@@ -1,30 +1,85 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+import 'dart:async';
 
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
-
+import 'package:material_ui/material_ui.dart';
+import 'package:my_expense_tracker_app/data/services/database/app_database.dart';
+import 'package:my_expense_tracker_app/data/services/database/migration/migration_prompter.dart';
+import 'package:my_expense_tracker_app/data/services/database/migration/migration_runner.dart';
 import 'package:my_expense_tracker_app/main.dart';
+import 'package:my_expense_tracker_app/ui/features/migration/view_models/migration_view_model.dart';
+
+/// Stands in for the database so the screen can be tested without SQLite.
+class FakeAppDatabase implements AppDatabase {
+  FakeAppDatabase(this.onMigrate);
+
+  final Future<void> Function(MigrationPrompter prompter, void Function(MigrationProgress) onProgress) onMigrate;
+
+  @override
+  Future<void> migrate({
+    required Locale locale,
+    required MigrationPrompter prompter,
+    void Function(MigrationProgress progress)? onProgress,
+  }) => onMigrate(prompter, onProgress ?? (_) {});
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+MigrationViewModel viewModelFor(FakeAppDatabase database) =>
+    MigrationViewModel(database: database, locale: const Locale('en', 'IN'));
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('shows progress, asks a question, then opens the app', (tester) async {
+    final release = Completer<void>();
+    String? answer;
+    final viewModel = viewModelFor(
+      FakeAppDatabase((prompter, onProgress) async {
+        onProgress(const MigrationProgress(stage: MigrationStage.migrating, completed: 1, total: 3));
+        await release.future;
+        answer = await prompter.askChoice('Which currency?', ['INR', 'USD']);
+      }),
+    );
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    await tester.pumpWidget(MyApp(migrationViewModel: viewModel));
+    unawaited(viewModel.run());
+    await tester.pump();
+    expect(find.text('Updating your data (2 of 3)'), findsOneWidget);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+    release.complete();
+    await tester.pump();
+    expect(find.text('Which currency?'), findsOneWidget);
+
+    await tester.tap(find.text('USD'));
+    await tester.pumpAndSettle();
+    expect(answer, 'USD');
+    expect(find.text('You have pushed the button this many times:'), findsOneWidget);
+  });
+
+  testWidgets('shows which migration failed and lets the user retry', (tester) async {
+    var attempts = 0;
+    final viewModel = viewModelFor(
+      FakeAppDatabase((prompter, onProgress) async {
+        attempts++;
+        throw MigrationFailure(
+          step: 'Running 1790000000_add_currency_to_expenses',
+          error: StateError('boom'),
+          stackTrace: StackTrace.current,
+          backupPath: '/backups/expense_tracker.db.bak',
+        );
+      }),
+    );
+
+    await tester.pumpWidget(MyApp(migrationViewModel: viewModel));
+    await viewModel.run();
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text('Updating your data failed'), findsOneWidget);
+    expect(find.text('Running 1790000000_add_currency_to_expenses'), findsOneWidget);
+    expect(find.textContaining('boom'), findsOneWidget);
+    expect(find.textContaining('/backups/expense_tracker.db.bak'), findsOneWidget);
+
+    await tester.tap(find.text('Try again'));
+    await tester.pump();
+    expect(attempts, 2);
   });
 }

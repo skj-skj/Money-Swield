@@ -1,11 +1,22 @@
 import 'package:material_ui/material_ui.dart';
 
+import 'data/services/database/app_database.dart';
+import 'ui/features/migration/view_models/migration_view_model.dart';
+import 'ui/features/migration/views/migration_screen.dart';
+
 void main() {
-  runApp(const MyApp());
+  final binding = WidgetsFlutterBinding.ensureInitialized();
+  final migrationViewModel = MigrationViewModel(
+    database: AppDatabase(),
+    locale: binding.platformDispatcher.locale,
+  )..run();
+  runApp(MyApp(migrationViewModel: migrationViewModel));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({super.key, required this.migrationViewModel});
+
+  final MigrationViewModel migrationViewModel;
 
   // This widget is the root of your application.
   @override
@@ -30,7 +41,10 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: .fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const MyHomePage(title: 'My Expense Tracker App'),
+      home: MigrationGate(
+        viewModel: migrationViewModel,
+        child: const MyHomePage(title: 'My Expense Tracker App'),
+      ),
     );
   }
 }
