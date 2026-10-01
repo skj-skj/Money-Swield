@@ -105,7 +105,10 @@ class _QuestionView extends StatefulWidget {
 }
 
 class _QuestionViewState extends State<_QuestionView> {
-  late final _controller = TextEditingController(text: widget.question.initialValue);
+  late final _controller = TextEditingController(text: widget.question.initialValue ?? '');
+
+  /// The picked option, for a choice.
+  late String? _selected = widget.question.initialValue;
 
   @override
   void dispose() {
@@ -116,6 +119,8 @@ class _QuestionViewState extends State<_QuestionView> {
   @override
   Widget build(BuildContext context) {
     final options = widget.question.options;
+    final selected = _selected;
+    final canContinue = options == null || selected != null;
     return Center(
       child: SingleChildScrollView(
         child: Column(
@@ -128,20 +133,24 @@ class _QuestionViewState extends State<_QuestionView> {
             const SizedBox(height: 24),
             if (options != null)
               for (final option in options)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: OutlinedButton(onPressed: () => widget.onAnswer(option), child: Text(option)),
+                ListTile(
+                  leading: Icon(option == selected ? Icons.radio_button_checked : Icons.radio_button_unchecked),
+                  title: Text(option),
+                  selected: option == selected,
+                  onTap: () => setState(() => _selected = option),
                 )
-            else ...[
+            else
               TextField(
                 controller: _controller,
                 autofocus: true,
                 onSubmitted: widget.onAnswer,
                 decoration: const InputDecoration(border: OutlineInputBorder()),
               ),
-              const SizedBox(height: 16),
-              FilledButton(onPressed: () => widget.onAnswer(_controller.text), child: const Text('Continue')),
-            ],
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: canContinue ? () => widget.onAnswer(options == null ? _controller.text : selected!) : null,
+              child: const Text('Continue'),
+            ),
           ],
         ),
       ),

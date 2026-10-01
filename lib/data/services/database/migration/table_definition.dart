@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart' show setEquals;
+
 import 'sql.dart';
 import 'sqlite_type.dart';
 
@@ -54,8 +56,11 @@ class ForeignKeyDefinition {
     onUpdate: onUpdate,
   );
 
-  String toSql() =>
-      'FOREIGN KEY (${quoteAll(columns)}) REFERENCES ${quote(parentTable)} (${quoteAll(parentColumns)})'
+  String toSql() => 'FOREIGN KEY (${quoteAll(columns)}) ${referencesSql()}';
+
+  /// The `REFERENCES ...` part, also used when adding a column in place.
+  String referencesSql() =>
+      'REFERENCES ${quote(parentTable)} (${quoteAll(parentColumns)})'
       ' ON DELETE ${onDelete.sql} ON UPDATE ${onUpdate.sql}';
 }
 
@@ -123,8 +128,15 @@ class TableDefinition {
     orElse: () => throw ArgumentError('Table "$name" has no column "$column"'),
   );
 
-  bool isUnique(String column) =>
-      uniqueConstraints.any((u) => u.length == 1 && u.first == column);
+  /// Whether [keyColumns] identify a row, i.e. are the primary key or have a
+  /// unique constraint or unique index. A foreign key can only point at
+  /// such columns.
+  bool isKey(List<String> keyColumns) {
+    final wanted = keyColumns.toSet();
+    return setEquals(primaryKey.toSet(), wanted) ||
+        uniqueConstraints.any((u) => setEquals(u.toSet(), wanted)) ||
+        indexes.any((i) => i.unique && setEquals(i.columns.toSet(), wanted));
+  }
 
   /// The `CREATE TABLE` statement. [tableName] overrides [name], which is
   /// used when building the replacement table during a rebuild.
@@ -164,7 +176,9 @@ class TableDefinition {
     for (final f in foreignKeys) {
       checkColumns(f.columns, 'Foreign key');
     }
+    final indexNames = <String>{};
     for (final i in indexes) {
+      if (!indexNames.add(i.name)) throw ArgumentError('Table "$name" has index "${i.name}" twice');
       checkColumns(i.columns, 'Index "${i.name}"');
     }
     if (autoIncrement &&

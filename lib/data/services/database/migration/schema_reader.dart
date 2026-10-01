@@ -21,6 +21,56 @@ class SchemaReader {
     return rows.isNotEmpty;
   }
 
+  /// Describes what already uses [name], e.g. `index "by_x" on "a"`, or null
+  /// if it is free. SQLite gives tables, indexes and views one namespace and
+  /// ignores case. [exceptTable] and its own indexes are not counted.
+  Future<String?> nameInUse(String name, {String exceptTable = ''}) async {
+    final rows = await _db.rawQuery(
+      'SELECT type, name, tbl_name FROM sqlite_master WHERE name = ? COLLATE NOCASE AND tbl_name != ? COLLATE NOCASE',
+      [name, exceptTable],
+    );
+    if (rows.isEmpty) return null;
+    final row = rows.first;
+    final owner = row['type'] == 'index' ? ' on "${row['tbl_name']}"' : '';
+    return '${row['type']} "${row['name']}"$owner';
+  }
+
+  /// Throws if rebuilding [table] (see `Migrator.changeTable`) would lose or
+  /// break something the framework cannot recreate.
+  ///
+  /// The rebuild writes a fresh `CREATE TABLE` from what [readTable] sees,
+  /// and SQLite's `PRAGMA`s do not report CHECK constraints, collations or
+  /// generated columns, so those would be silently dropped. Triggers would be
+  /// dropped with the old table, and views that use the table make SQLite
+  /// refuse the rename at the end of the rebuild. Tables created by the
+  /// framework never have any of these.
+  Future<void> checkCanRebuild(String table) async {
+    final master = await _db.rawQuery(
+      "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?",
+      [table],
+    );
+    // Strip string literals and quoted names so that, say, DEFAULT 'check'
+    // is not mistaken for a CHECK constraint.
+    final createSql = (master.first['sql']! as String).replaceAll(_quotedText, '');
+    final feature = _featureWord.firstMatch(createSql)?.group(1)?.toUpperCase();
+    if (feature != null) {
+      final what = feature == 'CHECK' || feature == 'COLLATE' ? feature : 'a generated column';
+      throw UnsupportedError('Table "$table" uses $what, which the migration framework cannot rebuild');
+    }
+
+    final dependents = await _db.rawQuery(
+      "SELECT type, name FROM sqlite_master WHERE (type = 'trigger' AND tbl_name = ?) OR (type = 'view' AND sql LIKE ?)",
+      [table, '%$table%'],
+    );
+    if (dependents.isNotEmpty) {
+      final names = dependents.map((d) => '${d['type']} "${d['name']}"').join(', ');
+      throw UnsupportedError('Table "$table" is used by $names, which the migration framework cannot rebuild');
+    }
+  }
+
+  static final _quotedText = RegExp(r"""'(?:[^']|'')*'|"(?:[^"]|"")*"|`[^`]*`|\[[^\]]*\]""");
+  static final _featureWord = RegExp(r'\b(CHECK|COLLATE|GENERATED|AS)\b', caseSensitive: false);
+
   /// All tables except SQLite's own internal ones.
   Future<List<String>> tableNames() async {
     final rows = await _db.rawQuery(
@@ -36,14 +86,6 @@ class SchemaReader {
     );
     if (master.isEmpty) throw ArgumentError('Table "$table" does not exist');
     final createSql = master.first['sql']! as String;
-
-    final triggers = await _db.rawQuery(
-      "SELECT name FROM sqlite_master WHERE type = 'trigger' AND tbl_name = ?",
-      [table],
-    );
-    if (triggers.isNotEmpty) {
-      throw UnsupportedError('Table "$table" has triggers, which the migration framework cannot rebuild');
-    }
 
     final definition = TableDefinition(
       name: table,
@@ -133,6 +175,8 @@ class SchemaReader {
       foreignKey.columns.add(row['from']! as String);
       foreignKey.parentColumns.add(to);
     }
-    return byId.values.toList();
+    // SQLite numbers foreign keys last-declared first; return them in the
+    // order they were declared so a rebuild keeps the same schema.
+    return [for (final id in byId.keys.toList()..sort((a, b) => b.compareTo(a))) byId[id]!];
   }
 }

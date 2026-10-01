@@ -29,16 +29,17 @@ await m.createTable('expenses', (t) {          // adds `id` automatically
 await m.createTable('tags_expenses', id: false, (t) { ...; t.primaryKey(['tag_id', 'expense_id']); });
 await m.dropTable('expenses');
 
-// Columns (each rebuilds the table and keeps all rows)
+// Columns. All keep every row. A plain new column is added in place; any
+// other change rebuilds the table, because SQLite's ALTER TABLE can't do it.
 await m.addColumn('expenses', 'currency', SqliteType.text);
 await m.removeColumn('expenses', 'note');
 await m.renameColumn('expenses', 'note', 'description');
 await m.changeColumn('expenses', 'amount', SqliteType.integer, nullable: false);
 
-// Several changes, one rebuild
+// Several changes, at most one rebuild (same column helpers as createTable)
 await m.changeTable('expenses', (t) {
   t.renameColumn('note', 'description');
-  t.addColumn('paid', SqliteType.integer, nullable: false, defaultValue: true);
+  t.integer('paid', nullable: false, defaultValue: true);
   t.removeIndex(columns: ['title']);
 });
 
@@ -48,7 +49,8 @@ await m.removeReference('expenses', 'account_id');
 await m.addIndex('expenses', ['category_id', 'spent_at'], unique: true);
 await m.removeIndex('expenses', columns: ['category_id', 'spent_at']);
 
-// Data, for backfills (`where` matches by equality; null means IS NULL)
+// Data, for backfills (`where` matches by equality; null means IS NULL;
+// bools are stored as 1 / 0)
 final rows = await m.select('expenses', columns: ['id', 'amount'], where: {'currency': null});
 await m.insert('monthly_spend', {'month': '2026-09', 'total': 120.5});
 await m.update('expenses', {'currency': 'INR'}, where: {'id': 7});
@@ -57,7 +59,7 @@ await m.count('expenses');
 
 // Asking the device and the user
 m.locale.countryCode;                                    // e.g. 'IN'
-await m.askChoice('Which currency are your expenses in?', ['INR', 'USD']);
+await m.askChoice('Which currency are your expenses in?', ['INR', 'USD'], initialValue: 'INR'); // preselected
 await m.askText('Name for your default account?', initialValue: 'Cash');
 ```
 
@@ -72,14 +74,28 @@ await m.update('expenses', {'currency': currency});                  // 2. backf
 await m.changeColumn('expenses', 'currency', SqliteType.text, nullable: false); // 3. require it
 ```
 
+If one value suits every row, one step is enough: `changeColumn(..., nullable:
+false, defaultValue: 'INR')` sets the remaining NULLs to the default.
+
+## Tables the framework can't rebuild
+
+A rebuild writes a fresh `CREATE TABLE` from what SQLite reports about the
+table, and SQLite doesn't report CHECK constraints, collations or generated
+columns. So a change that needs a rebuild is refused, rather than silently
+dropping them, on a table that has any of these, or has a trigger, or is used
+by a view. Tables made with `createTable` never have them. Adding plain
+columns and indexes still works on such tables, because it happens in place.
+
 ## What protects the data
 
 - The database file is copied to `databases/backups/` before any pending
   migration runs. The copy is deleted only after every migration and SQLite's
-  integrity check pass.
+  integrity check pass. If a run fails, its copy stays, and later runs keep
+  that oldest copy instead of making new ones.
 - Each migration runs in its own transaction: if it throws, none of its
   changes are kept, and the screen shows which migration failed.
-- Foreign keys are checked before each migration commits.
+- Foreign keys are checked before each migration commits, and a reference to
+  a missing table or a non-unique column is refused when it is declared.
 - An older app refuses to open a database changed by a newer one.
 - `test/data/services/database/migrations/all_migrations_test.dart` runs every
   migration `up -> down -> up` and checks each file is registered.

@@ -49,10 +49,32 @@ void main() {
     await tester.pump();
     expect(find.text('Which currency?'), findsOneWidget);
 
+    final continueButton = find.widgetWithText(FilledButton, 'Continue');
+    expect(tester.widget<FilledButton>(continueButton).onPressed, isNull, reason: 'nothing picked yet');
     await tester.tap(find.text('USD'));
+    await tester.pump();
+    await tester.tap(continueButton);
     await tester.pumpAndSettle();
     expect(answer, 'USD');
     expect(find.text('You have pushed the button this many times:'), findsOneWidget);
+  });
+
+  testWidgets('a choice with an initial value starts selected', (tester) async {
+    String? answer;
+    final viewModel = viewModelFor(
+      FakeAppDatabase((prompter, onProgress) async {
+        answer = await prompter.askChoice('Which currency?', ['INR', 'USD'], initialValue: 'USD');
+      }),
+    );
+
+    await tester.pumpWidget(MyApp(migrationViewModel: viewModel));
+    unawaited(viewModel.run());
+    await tester.pump();
+    expect(tester.widget<ListTile>(find.widgetWithText(ListTile, 'USD')).selected, isTrue);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
+    await tester.pumpAndSettle();
+    expect(answer, 'USD');
   });
 
   testWidgets('shows which migration failed and lets the user retry', (tester) async {

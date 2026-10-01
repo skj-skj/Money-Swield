@@ -6,5 +6,7 @@
 abstract interface class MigrationPrompter {
   Future<String> askText(String question, {String initialValue = ''});
 
-  Future<String> askChoice(String question, List<String> options);
+  /// [initialValue], if given, is one of [options] and is shown already
+  /// selected, so the user only has to confirm it.
+  Future<String> askChoice(String question, List<String> options, {String? initialValue});
 }

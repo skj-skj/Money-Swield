@@ -8,11 +8,14 @@ import '../../../../data/services/database/migration/migration_runner.dart';
 
 /// A question a migration is waiting on. [options] is null for free text.
 class MigrationQuestion {
-  const MigrationQuestion({required this.text, this.options, this.initialValue = ''});
+  const MigrationQuestion({required this.text, this.options, this.initialValue});
 
   final String text;
   final List<String>? options;
-  final String initialValue;
+
+  /// The prefilled text, or the option selected at first. Null for a choice
+  /// means nothing is selected until the user picks.
+  final String? initialValue;
 }
 
 /// Runs the database migrations on app start and exposes their progress,
@@ -81,8 +84,8 @@ class MigrationViewModel extends ChangeNotifier implements MigrationPrompter {
       _ask(MigrationQuestion(text: question, initialValue: initialValue));
 
   @override
-  Future<String> askChoice(String question, List<String> options) =>
-      _ask(MigrationQuestion(text: question, options: List.unmodifiable(options)));
+  Future<String> askChoice(String question, List<String> options, {String? initialValue}) =>
+      _ask(MigrationQuestion(text: question, options: List.unmodifiable(options), initialValue: initialValue));
 
   Future<String> _ask(MigrationQuestion question) {
     if (_answer != null) throw StateError('A migration question is already waiting for an answer');

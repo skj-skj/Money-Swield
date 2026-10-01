@@ -67,6 +67,8 @@ class MigrationFailure implements Exception {
 ///    before committing and recording it in `schema_migrations`,
 /// 3. runs SQLite's integrity check,
 /// 4. deletes the backup, which is only kept if something failed.
+///
+/// [rollback] goes through the same steps, running `down` instead.
 class MigrationRunner {
   MigrationRunner({
     required DatabaseFactory databaseFactory,
@@ -89,123 +91,127 @@ class MigrationRunner {
 
   /// Runs all migrations that have not run yet, oldest first.
   Future<void> migrate({void Function(MigrationProgress progress)? onProgress}) async {
-    void report(MigrationStage stage, int completed, int total, [Migration? current]) =>
-        onProgress?.call(MigrationProgress(stage: stage, completed: completed, total: total, current: current));
-
-    report(MigrationStage.checking, 0, 0);
-    final pending = await _guard('Checking database version', () async {
-      final db = await _open();
-      try {
-        return await _pending(db);
-      } finally {
-        await db.close();
-      }
-    });
-    if (pending.isEmpty) {
-      report(MigrationStage.done, 0, 0);
-      return;
-    }
-
-    report(MigrationStage.backingUp, 0, pending.length);
-    final backup = await _guard('Backing up database', () => DatabaseBackup.create(databasePath, now: _clock()));
-
-    final db = await _guard('Opening database', _open, backup: backup);
-    try {
-      await db.execute('PRAGMA foreign_keys = OFF');
-      for (final (index, migration) in pending.indexed) {
-        report(MigrationStage.migrating, index, pending.length, migration);
-        await _guard('Running $migration', migration: migration, backup: backup, () async {
-          await db.transaction((txn) async {
-            await migration.up(Migrator(txn, locale: locale, prompter: prompter));
-            await _checkForeignKeys(txn);
-            await txn.insert(historyTable, {
-              'version': migration.version,
-              'name': migration.name,
-              'applied_at': _clock().millisecondsSinceEpoch,
-            });
-          });
-        });
-      }
-      report(MigrationStage.verifying, pending.length, pending.length);
-      await _guard('Checking database integrity', () => _checkIntegrity(db), backup: backup);
-      await db.execute('PRAGMA foreign_keys = ON');
-    } finally {
-      await db.close();
-    }
-
-    if (backup != null) await DatabaseBackup.delete(backup);
-    report(MigrationStage.done, pending.length, pending.length);
+    onProgress?.call(const MigrationProgress(stage: MigrationStage.checking, completed: 0, total: 0));
+    final pending = await _guard('Checking database version', pendingMigrations);
+    await _run(
+      pending,
+      up: true,
+      report: (stage, completed, [current]) => onProgress?.call(
+        MigrationProgress(stage: stage, completed: completed, total: pending.length, current: current),
+      ),
+    );
   }
 
   /// Undoes the last [steps] applied migrations, newest first, by running
   /// their `down`. Meant for development and tests.
   Future<void> rollback({int steps = 1}) async {
-    final db = await _open();
-    final List<Migration> toUndo;
-    try {
-      final applied = await _appliedVersions(db);
-      final latest = (applied.toList()..sort()).reversed.take(steps);
-      toUndo = [for (final version in latest) _migrations.firstWhere((m) => m.version == version)];
-    } finally {
-      await db.close();
-    }
-    if (toUndo.isEmpty) return;
-
-    final backup = await DatabaseBackup.create(databasePath, now: _clock());
-    final reopened = await _open();
-    try {
-      await reopened.execute('PRAGMA foreign_keys = OFF');
-      for (final migration in toUndo) {
-        await _guard('Rolling back $migration', migration: migration, backup: backup, () async {
-          await reopened.transaction((txn) async {
-            await migration.down(Migrator(txn, locale: locale, prompter: prompter));
-            await _checkForeignKeys(txn);
-            await txn.delete(historyTable, where: 'version = ?', whereArgs: [migration.version]);
-          });
-        });
-      }
-      await reopened.execute('PRAGMA foreign_keys = ON');
-    } finally {
-      await reopened.close();
-    }
-    if (backup != null) await DatabaseBackup.delete(backup);
+    if (steps < 0) throw ArgumentError.value(steps, 'steps', 'Must not be negative');
+    final toUndo = await _guard('Checking database version', () async {
+      final applied = await _withDatabase(_appliedVersions);
+      return [
+        for (final version in (applied.toList()..sort()).reversed.take(steps))
+          _migrations.firstWhere((m) => m.version == version),
+      ];
+    });
+    await _run(toUndo, up: false);
   }
 
   /// Migrations not yet applied to the database at [databasePath].
   Future<List<Migration>> pendingMigrations() async {
+    // A new install has nothing applied. Checking without opening keeps the
+    // file from being created here, so there is no empty file to back up.
+    if (!await File(databasePath).exists()) return [..._migrations];
+    final applied = await _withDatabase(_appliedVersions);
+    return [for (final m in _migrations) if (!applied.contains(m.version)) m];
+  }
+
+  /// Runs each of [migrations] in its own transaction, `up` or (unless [up])
+  /// `down`, with the backup and checks described on the class.
+  Future<void> _run(
+    List<Migration> migrations, {
+    required bool up,
+    void Function(MigrationStage stage, int completed, [Migration? current])? report,
+  }) async {
+    if (migrations.isEmpty) {
+      report?.call(MigrationStage.done, 0);
+      return;
+    }
+
+    report?.call(MigrationStage.backingUp, 0);
+    final backup = await _guard('Backing up database', () => DatabaseBackup.create(databasePath, now: _clock()));
+
+    final db = await _guard('Opening database', _open, backup: backup);
+    try {
+      for (final (index, migration) in migrations.indexed) {
+        report?.call(MigrationStage.migrating, index, migration);
+        final step = up ? 'Running $migration' : 'Rolling back $migration';
+        await _guard(step, migration: migration, backup: backup, () async {
+          await db.transaction((txn) async {
+            final m = Migrator(txn, locale: locale, prompter: prompter);
+            await (up ? migration.up(m) : migration.down(m));
+            await _checkForeignKeys(txn);
+            if (up) {
+              await txn.insert(historyTable, {
+                'version': migration.version,
+                'name': migration.name,
+                'applied_at': _clock().millisecondsSinceEpoch,
+              });
+            } else {
+              await txn.delete(historyTable, where: 'version = ?', whereArgs: [migration.version]);
+            }
+          });
+        });
+      }
+      report?.call(MigrationStage.verifying, migrations.length);
+      await _guard('Checking database integrity', () => _checkIntegrity(db), backup: backup);
+    } finally {
+      await db.close();
+    }
+
+    if (backup != null) await DatabaseBackup.delete(backup);
+    report?.call(MigrationStage.done, migrations.length);
+  }
+
+  /// Opens the database with the history table in place and foreign key
+  /// enforcement off, as SQLite's table rebuild needs. The setting only
+  /// lasts for this connection; the app's own connection turns it on.
+  Future<Database> _open() async {
+    await Directory(p.dirname(databasePath)).create(recursive: true);
+    return _factory.openDatabase(
+      databasePath,
+      options: OpenDatabaseOptions(
+        singleInstance: false,
+        onConfigure: (db) => db.execute('PRAGMA foreign_keys = OFF'),
+        onOpen: (db) => db.execute(
+          'CREATE TABLE IF NOT EXISTS $historyTable ('
+          'version INTEGER PRIMARY KEY NOT NULL, name TEXT NOT NULL, applied_at INTEGER NOT NULL)',
+        ),
+      ),
+    );
+  }
+
+  Future<T> _withDatabase<T>(Future<T> Function(Database db) action) async {
     final db = await _open();
     try {
-      return await _pending(db);
+      return await action(db);
     } finally {
       await db.close();
     }
   }
 
-  Future<Database> _open() async {
-    await Directory(p.dirname(databasePath)).create(recursive: true);
-    return _factory.openDatabase(databasePath, options: OpenDatabaseOptions(singleInstance: false));
-  }
-
-  Future<List<Migration>> _pending(Database db) async {
-    final applied = await _appliedVersions(db);
-    final known = {for (final m in _migrations) m.version};
-    final unknown = applied.difference(known);
+  /// Versions recorded as applied. Throws if any is unknown to this app,
+  /// i.e. a newer app changed the database.
+  Future<Set<int>> _appliedVersions(Database db) async {
+    final rows = await db.query(historyTable, columns: ['version']);
+    final applied = {for (final row in rows) row['version']! as int};
+    final unknown = applied.difference({for (final m in _migrations) m.version});
     if (unknown.isNotEmpty) {
       throw StateError(
         'This database was updated by a newer version of the app (unknown migrations: '
         '${(unknown.toList()..sort()).join(', ')}). Install the latest version of the app.',
       );
     }
-    return [for (final m in _migrations) if (!applied.contains(m.version)) m];
-  }
-
-  Future<Set<int>> _appliedVersions(Database db) async {
-    await db.execute(
-      'CREATE TABLE IF NOT EXISTS $historyTable ('
-      'version INTEGER PRIMARY KEY NOT NULL, name TEXT NOT NULL, applied_at INTEGER NOT NULL)',
-    );
-    final rows = await db.query(historyTable, columns: ['version']);
-    return {for (final row in rows) row['version']! as int};
+    return applied;
   }
 
   static Future<void> _checkForeignKeys(DatabaseExecutor db) async {

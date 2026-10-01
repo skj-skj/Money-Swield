@@ -30,6 +30,13 @@ String quote(String name) => '"${name.replaceAll('"', '""')}"';
 /// Quotes each name and joins them with commas.
 String quoteAll(List<String> names) => names.map(quote).join(', ');
 
+/// Converts a Dart value into one SQLite accepts as a query argument.
+/// SQLite has no boolean type, so `bool` becomes 1 / 0.
+Object? toSqlArgument(Object? value) => switch (value) {
+  bool() => value ? 1 : 0,
+  _ => value,
+};
+
 /// Converts a Dart value into a SQL literal usable after `DEFAULT`.
 ///
 /// Supports `int`, `double`, `bool` (stored as 1 / 0) and `String`.

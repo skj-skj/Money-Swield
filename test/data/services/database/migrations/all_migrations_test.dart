@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_expense_tracker_app/data/services/database/migration/migration.dart';
+import 'package:my_expense_tracker_app/data/services/database/migration/schema_reader.dart';
 import 'package:my_expense_tracker_app/data/services/database/migrations/all_migrations.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -22,8 +23,8 @@ void main() {
   test('every migration can run up, down and up again (like rails db:migrate:redo)', () async {
     final db = await openMemoryDatabase();
     addTearDown(db.close);
-    // The same answer to every question the migrations ask.
-    final m = migratorFor(db, prompter: FakePrompter(List.filled(100, '')));
+    // Every question is answered with its suggested value.
+    final m = migratorFor(db);
 
     for (final migration in allMigrations) {
       await migration.up(m);
@@ -39,5 +40,16 @@ void main() {
   });
 }
 
-Future<List<Map<String, Object?>>> _schema(Database db) =>
-    db.rawQuery("SELECT type, name, sql FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' ORDER BY name");
+/// Every table as the framework sees it, as SQL. Compared via the framework
+/// rather than SQLite's stored text, because a column added in place is
+/// written differently from the same column after a rebuild.
+Future<List<String>> _schema(Database db) async {
+  final reader = SchemaReader(db);
+  return [
+    for (final name in await reader.tableNames())
+      if (await reader.readTable(name) case final table) ...[
+        table.createTableSql(),
+        for (final index in table.indexes) index.toSql(name),
+      ],
+  ];
+}

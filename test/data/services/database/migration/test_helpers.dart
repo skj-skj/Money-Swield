@@ -15,8 +15,9 @@ Future<Database> openMemoryDatabase() => testDatabaseFactory().openDatabase(
   options: OpenDatabaseOptions(singleInstance: false),
 );
 
-/// Answers every question with the queued answers, in order, and records
-/// what was asked.
+/// Answers questions with the queued answers, in order, and records what
+/// was asked. Once the queue is empty it accepts the suggestion: the
+/// `initialValue`, or for a choice without one, the first option.
 class FakePrompter implements MigrationPrompter {
   FakePrompter([List<String> answers = const []]) : _answers = [...answers];
 
@@ -26,13 +27,16 @@ class FakePrompter implements MigrationPrompter {
   @override
   Future<String> askText(String question, {String initialValue = ''}) async {
     questions.add(question);
-    return _answers.removeAt(0);
+    return _answers.isEmpty ? initialValue : _answers.removeAt(0);
   }
 
   @override
-  Future<String> askChoice(String question, List<String> options) async {
+  Future<String> askChoice(String question, List<String> options, {String? initialValue}) async {
     questions.add(question);
-    return _answers.removeAt(0);
+    if (_answers.isEmpty) return initialValue ?? options.first;
+    final answer = _answers.removeAt(0);
+    if (!options.contains(answer)) throw StateError('"$answer" is not one of $options for "$question"');
+    return answer;
   }
 }
 

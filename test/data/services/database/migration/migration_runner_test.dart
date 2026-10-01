@@ -65,13 +65,15 @@ void main() {
   late String databasePath;
   final factory = testDatabaseFactory();
 
-  MigrationRunner runner(List<Migration> migrations, {FakePrompter? prompter}) => MigrationRunner(
-    databaseFactory: factory,
-    databasePath: databasePath,
-    migrations: migrations,
-    locale: const Locale('en', 'IN'),
-    prompter: prompter ?? FakePrompter(),
-  );
+  MigrationRunner runner(List<Migration> migrations, {FakePrompter? prompter, DateTime Function()? clock}) =>
+      MigrationRunner(
+        databaseFactory: factory,
+        databasePath: databasePath,
+        migrations: migrations,
+        locale: const Locale('en', 'IN'),
+        prompter: prompter ?? FakePrompter(),
+        clock: clock ?? DateTime.now,
+      );
 
   Future<T> withDatabase<T>(Future<T> Function(Database db) action) async {
     final db = await factory.openDatabase(databasePath, options: OpenDatabaseOptions(singleInstance: false));
@@ -205,6 +207,39 @@ void main() {
     expect((await all.pendingMigrations()).map((m) => m.name), ['add_currency_to_expenses']);
     await all.rollback();
     expect(await withDatabase((db) => db.query('sqlite_master', where: "name = 'expenses'")), isEmpty);
+  });
+
+  test('first install makes no backup and no database file until migrating', () async {
+    expect(await runner([createExpenses]).pendingMigrations(), [createExpenses]);
+    expect(File(databasePath).existsSync(), isFalse);
+    await runner([createExpenses]).migrate();
+    expect(File(databasePath).existsSync(), isTrue);
+    expect(backups(), isEmpty);
+  });
+
+  test('repeated failures keep only the oldest backup, success removes it', () async {
+    await runner([createExpenses]).migrate();
+    final broken = TestMigration(2500, 'broken', (m) async => throw StateError('boom'));
+
+    for (final month in [1, 2]) {
+      await expectLater(
+        runner([createExpenses, broken], clock: () => DateTime.utc(2026, month)).migrate(),
+        throwsA(isA<MigrationFailure>()),
+      );
+    }
+    expect(backups(), ['app.db.2026-01-01T00-00-00Z.bak']);
+
+    await runner([createExpenses, TestMigration(2500, 'broken', (m) async {})]).migrate();
+    expect(backups(), isEmpty);
+  });
+
+  test('rollback refuses a database from a newer app and negative steps', () async {
+    await runner([createExpenses, createMonthlySpend]).migrate();
+    await expectLater(
+      runner([createExpenses]).rollback(),
+      throwsA(isA<MigrationFailure>().having((f) => '${f.error}', 'error', contains('newer version'))),
+    );
+    expect(() => runner([createExpenses]).rollback(steps: -1), throwsArgumentError);
   });
 
   test('rejects duplicate versions', () {
