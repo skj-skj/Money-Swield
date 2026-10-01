@@ -1,49 +1,50 @@
+import 'package:bloc_signals_flutter/bloc_signals_flutter.dart';
 import 'package:material_ui/material_ui.dart';
 
 import 'data/services/database/app_database.dart';
-import 'ui/features/migration/view_models/migration_view_model.dart';
+import 'ui/features/migration/view_models/migration_cubit.dart';
 import 'ui/features/migration/views/migration_screen.dart';
 
 void main() {
   final binding = WidgetsFlutterBinding.ensureInitialized();
-  final migrationViewModel = MigrationViewModel(
-    database: AppDatabase(),
-    locale: binding.platformDispatcher.locale,
-  )..run();
-  runApp(MyApp(migrationViewModel: migrationViewModel));
+  // Created before runApp so migrations start without waiting for the first
+  // frame. It lives as long as the app, so nothing needs to close it.
+  final migrationCubit = MigrationCubit(database: AppDatabase(), locale: binding.platformDispatcher.locale)..run();
+  runApp(MyApp(migrationCubit: migrationCubit));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key, required this.migrationViewModel});
+  const MyApp({super.key, required this.migrationCubit});
 
-  final MigrationViewModel migrationViewModel;
+  final MigrationCubit migrationCubit;
 
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Expense Tracker App',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: MigrationGate(
-        viewModel: migrationViewModel,
-        child: const MyHomePage(title: 'My Expense Tracker App'),
+    // .value because main() owns the cubit, not this widget.
+    return BlocSignalProvider<MigrationCubit>.value(
+      value: migrationCubit,
+      child: MaterialApp(
+        title: 'Expense Tracker App',
+        theme: ThemeData(
+          // This is the theme of your application.
+          //
+          // TRY THIS: Try running your application with "flutter run". You'll see
+          // the application has a purple toolbar. Then, without quitting the app,
+          // try changing the seedColor in the colorScheme below to Colors.green
+          // and then invoke "hot reload" (save your changes or press the "hot
+          // reload" button in a Flutter-supported IDE, or press "r" if you used
+          // the command line to start the app).
+          //
+          // Notice that the counter didn't reset back to zero; the application
+          // state is not lost during the reload. To reset the state, use hot
+          // restart instead.
+          //
+          // This works for code too, not just values: Most code changes can be
+          // tested with just a hot reload.
+          colorScheme: .fromSeed(seedColor: Colors.deepPurple),
+        ),
+        home: const MigrationGate(child: MyHomePage(title: 'My Expense Tracker App')),
       ),
     );
   }
@@ -119,10 +120,7 @@ class _MyHomePageState extends State<MyHomePage> {
           mainAxisAlignment: .center,
           children: [
             const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
+            Text('$_counter', style: Theme.of(context).textTheme.headlineMedium),
           ],
         ),
       ),

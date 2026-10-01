@@ -1,47 +1,49 @@
+import 'package:bloc_signals_flutter/bloc_signals_flutter.dart';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../data/services/database/migration/migration_runner.dart';
-import '../view_models/migration_view_model.dart';
+import '../view_models/migration_cubit.dart';
 
 /// Shows migration progress on app start and switches to [child] once the
-/// database is up to date.
+/// database is up to date. Reads the [MigrationCubit] from the nearest
+/// [BlocSignalProvider].
 class MigrationGate extends StatelessWidget {
-  const MigrationGate({super.key, required this.viewModel, required this.child});
+  const MigrationGate({super.key, required this.child});
 
-  final MigrationViewModel viewModel;
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: viewModel,
-      builder: (context, _) => viewModel.isDone ? child : MigrationScreen(viewModel: viewModel),
+    return BlocSignalBuilder<MigrationCubit, MigrationState>(
+      builder: (context, state) => state is MigrationDone ? child : MigrationScreen(state: state),
     );
   }
 }
 
 class MigrationScreen extends StatelessWidget {
-  const MigrationScreen({super.key, required this.viewModel});
+  const MigrationScreen({super.key, required this.state});
 
-  final MigrationViewModel viewModel;
+  final MigrationState state;
 
   @override
   Widget build(BuildContext context) {
-    final failure = viewModel.failure;
-    final question = viewModel.question;
+    final cubit = context.read<MigrationCubit>();
     return Scaffold(
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: switch ((failure, question)) {
-            (final MigrationFailure failure, _) => _FailureView(failure: failure, onRetry: viewModel.run),
-            (_, final MigrationQuestion question) => _QuestionView(
+          child: switch (state) {
+            MigrationFailed(:final failure) => _FailureView(failure: failure, onRetry: cubit.run),
+            MigrationAsking(:final question) => _QuestionView(
               key: ValueKey(question),
               question: question,
-              onAnswer: viewModel.answer,
+              onAnswer: cubit.answer,
             ),
-            _ => _ProgressView(progress: viewModel.progress),
+            MigrationInProgress(:final progress) => _ProgressView(progress: progress),
+            // MigrationGate shows the app instead; this only shows for the
+            // single frame before it switches over.
+            MigrationDone() => const _ProgressView(progress: null),
           },
         ),
       ),
@@ -181,10 +183,7 @@ class _FailureView extends StatelessWidget {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 16),
-        Text(
-          migration == null ? failure.step : 'Failed migration: $migration',
-          style: theme.textTheme.titleSmall,
-        ),
+        Text(migration == null ? failure.step : 'Failed migration: $migration', style: theme.textTheme.titleSmall),
         const SizedBox(height: 8),
         Expanded(
           child: DecoratedBox(
