@@ -19,7 +19,9 @@ android {
         applicationId = "com.skj.expense.tracker.my_expense_tracker_app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        // Android 10: photos go to Pictures/<AppName> through MediaStore
+        // without a storage permission (application-design.md §8).
+        minSdk = 29
         targetSdk = flutter.targetSdkVersion
         // Uses the version code from pubspec.yaml. When using split APKs, 1000 * ABI_VERSION
         // is added automatically by Flutter. (https://developer.android.com/studio/build/configure-apk-splits#configure-APK-versions)

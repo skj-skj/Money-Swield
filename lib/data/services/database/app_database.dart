@@ -59,7 +59,9 @@ class AppDatabase {
 
   static Future<String> _defaultDatabasePath() async {
     final Directory? folder = await getExternalStorageDirectory();
-    if (folder == null) throw StateError('App storage folder is not available on this device');
+    if (folder == null) {
+      throw StateError('App storage folder is not available on this device');
+    }
     return p.join(folder.path, 'databases', fileName);
   }
 }

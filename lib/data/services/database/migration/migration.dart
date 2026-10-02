@@ -35,7 +35,9 @@ abstract class Migration {
 /// Throw from [Migration.down] when a change cannot be undone, e.g. because
 /// data was deleted.
 class IrreversibleMigration implements Exception {
-  const IrreversibleMigration([this.reason = 'This migration cannot be undone']);
+  const IrreversibleMigration([
+    this.reason = 'This migration cannot be undone',
+  ]);
 
   final String reason;
 

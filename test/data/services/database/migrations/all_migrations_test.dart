@@ -16,7 +16,9 @@ void main() {
         .map((f) => f.uri.pathSegments.last)
         .where((name) => RegExp(r'^\d+_').hasMatch(name))
         .toList();
-    final registered = {for (final m in allMigrations) '${m.version}_${m.name}.dart'};
+    final registered = {
+      for (final m in allMigrations) '${m.version}_${m.name}.dart',
+    };
     expect(registered, unorderedEquals(files));
   });
 
@@ -35,7 +37,11 @@ void main() {
         continue;
       }
       await migration.up(m);
-      expect(await _schema(db), schemaAfterUp, reason: '$migration down() did not exactly undo up()');
+      expect(
+        await _schema(db),
+        schemaAfterUp,
+        reason: '$migration down() did not exactly undo up()',
+      );
     }
   });
 }

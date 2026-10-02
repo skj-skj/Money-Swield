@@ -23,7 +23,8 @@ typedef Row = Map<String, Object?>;
 ///
 /// Asking the user: [askText], [askChoice]. Device settings: [locale].
 class Migrator {
-  Migrator(this._db, {required this.locale, required this._prompter}) : _reader = SchemaReader(_db);
+  Migrator(this._db, {required this.locale, required this._prompter})
+    : _reader = SchemaReader(_db);
 
   final DatabaseExecutor _db;
   final MigrationPrompter _prompter;
@@ -38,10 +39,16 @@ class Migrator {
 
   /// Creates a table. Unless [id] is false, it gets an
   /// `id INTEGER PRIMARY KEY AUTOINCREMENT` column first.
-  Future<void> createTable(String name, void Function(TableBuilder t) build, {bool id = true}) async {
+  Future<void> createTable(
+    String name,
+    void Function(TableBuilder t) build, {
+    bool id = true,
+  }) async {
     checkIdentifier(name);
     if (await _reader.nameInUse(name) case final owner?) {
-      throw ArgumentError('Cannot create table "$name": the name is already used by $owner');
+      throw ArgumentError(
+        'Cannot create table "$name": the name is already used by $owner',
+      );
     }
 
     final table = TableDefinition(name: name);
@@ -84,7 +91,10 @@ class Migrator {
   /// place, and anything else rebuilds the table: a new table with the
   /// wanted shape is created, the rows are copied over, and it replaces the
   /// old one. Put several changes in one [changeTable] to rebuild only once.
-  Future<void> changeTable(String name, void Function(TableEditor t) edit) async {
+  Future<void> changeTable(
+    String name,
+    void Function(TableEditor t) edit,
+  ) async {
     final before = await _reader.readTable(name);
     final editor = TableEditor(before.copy());
     edit(editor);
@@ -96,7 +106,10 @@ class Migrator {
     await _checkIndexNamesFree(after);
     await _checkExistingRowsFit(after, sources);
 
-    final added = [for (final c in after.columns) if (!sources.containsKey(c.name)) c];
+    final added = [
+      for (final c in after.columns)
+        if (!sources.containsKey(c.name)) c,
+    ];
     if (_canChangeInPlace(before, after, added)) {
       await _changeInPlace(before, after, added);
     } else {
@@ -108,7 +121,8 @@ class Migrator {
   Future<bool> tableExists(String name) => _reader.tableExists(name);
 
   Future<bool> columnExists(String table, String column) async =>
-      await tableExists(table) && (await _reader.readTable(table)).hasColumn(column);
+      await tableExists(table) &&
+      (await _reader.readTable(table)).hasColumn(column);
 
   // ---------------------------------------------------------------------------
   // Columns and indexes (each is a one-change changeTable)
@@ -123,7 +137,13 @@ class Migrator {
     Object? defaultValue,
   }) => changeTable(
     table,
-    (t) => t.column(column, type, nullable: nullable, unique: unique, defaultValue: defaultValue),
+    (t) => t.column(
+      column,
+      type,
+      nullable: nullable,
+      unique: unique,
+      defaultValue: defaultValue,
+    ),
   );
 
   Future<void> removeColumn(String table, String column) =>
@@ -142,7 +162,13 @@ class Migrator {
     Object? defaultValue,
   }) => changeTable(
     table,
-    (t) => t.changeColumn(column, type, nullable: nullable, unique: unique, defaultValue: defaultValue),
+    (t) => t.changeColumn(
+      column,
+      type,
+      nullable: nullable,
+      unique: unique,
+      defaultValue: defaultValue,
+    ),
   );
 
   Future<void> addReference(
@@ -170,31 +196,57 @@ class Migrator {
   Future<void> removeReference(String table, String column) =>
       changeTable(table, (t) => t.removeReference(column));
 
-  Future<void> addIndex(String table, List<String> columns, {bool unique = false, String? name}) =>
-      changeTable(table, (t) => t.index(columns, unique: unique, name: name));
+  Future<void> addIndex(
+    String table,
+    List<String> columns, {
+    bool unique = false,
+    String? name,
+  }) => changeTable(table, (t) => t.index(columns, unique: unique, name: name));
 
   /// Removes the index on exactly [columns], or the index called [name].
-  Future<void> removeIndex(String table, {List<String>? columns, String? name}) =>
-      changeTable(table, (t) => t.removeIndex(columns: columns, name: name));
+  Future<void> removeIndex(
+    String table, {
+    List<String>? columns,
+    String? name,
+  }) => changeTable(table, (t) => t.removeIndex(columns: columns, name: name));
 
   // ---------------------------------------------------------------------------
   // Data, for backfills. `where` matches columns by equality (null = IS NULL).
   // `bool` values are stored as 1 / 0.
   // ---------------------------------------------------------------------------
 
-  Future<List<Row>> select(String table, {List<String>? columns, Map<String, Object?> where = const {}}) {
+  Future<List<Row>> select(
+    String table, {
+    List<String>? columns,
+    Map<String, Object?> where = const {},
+  }) {
     final (whereSql, args) = _where(where);
-    return _db.query(quote(table), columns: columns?.map(quote).toList(), where: whereSql, whereArgs: args);
+    return _db.query(
+      quote(table),
+      columns: columns?.map(quote).toList(),
+      where: whereSql,
+      whereArgs: args,
+    );
   }
 
   /// Inserts a row and returns its rowid.
-  Future<int> insert(String table, Map<String, Object?> values) => _db.insert(quote(table), _values(values));
+  Future<int> insert(String table, Map<String, Object?> values) =>
+      _db.insert(quote(table), _values(values));
 
   /// Updates matching rows (all rows if [where] is empty) and returns how
   /// many changed.
-  Future<int> update(String table, Map<String, Object?> values, {Map<String, Object?> where = const {}}) {
+  Future<int> update(
+    String table,
+    Map<String, Object?> values, {
+    Map<String, Object?> where = const {},
+  }) {
     final (whereSql, args) = _where(where);
-    return _db.update(quote(table), _values(values), where: whereSql, whereArgs: args);
+    return _db.update(
+      quote(table),
+      _values(values),
+      where: whereSql,
+      whereArgs: args,
+    );
   }
 
   /// Deletes matching rows (all rows if [where] is empty) and returns how
@@ -204,7 +256,10 @@ class Migrator {
     return _db.delete(quote(table), where: whereSql, whereArgs: args);
   }
 
-  Future<int> count(String table, {Map<String, Object?> where = const {}}) async {
+  Future<int> count(
+    String table, {
+    Map<String, Object?> where = const {},
+  }) async {
     final (whereSql, args) = _where(where);
     final rows = await _db.rawQuery(
       'SELECT COUNT(*) AS n FROM ${quote(table)}${whereSql == null ? '' : ' WHERE $whereSql'}',
@@ -224,10 +279,20 @@ class Migrator {
   /// Shows [question] on the migration screen and waits for the user to
   /// pick one of [options]. [initialValue], if given, must be one of the
   /// [options] and is shown already selected.
-  Future<String> askChoice(String question, List<String> options, {String? initialValue}) {
-    if (options.isEmpty) throw ArgumentError('askChoice needs at least one option');
+  Future<String> askChoice(
+    String question,
+    List<String> options, {
+    String? initialValue,
+  }) {
+    if (options.isEmpty) {
+      throw ArgumentError('askChoice needs at least one option');
+    }
     if (initialValue != null && !options.contains(initialValue)) {
-      throw ArgumentError.value(initialValue, 'initialValue', 'Must be one of the options $options');
+      throw ArgumentError.value(
+        initialValue,
+        'initialValue',
+        'Must be one of the options $options',
+      );
     }
     return _prompter.askChoice(question, options, initialValue: initialValue);
   }
@@ -238,12 +303,19 @@ class Migrator {
 
   /// Other tables may point at columns of [after]. Those columns must keep
   /// their name and stay unique, or the other table's foreign keys break.
-  Future<void> _checkReferencesToTable(TableDefinition after, Map<String, String> sources) async {
-    for (final (:table, :foreignKey) in await _reader.foreignKeysReferencing(after.name)) {
+  Future<void> _checkReferencesToTable(
+    TableDefinition after,
+    Map<String, String> sources,
+  ) async {
+    for (final (:table, :foreignKey) in await _reader.foreignKeysReferencing(
+      after.name,
+    )) {
       final columns = foreignKey.parentColumns;
       for (final column in columns) {
         if (sources[column] != column) {
-          throw ArgumentError('Cannot rename or remove "${after.name}.$column": "$table" references it.');
+          throw ArgumentError(
+            'Cannot rename or remove "${after.name}.$column": "$table" references it.',
+          );
         }
       }
       if (!after.isKey(columns)) {
@@ -266,7 +338,9 @@ class Migrator {
           ? await _reader.readTable(parentName)
           : null;
       if (parent == null) {
-        throw ArgumentError('"${table.name}" references table "$parentName", which does not exist');
+        throw ArgumentError(
+          '"${table.name}" references table "$parentName", which does not exist',
+        );
       }
       if (!parent.isKey(foreignKey.parentColumns)) {
         throw ArgumentError(
@@ -281,8 +355,11 @@ class Migrator {
   /// table.
   Future<void> _checkIndexNamesFree(TableDefinition table) async {
     for (final index in table.indexes) {
-      if (await _reader.nameInUse(index.name, exceptTable: table.name) case final owner?) {
-        throw ArgumentError('Index name "${index.name}" is already used by $owner');
+      if (await _reader.nameInUse(index.name, exceptTable: table.name)
+          case final owner?) {
+        throw ArgumentError(
+          'Index name "${index.name}" is already used by $owner',
+        );
       }
     }
   }
@@ -290,8 +367,13 @@ class Migrator {
   /// Gives a clear message instead of a bare "NOT NULL constraint failed".
   /// Columns with a default always fit: new rows get the default, and
   /// [_rebuild] replaces copied NULLs with it.
-  Future<void> _checkExistingRowsFit(TableDefinition after, Map<String, String> sources) async {
-    for (final column in after.columns.where((c) => !c.nullable && c.defaultSql == null)) {
+  Future<void> _checkExistingRowsFit(
+    TableDefinition after,
+    Map<String, String> sources,
+  ) async {
+    for (final column in after.columns.where(
+      (c) => !c.nullable && c.defaultSql == null,
+    )) {
       final source = sources[column.name];
       final missing = source == null
           ? await count(after.name)
@@ -309,7 +391,11 @@ class Migrator {
   /// add and changes indexes, so no rebuild is needed. SQLite can add a
   /// column only if it is not UNIQUE, not NOT NULL without a default, and, if
   /// it is a reference, has no default.
-  bool _canChangeInPlace(TableDefinition before, TableDefinition after, List<ColumnDefinition> added) {
+  bool _canChangeInPlace(
+    TableDefinition before,
+    TableDefinition after,
+    List<ColumnDefinition> added,
+  ) {
     for (final column in added) {
       final isReference = _referenceOf(after, column.name) != null;
       final hasValue = column.nullable || column.defaultSql != null;
@@ -320,11 +406,17 @@ class Migrator {
     final addedNames = {for (final c in added) c.name};
     final rest = after.copy()
       ..columns.removeWhere((c) => addedNames.contains(c.name))
-      ..foreignKeys.removeWhere((f) => f.columns.length == 1 && addedNames.contains(f.columns.first));
+      ..foreignKeys.removeWhere(
+        (f) => f.columns.length == 1 && addedNames.contains(f.columns.first),
+      );
     return rest.createTableSql() == before.createTableSql();
   }
 
-  Future<void> _changeInPlace(TableDefinition before, TableDefinition after, List<ColumnDefinition> added) async {
+  Future<void> _changeInPlace(
+    TableDefinition before,
+    TableDefinition after,
+    List<ColumnDefinition> added,
+  ) async {
     final table = before.name;
     for (final column in added) {
       final reference = _referenceOf(after, column.name);
@@ -337,31 +429,45 @@ class Migrator {
     final beforeIndexes = {for (final i in before.indexes) i.toSql(table)};
     final afterIndexes = {for (final i in after.indexes) i.toSql(table)};
     for (final index in before.indexes) {
-      if (!afterIndexes.contains(index.toSql(table))) await _db.execute('DROP INDEX ${quote(index.name)}');
+      if (!afterIndexes.contains(index.toSql(table))) {
+        await _db.execute('DROP INDEX ${quote(index.name)}');
+      }
     }
     for (final index in after.indexes) {
-      if (!beforeIndexes.contains(index.toSql(table))) await _db.execute(index.toSql(table));
+      if (!beforeIndexes.contains(index.toSql(table))) {
+        await _db.execute(index.toSql(table));
+      }
     }
   }
 
   /// The single-column foreign key on [column], as added by `references`.
   ForeignKeyDefinition? _referenceOf(TableDefinition table, String column) =>
-      table.foreignKeys.where((f) => f.columns.length == 1 && f.columns.first == column).firstOrNull;
+      table.foreignKeys
+          .where((f) => f.columns.length == 1 && f.columns.first == column)
+          .firstOrNull;
 
   /// SQLite's documented 12-step procedure for changing a table:
   /// https://www.sqlite.org/lang_altertable.html#otheralter
   /// Foreign key enforcement is switched off by the runner beforehand and
   /// checked after the migration.
-  Future<void> _rebuild(TableDefinition before, TableDefinition after, Map<String, String> sources) async {
+  Future<void> _rebuild(
+    TableDefinition before,
+    TableDefinition after,
+    Map<String, String> sources,
+  ) async {
     final table = before.name;
     final temporary = '_migration_new_$table';
-    final copied = after.columns.where((c) => sources.containsKey(c.name)).toList();
+    final copied = after.columns
+        .where((c) => sources.containsKey(c.name))
+        .toList();
 
     // A column that becomes NOT NULL with a default gets that default where
     // it was NULL; inserting the NULL itself would fail.
     String copyFrom(ColumnDefinition c) {
       final source = quote(sources[c.name]!);
-      return !c.nullable && c.defaultSql != null ? 'COALESCE($source, ${c.defaultSql})' : source;
+      return !c.nullable && c.defaultSql != null
+          ? 'COALESCE($source, ${c.defaultSql})'
+          : source;
     }
 
     await _db.execute(after.createTableSql(tableName: temporary));
@@ -372,10 +478,14 @@ class Migrator {
       );
     }
 
-    final lastId = before.autoIncrement ? await _autoIncrementCounter(table) : null;
+    final lastId = before.autoIncrement
+        ? await _autoIncrementCounter(table)
+        : null;
 
     await _db.execute('DROP TABLE ${quote(table)}');
-    await _db.execute('ALTER TABLE ${quote(temporary)} RENAME TO ${quote(table)}');
+    await _db.execute(
+      'ALTER TABLE ${quote(temporary)} RENAME TO ${quote(table)}',
+    );
     for (final index in after.indexes) {
       await _db.execute(index.toSql(table));
     }
@@ -387,14 +497,24 @@ class Migrator {
       if (current == null) {
         await _db.insert('sqlite_sequence', {'name': table, 'seq': lastId});
       } else if (current < lastId) {
-        await _db.update('sqlite_sequence', {'seq': lastId}, where: 'name = ?', whereArgs: [table]);
+        await _db.update(
+          'sqlite_sequence',
+          {'seq': lastId},
+          where: 'name = ?',
+          whereArgs: [table],
+        );
       }
     }
   }
 
   Future<int?> _autoIncrementCounter(String table) async {
     if (!await _reader.tableExists('sqlite_sequence')) return null;
-    final rows = await _db.query('sqlite_sequence', columns: ['seq'], where: 'name = ?', whereArgs: [table]);
+    final rows = await _db.query(
+      'sqlite_sequence',
+      columns: ['seq'],
+      where: 'name = ?',
+      whereArgs: [table],
+    );
     return rows.isEmpty ? null : rows.first['seq']! as int;
   }
 
@@ -413,6 +533,8 @@ class Migrator {
     return (conditions.join(' AND '), args);
   }
 
-  Map<String, Object?> _values(Map<String, Object?> values) =>
-      {for (final MapEntry(:key, :value) in values.entries) quote(key): toSqlArgument(value)};
+  Map<String, Object?> _values(Map<String, Object?> values) => {
+    for (final MapEntry(:key, :value) in values.entries)
+      quote(key): toSqlArgument(value),
+  };
 }

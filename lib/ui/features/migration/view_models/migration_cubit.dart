@@ -9,7 +9,11 @@ import '../../../../data/services/database/migration/migration_runner.dart';
 
 /// A question a migration is waiting on. [options] is null for free text.
 class MigrationQuestion {
-  const MigrationQuestion({required this.text, this.options, this.initialValue});
+  const MigrationQuestion({
+    required this.text,
+    this.options,
+    this.initialValue,
+  });
 
   final String text;
   final List<String>? options;
@@ -57,8 +61,10 @@ final class MigrationDone extends MigrationState {
 
 /// Runs the database migrations on app start and exposes their progress,
 /// questions and failures to the migration screen.
-class MigrationCubit extends CubitSignal<MigrationState> implements MigrationPrompter {
-  MigrationCubit({required this._database, required this._locale}) : super(initialState: const MigrationInProgress());
+class MigrationCubit extends CubitSignal<MigrationState>
+    implements MigrationPrompter {
+  MigrationCubit({required this._database, required this._locale})
+    : super(initialState: const MigrationInProgress());
 
   final AppDatabase _database;
   final Locale _locale;
@@ -90,7 +96,15 @@ class MigrationCubit extends CubitSignal<MigrationState> implements MigrationPro
     } on MigrationFailure catch (failure) {
       _emitIfOpen(MigrationFailed(failure));
     } catch (error, stackTrace) {
-      _emitIfOpen(MigrationFailed(MigrationFailure(step: 'Starting database', error: error, stackTrace: stackTrace)));
+      _emitIfOpen(
+        MigrationFailed(
+          MigrationFailure(
+            step: 'Starting database',
+            error: error,
+            stackTrace: stackTrace,
+          ),
+        ),
+      );
     } finally {
       _isRunning = false;
     }
@@ -111,11 +125,22 @@ class MigrationCubit extends CubitSignal<MigrationState> implements MigrationPro
       _ask(MigrationQuestion(text: question, initialValue: initialValue));
 
   @override
-  Future<String> askChoice(String question, List<String> options, {String? initialValue}) =>
-      _ask(MigrationQuestion(text: question, options: List.unmodifiable(options), initialValue: initialValue));
+  Future<String> askChoice(
+    String question,
+    List<String> options, {
+    String? initialValue,
+  }) => _ask(
+    MigrationQuestion(
+      text: question,
+      options: List.unmodifiable(options),
+      initialValue: initialValue,
+    ),
+  );
 
   Future<String> _ask(MigrationQuestion question) {
-    if (_answer != null) throw StateError('A migration question is already waiting for an answer');
+    if (_answer != null) {
+      throw StateError('A migration question is already waiting for an answer');
+    }
     final state = value;
     final progress = state is MigrationInProgress ? state.progress : null;
     final answer = Completer<String>();

@@ -1,8 +1,9 @@
 import 'package:bloc_signals_flutter/bloc_signals_flutter.dart';
-import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../data/services/database/migration/migration_runner.dart';
+import '../../../../l10n/app_localizations.dart';
+import '../../../core/widgets/error_report_view.dart';
 import '../view_models/migration_cubit.dart';
 
 /// Shows migration progress on app start and switches to [child] once the
@@ -16,7 +17,8 @@ class MigrationGate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocSignalBuilder<MigrationCubit, MigrationState>(
-      builder: (context, state) => state is MigrationDone ? child : MigrationScreen(state: state),
+      builder: (context, state) =>
+          state is MigrationDone ? child : MigrationScreen(state: state),
     );
   }
 }
@@ -34,13 +36,18 @@ class MigrationScreen extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: switch (state) {
-            MigrationFailed(:final failure) => _FailureView(failure: failure, onRetry: cubit.run),
+            MigrationFailed(:final failure) => _FailureView(
+              failure: failure,
+              onRetry: cubit.run,
+            ),
             MigrationAsking(:final question) => _QuestionView(
               key: ValueKey(question),
               question: question,
               onAnswer: cubit.answer,
             ),
-            MigrationInProgress(:final progress) => _ProgressView(progress: progress),
+            MigrationInProgress(:final progress) => _ProgressView(
+              progress: progress,
+            ),
             // MigrationGate shows the app instead; this only shows for the
             // single frame before it switches over.
             MigrationDone() => const _ProgressView(progress: null),
@@ -59,18 +66,19 @@ class _ProgressView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     final progress = this.progress;
     final isMigrating = progress != null && progress.total > 0;
 
     final (title, detail) = switch (progress?.stage) {
-      null || MigrationStage.checking => ('Checking your data…', null),
-      MigrationStage.backingUp => ('Backing up your data…', null),
+      null || MigrationStage.checking => (l10n.migrationChecking, null),
+      MigrationStage.backingUp => (l10n.migrationBackingUp, null),
       MigrationStage.migrating => (
-        'Updating your data (${progress!.completed + 1} of ${progress.total})',
+        l10n.migrationUpdating(progress!.completed + 1, progress.total),
         progress.current?.name,
       ),
-      MigrationStage.verifying => ('Verifying your data…', null),
-      MigrationStage.done => ('Done', null),
+      MigrationStage.verifying => (l10n.migrationVerifying, null),
+      MigrationStage.done => (l10n.migrationDone, null),
     };
 
     return Center(
@@ -82,13 +90,19 @@ class _ProgressView extends StatelessWidget {
           Text(title, style: textTheme.titleLarge, textAlign: TextAlign.center),
           if (detail != null) ...[
             const SizedBox(height: 8),
-            Text(detail, style: textTheme.bodyMedium, textAlign: TextAlign.center),
+            Text(
+              detail,
+              style: textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
           ],
           const SizedBox(height: 24),
-          LinearProgressIndicator(value: isMigrating ? progress.completed / progress.total : null),
+          LinearProgressIndicator(
+            value: isMigrating ? progress.completed / progress.total : null,
+          ),
           if (isMigrating) ...[
             const SizedBox(height: 16),
-            Text('Please keep the app open.', style: textTheme.bodySmall),
+            Text(l10n.migrationKeepOpen, style: textTheme.bodySmall),
           ],
         ],
       ),
@@ -97,7 +111,11 @@ class _ProgressView extends StatelessWidget {
 }
 
 class _QuestionView extends StatefulWidget {
-  const _QuestionView({super.key, required this.question, required this.onAnswer});
+  const _QuestionView({
+    super.key,
+    required this.question,
+    required this.onAnswer,
+  });
 
   final MigrationQuestion question;
   final ValueChanged<String> onAnswer;
@@ -107,7 +125,9 @@ class _QuestionView extends StatefulWidget {
 }
 
 class _QuestionViewState extends State<_QuestionView> {
-  late final _controller = TextEditingController(text: widget.question.initialValue ?? '');
+  late final _controller = TextEditingController(
+    text: widget.question.initialValue ?? '',
+  );
 
   /// The picked option, for a choice.
   late String? _selected = widget.question.initialValue;
@@ -120,6 +140,7 @@ class _QuestionViewState extends State<_QuestionView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final options = widget.question.options;
     final selected = _selected;
     final canContinue = options == null || selected != null;
@@ -129,14 +150,24 @@ class _QuestionViewState extends State<_QuestionView> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('One quick question', style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              l10n.migrationQuestionTitle,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
             const SizedBox(height: 12),
-            Text(widget.question.text, style: Theme.of(context).textTheme.bodyLarge),
+            Text(
+              widget.question.text,
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
             const SizedBox(height: 24),
             if (options != null)
               for (final option in options)
                 ListTile(
-                  leading: Icon(option == selected ? Icons.radio_button_checked : Icons.radio_button_unchecked),
+                  leading: Icon(
+                    option == selected
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_unchecked,
+                  ),
                   title: Text(option),
                   selected: option == selected,
                   onTap: () => setState(() => _selected = option),
@@ -150,8 +181,12 @@ class _QuestionViewState extends State<_QuestionView> {
               ),
             const SizedBox(height: 16),
             FilledButton(
-              onPressed: canContinue ? () => widget.onAnswer(options == null ? _controller.text : selected!) : null,
-              child: const Text('Continue'),
+              onPressed: canContinue
+                  ? () => widget.onAnswer(
+                      options == null ? _controller.text : selected!,
+                    )
+                  : null,
+              child: Text(l10n.continueButton),
             ),
           ],
         ),
@@ -168,52 +203,18 @@ class _FailureView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final migration = failure.migration;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Icon(Icons.error_outline_rounded, size: 56, color: theme.colorScheme.error),
-        const SizedBox(height: 16),
-        Text('Updating your data failed', style: theme.textTheme.titleLarge, textAlign: TextAlign.center),
-        const SizedBox(height: 8),
-        Text(
-          'Your data was not changed by the failed step. '
-          'Please copy the report below and send it to us so we can fix it in the next update.',
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 16),
-        Text(migration == null ? failure.step : 'Failed migration: $migration', style: theme.textTheme.titleSmall),
-        const SizedBox(height: 8),
-        Expanded(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(12),
-              child: SelectableText(
-                failure.report,
-                style: theme.textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        FilledButton.icon(
-          onPressed: () async {
-            await Clipboard.setData(ClipboardData(text: failure.report));
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Report copied')));
-            }
-          },
-          icon: const Icon(Icons.copy_rounded),
-          label: const Text('Copy error report'),
-        ),
-        const SizedBox(height: 8),
-        OutlinedButton(onPressed: onRetry, child: const Text('Try again')),
-      ],
+    return ErrorReportView(
+      title: l10n.migrationFailedTitle,
+      message: l10n.migrationFailedMessage,
+      // The step text (e.g. "Starting database") stays in English: it is
+      // part of the report the user sends us.
+      detail: migration == null
+          ? failure.step
+          : l10n.migrationFailedStep('$migration'),
+      report: failure.report,
+      onRetry: onRetry,
     );
   }
 }

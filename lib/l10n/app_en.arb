@@ -1,0 +1,152 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "Expense Tracker",
+  "@appTitle": {"description": "App name. Placeholder until the real name is chosen (phase-1.md §12)."},
+
+  "save": "Save",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "next": "Next",
+  "back": "Back",
+  "getStarted": "Get started",
+  "continueButton": "Continue",
+  "tryAgain": "Try again",
+  "copyErrorReport": "Copy error report",
+  "reportCopied": "Report copied",
+  "saveFailed": "Couldn't save. Please try again.",
+  "loadFailed": "Couldn't load this list.",
+
+  "migrationChecking": "Checking your data…",
+  "migrationBackingUp": "Backing up your data…",
+  "migrationUpdating": "Updating your data ({current} of {total})",
+  "@migrationUpdating": {
+    "placeholders": {"current": {"type": "int"}, "total": {"type": "int"}}
+  },
+  "migrationVerifying": "Verifying your data…",
+  "migrationDone": "Done",
+  "migrationKeepOpen": "Please keep the app open.",
+  "migrationQuestionTitle": "One quick question",
+  "migrationFailedTitle": "Updating your data failed",
+  "migrationFailedMessage": "Your data was not changed by the failed step. Please copy the report below and send it to us so we can fix it in the next update.",
+  "migrationFailedStep": "Failed migration: {migration}",
+  "@migrationFailedStep": {
+    "placeholders": {"migration": {"type": "String", "example": "1790942737_create_categories"}}
+  },
+
+  "startupFailedTitle": "Your data couldn't be opened",
+  "startupFailedMessage": "Nothing was changed. Please copy the report below and send it to us so we can fix it in the next update.",
+
+  "onboardingStep": "Step {current} of {total}",
+  "@onboardingStep": {
+    "placeholders": {"current": {"type": "int"}, "total": {"type": "int"}}
+  },
+  "onboardingLanguageTitle": "Choose your language",
+  "onboardingCurrencyTitle": "Your currency",
+  "onboardingCurrencySubtitle": "New expenses use this currency. You can change it anytime in Settings.",
+  "onboardingPaymentMethodTitle": "How do you usually pay?",
+  "onboardingPaymentMethodSubtitle": "New expenses use this payment method. You can change it anytime in Settings.",
+
+  "languageSystem": "System default",
+  "languageSystemDetected": "System default (detected: {language})",
+  "@languageSystemDetected": {
+    "placeholders": {"language": {"type": "String", "example": "English"}}
+  },
+  "searchCurrencies": "Search by code or name",
+  "noCurrencyFound": "No currency matches \"{query}\"",
+  "@noCurrencyFound": {
+    "placeholders": {"query": {"type": "String"}}
+  },
+
+  "navHome": "Home",
+  "navManage": "Manage",
+  "navSettings": "Settings",
+
+  "homeEmptyTitle": "No expenses yet",
+  "homeEmptyMessage": "Adding expenses is coming in the next update.",
+
+  "categoriesTitle": "Categories",
+  "eventsTitle": "Events",
+  "paymentMethodsTitle": "Payment methods",
+  "addCategory": "Add category",
+  "addEvent": "Add event",
+  "addPaymentMethod": "Add payment method",
+  "editCategory": "Edit category",
+  "editEvent": "Edit event",
+  "editPaymentMethod": "Edit payment method",
+  "listEmpty": "Nothing here yet. Tap + to add one.",
+  "archivedSection": "Archived ({count})",
+  "@archivedSection": {
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "defaultBadge": "Default",
+
+  "fieldEmoji": "Emoji",
+  "fieldName": "Name",
+  "fieldDescription": "Description (optional)",
+  "errorNameRequired": "Enter a name",
+  "errorTooLong": "Use at most {max} characters",
+  "@errorTooLong": {
+    "placeholders": {"max": {"type": "int"}}
+  },
+  "errorNameDuplicate": "\"{name}\" already exists",
+  "@errorNameDuplicate": {
+    "placeholders": {"name": {"type": "String"}}
+  },
+  "errorEmojiRequired": "Pick an emoji",
+  "errorEmojiNotSingle": "Use exactly one emoji",
+  "resetToDefaultName": "Reset to default name",
+  "deleteConfirmTitle": "Delete \"{name}\"?",
+  "@deleteConfirmTitle": {
+    "placeholders": {"name": {"type": "String"}}
+  },
+  "deleteConfirmMessage": "This can't be undone.",
+  "archive": "Archive",
+  "unarchive": "Unarchive",
+  "setAsDefault": "Set as default",
+  "cannotDeleteDefaultHint": "Set another method as default first",
+  "pickEmojiTitle": "Pick an emoji",
+  "typeAnyEmoji": "Type any emoji",
+  "useEmoji": "Use",
+
+  "settingsTitle": "Settings",
+  "settingLanguage": "Language",
+  "settingTheme": "Theme",
+  "settingDefaultCurrency": "Default currency",
+  "settingDefaultPaymentMethod": "Default payment method",
+  "themeSystem": "System",
+  "themeLight": "Light",
+  "themeDark": "Dark",
+
+  "categoryFood": "Food",
+  "categoryDrinks": "Drinks",
+  "categoryGroceries": "Groceries",
+  "categoryShopping": "Shopping",
+  "categoryClothes": "Clothes",
+  "categoryTransport": "Transport",
+  "categoryFuel": "Fuel",
+  "categoryRent": "Rent",
+  "categoryHouse": "House",
+  "categoryBills": "Bills",
+  "categoryHealth": "Health",
+  "categoryEducation": "Education",
+  "categoryEntertainment": "Entertainment",
+  "categoryTravel": "Travel",
+  "categoryGifts": "Gifts",
+  "categoryPersonalCare": "Personal care",
+  "categorySubscription": "Subscription",
+  "categoryLoan": "Loan",
+  "categoryInvestment": "Investment",
+  "categoryOther": "Other",
+
+  "paymentMethodCash": "Cash",
+  "paymentMethodUpi": "UPI",
+  "paymentMethodDebitCard": "Debit card",
+  "paymentMethodCreditCard": "Credit card",
+
+  "eventBirthday": "Birthday",
+  "eventAnniversary": "Anniversary",
+  "eventParty": "Party",
+  "eventFestival": "Festival",
+  "eventTrip": "Trip"
+}

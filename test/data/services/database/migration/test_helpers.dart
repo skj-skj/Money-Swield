@@ -31,21 +31,31 @@ class FakePrompter implements MigrationPrompter {
   }
 
   @override
-  Future<String> askChoice(String question, List<String> options, {String? initialValue}) async {
+  Future<String> askChoice(
+    String question,
+    List<String> options, {
+    String? initialValue,
+  }) async {
     questions.add(question);
     if (_answers.isEmpty) return initialValue ?? options.first;
     final answer = _answers.removeAt(0);
-    if (!options.contains(answer)) throw StateError('"$answer" is not one of $options for "$question"');
+    if (!options.contains(answer)) {
+      throw StateError('"$answer" is not one of $options for "$question"');
+    }
     return answer;
   }
 }
 
-Migrator migratorFor(DatabaseExecutor db, {Locale locale = const Locale('en', 'IN'), FakePrompter? prompter}) =>
-    Migrator(db, locale: locale, prompter: prompter ?? FakePrompter());
+Migrator migratorFor(
+  DatabaseExecutor db, {
+  Locale locale = const Locale('en', 'IN'),
+  FakePrompter? prompter,
+}) => Migrator(db, locale: locale, prompter: prompter ?? FakePrompter());
 
 /// A migration built from closures, for tests.
 class TestMigration extends Migration {
-  const TestMigration(int version, String name, this._up, [this._down]) : super(version: version, name: name);
+  const TestMigration(int version, String name, this._up, [this._down])
+    : super(version: version, name: name);
 
   final Future<void> Function(Migrator m) _up;
   final Future<void> Function(Migrator m)? _down;
@@ -54,5 +64,6 @@ class TestMigration extends Migration {
   Future<void> up(Migrator m) => _up(m);
 
   @override
-  Future<void> down(Migrator m) => (_down ?? (_) => throw const IrreversibleMigration())(m);
+  Future<void> down(Migrator m) =>
+      (_down ?? (_) => throw const IrreversibleMigration())(m);
 }

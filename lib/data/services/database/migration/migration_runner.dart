@@ -12,7 +12,12 @@ import 'migration_prompter.dart';
 enum MigrationStage { checking, backingUp, migrating, verifying, done }
 
 class MigrationProgress {
-  const MigrationProgress({required this.stage, required this.completed, required this.total, this.current});
+  const MigrationProgress({
+    required this.stage,
+    required this.completed,
+    required this.total,
+    this.current,
+  });
 
   final MigrationStage stage;
 
@@ -90,14 +95,30 @@ class MigrationRunner {
   final DateTime Function() _clock;
 
   /// Runs all migrations that have not run yet, oldest first.
-  Future<void> migrate({void Function(MigrationProgress progress)? onProgress}) async {
-    onProgress?.call(const MigrationProgress(stage: MigrationStage.checking, completed: 0, total: 0));
-    final pending = await _guard('Checking database version', pendingMigrations);
+  Future<void> migrate({
+    void Function(MigrationProgress progress)? onProgress,
+  }) async {
+    onProgress?.call(
+      const MigrationProgress(
+        stage: MigrationStage.checking,
+        completed: 0,
+        total: 0,
+      ),
+    );
+    final pending = await _guard(
+      'Checking database version',
+      pendingMigrations,
+    );
     await _run(
       pending,
       up: true,
       report: (stage, completed, [current]) => onProgress?.call(
-        MigrationProgress(stage: stage, completed: completed, total: pending.length, current: current),
+        MigrationProgress(
+          stage: stage,
+          completed: completed,
+          total: pending.length,
+          current: current,
+        ),
       ),
     );
   }
@@ -105,7 +126,9 @@ class MigrationRunner {
   /// Undoes the last [steps] applied migrations, newest first, by running
   /// their `down`. Meant for development and tests.
   Future<void> rollback({int steps = 1}) async {
-    if (steps < 0) throw ArgumentError.value(steps, 'steps', 'Must not be negative');
+    if (steps < 0) {
+      throw ArgumentError.value(steps, 'steps', 'Must not be negative');
+    }
     final toUndo = await _guard('Checking database version', () async {
       final applied = await _withDatabase(_appliedVersions);
       return [
@@ -122,7 +145,10 @@ class MigrationRunner {
     // file from being created here, so there is no empty file to back up.
     if (!await File(databasePath).exists()) return [..._migrations];
     final applied = await _withDatabase(_appliedVersions);
-    return [for (final m in _migrations) if (!applied.contains(m.version)) m];
+    return [
+      for (final m in _migrations)
+        if (!applied.contains(m.version)) m,
+    ];
   }
 
   /// Runs each of [migrations] in its own transaction, `up` or (unless [up])
@@ -130,7 +156,8 @@ class MigrationRunner {
   Future<void> _run(
     List<Migration> migrations, {
     required bool up,
-    void Function(MigrationStage stage, int completed, [Migration? current])? report,
+    void Function(MigrationStage stage, int completed, [Migration? current])?
+    report,
   }) async {
     if (migrations.isEmpty) {
       report?.call(MigrationStage.done, 0);
@@ -138,7 +165,10 @@ class MigrationRunner {
     }
 
     report?.call(MigrationStage.backingUp, 0);
-    final backup = await _guard('Backing up database', () => DatabaseBackup.create(databasePath, now: _clock()));
+    final backup = await _guard(
+      'Backing up database',
+      () => DatabaseBackup.create(databasePath, now: _clock()),
+    );
 
     final db = await _guard('Opening database', _open, backup: backup);
     try {
@@ -157,13 +187,21 @@ class MigrationRunner {
                 'applied_at': _clock().millisecondsSinceEpoch,
               });
             } else {
-              await txn.delete(historyTable, where: 'version = ?', whereArgs: [migration.version]);
+              await txn.delete(
+                historyTable,
+                where: 'version = ?',
+                whereArgs: [migration.version],
+              );
             }
           });
         });
       }
       report?.call(MigrationStage.verifying, migrations.length);
-      await _guard('Checking database integrity', () => _checkIntegrity(db), backup: backup);
+      await _guard(
+        'Checking database integrity',
+        () => _checkIntegrity(db),
+        backup: backup,
+      );
     } finally {
       await db.close();
     }
@@ -183,7 +221,7 @@ class MigrationRunner {
         singleInstance: false,
         onConfigure: (db) => db.execute('PRAGMA foreign_keys = OFF'),
         onOpen: (db) => db.execute(
-          'CREATE TABLE IF NOT EXISTS $historyTable ('
+          'CREATE TABLE IF NOT EXISTS $historyTable ( '
           'version INTEGER PRIMARY KEY NOT NULL, name TEXT NOT NULL, applied_at INTEGER NOT NULL)',
         ),
       ),
@@ -204,7 +242,9 @@ class MigrationRunner {
   Future<Set<int>> _appliedVersions(Database db) async {
     final rows = await db.query(historyTable, columns: ['version']);
     final applied = {for (final row in rows) row['version']! as int};
-    final unknown = applied.difference({for (final m in _migrations) m.version});
+    final unknown = applied.difference({
+      for (final m in _migrations) m.version,
+    });
     if (unknown.isNotEmpty) {
       throw StateError(
         'This database was updated by a newer version of the app (unknown migrations: '
@@ -219,9 +259,14 @@ class MigrationRunner {
     if (violations.isEmpty) return;
     final details = violations
         .take(5)
-        .map((v) => '${v['table']} row ${v['rowid']} points to a missing row in ${v['parent']}')
+        .map(
+          (v) =>
+              '${v['table']} row ${v['rowid']} points to a missing row in ${v['parent']}',
+        )
         .join('; ');
-    throw StateError('Foreign key check failed (${violations.length} violation(s)): $details');
+    throw StateError(
+      'Foreign key check failed (${violations.length} violation(s)): $details',
+    );
   }
 
   static Future<void> _checkIntegrity(Database db) async {
@@ -231,7 +276,12 @@ class MigrationRunner {
   }
 
   /// Runs [action], turning any error into a [MigrationFailure].
-  Future<T> _guard<T>(String step, Future<T> Function() action, {Migration? migration, File? backup}) async {
+  Future<T> _guard<T>(
+    String step,
+    Future<T> Function() action, {
+    Migration? migration,
+    File? backup,
+  }) async {
     try {
       return await action();
     } on MigrationFailure {
@@ -251,9 +301,15 @@ class MigrationRunner {
     final versions = <int>{};
     final names = <String>{};
     for (final m in migrations) {
-      if (m.version <= 0) throw ArgumentError('Migration $m has an invalid version');
-      if (!versions.add(m.version)) throw ArgumentError('Two migrations share version ${m.version}');
-      if (!names.add(m.name)) throw ArgumentError('Two migrations share the name "${m.name}"');
+      if (m.version <= 0) {
+        throw ArgumentError('Migration $m has an invalid version');
+      }
+      if (!versions.add(m.version)) {
+        throw ArgumentError('Two migrations share version ${m.version}');
+      }
+      if (!names.add(m.name)) {
+        throw ArgumentError('Two migrations share the name "${m.name}"');
+      }
     }
     return [...migrations]..sort((a, b) => a.version.compareTo(b.version));
   }

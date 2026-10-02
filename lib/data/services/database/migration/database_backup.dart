@@ -19,7 +19,10 @@ class DatabaseBackup {
   /// Copies the (closed) database at [databasePath], or returns the backup a
   /// failed earlier run left. Returns null when there is no database yet,
   /// i.e. on first install there is nothing to lose.
-  static Future<File?> create(String databasePath, {required DateTime now}) async {
+  static Future<File?> create(
+    String databasePath, {
+    required DateTime now,
+  }) async {
     final database = File(databasePath);
     if (!await database.exists()) return null;
 
@@ -33,11 +36,21 @@ class DatabaseBackup {
       return existing.first;
     }
 
-    final stamp = now.toUtc().toIso8601String().split('.').first.replaceAll(':', '-');
-    final backupPath = p.join(folder.path, '${p.basename(databasePath)}.${stamp}Z.bak');
+    final stamp = now
+        .toUtc()
+        .toIso8601String()
+        .split('.')
+        .first
+        .replaceAll(':', '-');
+    final backupPath = p.join(
+      folder.path,
+      '${p.basename(databasePath)}.${stamp}Z.bak',
+    );
     for (final suffix in _sidecarSuffixes) {
       final sidecar = File('$databasePath$suffix');
-      if (await sidecar.exists()) await _copyVerified(sidecar, '$backupPath$suffix');
+      if (await sidecar.exists()) {
+        await _copyVerified(sidecar, '$backupPath$suffix');
+      }
     }
     // Copied under a temporary name and renamed last, so a backup cut short
     // (e.g. the app was killed) is never mistaken for a complete one.
@@ -46,20 +59,30 @@ class DatabaseBackup {
   }
 
   static Future<void> delete(File backup) async {
-    for (final file in [backup, for (final suffix in _sidecarSuffixes) File('${backup.path}$suffix')]) {
+    for (final file in [
+      backup,
+      for (final suffix in _sidecarSuffixes) File('${backup.path}$suffix'),
+    ]) {
       if (await file.exists()) await file.delete();
     }
   }
 
   /// Complete backups of [databasePath], oldest first (the time stamp in the
   /// name sorts by age). Deletes partial copies on the way.
-  static Future<List<File>> _backupsOf(String databasePath, Directory folder) async {
+  static Future<List<File>> _backupsOf(
+    String databasePath,
+    Directory folder,
+  ) async {
     final prefix = '${p.basename(databasePath)}.';
     final backups = <File>[];
     await for (final entity in folder.list()) {
-      if (entity is! File || !p.basename(entity.path).startsWith(prefix)) continue;
+      if (entity is! File || !p.basename(entity.path).startsWith(prefix)) {
+        continue;
+      }
       if (entity.path.endsWith('.bak')) backups.add(entity);
-      if (entity.path.endsWith('.partial')) await entity.delete(); // Left by a run that was cut short.
+      if (entity.path.endsWith('.partial')) {
+        await entity.delete(); // Left by a run that was cut short.
+      }
     }
     return backups..sort((a, b) => a.path.compareTo(b.path));
   }

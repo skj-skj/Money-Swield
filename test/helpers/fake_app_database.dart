@@ -9,7 +9,11 @@ import 'package:my_expense_tracker_app/ui/features/migration/view_models/migrati
 class FakeAppDatabase implements AppDatabase {
   FakeAppDatabase(this.onMigrate);
 
-  final Future<void> Function(MigrationPrompter prompter, void Function(MigrationProgress) onProgress) onMigrate;
+  final Future<void> Function(
+    MigrationPrompter prompter,
+    void Function(MigrationProgress) onProgress,
+  )
+  onMigrate;
 
   @override
   Future<void> migrate({
@@ -24,7 +28,10 @@ class FakeAppDatabase implements AppDatabase {
 
 /// Builds a cubit for [database] and closes it when the test ends.
 MigrationCubit cubitFor(FakeAppDatabase database) {
-  final cubit = MigrationCubit(database: database, locale: const Locale('en', 'IN'));
+  final cubit = MigrationCubit(
+    database: database,
+    locale: const Locale('en', 'IN'),
+  );
   addTearDown(cubit.close);
   return cubit;
 }

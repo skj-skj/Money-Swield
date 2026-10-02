@@ -19,8 +19,12 @@ class ColumnDefinition {
   /// The default value as SQL text (e.g. `'INR'` or `0`), or null for none.
   String? defaultSql;
 
-  ColumnDefinition copy() =>
-      ColumnDefinition(name: name, type: type, nullable: nullable, defaultSql: defaultSql);
+  ColumnDefinition copy() => ColumnDefinition(
+    name: name,
+    type: type,
+    nullable: nullable,
+    defaultSql: defaultSql,
+  );
 
   String toSql({required bool isPrimaryKey, required bool autoIncrement}) {
     final sql = StringBuffer('${quote(name)} ${type.sql}');
@@ -66,13 +70,18 @@ class ForeignKeyDefinition {
 
 /// A `CREATE [UNIQUE] INDEX` on one or more columns.
 class IndexDefinition {
-  IndexDefinition({required this.name, required this.columns, this.unique = false});
+  IndexDefinition({
+    required this.name,
+    required this.columns,
+    this.unique = false,
+  });
 
   String name;
   List<String> columns;
   bool unique;
 
-  IndexDefinition copy() => IndexDefinition(name: name, columns: [...columns], unique: unique);
+  IndexDefinition copy() =>
+      IndexDefinition(name: name, columns: [...columns], unique: unique);
 
   String toSql(String table) =>
       'CREATE ${unique ? 'UNIQUE ' : ''}INDEX ${quote(name)} ON ${quote(table)} (${quoteAll(columns)})';
@@ -116,7 +125,9 @@ class TableDefinition {
     columns: [for (final c in columns) c.copy()],
     primaryKey: [...primaryKey],
     autoIncrement: autoIncrement,
-    uniqueConstraints: [for (final u in uniqueConstraints) [...u]],
+    uniqueConstraints: [
+      for (final u in uniqueConstraints) [...u],
+    ],
     foreignKeys: [for (final f in foreignKeys) f.copy()],
     indexes: [for (final i in indexes) i.copy()],
   );
@@ -141,7 +152,9 @@ class TableDefinition {
   /// The `CREATE TABLE` statement. [tableName] overrides [name], which is
   /// used when building the replacement table during a rebuild.
   String createTableSql({String? tableName}) {
-    if (columns.isEmpty) throw StateError('Table "$name" must have at least one column');
+    if (columns.isEmpty) {
+      throw StateError('Table "$name" must have at least one column');
+    }
     final inlinePrimaryKey = primaryKey.length == 1;
     final parts = <String>[
       for (final c in columns)
@@ -161,13 +174,17 @@ class TableDefinition {
   void validate() {
     void checkColumns(List<String> names, String what) {
       for (final n in names) {
-        if (!hasColumn(n)) throw ArgumentError('$what on "$name" refers to unknown column "$n"');
+        if (!hasColumn(n)) {
+          throw ArgumentError('$what on "$name" refers to unknown column "$n"');
+        }
       }
     }
 
     final seen = <String>{};
     for (final c in columns) {
-      if (!seen.add(c.name)) throw ArgumentError('Table "$name" has column "${c.name}" twice');
+      if (!seen.add(c.name)) {
+        throw ArgumentError('Table "$name" has column "${c.name}" twice');
+      }
     }
     checkColumns(primaryKey, 'Primary key');
     for (final u in uniqueConstraints) {
@@ -178,12 +195,17 @@ class TableDefinition {
     }
     final indexNames = <String>{};
     for (final i in indexes) {
-      if (!indexNames.add(i.name)) throw ArgumentError('Table "$name" has index "${i.name}" twice');
+      if (!indexNames.add(i.name)) {
+        throw ArgumentError('Table "$name" has index "${i.name}" twice');
+      }
       checkColumns(i.columns, 'Index "${i.name}"');
     }
     if (autoIncrement &&
-        (primaryKey.length != 1 || column(primaryKey.first).type != SqliteType.integer)) {
-      throw ArgumentError('AUTOINCREMENT needs a single INTEGER primary key on "$name"');
+        (primaryKey.length != 1 ||
+            column(primaryKey.first).type != SqliteType.integer)) {
+      throw ArgumentError(
+        'AUTOINCREMENT needs a single INTEGER primary key on "$name"',
+      );
     }
   }
 }

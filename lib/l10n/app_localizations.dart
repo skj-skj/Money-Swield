@@ -1,0 +1,780 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/intl.dart' as intl;
+
+import 'app_localizations_en.dart';
+import 'app_localizations_es.dart';
+import 'app_localizations_hi.dart';
+
+// ignore_for_file: type=lint
+
+/// Callers can lookup localized strings with an instance of AppLocalizations
+/// returned by `AppLocalizations.of(context)`.
+///
+/// Applications need to include `AppLocalizations.delegate()` in their app's
+/// `localizationDelegates` list, and the locales they support in the app's
+/// `supportedLocales` list. For example:
+///
+/// ```dart
+/// import 'l10n/app_localizations.dart';
+///
+/// return MaterialApp(
+///   localizationsDelegates: AppLocalizations.localizationsDelegates,
+///   supportedLocales: AppLocalizations.supportedLocales,
+///   home: MyApplicationHome(),
+/// );
+/// ```
+///
+/// ## Update pubspec.yaml
+///
+/// Please make sure to update your pubspec.yaml to include the following
+/// packages:
+///
+/// ```yaml
+/// dependencies:
+///   # Internationalization support.
+///   flutter_localizations:
+///     sdk: flutter
+///   intl: any # Use the pinned version from flutter_localizations
+///
+///   # Rest of dependencies
+/// ```
+///
+/// ## iOS Applications
+///
+/// iOS applications define key application metadata, including supported
+/// locales, in an Info.plist file that is built into the application bundle.
+/// To configure the locales supported by your app, you’ll need to edit this
+/// file.
+///
+/// First, open your project’s ios/Runner.xcworkspace Xcode workspace file.
+/// Then, in the Project Navigator, open the Info.plist file under the Runner
+/// project’s Runner folder.
+///
+/// Next, select the Information Property List item, select Add Item from the
+/// Editor menu, then select Localizations from the pop-up menu.
+///
+/// Select and expand the newly-created Localizations item then, for each
+/// locale your application supports, add a new item and select the locale
+/// you wish to add from the pop-up menu in the Value field. This list should
+/// be consistent with the languages listed in the AppLocalizations.supportedLocales
+/// property.
+abstract class AppLocalizations {
+  AppLocalizations(String locale)
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+
+  final String localeName;
+
+  static AppLocalizations of(BuildContext context) {
+    return Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+  }
+
+  static const LocalizationsDelegate<AppLocalizations> delegate =
+      _AppLocalizationsDelegate();
+
+  /// A list of this localizations delegate along with the default localizations
+  /// delegates.
+  ///
+  /// Returns a list of localizations delegates containing this delegate along with
+  /// GlobalMaterialLocalizations.delegate, GlobalCupertinoLocalizations.delegate,
+  /// and GlobalWidgetsLocalizations.delegate.
+  ///
+  /// Additional delegates can be added by appending to this list in
+  /// MaterialApp. This list does not have to be used at all if a custom list
+  /// of delegates is preferred or required.
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
+      <LocalizationsDelegate<dynamic>>[
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
+
+  /// A list of this localizations delegate's supported locales.
+  static const List<Locale> supportedLocales = <Locale>[
+    Locale('en'),
+    Locale('es'),
+    Locale('hi'),
+  ];
+
+  /// App name. Placeholder until the real name is chosen (phase-1.md §12).
+  ///
+  /// In en, this message translates to:
+  /// **'Expense Tracker'**
+  String get appTitle;
+
+  /// No description provided for @save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get delete;
+
+  /// No description provided for @next.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get next;
+
+  /// No description provided for @back.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get back;
+
+  /// No description provided for @getStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Get started'**
+  String get getStarted;
+
+  /// No description provided for @continueButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get continueButton;
+
+  /// No description provided for @tryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get tryAgain;
+
+  /// No description provided for @copyErrorReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy error report'**
+  String get copyErrorReport;
+
+  /// No description provided for @reportCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Report copied'**
+  String get reportCopied;
+
+  /// No description provided for @saveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save. Please try again.'**
+  String get saveFailed;
+
+  /// No description provided for @loadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load this list.'**
+  String get loadFailed;
+
+  /// No description provided for @migrationChecking.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking your data…'**
+  String get migrationChecking;
+
+  /// No description provided for @migrationBackingUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Backing up your data…'**
+  String get migrationBackingUp;
+
+  /// No description provided for @migrationUpdating.
+  ///
+  /// In en, this message translates to:
+  /// **'Updating your data ({current} of {total})'**
+  String migrationUpdating(int current, int total);
+
+  /// No description provided for @migrationVerifying.
+  ///
+  /// In en, this message translates to:
+  /// **'Verifying your data…'**
+  String get migrationVerifying;
+
+  /// No description provided for @migrationDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get migrationDone;
+
+  /// No description provided for @migrationKeepOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Please keep the app open.'**
+  String get migrationKeepOpen;
+
+  /// No description provided for @migrationQuestionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'One quick question'**
+  String get migrationQuestionTitle;
+
+  /// No description provided for @migrationFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Updating your data failed'**
+  String get migrationFailedTitle;
+
+  /// No description provided for @migrationFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your data was not changed by the failed step. Please copy the report below and send it to us so we can fix it in the next update.'**
+  String get migrationFailedMessage;
+
+  /// No description provided for @migrationFailedStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed migration: {migration}'**
+  String migrationFailedStep(String migration);
+
+  /// No description provided for @startupFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your data couldn\'t be opened'**
+  String get startupFailedTitle;
+
+  /// No description provided for @startupFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing was changed. Please copy the report below and send it to us so we can fix it in the next update.'**
+  String get startupFailedMessage;
+
+  /// No description provided for @onboardingStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Step {current} of {total}'**
+  String onboardingStep(int current, int total);
+
+  /// No description provided for @onboardingLanguageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your language'**
+  String get onboardingLanguageTitle;
+
+  /// No description provided for @onboardingCurrencyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your currency'**
+  String get onboardingCurrencyTitle;
+
+  /// No description provided for @onboardingCurrencySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New expenses use this currency. You can change it anytime in Settings.'**
+  String get onboardingCurrencySubtitle;
+
+  /// No description provided for @onboardingPaymentMethodTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How do you usually pay?'**
+  String get onboardingPaymentMethodTitle;
+
+  /// No description provided for @onboardingPaymentMethodSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New expenses use this payment method. You can change it anytime in Settings.'**
+  String get onboardingPaymentMethodSubtitle;
+
+  /// No description provided for @languageSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System default'**
+  String get languageSystem;
+
+  /// No description provided for @languageSystemDetected.
+  ///
+  /// In en, this message translates to:
+  /// **'System default (detected: {language})'**
+  String languageSystemDetected(String language);
+
+  /// No description provided for @searchCurrencies.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by code or name'**
+  String get searchCurrencies;
+
+  /// No description provided for @noCurrencyFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No currency matches \"{query}\"'**
+  String noCurrencyFound(String query);
+
+  /// No description provided for @navHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get navHome;
+
+  /// No description provided for @navManage.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage'**
+  String get navManage;
+
+  /// No description provided for @navSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get navSettings;
+
+  /// No description provided for @homeEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No expenses yet'**
+  String get homeEmptyTitle;
+
+  /// No description provided for @homeEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Adding expenses is coming in the next update.'**
+  String get homeEmptyMessage;
+
+  /// No description provided for @categoriesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Categories'**
+  String get categoriesTitle;
+
+  /// No description provided for @eventsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Events'**
+  String get eventsTitle;
+
+  /// No description provided for @paymentMethodsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment methods'**
+  String get paymentMethodsTitle;
+
+  /// No description provided for @addCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Add category'**
+  String get addCategory;
+
+  /// No description provided for @addEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Add event'**
+  String get addEvent;
+
+  /// No description provided for @addPaymentMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Add payment method'**
+  String get addPaymentMethod;
+
+  /// No description provided for @editCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit category'**
+  String get editCategory;
+
+  /// No description provided for @editEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit event'**
+  String get editEvent;
+
+  /// No description provided for @editPaymentMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit payment method'**
+  String get editPaymentMethod;
+
+  /// No description provided for @listEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing here yet. Tap + to add one.'**
+  String get listEmpty;
+
+  /// No description provided for @archivedSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived ({count})'**
+  String archivedSection(int count);
+
+  /// No description provided for @defaultBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get defaultBadge;
+
+  /// No description provided for @fieldEmoji.
+  ///
+  /// In en, this message translates to:
+  /// **'Emoji'**
+  String get fieldEmoji;
+
+  /// No description provided for @fieldName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get fieldName;
+
+  /// No description provided for @fieldDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Description (optional)'**
+  String get fieldDescription;
+
+  /// No description provided for @errorNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a name'**
+  String get errorNameRequired;
+
+  /// No description provided for @errorTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Use at most {max} characters'**
+  String errorTooLong(int max);
+
+  /// No description provided for @errorNameDuplicate.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{name}\" already exists'**
+  String errorNameDuplicate(String name);
+
+  /// No description provided for @errorEmojiRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick an emoji'**
+  String get errorEmojiRequired;
+
+  /// No description provided for @errorEmojiNotSingle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use exactly one emoji'**
+  String get errorEmojiNotSingle;
+
+  /// No description provided for @resetToDefaultName.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset to default name'**
+  String get resetToDefaultName;
+
+  /// No description provided for @deleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete \"{name}\"?'**
+  String deleteConfirmTitle(String name);
+
+  /// No description provided for @deleteConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This can\'t be undone.'**
+  String get deleteConfirmMessage;
+
+  /// No description provided for @archive.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get archive;
+
+  /// No description provided for @unarchive.
+  ///
+  /// In en, this message translates to:
+  /// **'Unarchive'**
+  String get unarchive;
+
+  /// No description provided for @setAsDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Set as default'**
+  String get setAsDefault;
+
+  /// No description provided for @cannotDeleteDefaultHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Set another method as default first'**
+  String get cannotDeleteDefaultHint;
+
+  /// No description provided for @pickEmojiTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick an emoji'**
+  String get pickEmojiTitle;
+
+  /// No description provided for @typeAnyEmoji.
+  ///
+  /// In en, this message translates to:
+  /// **'Type any emoji'**
+  String get typeAnyEmoji;
+
+  /// No description provided for @useEmoji.
+  ///
+  /// In en, this message translates to:
+  /// **'Use'**
+  String get useEmoji;
+
+  /// No description provided for @settingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settingsTitle;
+
+  /// No description provided for @settingLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get settingLanguage;
+
+  /// No description provided for @settingTheme.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme'**
+  String get settingTheme;
+
+  /// No description provided for @settingDefaultCurrency.
+  ///
+  /// In en, this message translates to:
+  /// **'Default currency'**
+  String get settingDefaultCurrency;
+
+  /// No description provided for @settingDefaultPaymentMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Default payment method'**
+  String get settingDefaultPaymentMethod;
+
+  /// No description provided for @themeSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get themeSystem;
+
+  /// No description provided for @themeLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get themeLight;
+
+  /// No description provided for @themeDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get themeDark;
+
+  /// No description provided for @categoryFood.
+  ///
+  /// In en, this message translates to:
+  /// **'Food'**
+  String get categoryFood;
+
+  /// No description provided for @categoryDrinks.
+  ///
+  /// In en, this message translates to:
+  /// **'Drinks'**
+  String get categoryDrinks;
+
+  /// No description provided for @categoryGroceries.
+  ///
+  /// In en, this message translates to:
+  /// **'Groceries'**
+  String get categoryGroceries;
+
+  /// No description provided for @categoryShopping.
+  ///
+  /// In en, this message translates to:
+  /// **'Shopping'**
+  String get categoryShopping;
+
+  /// No description provided for @categoryClothes.
+  ///
+  /// In en, this message translates to:
+  /// **'Clothes'**
+  String get categoryClothes;
+
+  /// No description provided for @categoryTransport.
+  ///
+  /// In en, this message translates to:
+  /// **'Transport'**
+  String get categoryTransport;
+
+  /// No description provided for @categoryFuel.
+  ///
+  /// In en, this message translates to:
+  /// **'Fuel'**
+  String get categoryFuel;
+
+  /// No description provided for @categoryRent.
+  ///
+  /// In en, this message translates to:
+  /// **'Rent'**
+  String get categoryRent;
+
+  /// No description provided for @categoryHouse.
+  ///
+  /// In en, this message translates to:
+  /// **'House'**
+  String get categoryHouse;
+
+  /// No description provided for @categoryBills.
+  ///
+  /// In en, this message translates to:
+  /// **'Bills'**
+  String get categoryBills;
+
+  /// No description provided for @categoryHealth.
+  ///
+  /// In en, this message translates to:
+  /// **'Health'**
+  String get categoryHealth;
+
+  /// No description provided for @categoryEducation.
+  ///
+  /// In en, this message translates to:
+  /// **'Education'**
+  String get categoryEducation;
+
+  /// No description provided for @categoryEntertainment.
+  ///
+  /// In en, this message translates to:
+  /// **'Entertainment'**
+  String get categoryEntertainment;
+
+  /// No description provided for @categoryTravel.
+  ///
+  /// In en, this message translates to:
+  /// **'Travel'**
+  String get categoryTravel;
+
+  /// No description provided for @categoryGifts.
+  ///
+  /// In en, this message translates to:
+  /// **'Gifts'**
+  String get categoryGifts;
+
+  /// No description provided for @categoryPersonalCare.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal care'**
+  String get categoryPersonalCare;
+
+  /// No description provided for @categorySubscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription'**
+  String get categorySubscription;
+
+  /// No description provided for @categoryLoan.
+  ///
+  /// In en, this message translates to:
+  /// **'Loan'**
+  String get categoryLoan;
+
+  /// No description provided for @categoryInvestment.
+  ///
+  /// In en, this message translates to:
+  /// **'Investment'**
+  String get categoryInvestment;
+
+  /// No description provided for @categoryOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get categoryOther;
+
+  /// No description provided for @paymentMethodCash.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash'**
+  String get paymentMethodCash;
+
+  /// No description provided for @paymentMethodUpi.
+  ///
+  /// In en, this message translates to:
+  /// **'UPI'**
+  String get paymentMethodUpi;
+
+  /// No description provided for @paymentMethodDebitCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Debit card'**
+  String get paymentMethodDebitCard;
+
+  /// No description provided for @paymentMethodCreditCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit card'**
+  String get paymentMethodCreditCard;
+
+  /// No description provided for @eventBirthday.
+  ///
+  /// In en, this message translates to:
+  /// **'Birthday'**
+  String get eventBirthday;
+
+  /// No description provided for @eventAnniversary.
+  ///
+  /// In en, this message translates to:
+  /// **'Anniversary'**
+  String get eventAnniversary;
+
+  /// No description provided for @eventParty.
+  ///
+  /// In en, this message translates to:
+  /// **'Party'**
+  String get eventParty;
+
+  /// No description provided for @eventFestival.
+  ///
+  /// In en, this message translates to:
+  /// **'Festival'**
+  String get eventFestival;
+
+  /// No description provided for @eventTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip'**
+  String get eventTrip;
+}
+
+class _AppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
+  const _AppLocalizationsDelegate();
+
+  @override
+  Future<AppLocalizations> load(Locale locale) {
+    return SynchronousFuture<AppLocalizations>(lookupAppLocalizations(locale));
+  }
+
+  @override
+  bool isSupported(Locale locale) =>
+      <String>['en', 'es', 'hi'].contains(locale.languageCode);
+
+  @override
+  bool shouldReload(_AppLocalizationsDelegate old) => false;
+}
+
+AppLocalizations lookupAppLocalizations(Locale locale) {
+  // Lookup logic when only language code is specified.
+  switch (locale.languageCode) {
+    case 'en':
+      return AppLocalizationsEn();
+    case 'es':
+      return AppLocalizationsEs();
+    case 'hi':
+      return AppLocalizationsHi();
+  }
+
+  throw FlutterError(
+    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.',
+  );
+}

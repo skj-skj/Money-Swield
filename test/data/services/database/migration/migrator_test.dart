@@ -10,7 +10,8 @@ void main() {
   late Database db;
   late Migrator m;
 
-  Future<TableDefinition> read(String table) => SchemaReader(db).readTable(table);
+  Future<TableDefinition> read(String table) =>
+      SchemaReader(db).readTable(table);
 
   Future<void> createCategoriesAndExpenses() async {
     await m.createTable('categories', (t) {
@@ -20,10 +21,19 @@ void main() {
       t.text('title', nullable: false);
       t.real('amount', nullable: false, defaultValue: 0);
       t.text('note');
-      t.references('category_id', toTable: 'categories', onDelete: ForeignKeyAction.cascade);
+      t.references(
+        'category_id',
+        toTable: 'categories',
+        onDelete: ForeignKeyAction.cascade,
+      );
     });
     await m.insert('categories', {'name': 'Food'});
-    await m.insert('expenses', {'title': 'Lunch', 'amount': 12.5, 'note': 'office', 'category_id': 1});
+    await m.insert('expenses', {
+      'title': 'Lunch',
+      'amount': 12.5,
+      'note': 'office',
+      'category_id': 1,
+    });
     await m.insert('expenses', {'title': 'Tea', 'amount': 2, 'category_id': 1});
   }
 
@@ -39,7 +49,13 @@ void main() {
       await createCategoriesAndExpenses();
 
       final expenses = await read('expenses');
-      expect(expenses.columns.map((c) => c.name), ['id', 'title', 'amount', 'note', 'category_id']);
+      expect(expenses.columns.map((c) => c.name), [
+        'id',
+        'title',
+        'amount',
+        'note',
+        'category_id',
+      ]);
       expect(expenses.primaryKey, ['id']);
       expect(expenses.autoIncrement, isTrue);
       expect(expenses.column('title').nullable, isFalse);
@@ -63,20 +79,41 @@ void main() {
       expect(table.autoIncrement, isFalse);
     });
 
-    test('rejects an existing table, in any letter case, and bad names', () async {
-      await m.createTable('a', (t) => t.text('x'));
-      await expectLater(m.createTable('a', (t) => t.text('x')), throwsArgumentError);
-      await expectLater(m.createTable('A', (t) => t.text('x')), throwsArgumentError);
-      await expectLater(m.createTable('bad name', (t) => t.text('x')), throwsArgumentError);
-      await expectLater(m.createTable('b', (t) => t.text('x; DROP TABLE a')), throwsArgumentError);
-    });
+    test(
+      'rejects an existing table, in any letter case, and bad names',
+      () async {
+        await m.createTable('a', (t) => t.text('x'));
+        await expectLater(
+          m.createTable('a', (t) => t.text('x')),
+          throwsArgumentError,
+        );
+        await expectLater(
+          m.createTable('A', (t) => t.text('x')),
+          throwsArgumentError,
+        );
+        await expectLater(
+          m.createTable('bad name', (t) => t.text('x')),
+          throwsArgumentError,
+        );
+        await expectLater(
+          m.createTable('b', (t) => t.text('x; DROP TABLE a')),
+          throwsArgumentError,
+        );
+      },
+    );
   });
 
   group('changing columns keeps data', () {
     setUp(createCategoriesAndExpenses);
 
     test('addColumn with a default fills existing rows', () async {
-      await m.addColumn('expenses', 'currency', SqliteType.text, nullable: false, defaultValue: 'INR');
+      await m.addColumn(
+        'expenses',
+        'currency',
+        SqliteType.text,
+        nullable: false,
+        defaultValue: 'INR',
+      );
       final rows = await m.select('expenses', columns: ['title', 'currency']);
       expect(rows, [
         {'title': 'Lunch', 'currency': 'INR'},
@@ -84,20 +121,31 @@ void main() {
       ]);
     });
 
-    test('addColumn NOT NULL without default on existing rows explains the fix', () async {
-      await expectLater(
-        m.addColumn('expenses', 'currency', SqliteType.text, nullable: false),
-        throwsA(isA<StateError>().having((e) => e.message, 'message', contains('backfill'))),
-      );
-      expect(await m.columnExists('expenses', 'currency'), isFalse);
-    });
+    test(
+      'addColumn NOT NULL without default on existing rows explains the fix',
+      () async {
+        await expectLater(
+          m.addColumn('expenses', 'currency', SqliteType.text, nullable: false),
+          throwsA(
+            isA<StateError>().having(
+              (e) => e.message,
+              'message',
+              contains('backfill'),
+            ),
+          ),
+        );
+        expect(await m.columnExists('expenses', 'currency'), isFalse);
+      },
+    );
 
     test('removeColumn drops the column and its indexes', () async {
       await m.addIndex('expenses', ['note']);
       await m.removeColumn('expenses', 'note');
       final table = await read('expenses');
       expect(table.hasColumn('note'), isFalse);
-      expect(table.indexes.map((i) => i.name), ['index_expenses_on_category_id']);
+      expect(table.indexes.map((i) => i.name), [
+        'index_expenses_on_category_id',
+      ]);
       expect(await m.count('expenses'), 2);
     });
 
@@ -109,44 +157,73 @@ void main() {
       expect((await m.select('expenses', where: {'group_id': 1})).length, 2);
     });
 
-    test('renameColumn renames default-named indexes, keeps custom names', () async {
-      await m.addIndex('expenses', ['note']);
-      await m.addIndex('expenses', ['title'], name: 'by_title');
-      await m.renameColumn('expenses', 'note', 'description');
-      await m.renameColumn('expenses', 'title', 'name');
-      expect((await read('expenses')).indexes.map((i) => i.name), [
-        'index_expenses_on_category_id',
-        'index_expenses_on_description',
-        'by_title',
-      ]);
-    });
+    test(
+      'renameColumn renames default-named indexes, keeps custom names',
+      () async {
+        await m.addIndex('expenses', ['note']);
+        await m.addIndex('expenses', ['title'], name: 'by_title');
+        await m.renameColumn('expenses', 'note', 'description');
+        await m.renameColumn('expenses', 'title', 'name');
+        expect((await read('expenses')).indexes.map((i) => i.name), [
+          'index_expenses_on_category_id',
+          'index_expenses_on_description',
+          'by_title',
+        ]);
+      },
+    );
 
     test('refuses to rename a column another table references', () async {
-      await expectLater(m.renameColumn('categories', 'id', 'category_id'), throwsArgumentError);
+      await expectLater(
+        m.renameColumn('categories', 'id', 'category_id'),
+        throwsArgumentError,
+      );
     });
 
     test('changeColumn changes type and nullability', () async {
-      await m.changeColumn('expenses', 'amount', SqliteType.text, nullable: false);
+      await m.changeColumn(
+        'expenses',
+        'amount',
+        SqliteType.text,
+        nullable: false,
+      );
       final table = await read('expenses');
       expect(table.column('amount').type, SqliteType.text);
       expect(table.column('amount').defaultSql, isNull);
-      expect((await m.select('expenses', columns: ['amount'])).first['amount'], '12.5');
+      expect(
+        (await m.select('expenses', columns: ['amount'])).first['amount'],
+        '12.5',
+      );
     });
 
     test('changeColumn to NOT NULL fails clearly while NULLs exist', () async {
       await expectLater(
         m.changeColumn('expenses', 'note', SqliteType.text, nullable: false),
-        throwsA(isA<StateError>().having((e) => e.message, 'message', contains('1 existing row'))),
+        throwsA(
+          isA<StateError>().having(
+            (e) => e.message,
+            'message',
+            contains('1 existing row'),
+          ),
+        ),
       );
     });
 
-    test('changeColumn to NOT NULL with a default fills existing NULLs', () async {
-      await m.changeColumn('expenses', 'note', SqliteType.text, nullable: false, defaultValue: '');
-      expect(await m.select('expenses', columns: ['note']), [
-        {'note': 'office'},
-        {'note': ''},
-      ]);
-    });
+    test(
+      'changeColumn to NOT NULL with a default fills existing NULLs',
+      () async {
+        await m.changeColumn(
+          'expenses',
+          'note',
+          SqliteType.text,
+          nullable: false,
+          defaultValue: '',
+        );
+        expect(await m.select('expenses', columns: ['note']), [
+          {'note': 'office'},
+          {'note': ''},
+        ]);
+      },
+    );
 
     test('changeTable applies several changes in one rebuild', () async {
       await m.changeTable('expenses', (t) {
@@ -155,38 +232,85 @@ void main() {
         t.index(['title', 'amount'], unique: true);
       });
       final table = await read('expenses');
-      expect(table.columns.map((c) => c.name), ['id', 'title', 'amount', 'description', 'category_id', 'paid']);
-      expect(table.indexes.map((i) => i.name), contains('index_expenses_on_title_and_amount'));
-      expect((await m.select('expenses', where: {'title': 'Lunch'})).single['description'], 'office');
+      expect(table.columns.map((c) => c.name), [
+        'id',
+        'title',
+        'amount',
+        'description',
+        'category_id',
+        'paid',
+      ]);
+      expect(
+        table.indexes.map((i) => i.name),
+        contains('index_expenses_on_title_and_amount'),
+      );
+      expect(
+        (await m.select(
+          'expenses',
+          where: {'title': 'Lunch'},
+        )).single['description'],
+        'office',
+      );
     });
   });
 
   group('in-place changes and rebuilds', () {
     setUp(createCategoriesAndExpenses);
 
-    test('plain columns, references and indexes are changed in place', () async {
-      // A hand-made CHECK would be lost by a rebuild, so only in-place
-      // changes can succeed on this table.
-      await db.execute(
-        "CREATE TABLE legacy (id INTEGER PRIMARY KEY, kind TEXT DEFAULT 'check' CHECK (kind != ''))",
-      );
-      await m.addColumn('legacy', 'note', SqliteType.text);
-      await m.addColumn('legacy', 'count', SqliteType.integer, nullable: false, defaultValue: 0);
-      await m.addReference('legacy', 'category_id', toTable: 'categories');
-      await m.removeIndex('legacy', columns: ['category_id']);
-      expect((await read('legacy')).columns.map((c) => c.name), ['id', 'kind', 'note', 'count', 'category_id']);
+    test(
+      'plain columns, references and indexes are changed in place',
+      () async {
+        // A hand-made CHECK would be lost by a rebuild, so only in-place
+        // changes can succeed on this table.
+        await db.execute(
+          "CREATE TABLE legacy (id INTEGER PRIMARY KEY, kind TEXT DEFAULT 'check' CHECK (kind != ''))",
+        );
+        await m.addColumn('legacy', 'note', SqliteType.text);
+        await m.addColumn(
+          'legacy',
+          'count',
+          SqliteType.integer,
+          nullable: false,
+          defaultValue: 0,
+        );
+        await m.addReference('legacy', 'category_id', toTable: 'categories');
+        await m.removeIndex('legacy', columns: ['category_id']);
+        expect((await read('legacy')).columns.map((c) => c.name), [
+          'id',
+          'kind',
+          'note',
+          'count',
+          'category_id',
+        ]);
 
-      await expectLater(m.removeColumn('legacy', 'note'), throwsA(isA<UnsupportedError>()));
-      await expectLater(m.addColumn('legacy', 'code', SqliteType.text, unique: true), throwsA(isA<UnsupportedError>()));
-    });
+        await expectLater(
+          m.removeColumn('legacy', 'note'),
+          throwsA(isA<UnsupportedError>()),
+        );
+        await expectLater(
+          m.addColumn('legacy', 'code', SqliteType.text, unique: true),
+          throwsA(isA<UnsupportedError>()),
+        );
+      },
+    );
 
     test('a table used by a view is not rebuilt', () async {
       await db.execute('CREATE VIEW lunches AS SELECT * FROM expenses');
       await expectLater(
         m.removeColumn('expenses', 'note'),
-        throwsA(isA<UnsupportedError>().having((e) => e.message, 'message', contains('view "lunches"'))),
+        throwsA(
+          isA<UnsupportedError>().having(
+            (e) => e.message,
+            'message',
+            contains('view "lunches"'),
+          ),
+        ),
       );
-      await m.addColumn('expenses', 'currency', SqliteType.text); // In place still works.
+      await m.addColumn(
+        'expenses',
+        'currency',
+        SqliteType.text,
+      ); // In place still works.
     });
 
     test('a rebuilt table has the same schema as the original, foreign keys in order', () async {
@@ -202,14 +326,22 @@ void main() {
     });
 
     test('rebuild does not reuse ids of deleted rows', () async {
-      await m.delete('expenses', where: {'title': 'Tea'}); // Highest id is now 1, but 2 was used.
+      await m.delete(
+        'expenses',
+        where: {'title': 'Tea'},
+      ); // Highest id is now 1, but 2 was used.
       await m.removeColumn('expenses', 'note'); // Rebuilds.
       final id = await m.insert('expenses', {'title': 'Bus', 'amount': 1});
       expect(id, 3);
     });
 
     test('rebuilding the parent keeps foreign keys valid', () async {
-      await m.addColumn('categories', 'color', SqliteType.text, unique: true); // Unique needs a rebuild.
+      await m.addColumn(
+        'categories',
+        'color',
+        SqliteType.text,
+        unique: true,
+      ); // Unique needs a rebuild.
       expect(await db.rawQuery('PRAGMA foreign_key_check'), isEmpty);
     });
   });
@@ -219,10 +351,21 @@ void main() {
 
     test('addReference and removeReference', () async {
       await m.createTable('accounts', (t) => t.text('name'));
-      await m.addReference('expenses', 'account_id', toTable: 'accounts', onDelete: ForeignKeyAction.setNull);
+      await m.addReference(
+        'expenses',
+        'account_id',
+        toTable: 'accounts',
+        onDelete: ForeignKeyAction.setNull,
+      );
       var table = await read('expenses');
-      expect(table.foreignKeys.map((f) => f.parentTable), containsAll(['categories', 'accounts']));
-      expect(table.indexes.map((i) => i.name), contains('index_expenses_on_account_id'));
+      expect(
+        table.foreignKeys.map((f) => f.parentTable),
+        containsAll(['categories', 'accounts']),
+      );
+      expect(
+        table.indexes.map((i) => i.name),
+        contains('index_expenses_on_account_id'),
+      );
 
       await m.removeReference('expenses', 'account_id');
       table = await read('expenses');
@@ -233,21 +376,59 @@ void main() {
     test('must point at an existing table', () async {
       await expectLater(
         m.createTable('a', (t) => t.references('x_id', toTable: 'missing')),
-        throwsA(isA<ArgumentError>().having((e) => e.message, 'message', contains('does not exist'))),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            contains('does not exist'),
+          ),
+        ),
       );
     });
 
-    test('must point at a primary key or unique column, which must stay unique', () async {
-      await expectLater(
-        m.addReference('expenses', 'title_ref', toTable: 'expenses', toColumn: 'title'),
-        throwsA(isA<ArgumentError>().having((e) => e.message, 'message', contains('not its primary key'))),
-      );
-      await m.createTable('b', (t) => t.references('category_name', toTable: 'categories', toColumn: 'name'));
-      await expectLater(
-        m.changeColumn('categories', 'name', SqliteType.text, nullable: false), // Drops UNIQUE.
-        throwsA(isA<ArgumentError>().having((e) => e.message, 'message', contains('must stay'))),
-      );
-    });
+    test(
+      'must point at a primary key or unique column, which must stay unique',
+      () async {
+        await expectLater(
+          m.addReference(
+            'expenses',
+            'title_ref',
+            toTable: 'expenses',
+            toColumn: 'title',
+          ),
+          throwsA(
+            isA<ArgumentError>().having(
+              (e) => e.message,
+              'message',
+              contains('not its primary key'),
+            ),
+          ),
+        );
+        await m.createTable(
+          'b',
+          (t) => t.references(
+            'category_name',
+            toTable: 'categories',
+            toColumn: 'name',
+          ),
+        );
+        await expectLater(
+          m.changeColumn(
+            'categories',
+            'name',
+            SqliteType.text,
+            nullable: false,
+          ), // Drops UNIQUE.
+          throwsA(
+            isA<ArgumentError>().having(
+              (e) => e.message,
+              'message',
+              contains('must stay'),
+            ),
+          ),
+        );
+      },
+    );
 
     test('dropTable refuses while other tables reference it', () async {
       await expectLater(m.dropTable('categories'), throwsArgumentError);
@@ -272,7 +453,13 @@ void main() {
       await m.addIndex('categories', ['name'], name: 'by_name');
       await expectLater(
         m.addIndex('expenses', ['title'], name: 'by_name'),
-        throwsA(isA<ArgumentError>().having((e) => e.message, 'message', contains('index "by_name" on "categories"'))),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            contains('index "by_name" on "categories"'),
+          ),
+        ),
       );
     });
   });
@@ -282,7 +469,10 @@ void main() {
 
     test('where matches NULL with IS NULL', () async {
       expect(await m.count('expenses', where: {'note': null}), 1);
-      expect(await m.update('expenses', {'note': 'none'}, where: {'note': null}), 1);
+      expect(
+        await m.update('expenses', {'note': 'none'}, where: {'note': null}),
+        1,
+      );
       expect(await m.count('expenses', where: {'note': null}), 0);
     });
 
@@ -290,14 +480,23 @@ void main() {
       await m.addColumn('expenses', 'paid', SqliteType.integer);
       await m.update('expenses', {'paid': true}, where: {'title': 'Lunch'});
       expect(await m.count('expenses', where: {'paid': true}), 1);
-      expect((await m.select('expenses', where: {'title': 'Lunch'})).single['paid'], 1);
+      expect(
+        (await m.select('expenses', where: {'title': 'Lunch'})).single['paid'],
+        1,
+      );
     });
   });
 
   group('asking the user', () {
     test('askChoice checks that the initial value is an option', () async {
-      expect(() => m.askChoice('Currency?', ['INR', 'USD'], initialValue: 'EUR'), throwsArgumentError);
-      expect(await m.askChoice('Currency?', ['INR', 'USD'], initialValue: 'USD'), 'USD');
+      expect(
+        () => m.askChoice('Currency?', ['INR', 'USD'], initialValue: 'EUR'),
+        throwsArgumentError,
+      );
+      expect(
+        await m.askChoice('Currency?', ['INR', 'USD'], initialValue: 'USD'),
+        'USD',
+      );
     });
   });
 }

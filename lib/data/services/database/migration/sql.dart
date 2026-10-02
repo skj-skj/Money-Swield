@@ -19,7 +19,11 @@ String checkIdentifier(String name) {
     );
   }
   if (name.toLowerCase().startsWith('sqlite_')) {
-    throw ArgumentError.value(name, 'name', 'Names starting with "sqlite_" are reserved by SQLite');
+    throw ArgumentError.value(
+      name,
+      'name',
+      'Names starting with "sqlite_" are reserved by SQLite',
+    );
   }
   return name;
 }

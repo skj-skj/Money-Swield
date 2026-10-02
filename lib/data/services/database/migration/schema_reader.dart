@@ -51,11 +51,18 @@ class SchemaReader {
     );
     // Strip string literals and quoted names so that, say, DEFAULT 'check'
     // is not mistaken for a CHECK constraint.
-    final createSql = (master.first['sql']! as String).replaceAll(_quotedText, '');
+    final createSql = (master.first['sql']! as String).replaceAll(
+      _quotedText,
+      '',
+    );
     final feature = _featureWord.firstMatch(createSql)?.group(1)?.toUpperCase();
     if (feature != null) {
-      final what = feature == 'CHECK' || feature == 'COLLATE' ? feature : 'a generated column';
-      throw UnsupportedError('Table "$table" uses $what, which the migration framework cannot rebuild');
+      final what = feature == 'CHECK' || feature == 'COLLATE'
+          ? feature
+          : 'a generated column';
+      throw UnsupportedError(
+        'Table "$table" uses $what, which the migration framework cannot rebuild',
+      );
     }
 
     final dependents = await _db.rawQuery(
@@ -63,13 +70,22 @@ class SchemaReader {
       [table, '%$table%'],
     );
     if (dependents.isNotEmpty) {
-      final names = dependents.map((d) => '${d['type']} "${d['name']}"').join(', ');
-      throw UnsupportedError('Table "$table" is used by $names, which the migration framework cannot rebuild');
+      final names = dependents
+          .map((d) => '${d['type']} "${d['name']}"')
+          .join(', ');
+      throw UnsupportedError(
+        'Table "$table" is used by $names, which the migration framework cannot rebuild',
+      );
     }
   }
 
-  static final _quotedText = RegExp(r"""'(?:[^']|'')*'|"(?:[^"]|"")*"|`[^`]*`|\[[^\]]*\]""");
-  static final _featureWord = RegExp(r'\b(CHECK|COLLATE|GENERATED|AS)\b', caseSensitive: false);
+  static final _quotedText = RegExp(
+    r"""'(?:[^']|'')*'|"(?:[^"]|"")*"|`[^`]*`|\[[^\]]*\]""",
+  );
+  static final _featureWord = RegExp(
+    r'\b(CHECK|COLLATE|GENERATED|AS)\b',
+    caseSensitive: false,
+  );
 
   /// All tables except SQLite's own internal ones.
   Future<List<String>> tableNames() async {
@@ -89,12 +105,17 @@ class SchemaReader {
 
     final definition = TableDefinition(
       name: table,
-      autoIncrement: RegExp(r'\bAUTOINCREMENT\b', caseSensitive: false).hasMatch(createSql),
+      autoIncrement: RegExp(
+        r'\bAUTOINCREMENT\b',
+        caseSensitive: false,
+      ).hasMatch(createSql),
     );
 
     // Columns and primary key.
     final primaryKeyByPosition = <int, String>{};
-    for (final row in await _db.rawQuery('PRAGMA table_info(${quote(table)})')) {
+    for (final row in await _db.rawQuery(
+      'PRAGMA table_info(${quote(table)})',
+    )) {
       final name = row['name']! as String;
       definition.columns.add(
         ColumnDefinition(
@@ -108,7 +129,8 @@ class SchemaReader {
       if (pkPosition > 0) primaryKeyByPosition[pkPosition] = name;
     }
     definition.primaryKey = [
-      for (final position in primaryKeyByPosition.keys.toList()..sort()) primaryKeyByPosition[position]!,
+      for (final position in primaryKeyByPosition.keys.toList()..sort())
+        primaryKeyByPosition[position]!,
     ];
 
     // Unique constraints and indexes. index_list lists newest first.
@@ -118,13 +140,21 @@ class SchemaReader {
       final origin = row['origin']! as String;
       if (origin == 'pk') continue; // Already covered by the primary key.
       if (row['partial'] == 1) {
-        throw UnsupportedError('Partial index "$name" on "$table" is not supported');
+        throw UnsupportedError(
+          'Partial index "$name" on "$table" is not supported',
+        );
       }
       final columns = await _indexColumns(name);
       if (origin == 'u') {
         definition.uniqueConstraints.add(columns);
       } else {
-        definition.indexes.add(IndexDefinition(name: name, columns: columns, unique: row['unique'] == 1));
+        definition.indexes.add(
+          IndexDefinition(
+            name: name,
+            columns: columns,
+            unique: row['unique'] == 1,
+          ),
+        );
       }
     }
 
@@ -133,34 +163,41 @@ class SchemaReader {
   }
 
   /// Foreign keys in other tables that point at [parentTable].
-  Future<List<({String table, ForeignKeyDefinition foreignKey})>> foreignKeysReferencing(
-    String parentTable,
-  ) async {
+  Future<List<({String table, ForeignKeyDefinition foreignKey})>>
+  foreignKeysReferencing(String parentTable) async {
     return [
       for (final table in await tableNames())
         if (table != parentTable)
           for (final foreignKey in await _foreignKeys(table))
-            if (foreignKey.parentTable == parentTable) (table: table, foreignKey: foreignKey),
+            if (foreignKey.parentTable == parentTable)
+              (table: table, foreignKey: foreignKey),
     ];
   }
 
   Future<List<String>> _indexColumns(String index) async {
     final rows = await _db.rawQuery('PRAGMA index_info(${quote(index)})');
-    final sorted = [...rows]..sort((a, b) => (a['seqno']! as int).compareTo(b['seqno']! as int));
+    final sorted = [...rows]
+      ..sort((a, b) => (a['seqno']! as int).compareTo(b['seqno']! as int));
     return [
       for (final row in sorted)
-        row['name'] as String? ?? (throw UnsupportedError('Expression index "$index" is not supported')),
+        row['name'] as String? ??
+            (throw UnsupportedError(
+              'Expression index "$index" is not supported',
+            )),
     ];
   }
 
   Future<List<ForeignKeyDefinition>> _foreignKeys(String table) async {
     final rows = await _db.rawQuery('PRAGMA foreign_key_list(${quote(table)})');
     final byId = <int, ForeignKeyDefinition>{};
-    final sorted = [...rows]..sort((a, b) => (a['seq']! as int).compareTo(b['seq']! as int));
+    final sorted = [...rows]
+      ..sort((a, b) => (a['seq']! as int).compareTo(b['seq']! as int));
     for (final row in sorted) {
       final to = row['to'] as String?;
       if (to == null) {
-        throw UnsupportedError('Foreign key on "$table" must name the referenced column explicitly');
+        throw UnsupportedError(
+          'Foreign key on "$table" must name the referenced column explicitly',
+        );
       }
       final foreignKey = byId.putIfAbsent(
         row['id']! as int,
@@ -177,6 +214,9 @@ class SchemaReader {
     }
     // SQLite numbers foreign keys last-declared first; return them in the
     // order they were declared so a rebuild keeps the same schema.
-    return [for (final id in byId.keys.toList()..sort((a, b) => b.compareTo(a))) byId[id]!];
+    return [
+      for (final id in byId.keys.toList()..sort((a, b) => b.compareTo(a)))
+        byId[id]!,
+    ];
   }
 }
