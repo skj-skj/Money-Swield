@@ -121,6 +121,27 @@ void main() {
 
   tearDown(() => folder.delete(recursive: true));
 
+  test(
+    'says whether it installed, updated or left the database alone',
+    () async {
+      // No file yet: a new install.
+      expect(
+        await runner([createExpenses]).migrate(),
+        MigrationOutcome.installed,
+      );
+      // Same migrations again: nothing pending.
+      expect(
+        await runner([createExpenses]).migrate(),
+        MigrationOutcome.upToDate,
+      );
+      // An app update brings a new one.
+      expect(
+        await runner([createExpenses, createMonthlySpend]).migrate(),
+        MigrationOutcome.updated,
+      );
+    },
+  );
+
   test('runs pending migrations in version order and records them', () async {
     final progress = <MigrationProgress>[];
     await runner([createMonthlySpend, createExpenses])

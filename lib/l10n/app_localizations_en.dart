@@ -141,8 +141,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeEmptyTitle => 'No expenses yet';
 
   @override
-  String get homeEmptyMessage =>
-      'Adding expenses is coming in the next update.';
+  String get homeEmptyMessage => 'Tap Add expense to record your first one.';
 
   @override
   String get categoriesTitle => 'Categories';
@@ -265,6 +264,337 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get themeDark => 'Dark';
+
+  @override
+  String get ok => 'OK';
+
+  @override
+  String get addExpense => 'Add expense';
+
+  @override
+  String get editExpense => 'Edit expense';
+
+  @override
+  String get fieldTitle => 'Title';
+
+  @override
+  String get fieldAmount => 'Amount';
+
+  @override
+  String get fieldCategory => 'Category';
+
+  @override
+  String get fieldEvents => 'Events';
+
+  @override
+  String get fieldPaymentMethod => 'Payment method';
+
+  @override
+  String get fieldCurrency => 'Currency';
+
+  @override
+  String get fieldDate => 'Date';
+
+  @override
+  String get fieldTime => 'Time';
+
+  @override
+  String get fieldNotes => 'Description';
+
+  @override
+  String get fieldDeletedAt => 'Deleted on';
+
+  @override
+  String get amountErrorEmpty => 'Enter an amount';
+
+  @override
+  String get amountErrorInvalid => 'Enter a plain number, like 110.50';
+
+  @override
+  String amountErrorTooLarge(int max) {
+    return 'Use at most $max digits before the decimal point';
+  }
+
+  @override
+  String amountErrorTooManyDecimals(int digits, String currency) {
+    String _temp0 = intl.Intl.pluralLogic(
+      digits,
+      locale: localeName,
+      other: '$currency has only $digits decimals',
+      one: '$currency has only 1 decimal',
+      zero: '$currency has no decimals',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get amountErrorNotPositive => 'Enter an amount above zero';
+
+  @override
+  String amountPreview(String amount) {
+    return '= $amount';
+  }
+
+  @override
+  String get titleRequired => 'Enter a title';
+
+  @override
+  String get categoryRequired => 'Pick a category';
+
+  @override
+  String get discardChangesTitle => 'Discard changes?';
+
+  @override
+  String get discard => 'Discard';
+
+  @override
+  String get keepEditing => 'Keep editing';
+
+  @override
+  String get expenseGone => 'This expense no longer exists';
+
+  @override
+  String get search => 'Search';
+
+  @override
+  String get closeSearch => 'Close search';
+
+  @override
+  String get searchCategories => 'Search categories…';
+
+  @override
+  String get searchEvents => 'Search events…';
+
+  @override
+  String get newCategory => 'New category';
+
+  @override
+  String get newEvent => 'New event';
+
+  @override
+  String get moreResults => 'More results';
+
+  @override
+  String get allCategories => 'All categories';
+
+  @override
+  String get allEvents => 'All events';
+
+  @override
+  String get noMoreMatches => 'No more matches';
+
+  @override
+  String get noCategoriesYet => 'No categories yet';
+
+  @override
+  String get today => 'Today';
+
+  @override
+  String get yesterday => 'Yesterday';
+
+  @override
+  String get movedToBin => 'Moved to bin';
+
+  @override
+  String get undo => 'Undo';
+
+  @override
+  String get loadMoreFailed => 'Couldn\'t load more expenses.';
+
+  @override
+  String get bin => 'Bin';
+
+  @override
+  String get binSubtitle => 'Deleted expenses are kept for 30 days';
+
+  @override
+  String get binEmpty => 'Deleted expenses stay here for 30 days.';
+
+  @override
+  String get deletedToday => 'Deleted today';
+
+  @override
+  String get deletedYesterday => 'Deleted yesterday';
+
+  @override
+  String deletedDaysAgo(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days ago',
+      one: '1 day ago',
+    );
+    return 'Deleted $_temp0';
+  }
+
+  @override
+  String removedInDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'removed in $days days',
+      one: 'removed in 1 day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get removedOnNextStart => 'removed on next start';
+
+  @override
+  String get restore => 'Restore';
+
+  @override
+  String get restoreAll => 'Restore all';
+
+  @override
+  String get deletePermanently => 'Delete permanently';
+
+  @override
+  String deletePermanentlyTitle(String title) {
+    return 'Delete \"$title\" permanently?';
+  }
+
+  @override
+  String get emptyBin => 'Empty bin';
+
+  @override
+  String get emptyBinTitle => 'Empty the bin?';
+
+  @override
+  String get cannotBeUndone => 'This can\'t be undone.';
+
+  @override
+  String usedByExpenses(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count expenses',
+      one: '1 expense',
+    );
+    return '\"$name\" is used by $_temp0.';
+  }
+
+  @override
+  String usedByExpensesWithBin(String name, int count, int binned) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count expenses',
+      one: '1 expense',
+    );
+    return '\"$name\" is used by $_temp0 ($binned in the bin).';
+  }
+
+  @override
+  String get moveExpensesTo => 'Move them to:';
+
+  @override
+  String get moveAndDelete => 'Move and delete';
+
+  @override
+  String get addAnotherFirst =>
+      'Add another one first, so its expenses have somewhere to go.';
+
+  @override
+  String eventDeleteWithCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count expenses',
+      one: '1 expense',
+    );
+    return 'It will be removed from $_temp0. The expenses stay.';
+  }
+
+  @override
+  String get recentCurrencies => 'Recent';
+
+  @override
+  String get allCurrencies => 'All currencies';
+
+  @override
+  String get noneEvent => 'None';
+
+  @override
+  String get settingTileShape => 'Tile shape';
+
+  @override
+  String get settingButtonShape => 'Button shape';
+
+  @override
+  String get shapeSquare => 'Square';
+
+  @override
+  String get shapeRounded => 'Rounded square';
+
+  @override
+  String get shapeCircle => 'Circle';
+
+  @override
+  String get settingCustomizeTiles => 'Customize tiles';
+
+  @override
+  String get settingCustomizeTilesSubtitle =>
+      'Shapes of the category and event pickers';
+
+  @override
+  String get preview => 'Preview';
+
+  @override
+  String get settingThemeColor => 'Theme color';
+
+  @override
+  String get themeColorWallpaper => 'Wallpaper colors';
+
+  @override
+  String get colorPurple => 'Purple';
+
+  @override
+  String get colorBlue => 'Blue';
+
+  @override
+  String get colorTeal => 'Teal';
+
+  @override
+  String get colorGreen => 'Green';
+
+  @override
+  String get colorAmber => 'Amber';
+
+  @override
+  String get colorOrange => 'Orange';
+
+  @override
+  String get colorRed => 'Red';
+
+  @override
+  String get colorPink => 'Pink';
+
+  @override
+  String get restoreDefaultLook => 'Restore default look';
+
+  @override
+  String get restoreDefaultLookSubtitle => 'Theme color and tile shapes';
+
+  @override
+  String get restoreDefaultLookTitle => 'Restore the default look?';
+
+  @override
+  String get restoreDefaultLookMessage =>
+      'The theme color goes back to the wallpaper colors, tiles to rounded squares and buttons to circles.';
+
+  @override
+  String get migrationInstalledTitle => 'Database initialized';
+
+  @override
+  String get migrationInstalledMessage => 'Everything is ready.';
+
+  @override
+  String get migrationUpdatedTitle => 'Update done successfully';
+
+  @override
+  String get migrationUpdatedMessage => 'Your data is up to date.';
 
   @override
   String get categoryFood => 'Food';

@@ -7,7 +7,10 @@ import 'package:my_expense_tracker_app/ui/features/migration/view_models/migrati
 
 /// Stands in for the database so migrations can be tested without SQLite.
 class FakeAppDatabase implements AppDatabase {
-  FakeAppDatabase(this.onMigrate);
+  FakeAppDatabase(this.onMigrate, {this.outcome = MigrationOutcome.upToDate});
+
+  /// What [migrate] reports once [onMigrate] finished.
+  final MigrationOutcome outcome;
 
   final Future<void> Function(
     MigrationPrompter prompter,
@@ -16,11 +19,14 @@ class FakeAppDatabase implements AppDatabase {
   onMigrate;
 
   @override
-  Future<void> migrate({
+  Future<MigrationOutcome> migrate({
     required Locale locale,
     required MigrationPrompter prompter,
     void Function(MigrationProgress progress)? onProgress,
-  }) => onMigrate(prompter, onProgress ?? (_) {});
+  }) async {
+    await onMigrate(prompter, onProgress ?? (_) {});
+    return outcome;
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

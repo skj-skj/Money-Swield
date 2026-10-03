@@ -74,6 +74,70 @@ void main() {
     await tester.tap(find.text('UAE Dirham'));
     expect(picked, 'AED');
   });
+  group('recentSection', () {
+    List<String> codes(String selected, List<String> recent) => [
+      for (final c in recentSection(selected, recent)) c.code,
+    ];
+
+    test('is the selected currency, then up to 5 recent ones', () {
+      expect(codes('INR', ['USD', 'EUR']), ['INR', 'USD', 'EUR']);
+      expect(codes('INR', ['USD', 'EUR', 'GBP', 'JPY', 'AED', 'CAD', 'AUD']), [
+        'INR',
+        'USD',
+        'EUR',
+        'GBP',
+        'JPY',
+        'AED',
+      ]);
+    });
+
+    test('has no duplicates and no unknown codes', () {
+      expect(codes('INR', ['INR', 'XYZ', 'USD', 'USD']), ['INR', 'USD']);
+    });
+
+    test('is empty when nothing but the selected one would be in it', () {
+      expect(codes('INR', []), isEmpty);
+      expect(codes('INR', ['INR']), isEmpty);
+    });
+  });
+
+  testWidgets('with recent currencies: Recent, then the full list', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: CurrencySearchList(
+            selected: 'INR',
+            recent: const ['USD', 'INR'],
+            onSelected: (_) {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Recent'), findsOneWidget);
+    expect(find.text('All currencies'), findsOneWidget);
+    final codes = visibleCodes(tester);
+    expect(codes.take(3), ['INR', 'USD', 'AED'], reason: 'full list from A');
+
+    await tester.enterText(find.byType(TextField), 'dollar');
+    await tester.pumpAndSettle();
+    expect(find.text('Recent'), findsNothing, reason: 'search is plain');
+  });
+
+  testWidgets('without recent currencies it looks like before: no headers', (
+    tester,
+  ) async {
+    await pumpList(tester, selected: 'INR');
+    expect(find.text('Recent'), findsNothing);
+    expect(find.text('All currencies'), findsNothing);
+  });
 }
 
 /// Codes of the currency rows currently built, top to bottom.

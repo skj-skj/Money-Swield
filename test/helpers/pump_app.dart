@@ -19,6 +19,7 @@ Future<SettingsCubit> pumpApp(
     tester,
     openDependencies: () async => dependencies,
     migrationCubit: migrationCubit,
+    wallpaperSeed: dependencies.wallpaperSeed,
   );
 }
 
@@ -28,6 +29,7 @@ Future<SettingsCubit> pumpAppWith(
   WidgetTester tester, {
   required Future<AppDependencies> Function() openDependencies,
   MigrationCubit? migrationCubit,
+  int? wallpaperSeed,
 }) async {
   final settingsCubit = SettingsCubit(initial: AppSettings.beforeLoad);
   addTearDown(settingsCubit.close);
@@ -40,6 +42,7 @@ Future<SettingsCubit> pumpAppWith(
       migrationCubit: migrations,
       settingsCubit: settingsCubit,
       openDependencies: openDependencies,
+      wallpaperSeed: wallpaperSeed,
     ),
   );
   // With the caller's migrations, the test drives them; an indeterminate

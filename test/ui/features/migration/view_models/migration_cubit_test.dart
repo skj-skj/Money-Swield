@@ -1,9 +1,14 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart' show Locale;
+import 'package:my_expense_tracker_app/data/services/database/app_database.dart';
 import 'package:my_expense_tracker_app/data/services/database/migration/migration_runner.dart';
 import 'package:my_expense_tracker_app/ui/features/migration/view_models/migration_cubit.dart';
+import 'package:path/path.dart' as p;
 
+import '../../../../data/services/database/migration/test_helpers.dart';
 import '../../../../helpers/fake_app_database.dart';
 
 void main() {
@@ -136,4 +141,90 @@ void main() {
       expect(cubit.value, isA<MigrationDone>());
     },
   );
+
+  group('when it is done', () {
+    test('nothing pending opens the app at once', () async {
+      final cubit = cubitFor(FakeAppDatabase((prompter, onProgress) async {}));
+      await cubit.run();
+      expect(cubit.value, isA<MigrationDone>());
+    });
+
+    for (final outcome in [
+      MigrationOutcome.installed,
+      MigrationOutcome.updated,
+    ]) {
+      test('${outcome.name} waits for Continue', () async {
+        final cubit = cubitFor(
+          FakeAppDatabase((prompter, onProgress) async {}, outcome: outcome),
+        );
+        await cubit.run();
+        expect(
+          cubit.value,
+          isA<MigrationSucceeded>().having(
+            (s) => s.outcome,
+            'outcome',
+            outcome,
+          ),
+        );
+
+        await cubit.run(); // A second run while waiting does nothing.
+        expect(cubit.value, isA<MigrationSucceeded>());
+
+        cubit.acknowledge();
+        expect(cubit.value, isA<MigrationDone>());
+      });
+    }
+
+    test(
+      'a new install that failed and was retried still says installed',
+      () async {
+        // The real runner on a real file: a fresh install whose second
+        // migration fails once (e.g. the database was locked), then Try again.
+        final folder = await Directory.systemTemp.createTemp('migration_cubit');
+        addTearDown(() => folder.delete(recursive: true));
+        var failOnce = true;
+        final database = AppDatabase(
+          databaseFactory: testDatabaseFactory(),
+          databasePath: () async => p.join(folder.path, 'app.db'),
+          migrations: [
+            TestMigration(
+              1,
+              'create_a',
+              (m) => m.createTable('a', (t) => t.text('name')),
+            ),
+            TestMigration(2, 'create_b', (m) async {
+              if (failOnce) {
+                failOnce = false;
+                throw StateError('database is locked');
+              }
+              await m.createTable('b', (t) => t.text('name'));
+            }),
+          ],
+        );
+        final cubit = MigrationCubit(
+          database: database,
+          locale: const Locale('en', 'IN'),
+        );
+        addTearDown(cubit.close);
+
+        await cubit.run();
+        expect(cubit.value, isA<MigrationFailed>());
+        await cubit.run();
+        expect(
+          cubit.value,
+          isA<MigrationSucceeded>().having(
+            (s) => s.outcome,
+            'outcome',
+            MigrationOutcome.installed,
+          ),
+        );
+      },
+    );
+
+    test('acknowledge does nothing before it is done', () {
+      final cubit = cubitFor(FakeAppDatabase((prompter, onProgress) async {}));
+      cubit.acknowledge();
+      expect(cubit.value, isA<MigrationInProgress>());
+    });
+  });
 }

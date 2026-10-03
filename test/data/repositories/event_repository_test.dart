@@ -147,4 +147,22 @@ void main() {
       'festival',
     ]);
   });
+
+  group('usage', () {
+    test('counts every expense with the event, binned ones included', () async {
+      await insertExpenseRow(db, eventIds: {1, 2});
+      await insertExpenseRow(db, eventIds: {1}, deletedAt: 5);
+      await insertExpenseRow(db);
+      expect(await repository.usage(1), 2);
+      expect(await repository.usage(2), 1);
+      expect(await repository.usage(3), 0);
+    });
+
+    test('deleting a used event keeps its expenses', () async {
+      await insertExpenseRow(db, eventIds: {1});
+      await repository.delete(1);
+      expect(await db.query('expenses'), hasLength(1));
+      expect(await db.query('expense_events'), isEmpty);
+    });
+  });
 }

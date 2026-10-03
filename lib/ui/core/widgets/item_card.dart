@@ -10,6 +10,7 @@ class ItemCard extends StatelessWidget {
     required this.title,
     this.description,
     this.badge,
+    this.selected = false,
     required this.onTap,
   });
 
@@ -19,6 +20,9 @@ class ItemCard extends StatelessWidget {
 
   /// A short label in the top corner, e.g. "Default".
   final String? badge;
+
+  /// Shows a check mark, for cards picked in a multi-select list.
+  final bool selected;
 
   final VoidCallback onTap;
 
@@ -32,6 +36,7 @@ class ItemCard extends StatelessWidget {
     final badge = this.badge;
     return Card(
       margin: EdgeInsets.zero,
+      color: selected ? theme.colorScheme.secondaryContainer : null,
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
@@ -46,6 +51,8 @@ class ItemCard extends StatelessWidget {
                   Text(emoji, style: const TextStyle(fontSize: 28)),
                   const Spacer(),
                   if (badge != null) _Badge(label: badge),
+                  if (selected)
+                    Icon(Icons.check_circle, color: theme.colorScheme.primary),
                 ],
               ),
               const SizedBox(height: 8),

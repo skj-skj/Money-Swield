@@ -142,8 +142,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get homeEmptyTitle => 'Aún no hay gastos';
 
   @override
-  String get homeEmptyMessage =>
-      'La opción de añadir gastos llegará en la próxima actualización.';
+  String get homeEmptyMessage => 'Toca Añadir gasto para registrar el primero.';
 
   @override
   String get categoriesTitle => 'Categorías';
@@ -267,6 +266,338 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get themeDark => 'Oscuro';
+
+  @override
+  String get ok => 'Aceptar';
+
+  @override
+  String get addExpense => 'Añadir gasto';
+
+  @override
+  String get editExpense => 'Editar gasto';
+
+  @override
+  String get fieldTitle => 'Título';
+
+  @override
+  String get fieldAmount => 'Importe';
+
+  @override
+  String get fieldCategory => 'Categoría';
+
+  @override
+  String get fieldEvents => 'Eventos';
+
+  @override
+  String get fieldPaymentMethod => 'Método de pago';
+
+  @override
+  String get fieldCurrency => 'Moneda';
+
+  @override
+  String get fieldDate => 'Fecha';
+
+  @override
+  String get fieldTime => 'Hora';
+
+  @override
+  String get fieldNotes => 'Descripción';
+
+  @override
+  String get fieldDeletedAt => 'Eliminado el';
+
+  @override
+  String get amountErrorEmpty => 'Introduce un importe';
+
+  @override
+  String get amountErrorInvalid => 'Introduce solo un número, como 110,50';
+
+  @override
+  String amountErrorTooLarge(int max) {
+    return 'Usa como máximo $max cifras antes de los decimales';
+  }
+
+  @override
+  String amountErrorTooManyDecimals(int digits, String currency) {
+    String _temp0 = intl.Intl.pluralLogic(
+      digits,
+      locale: localeName,
+      other: '$currency solo tiene $digits decimales',
+      one: '$currency solo tiene 1 decimal',
+      zero: '$currency no tiene decimales',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get amountErrorNotPositive => 'Introduce un importe mayor que cero';
+
+  @override
+  String amountPreview(String amount) {
+    return '= $amount';
+  }
+
+  @override
+  String get titleRequired => 'Introduce un título';
+
+  @override
+  String get categoryRequired => 'Elige una categoría';
+
+  @override
+  String get discardChangesTitle => '¿Descartar los cambios?';
+
+  @override
+  String get discard => 'Descartar';
+
+  @override
+  String get keepEditing => 'Seguir editando';
+
+  @override
+  String get expenseGone => 'Este gasto ya no existe';
+
+  @override
+  String get search => 'Buscar';
+
+  @override
+  String get closeSearch => 'Cerrar búsqueda';
+
+  @override
+  String get searchCategories => 'Buscar categorías…';
+
+  @override
+  String get searchEvents => 'Buscar eventos…';
+
+  @override
+  String get newCategory => 'Nueva categoría';
+
+  @override
+  String get newEvent => 'Nuevo evento';
+
+  @override
+  String get moreResults => 'Más resultados';
+
+  @override
+  String get allCategories => 'Todas las categorías';
+
+  @override
+  String get allEvents => 'Todos los eventos';
+
+  @override
+  String get noMoreMatches => 'No hay más coincidencias';
+
+  @override
+  String get noCategoriesYet => 'Aún no hay categorías';
+
+  @override
+  String get today => 'Hoy';
+
+  @override
+  String get yesterday => 'Ayer';
+
+  @override
+  String get movedToBin => 'Movido a la papelera';
+
+  @override
+  String get undo => 'Deshacer';
+
+  @override
+  String get loadMoreFailed => 'No se pudieron cargar más gastos.';
+
+  @override
+  String get bin => 'Papelera';
+
+  @override
+  String get binSubtitle => 'Los gastos eliminados se guardan 30 días';
+
+  @override
+  String get binEmpty => 'Los gastos eliminados se quedan aquí 30 días.';
+
+  @override
+  String get deletedToday => 'Eliminado hoy';
+
+  @override
+  String get deletedYesterday => 'Eliminado ayer';
+
+  @override
+  String deletedDaysAgo(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'hace $days días',
+      one: 'hace 1 día',
+    );
+    return 'Eliminado $_temp0';
+  }
+
+  @override
+  String removedInDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'se borra en $days días',
+      one: 'se borra en 1 día',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get removedOnNextStart => 'se borra al volver a abrir la app';
+
+  @override
+  String get restore => 'Restaurar';
+
+  @override
+  String get restoreAll => 'Restaurar todo';
+
+  @override
+  String get deletePermanently => 'Eliminar para siempre';
+
+  @override
+  String deletePermanentlyTitle(String title) {
+    return '¿Eliminar \"$title\" para siempre?';
+  }
+
+  @override
+  String get emptyBin => 'Vaciar papelera';
+
+  @override
+  String get emptyBinTitle => '¿Vaciar la papelera?';
+
+  @override
+  String get cannotBeUndone => 'Esto no se puede deshacer.';
+
+  @override
+  String usedByExpenses(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count gastos',
+      one: '1 gasto',
+    );
+    return '\"$name\" se usa en $_temp0.';
+  }
+
+  @override
+  String usedByExpensesWithBin(String name, int count, int binned) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count gastos',
+      one: '1 gasto',
+    );
+    return '\"$name\" se usa en $_temp0 ($binned en la papelera).';
+  }
+
+  @override
+  String get moveExpensesTo => 'Muévelos a:';
+
+  @override
+  String get moveAndDelete => 'Mover y eliminar';
+
+  @override
+  String get addAnotherFirst =>
+      'Añade otro primero, para que sus gastos tengan adónde ir.';
+
+  @override
+  String eventDeleteWithCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count gastos',
+      one: '1 gasto',
+    );
+    return 'Se quitará de $_temp0. Los gastos se mantienen.';
+  }
+
+  @override
+  String get recentCurrencies => 'Recientes';
+
+  @override
+  String get allCurrencies => 'Todas las monedas';
+
+  @override
+  String get noneEvent => 'Ninguno';
+
+  @override
+  String get settingTileShape => 'Forma de los mosaicos';
+
+  @override
+  String get settingButtonShape => 'Forma de los botones';
+
+  @override
+  String get shapeSquare => 'Cuadrado';
+
+  @override
+  String get shapeRounded => 'Cuadrado redondeado';
+
+  @override
+  String get shapeCircle => 'Círculo';
+
+  @override
+  String get settingCustomizeTiles => 'Personalizar mosaicos';
+
+  @override
+  String get settingCustomizeTilesSubtitle =>
+      'Formas de los selectores de categoría y evento';
+
+  @override
+  String get preview => 'Vista previa';
+
+  @override
+  String get settingThemeColor => 'Color del tema';
+
+  @override
+  String get themeColorWallpaper => 'Colores del fondo de pantalla';
+
+  @override
+  String get colorPurple => 'Morado';
+
+  @override
+  String get colorBlue => 'Azul';
+
+  @override
+  String get colorTeal => 'Verde azulado';
+
+  @override
+  String get colorGreen => 'Verde';
+
+  @override
+  String get colorAmber => 'Ámbar';
+
+  @override
+  String get colorOrange => 'Naranja';
+
+  @override
+  String get colorRed => 'Rojo';
+
+  @override
+  String get colorPink => 'Rosa';
+
+  @override
+  String get restoreDefaultLook => 'Restaurar el aspecto predeterminado';
+
+  @override
+  String get restoreDefaultLookSubtitle =>
+      'Color del tema y formas de los mosaicos';
+
+  @override
+  String get restoreDefaultLookTitle => '¿Restaurar el aspecto predeterminado?';
+
+  @override
+  String get restoreDefaultLookMessage =>
+      'El color del tema vuelve a los colores del fondo de pantalla, los mosaicos a cuadrados redondeados y los botones a círculos.';
+
+  @override
+  String get migrationInstalledTitle => 'Base de datos creada';
+
+  @override
+  String get migrationInstalledMessage => 'Todo está listo.';
+
+  @override
+  String get migrationUpdatedTitle => 'Actualización completada';
+
+  @override
+  String get migrationUpdatedMessage => 'Tus datos están al día.';
 
   @override
   String get categoryFood => 'Comida';

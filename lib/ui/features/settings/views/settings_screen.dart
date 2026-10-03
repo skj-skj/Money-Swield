@@ -1,29 +1,34 @@
 import 'package:bloc_signals_flutter/bloc_signals_flutter.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../../../../data/repositories/payment_method_repository.dart';
+import '../../../../app/app_dependencies.dart';
 import '../../../../domain/models/app_settings.dart';
 import '../../../../domain/models/app_theme_mode.dart';
 import '../../../../domain/models/payment_method.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/builtin_names.dart';
 import '../../../core/languages.dart';
+import '../../../core/recent_currencies.dart';
 import '../../../core/widgets/choice_dialog.dart';
+import '../../../core/widgets/confirm_dialog.dart';
 import '../../../core/widgets/currency_picker_sheet.dart';
 import '../../../core/widgets/save_error.dart';
+import '../../bin/views/bin_screen.dart';
 import '../../payment_methods/view_models/payment_method_list_cubit.dart';
 import '../view_models/settings_cubit.dart';
+import 'customize_tiles_screen.dart';
+import 'theme_color_dialog.dart';
 
-/// The Settings tab: language, theme, default currency and default payment
-/// method. Every change applies at once.
+/// The Settings tab: language, theme, default currency, default payment
+/// method, and the bin. Every change applies at once.
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
     super.key,
-    required this.paymentMethods,
+    required this.dependencies,
     required this.isVisible,
   });
 
-  final PaymentMethodRepository paymentMethods;
+  final AppDependencies dependencies;
 
   /// Whether this tab is the one shown. The shell keeps the tab alive while
   /// hidden, and payment methods may be renamed meanwhile on the Manage tab,
@@ -48,7 +53,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _l10n = l10n;
     _paymentMethodList?.close();
     _paymentMethodList = PaymentMethodListCubit(
-      repository: widget.paymentMethods,
+      repository: widget.dependencies.paymentMethods,
       l10n: l10n,
     )..load();
   }
@@ -99,9 +104,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _pickCurrency(AppSettings settings) async {
+    final recent = await recentCurrenciesOrEmpty(widget.dependencies.expenses);
+    if (!mounted) return;
     final code = await showCurrencyPicker(
       context,
       selected: settings.defaultCurrency,
+      recent: recent,
     );
     if (code == null || !mounted) return;
     await saveOrShowError(context, () => _settings.setDefaultCurrency(code));
@@ -138,6 +146,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Future<void> _restoreDefaultLook() async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await confirmAction(
+      context,
+      title: l10n.restoreDefaultLookTitle,
+      message: l10n.restoreDefaultLookMessage,
+      confirmLabel: l10n.restore,
+    );
+    if (!confirmed || !mounted) return;
+    await saveOrShowError(context, _settings.restoreDefaultLook);
+  }
+
+  Future<void> _pickThemeColor(AppSettings settings) async {
+    final choice = await showThemeColorDialog(
+      context,
+      current: settings.themeSeed,
+      wallpaperSeed: widget.dependencies.wallpaperSeed,
+    );
+    if (choice == null || !mounted) return;
+    await saveOrShowError(context, () => _settings.setThemeSeed(choice.seed));
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -160,6 +190,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
               title: Text(l10n.settingTheme),
               subtitle: Text(_themeName(l10n, settings.theme)),
               onTap: () => _pickTheme(settings),
+            ),
+            ListTile(
+              leading: const Icon(Icons.palette_outlined),
+              title: Text(l10n.settingThemeColor),
+              subtitle: Text(
+                themeColorName(
+                  l10n,
+                  seed: settings.themeSeed,
+                  wallpaperSeed: widget.dependencies.wallpaperSeed,
+                ),
+              ),
+              onTap: () => _pickThemeColor(settings),
             ),
             ListTile(
               leading: const Icon(Icons.currency_exchange),
@@ -187,6 +229,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onTap: () => _pickPaymentMethod(settings),
                 );
               },
+            ),
+            ListTile(
+              leading: const Icon(Icons.grid_view),
+              title: Text(l10n.settingCustomizeTiles),
+              subtitle: Text(l10n.settingCustomizeTilesSubtitle),
+              onTap: () => Navigator.push<void>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      CustomizeTilesScreen(dependencies: widget.dependencies),
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings_backup_restore),
+              title: Text(l10n.restoreDefaultLook),
+              subtitle: Text(l10n.restoreDefaultLookSubtitle),
+              onTap: _restoreDefaultLook,
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline),
+              title: Text(l10n.bin),
+              subtitle: Text(l10n.binSubtitle),
+              onTap: () => Navigator.push<void>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => BinScreen(dependencies: widget.dependencies),
+                ),
+              ),
             ),
           ],
         ),

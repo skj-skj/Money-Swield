@@ -337,7 +337,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeEmptyMessage.
   ///
   /// In en, this message translates to:
-  /// **'Adding expenses is coming in the next update.'**
+  /// **'Tap Add expense to record your first one.'**
   String get homeEmptyMessage;
 
   /// No description provided for @categoriesTitle.
@@ -567,6 +567,552 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Dark'**
   String get themeDark;
+
+  /// No description provided for @ok.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get ok;
+
+  /// No description provided for @addExpense.
+  ///
+  /// In en, this message translates to:
+  /// **'Add expense'**
+  String get addExpense;
+
+  /// No description provided for @editExpense.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit expense'**
+  String get editExpense;
+
+  /// No description provided for @fieldTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get fieldTitle;
+
+  /// No description provided for @fieldAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get fieldAmount;
+
+  /// No description provided for @fieldCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get fieldCategory;
+
+  /// No description provided for @fieldEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'Events'**
+  String get fieldEvents;
+
+  /// No description provided for @fieldPaymentMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment method'**
+  String get fieldPaymentMethod;
+
+  /// No description provided for @fieldCurrency.
+  ///
+  /// In en, this message translates to:
+  /// **'Currency'**
+  String get fieldCurrency;
+
+  /// No description provided for @fieldDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get fieldDate;
+
+  /// No description provided for @fieldTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get fieldTime;
+
+  /// No description provided for @fieldNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get fieldNotes;
+
+  /// No description provided for @fieldDeletedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted on'**
+  String get fieldDeletedAt;
+
+  /// No description provided for @amountErrorEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an amount'**
+  String get amountErrorEmpty;
+
+  /// No description provided for @amountErrorInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a plain number, like 110.50'**
+  String get amountErrorInvalid;
+
+  /// No description provided for @amountErrorTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'Use at most {max} digits before the decimal point'**
+  String amountErrorTooLarge(int max);
+
+  /// No description provided for @amountErrorTooManyDecimals.
+  ///
+  /// In en, this message translates to:
+  /// **'{digits, plural, =0{{currency} has no decimals} =1{{currency} has only 1 decimal} other{{currency} has only {digits} decimals}}'**
+  String amountErrorTooManyDecimals(int digits, String currency);
+
+  /// No description provided for @amountErrorNotPositive.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an amount above zero'**
+  String get amountErrorNotPositive;
+
+  /// No description provided for @amountPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'= {amount}'**
+  String amountPreview(String amount);
+
+  /// No description provided for @titleRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a title'**
+  String get titleRequired;
+
+  /// No description provided for @categoryRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a category'**
+  String get categoryRequired;
+
+  /// No description provided for @discardChangesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard changes?'**
+  String get discardChangesTitle;
+
+  /// No description provided for @discard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get discard;
+
+  /// No description provided for @keepEditing.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep editing'**
+  String get keepEditing;
+
+  /// No description provided for @expenseGone.
+  ///
+  /// In en, this message translates to:
+  /// **'This expense no longer exists'**
+  String get expenseGone;
+
+  /// No description provided for @search.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get search;
+
+  /// No description provided for @closeSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Close search'**
+  String get closeSearch;
+
+  /// No description provided for @searchCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Search categories…'**
+  String get searchCategories;
+
+  /// No description provided for @searchEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'Search events…'**
+  String get searchEvents;
+
+  /// No description provided for @newCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'New category'**
+  String get newCategory;
+
+  /// No description provided for @newEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'New event'**
+  String get newEvent;
+
+  /// No description provided for @moreResults.
+  ///
+  /// In en, this message translates to:
+  /// **'More results'**
+  String get moreResults;
+
+  /// No description provided for @allCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'All categories'**
+  String get allCategories;
+
+  /// No description provided for @allEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'All events'**
+  String get allEvents;
+
+  /// No description provided for @noMoreMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'No more matches'**
+  String get noMoreMatches;
+
+  /// No description provided for @noCategoriesYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No categories yet'**
+  String get noCategoriesYet;
+
+  /// No description provided for @today.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get today;
+
+  /// No description provided for @yesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get yesterday;
+
+  /// No description provided for @movedToBin.
+  ///
+  /// In en, this message translates to:
+  /// **'Moved to bin'**
+  String get movedToBin;
+
+  /// No description provided for @undo.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get undo;
+
+  /// No description provided for @loadMoreFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load more expenses.'**
+  String get loadMoreFailed;
+
+  /// No description provided for @bin.
+  ///
+  /// In en, this message translates to:
+  /// **'Bin'**
+  String get bin;
+
+  /// No description provided for @binSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted expenses are kept for 30 days'**
+  String get binSubtitle;
+
+  /// No description provided for @binEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted expenses stay here for 30 days.'**
+  String get binEmpty;
+
+  /// No description provided for @deletedToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted today'**
+  String get deletedToday;
+
+  /// No description provided for @deletedYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted yesterday'**
+  String get deletedYesterday;
+
+  /// No description provided for @deletedDaysAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted {days, plural, =1{1 day ago} other{{days} days ago}}'**
+  String deletedDaysAgo(int days);
+
+  /// No description provided for @removedInDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, =1{removed in 1 day} other{removed in {days} days}}'**
+  String removedInDays(int days);
+
+  /// No description provided for @removedOnNextStart.
+  ///
+  /// In en, this message translates to:
+  /// **'removed on next start'**
+  String get removedOnNextStart;
+
+  /// No description provided for @restore.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get restore;
+
+  /// No description provided for @restoreAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore all'**
+  String get restoreAll;
+
+  /// No description provided for @deletePermanently.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete permanently'**
+  String get deletePermanently;
+
+  /// No description provided for @deletePermanentlyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete \"{title}\" permanently?'**
+  String deletePermanentlyTitle(String title);
+
+  /// No description provided for @emptyBin.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty bin'**
+  String get emptyBin;
+
+  /// No description provided for @emptyBinTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty the bin?'**
+  String get emptyBinTitle;
+
+  /// No description provided for @cannotBeUndone.
+  ///
+  /// In en, this message translates to:
+  /// **'This can\'t be undone.'**
+  String get cannotBeUndone;
+
+  /// No description provided for @usedByExpenses.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{name}\" is used by {count, plural, =1{1 expense} other{{count} expenses}}.'**
+  String usedByExpenses(String name, int count);
+
+  /// No description provided for @usedByExpensesWithBin.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{name}\" is used by {count, plural, =1{1 expense} other{{count} expenses}} ({binned} in the bin).'**
+  String usedByExpensesWithBin(String name, int count, int binned);
+
+  /// No description provided for @moveExpensesTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Move them to:'**
+  String get moveExpensesTo;
+
+  /// No description provided for @moveAndDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Move and delete'**
+  String get moveAndDelete;
+
+  /// No description provided for @addAnotherFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Add another one first, so its expenses have somewhere to go.'**
+  String get addAnotherFirst;
+
+  /// No description provided for @eventDeleteWithCount.
+  ///
+  /// In en, this message translates to:
+  /// **'It will be removed from {count, plural, =1{1 expense} other{{count} expenses}}. The expenses stay.'**
+  String eventDeleteWithCount(int count);
+
+  /// No description provided for @recentCurrencies.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get recentCurrencies;
+
+  /// No description provided for @allCurrencies.
+  ///
+  /// In en, this message translates to:
+  /// **'All currencies'**
+  String get allCurrencies;
+
+  /// No description provided for @noneEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get noneEvent;
+
+  /// No description provided for @settingTileShape.
+  ///
+  /// In en, this message translates to:
+  /// **'Tile shape'**
+  String get settingTileShape;
+
+  /// No description provided for @settingButtonShape.
+  ///
+  /// In en, this message translates to:
+  /// **'Button shape'**
+  String get settingButtonShape;
+
+  /// No description provided for @shapeSquare.
+  ///
+  /// In en, this message translates to:
+  /// **'Square'**
+  String get shapeSquare;
+
+  /// No description provided for @shapeRounded.
+  ///
+  /// In en, this message translates to:
+  /// **'Rounded square'**
+  String get shapeRounded;
+
+  /// No description provided for @shapeCircle.
+  ///
+  /// In en, this message translates to:
+  /// **'Circle'**
+  String get shapeCircle;
+
+  /// No description provided for @settingCustomizeTiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Customize tiles'**
+  String get settingCustomizeTiles;
+
+  /// No description provided for @settingCustomizeTilesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shapes of the category and event pickers'**
+  String get settingCustomizeTilesSubtitle;
+
+  /// No description provided for @preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get preview;
+
+  /// No description provided for @settingThemeColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme color'**
+  String get settingThemeColor;
+
+  /// No description provided for @themeColorWallpaper.
+  ///
+  /// In en, this message translates to:
+  /// **'Wallpaper colors'**
+  String get themeColorWallpaper;
+
+  /// No description provided for @colorPurple.
+  ///
+  /// In en, this message translates to:
+  /// **'Purple'**
+  String get colorPurple;
+
+  /// No description provided for @colorBlue.
+  ///
+  /// In en, this message translates to:
+  /// **'Blue'**
+  String get colorBlue;
+
+  /// No description provided for @colorTeal.
+  ///
+  /// In en, this message translates to:
+  /// **'Teal'**
+  String get colorTeal;
+
+  /// No description provided for @colorGreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Green'**
+  String get colorGreen;
+
+  /// No description provided for @colorAmber.
+  ///
+  /// In en, this message translates to:
+  /// **'Amber'**
+  String get colorAmber;
+
+  /// No description provided for @colorOrange.
+  ///
+  /// In en, this message translates to:
+  /// **'Orange'**
+  String get colorOrange;
+
+  /// No description provided for @colorRed.
+  ///
+  /// In en, this message translates to:
+  /// **'Red'**
+  String get colorRed;
+
+  /// No description provided for @colorPink.
+  ///
+  /// In en, this message translates to:
+  /// **'Pink'**
+  String get colorPink;
+
+  /// No description provided for @restoreDefaultLook.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore default look'**
+  String get restoreDefaultLook;
+
+  /// No description provided for @restoreDefaultLookSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme color and tile shapes'**
+  String get restoreDefaultLookSubtitle;
+
+  /// No description provided for @restoreDefaultLookTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore the default look?'**
+  String get restoreDefaultLookTitle;
+
+  /// No description provided for @restoreDefaultLookMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The theme color goes back to the wallpaper colors, tiles to rounded squares and buttons to circles.'**
+  String get restoreDefaultLookMessage;
+
+  /// No description provided for @migrationInstalledTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Database initialized'**
+  String get migrationInstalledTitle;
+
+  /// No description provided for @migrationInstalledMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything is ready.'**
+  String get migrationInstalledMessage;
+
+  /// No description provided for @migrationUpdatedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Update done successfully'**
+  String get migrationUpdatedTitle;
+
+  /// No description provided for @migrationUpdatedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your data is up to date.'**
+  String get migrationUpdatedMessage;
 
   /// No description provided for @categoryFood.
   ///

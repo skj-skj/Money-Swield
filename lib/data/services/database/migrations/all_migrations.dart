@@ -5,6 +5,8 @@ import '1790942733_create_settings.dart';
 import '1790942737_create_categories.dart';
 import '1790942740_create_payment_methods.dart';
 import '1790942747_create_events.dart';
+import '1790960250_create_expenses.dart';
+import '1790960267_create_expense_events.dart';
 
 /// Every migration, oldest first.
 const List<Migration> allMigrations = [
@@ -12,4 +14,6 @@ const List<Migration> allMigrations = [
   CreateCategories(),
   CreatePaymentMethods(),
   CreateEvents(),
+  CreateExpenses(),
+  CreateExpenseEvents(),
 ];

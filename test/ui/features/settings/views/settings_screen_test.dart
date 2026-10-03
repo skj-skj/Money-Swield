@@ -4,6 +4,8 @@ import 'package:my_expense_tracker_app/app/app_dependencies.dart';
 import 'package:my_expense_tracker_app/app/shell.dart';
 import 'package:my_expense_tracker_app/domain/models/app_theme_mode.dart';
 import 'package:my_expense_tracker_app/domain/models/currency.dart';
+import 'package:my_expense_tracker_app/domain/models/expense.dart';
+import 'package:my_expense_tracker_app/domain/models/money.dart';
 import 'package:my_expense_tracker_app/ui/core/widgets/currency_picker_sheet.dart';
 
 import '../../../../helpers/pump_app.dart';
@@ -119,6 +121,34 @@ void main() {
 
     expect(find.text('¥  JPY · Japanese Yen'), findsOneWidget);
     expect((await deps.settings.load()).defaultCurrency, 'JPY');
+  });
+
+  testWidgets('default currency shows the recently used currencies first', (
+    tester,
+  ) async {
+    await deps.expenses.add(
+      ExpenseInput(
+        title: 'Taxi',
+        description: null,
+        amount: const Money(500, 'USD'),
+        occurredAt: DateTime.utc(2026, 10, 1),
+        utcOffsetMinutes: 0,
+        categoryId: 1,
+        paymentMethodId: 1,
+        eventIds: const {},
+      ),
+    );
+    await openSettings(tester);
+    await tester.tap(find.text('Default currency'));
+    await tester.pumpAndSettle();
+
+    // phase-2.md §8: the same Recent section as Home's currency chip.
+    expect(find.text('Recent'), findsOneWidget);
+    expect(find.text('All currencies'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('US Dollar').first).dy,
+      lessThan(tester.getTopLeft(find.text('All currencies')).dy),
+    );
   });
 
   testWidgets(

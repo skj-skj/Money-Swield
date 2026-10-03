@@ -19,6 +19,7 @@ class EventFormScreen extends StatefulWidget {
     required this.repository,
     required this.original,
     required this.existing,
+    this.initialName = '',
   });
 
   final EventRepository repository;
@@ -26,6 +27,9 @@ class EventFormScreen extends StatefulWidget {
 
   /// Every event, archived ones included, to refuse duplicate names.
   final List<Event> existing;
+
+  /// The name a new event starts with; ignored when editing.
+  final String initialName;
 
   @override
   State<EventFormScreen> createState() => _EventFormScreenState();
@@ -46,6 +50,7 @@ class _EventFormScreenState extends State<EventFormScreen> {
       l10n: AppLocalizations.of(context),
       original: widget.original,
       existing: widget.existing,
+      initialName: widget.initialName,
     );
     _cubit = cubit;
     _name = TextEditingController(text: cubit.value.name);
@@ -63,7 +68,8 @@ class _EventFormScreenState extends State<EventFormScreen> {
   Future<void> _save() async {
     Event? saved;
     await saveOrShowError(context, () async => saved = await _cubit!.save());
-    if (saved != null && mounted) Navigator.pop(context);
+    // Pops with the saved event, so the expense form can select it.
+    if (saved != null && mounted) Navigator.pop(context, saved);
   }
 
   Future<void> _toggleArchived() async {
@@ -71,8 +77,22 @@ class _EventFormScreenState extends State<EventFormScreen> {
     if (done && mounted) Navigator.pop(context);
   }
 
+  /// Delete: the confirmation says how many expenses lose the event; the
+  /// expenses themselves stay (phase-2.md §10.2).
   Future<void> _delete(String name) async {
-    if (!await confirmDelete(context, name) || !mounted) return;
+    final l10n = AppLocalizations.of(context);
+    var count = 0;
+    final read = await saveOrShowError(
+      context,
+      () async => count = await _cubit!.usage(),
+    );
+    if (!read || !mounted) return;
+    final confirmed = await confirmDelete(
+      context,
+      name,
+      message: count == 0 ? null : l10n.eventDeleteWithCount(count),
+    );
+    if (!confirmed || !mounted) return;
     final deleted = await saveOrShowError(context, () => _cubit!.delete());
     if (deleted && mounted) Navigator.pop(context);
   }

@@ -54,6 +54,16 @@ final class MigrationFailed extends MigrationState {
   final MigrationFailure failure;
 }
 
+/// Migrations installed or updated the database. The screen says so (a
+/// tick and Continue) until the user acknowledges it. Not used when nothing
+/// was pending: then the app opens straight away.
+final class MigrationSucceeded extends MigrationState {
+  const MigrationSucceeded(this.outcome);
+
+  /// [MigrationOutcome.installed] or [MigrationOutcome.updated].
+  final MigrationOutcome outcome;
+}
+
 /// The database is up to date and the app can open.
 final class MigrationDone extends MigrationState {
   const MigrationDone();
@@ -77,7 +87,9 @@ class MigrationCubit extends CubitSignal<MigrationState>
   bool _isRunning = false;
 
   Future<void> run() async {
-    if (_isRunning || value is MigrationDone) return;
+    if (_isRunning || value is MigrationDone || value is MigrationSucceeded) {
+      return;
+    }
     _isRunning = true;
     // A failed run can leave a question unanswered if the migration threw
     // without waiting for it. Drop it so a retry can ask again.
@@ -85,14 +97,18 @@ class MigrationCubit extends CubitSignal<MigrationState>
     _emitIfOpen(const MigrationInProgress());
 
     try {
-      await _database.migrate(
+      final outcome = await _database.migrate(
         locale: _locale,
         prompter: this,
         // Progress is only reported between migrations, never while one is
         // waiting for an answer, so this cannot hide a pending question.
         onProgress: (progress) => _emitIfOpen(MigrationInProgress(progress)),
       );
-      _emitIfOpen(const MigrationDone());
+      _emitIfOpen(
+        outcome == MigrationOutcome.upToDate
+            ? const MigrationDone()
+            : MigrationSucceeded(outcome),
+      );
     } on MigrationFailure catch (failure) {
       _emitIfOpen(MigrationFailed(failure));
     } catch (error, stackTrace) {
@@ -108,6 +124,11 @@ class MigrationCubit extends CubitSignal<MigrationState>
     } finally {
       _isRunning = false;
     }
+  }
+
+  /// Continue on the success screen: opens the app.
+  void acknowledge() {
+    if (value is MigrationSucceeded) _emitIfOpen(const MigrationDone());
   }
 
   /// Called by the screen when the user answers the current question.

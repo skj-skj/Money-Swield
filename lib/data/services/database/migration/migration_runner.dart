@@ -11,6 +11,19 @@ import 'migration_prompter.dart';
 /// What the runner is doing right now.
 enum MigrationStage { checking, backingUp, migrating, verifying, done }
 
+/// What [MigrationRunner.migrate] did, so the app can tell the user (or
+/// say nothing when nothing happened).
+enum MigrationOutcome {
+  /// Nothing was pending: the database was already up to date.
+  upToDate,
+
+  /// There was no database yet; every migration created it from scratch.
+  installed,
+
+  /// An existing database was brought up to date.
+  updated,
+}
+
 class MigrationProgress {
   const MigrationProgress({
     required this.stage,
@@ -94,8 +107,9 @@ class MigrationRunner {
   final MigrationPrompter prompter;
   final DateTime Function() _clock;
 
-  /// Runs all migrations that have not run yet, oldest first.
-  Future<void> migrate({
+  /// Runs all migrations that have not run yet, oldest first, and says
+  /// whether that installed, updated or left alone the database.
+  Future<MigrationOutcome> migrate({
     void Function(MigrationProgress progress)? onProgress,
   }) async {
     onProgress?.call(
@@ -105,6 +119,8 @@ class MigrationRunner {
         total: 0,
       ),
     );
+    // Checked before anything runs: migrating creates the file.
+    final isNewInstall = !await File(databasePath).exists();
     final pending = await _guard(
       'Checking database version',
       pendingMigrations,
@@ -121,6 +137,8 @@ class MigrationRunner {
         ),
       ),
     );
+    if (pending.isEmpty) return MigrationOutcome.upToDate;
+    return isNewInstall ? MigrationOutcome.installed : MigrationOutcome.updated;
   }
 
   /// Undoes the last [steps] applied migrations, newest first, by running

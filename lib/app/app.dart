@@ -18,6 +18,7 @@ class App extends StatelessWidget {
     required this.migrationCubit,
     required this.settingsCubit,
     required this.openDependencies,
+    this.wallpaperSeed,
   });
 
   final MigrationCubit migrationCubit;
@@ -26,6 +27,9 @@ class App extends StatelessWidget {
   /// Opens the database once migrations are done. Tests pass an in-memory
   /// one.
   final Future<AppDependencies> Function() openDependencies;
+
+  /// The wallpaper's accent color (Android 12+), or null.
+  final int? wallpaperSeed;
 
   @override
   Widget build(BuildContext context) {
@@ -40,28 +44,37 @@ class App extends StatelessWidget {
           // as a whole, so they don't rebuild it.
           buildWhen: (previous, current) =>
               previous.locale != current.locale ||
-              previous.theme != current.theme,
-          builder: (context, settings) => MaterialApp(
-            onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
-            theme: lightTheme,
-            darkTheme: darkTheme,
-            themeMode: themeModeOf(settings.theme),
-            locale: settings.locale,
-            supportedLocales: AppLocalizations.supportedLocales,
-            // Material's own strings come from material_ui, not from
-            // flutter_localizations: material_ui widgets look up
-            // material_ui's MaterialLocalizations type, so
-            // AppLocalizations.localizationsDelegates (which lists
-            // flutter_localizations' delegate) would leave them unlocalized.
-            localizationsDelegates: const [
-              AppLocalizations.delegate,
-              ...GlobalMaterialLocalizations.delegates,
-            ],
-            home: MigrationGate(
-              child: StartupGate(openDependencies: openDependencies),
-            ),
-          ),
+              previous.theme != current.theme ||
+              previous.themeSeed != current.themeSeed,
+          builder: (context, settings) => _materialApp(settings),
         ),
+      ),
+    );
+  }
+
+  Widget _materialApp(AppSettings settings) {
+    final seed = themeSeedColor(
+      pickedSeed: settings.themeSeed,
+      wallpaperSeed: wallpaperSeed,
+    );
+    return MaterialApp(
+      onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
+      theme: lightTheme(seed),
+      darkTheme: darkTheme(seed),
+      themeMode: themeModeOf(settings.theme),
+      locale: settings.locale,
+      supportedLocales: AppLocalizations.supportedLocales,
+      // Material's own strings come from material_ui, not from
+      // flutter_localizations: material_ui widgets look up
+      // material_ui's MaterialLocalizations type, so
+      // AppLocalizations.localizationsDelegates (which lists
+      // flutter_localizations' delegate) would leave them unlocalized.
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        ...GlobalMaterialLocalizations.delegates,
+      ],
+      home: MigrationGate(
+        child: StartupGate(openDependencies: openDependencies),
       ),
     );
   }

@@ -36,6 +36,9 @@ void main() {
     expect(find.text('Updating your data (2 of 3)'), findsOneWidget);
 
     release.complete();
+    // The question is emitted from the fake migration's continuation,
+    // after the first frame was built; the second frame shows it.
+    await tester.pump();
     await tester.pump();
     expect(find.text('Which currency?'), findsOneWidget);
 
@@ -154,5 +157,73 @@ void main() {
 
     expect(find.text('आपका डेटा अपडेट हो रहा है (2 में से 1)'), findsOneWidget);
     expect(find.text('कृपया ऐप खुला रखें।'), findsOneWidget);
+  });
+
+  group('after migrating', () {
+    testWidgets('nothing pending: no migration screen at all, straight '
+        'into the app', (tester) async {
+      final cubit = cubitFor(FakeAppDatabase((prompter, onProgress) async {}));
+      final deps = await openTestDependencies();
+      await pumpApp(tester, dependencies: deps, migrationCubit: cubit);
+      expect(find.text('Checking your data…'), findsNothing);
+
+      await cubit.run();
+      await tester.pumpAndSettle();
+      expect(find.text('Checking your data…'), findsNothing);
+      expect(
+        find.byIcon(Icons.storage_rounded),
+        findsNothing,
+        reason: 'the migration screen never showed',
+      );
+      expect(find.text('Choose your language'), findsOneWidget);
+    });
+
+    testWidgets('a new install shows "Database initialized", then Continue', (
+      tester,
+    ) async {
+      final cubit = cubitFor(
+        FakeAppDatabase(
+          (prompter, onProgress) async {},
+          outcome: MigrationOutcome.installed,
+        ),
+      );
+      final deps = await openTestDependencies();
+      await pumpApp(tester, dependencies: deps, migrationCubit: cubit);
+      await cubit.run();
+      await tester.pump();
+
+      expect(find.text('Database initialized'), findsOneWidget);
+      final button = find.widgetWithText(FilledButton, 'Continue');
+      expect(
+        tester.widget<FilledButton>(button).onPressed,
+        isNull,
+        reason: 'not until the tick is drawn',
+      );
+
+      await tester.pumpAndSettle();
+      expect(tester.widget<FilledButton>(button).onPressed, isNotNull);
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+      expect(find.text('Choose your language'), findsOneWidget);
+    });
+
+    testWidgets('an update shows "Update done successfully"', (tester) async {
+      final cubit = cubitFor(
+        FakeAppDatabase(
+          (prompter, onProgress) async {},
+          outcome: MigrationOutcome.updated,
+        ),
+      );
+      final deps = await openTestDependencies();
+      await deps.settings.setOnboardingCompleted();
+      await pumpApp(tester, dependencies: deps, migrationCubit: cubit);
+      await cubit.run();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Update done successfully'), findsOneWidget);
+      await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
+      await tester.pumpAndSettle();
+      expect(find.text('No expenses yet'), findsOneWidget, reason: 'Home');
+    });
   });
 }

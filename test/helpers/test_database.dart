@@ -41,9 +41,11 @@ Future<Database> openEmptyDatabase() async {
 Future<AppDependencies> openTestDependencies({
   String deviceCurrency = 'INR',
   TestClock? clock,
+  int? wallpaperSeed,
 }) async => AppDependencies.forDatabase(
   await openMigratedDatabase(),
   deviceCurrency: deviceCurrency,
+  wallpaperSeed: wallpaperSeed,
   now: clock?.call,
 );
 
@@ -66,3 +68,31 @@ AppLocalizations l10nFor(String languageCode) =>
 const en = Locale('en');
 const es = Locale('es');
 const hi = Locale('hi');
+
+/// Inserts an expense row directly, for tests of other tables that only
+/// need "something uses this". [deletedAt] set puts it in the bin.
+Future<int> insertExpenseRow(
+  DatabaseExecutor db, {
+  int categoryId = 1,
+  int paymentMethodId = 1,
+  int? deletedAt,
+  Set<int> eventIds = const {},
+}) async {
+  final id = await db.insert('expenses', {
+    'title': 'Expense',
+    'amount_minor': 100,
+    'currency_code': 'INR',
+    'occurred_at': 0,
+    'utc_offset_minutes': 0,
+    'occurred_on': '1970-01-01',
+    'category_id': categoryId,
+    'payment_method_id': paymentMethodId,
+    'deleted_at': deletedAt,
+    'created_at': 0,
+    'updated_at': 0,
+  });
+  for (final eventId in eventIds) {
+    await db.insert('expense_events', {'expense_id': id, 'event_id': eventId});
+  }
+  return id;
+}

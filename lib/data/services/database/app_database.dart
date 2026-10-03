@@ -30,20 +30,31 @@ class AppDatabase {
   final Future<String> Function() _databasePath;
   final List<Migration> _migrations;
 
-  /// Runs pending migrations. Throws [MigrationFailure] if one fails.
-  Future<void> migrate({
+  /// Whether the first [migrate] of this app run found no database file.
+  /// Kept across retries: a failed run already created the file, so on its
+  /// own the runner would call the retry of a new install an update.
+  bool? _startedWithoutFile;
+
+  /// Runs pending migrations and says whether that installed, updated or
+  /// left alone the database. Throws [MigrationFailure] if one fails.
+  Future<MigrationOutcome> migrate({
     required Locale locale,
     required MigrationPrompter prompter,
     void Function(MigrationProgress progress)? onProgress,
   }) async {
+    final path = await _databasePath();
+    _startedWithoutFile ??= !await File(path).exists();
     final runner = MigrationRunner(
       databaseFactory: _factory,
-      databasePath: await _databasePath(),
+      databasePath: path,
       migrations: _migrations,
       locale: locale,
       prompter: prompter,
     );
-    await runner.migrate(onProgress: onProgress);
+    final outcome = await runner.migrate(onProgress: onProgress);
+    return outcome == MigrationOutcome.updated && _startedWithoutFile!
+        ? MigrationOutcome.installed
+        : outcome;
   }
 
   /// Opens the database for normal use, with foreign keys enforced. Call

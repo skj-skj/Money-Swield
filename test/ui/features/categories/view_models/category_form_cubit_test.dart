@@ -317,4 +317,37 @@ void main() {
       expect(await repository.all(), hasLength(20));
     });
   });
+
+  group('initialName (phase-2.md §6.4)', () {
+    CategoryFormCubit formWith({Category? original, required String name}) {
+      final cubit = CategoryFormCubit(
+        repository: repository,
+        l10n: l10nFor('en'),
+        original: original,
+        existing: existing,
+        initialName: name,
+      );
+      addTearDown(cubit.close);
+      return cubit;
+    }
+
+    test('prefills the name of a new category', () async {
+      final cubit = formWith(name: 'chai')..emojiChanged('☕');
+      expect(cubit.value.name, 'chai');
+      expect((await cubit.save())!.name, 'chai');
+    });
+
+    test('is ignored when editing: the saved name wins', () {
+      expect(
+        formWith(original: builtin('food'), name: 'chai').value.name,
+        'Food',
+      );
+    });
+
+    test('still runs the usual checks, e.g. duplicates', () async {
+      final cubit = formWith(name: 'food')..emojiChanged('🍕');
+      expect(await cubit.save(), isNull);
+      expect(cubit.nameError, NameError.duplicate);
+    });
+  });
 }

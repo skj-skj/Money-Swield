@@ -52,6 +52,9 @@ class CategoryFormCubit extends CubitSignal<CategoryFormState> {
     required this._l10n,
     required this.original,
     required List<Category> existing,
+    // Only used when adding: the expense form's picker passes its search
+    // text, so "chai" isn't typed twice (phase-2.md §6.4).
+    String initialName = '',
   }) : _otherNames = [
          for (final category in existing)
            if (category.id != original?.id) categoryName(_l10n, category),
@@ -59,7 +62,7 @@ class CategoryFormCubit extends CubitSignal<CategoryFormState> {
        super(
          initialState: CategoryFormState(
            // A built-in shows its localized name, ready to be renamed.
-           name: original == null ? '' : categoryName(_l10n, original),
+           name: original == null ? initialName : categoryName(_l10n, original),
            description: original?.description ?? '',
            emoji: original?.emoji ?? '',
          ),
@@ -153,14 +156,30 @@ class CategoryFormCubit extends CubitSignal<CategoryFormState> {
     }
   }
 
-  /// Deletes the category being edited. In Phase 1 nothing can reference a
-  /// category, so it is deleted directly (move-then-delete is Phase 2).
+  /// Deletes the category being edited. Only for an unused one: a used one
+  /// goes through [moveExpensesAndDelete] (the FK would refuse it anyway).
   Future<void> delete() async {
     final original = this.original;
     if (original == null || value.saving) return;
     _emitIfOpen(value.copyWith(saving: true));
     try {
       await _repository.delete(original.id);
+    } finally {
+      _emitIfOpen(value.copyWith(saving: false));
+    }
+  }
+
+  /// How many expenses use the edited category, binned ones included.
+  Future<({int active, int binned})> usage() => _repository.usage(original!.id);
+
+  /// Moves the edited category's expenses to [toId] and deletes it, in one
+  /// transaction (D7).
+  Future<void> moveExpensesAndDelete(int toId) async {
+    final original = this.original;
+    if (original == null || value.saving) return;
+    _emitIfOpen(value.copyWith(saving: true));
+    try {
+      await _repository.moveExpensesAndDelete(original.id, toId: toId);
     } finally {
       _emitIfOpen(value.copyWith(saving: false));
     }

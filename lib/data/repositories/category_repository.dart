@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 
 import '../../domain/models/category.dart';
+import 'data_version.dart';
 
 /// Reads and writes the `categories` table (database.md §3.2).
 ///
@@ -8,10 +9,18 @@ import '../../domain/models/category.dart';
 /// cubit, because uniqueness depends on the localized names of built-ins.
 /// This class trusts its input.
 class CategoryRepository {
-  CategoryRepository(this._db, {DateTime Function()? now})
-    : _now = now ?? DateTime.now;
+  CategoryRepository(
+    this._db, {
+    DataVersion? dataVersion,
+    DateTime Function()? now,
+  }) : _dataVersion = dataVersion ?? DataVersion(),
+       _now = now ?? DateTime.now;
 
   final Database _db;
+
+  /// Bumped after every write (phase-2.md §5).
+  final DataVersion _dataVersion;
+
   final DateTime Function() _now;
 
   /// Every category, in no particular order. The list screen sorts by
@@ -34,6 +43,7 @@ class CategoryRepository {
       'created_at': now,
       'updated_at': now,
     });
+    _dataVersion.bump();
     return Category(
       id: id,
       builtinKey: null,
@@ -64,11 +74,48 @@ class CategoryRepository {
     if (changed == 0) {
       throw StateError('Category ${category.id} no longer exists');
     }
+    _dataVersion.bump();
     return category.copyWith(updatedAt: _dateTime(now));
   }
 
-  Future<void> delete(int id) =>
-      _db.delete('categories', where: 'id = ?', whereArgs: [id]);
+  /// Deletes the category. Fails on the foreign key (RESTRICT) if an
+  /// expense still uses it; see [moveExpensesAndDelete].
+  Future<void> delete(int id) async {
+    await _db.delete('categories', where: 'id = ?', whereArgs: [id]);
+    _dataVersion.bump();
+  }
+
+  /// How many expenses use the category. Binned ones are counted on
+  /// purpose: they block the delete too and must be moved (database.md
+  /// §3.2).
+  Future<({int active, int binned})> usage(int id) async {
+    final row = (await _db.rawQuery(
+      'SELECT COALESCE(SUM(deleted_at IS NULL), 0) AS active, '
+      'COALESCE(SUM(deleted_at IS NOT NULL), 0) AS binned '
+      'FROM expenses WHERE category_id = ?',
+      [id],
+    )).single;
+    return (active: row['active']! as int, binned: row['binned']! as int);
+  }
+
+  /// Moves every expense of category [id], binned ones included, to [toId]
+  /// and deletes [id], in one transaction (D7). If [toId] no longer exists
+  /// the move fails on the foreign key and nothing changes.
+  Future<void> moveExpensesAndDelete(int id, {required int toId}) async {
+    if (toId == id) {
+      throw ArgumentError.value(toId, 'toId', 'must differ from id');
+    }
+    await _db.transaction((txn) async {
+      await txn.update(
+        'expenses',
+        {'category_id': toId, 'updated_at': _now().millisecondsSinceEpoch},
+        where: 'category_id = ?',
+        whereArgs: [id],
+      );
+      await txn.delete('categories', where: 'id = ?', whereArgs: [id]);
+    });
+    _dataVersion.bump();
+  }
 
   static Category _fromRow(Map<String, Object?> row) => Category(
     id: row['id']! as int,

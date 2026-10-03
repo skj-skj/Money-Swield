@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 
 import '../../domain/models/payment_method.dart';
+import 'data_version.dart';
 import 'settings_repository.dart';
 
 /// Thrown by [PaymentMethodRepository.delete] for the default payment
@@ -23,13 +24,18 @@ class PaymentMethodRepository {
   PaymentMethodRepository(
     this._db, {
     required this._settings,
+    DataVersion? dataVersion,
     DateTime Function()? now,
-  }) : _now = now ?? DateTime.now;
+  }) : _dataVersion = dataVersion ?? DataVersion(),
+       _now = now ?? DateTime.now;
 
   final Database _db;
 
   /// Knows which method is the default, so [delete] can refuse it.
   final SettingsRepository _settings;
+
+  /// Bumped after every write (phase-2.md §5).
+  final DataVersion _dataVersion;
 
   final DateTime Function() _now;
 
@@ -51,6 +57,7 @@ class PaymentMethodRepository {
       'created_at': now,
       'updated_at': now,
     });
+    _dataVersion.bump();
     return PaymentMethod(
       id: id,
       builtinKey: null,
@@ -74,18 +81,63 @@ class PaymentMethodRepository {
     if (changed == 0) {
       throw StateError('Payment method ${method.id} no longer exists');
     }
+    _dataVersion.bump();
     return method.copyWith(updatedAt: _dateTime(now));
   }
 
   /// Deletes the method. Throws [CannotDeleteDefault] if it is the current
   /// default. The UI checks this too, but the check lives here as well so
-  /// the setting and the table can never disagree.
-  Future<void> delete(int id) => _db.transaction((txn) async {
+  /// the setting and the table can never disagree. Fails on the foreign key
+  /// (RESTRICT) if an expense still uses it; see [moveExpensesAndDelete].
+  Future<void> delete(int id) async {
+    await _db.transaction((txn) async {
+      await _refuseDefault(txn, id);
+      await txn.delete('payment_methods', where: 'id = ?', whereArgs: [id]);
+    });
+    _dataVersion.bump();
+  }
+
+  /// How many expenses use the method. Binned ones are counted on purpose:
+  /// they block the delete too and must be moved (database.md §3.3).
+  Future<({int active, int binned})> usage(int id) async {
+    final row = (await _db.rawQuery(
+      'SELECT COALESCE(SUM(deleted_at IS NULL), 0) AS active, '
+      'COALESCE(SUM(deleted_at IS NOT NULL), 0) AS binned '
+      'FROM expenses WHERE payment_method_id = ?',
+      [id],
+    )).single;
+    return (active: row['active']! as int, binned: row['binned']! as int);
+  }
+
+  /// Moves every expense of method [id], binned ones included, to [toId]
+  /// and deletes [id], in one transaction (D7). Throws
+  /// [CannotDeleteDefault] for the default, and fails on the foreign key if
+  /// [toId] no longer exists; either way nothing changes.
+  Future<void> moveExpensesAndDelete(int id, {required int toId}) async {
+    if (toId == id) {
+      throw ArgumentError.value(toId, 'toId', 'must differ from id');
+    }
+    await _db.transaction((txn) async {
+      await _refuseDefault(txn, id);
+      await txn.update(
+        'expenses',
+        {
+          'payment_method_id': toId,
+          'updated_at': _now().millisecondsSinceEpoch,
+        },
+        where: 'payment_method_id = ?',
+        whereArgs: [id],
+      );
+      await txn.delete('payment_methods', where: 'id = ?', whereArgs: [id]);
+    });
+    _dataVersion.bump();
+  }
+
+  Future<void> _refuseDefault(Transaction txn, int id) async {
     if (await _settings.defaultPaymentMethodId(txn) == id) {
       throw CannotDeleteDefault(id);
     }
-    await txn.delete('payment_methods', where: 'id = ?', whereArgs: [id]);
-  });
+  }
 
   static PaymentMethod _fromRow(Map<String, Object?> row) => PaymentMethod(
     id: row['id']! as int,

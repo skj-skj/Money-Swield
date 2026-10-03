@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 
 import '../../domain/models/event.dart';
+import 'data_version.dart';
 
 /// Reads and writes the `events` table (database.md §3.4).
 ///
@@ -8,10 +9,18 @@ import '../../domain/models/event.dart';
 /// cubit, because uniqueness depends on the localized names of built-ins.
 /// This class trusts its input.
 class EventRepository {
-  EventRepository(this._db, {DateTime Function()? now})
-    : _now = now ?? DateTime.now;
+  EventRepository(
+    this._db, {
+    DataVersion? dataVersion,
+    DateTime Function()? now,
+  }) : _dataVersion = dataVersion ?? DataVersion(),
+       _now = now ?? DateTime.now;
 
   final Database _db;
+
+  /// Bumped after every write (phase-2.md §5).
+  final DataVersion _dataVersion;
+
   final DateTime Function() _now;
 
   /// Every event, archived ones included, in no particular order. The list
@@ -34,6 +43,7 @@ class EventRepository {
       'created_at': now,
       'updated_at': now,
     });
+    _dataVersion.bump();
     return Event(
       id: id,
       builtinKey: null,
@@ -66,6 +76,7 @@ class EventRepository {
       whereArgs: [event.id],
     );
     if (changed == 0) throw StateError('Event ${event.id} no longer exists');
+    _dataVersion.bump();
     final rows = await _db.query(
       'events',
       where: 'id = ?',
@@ -86,10 +97,25 @@ class EventRepository {
           : 'id = ? AND archived_at IS NOT NULL',
       whereArgs: [id],
     );
+    _dataVersion.bump();
   }
 
-  Future<void> delete(int id) =>
-      _db.delete('events', where: 'id = ?', whereArgs: [id]);
+  /// Deletes the event. Its links cascade and the expenses stay, binned
+  /// ones included (database.md §3.4).
+  Future<void> delete(int id) async {
+    await _db.delete('events', where: 'id = ?', whereArgs: [id]);
+    _dataVersion.bump();
+  }
+
+  /// How many expenses have the event, binned ones included: deleting it
+  /// removes it from those too. Shown in the delete confirmation.
+  Future<int> usage(int id) async {
+    final rows = await _db.rawQuery(
+      'SELECT COUNT(*) AS n FROM expense_events WHERE event_id = ?',
+      [id],
+    );
+    return rows.single['n']! as int;
+  }
 
   static Event _fromRow(Map<String, Object?> row) => Event(
     id: row['id']! as int,

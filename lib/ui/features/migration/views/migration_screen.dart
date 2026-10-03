@@ -3,12 +3,19 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../../data/services/database/migration/migration_runner.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../core/widgets/done_check.dart';
 import '../../../core/widgets/error_report_view.dart';
+import '../../../core/widgets/quiet_loading.dart';
 import '../view_models/migration_cubit.dart';
 
 /// Shows migration progress on app start and switches to [child] once the
 /// database is up to date. Reads the [MigrationCubit] from the nearest
 /// [BlocSignalProvider].
+///
+/// Nothing shows while it is only checking whether anything is pending
+/// (the usual case: a few milliseconds and nothing to do). The progress
+/// screen appears only when migrations really run, and then ends on
+/// "Database initialized" / "Update done successfully" with Continue.
 class MigrationGate extends StatelessWidget {
   const MigrationGate({super.key, required this.child});
 
@@ -31,6 +38,7 @@ class MigrationScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<MigrationCubit>();
+    if (_isOnlyChecking(state)) return const QuietLoading();
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -48,11 +56,81 @@ class MigrationScreen extends StatelessWidget {
             MigrationInProgress(:final progress) => _ProgressView(
               progress: progress,
             ),
+            MigrationSucceeded(:final outcome) => _SucceededView(
+              outcome: outcome,
+              onContinue: cubit.acknowledge,
+            ),
             // MigrationGate shows the app instead; this only shows for the
             // single frame before it switches over.
             MigrationDone() => const _ProgressView(progress: null),
           },
         ),
+      ),
+    );
+  }
+
+  /// Before the runner knows whether anything is pending.
+  static bool _isOnlyChecking(MigrationState state) => switch (state) {
+    MigrationInProgress(:final progress) =>
+      progress == null || progress.stage == MigrationStage.checking,
+    _ => false,
+  };
+}
+
+/// The end of a real migration run: a circle fills, a tick appears, then
+/// Continue. So the user sees that it worked, instead of the app jumping
+/// straight to onboarding or Home.
+class _SucceededView extends StatefulWidget {
+  const _SucceededView({required this.outcome, required this.onContinue});
+
+  final MigrationOutcome outcome;
+  final VoidCallback onContinue;
+
+  @override
+  State<_SucceededView> createState() => _SucceededViewState();
+}
+
+class _SucceededViewState extends State<_SucceededView> {
+  var _ticked = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final textTheme = Theme.of(context).textTheme;
+    final installed = widget.outcome == MigrationOutcome.installed;
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          DoneCheck(onCompleted: () => setState(() => _ticked = true)),
+          const SizedBox(height: 24),
+          Text(
+            installed
+                ? l10n.migrationInstalledTitle
+                : l10n.migrationUpdatedTitle,
+            style: textTheme.titleLarge,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            installed
+                ? l10n.migrationInstalledMessage
+                : l10n.migrationUpdatedMessage,
+            style: textTheme.bodyMedium,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 32),
+          // Appears once the tick is drawn; keeps its space meanwhile so
+          // nothing jumps.
+          AnimatedOpacity(
+            opacity: _ticked ? 1 : 0,
+            duration: const Duration(milliseconds: 200),
+            child: FilledButton(
+              onPressed: _ticked ? widget.onContinue : null,
+              child: Text(l10n.continueButton),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -4,6 +4,7 @@ import 'package:sqflite/sqflite.dart';
 
 import '../../domain/models/app_settings.dart';
 import '../../domain/models/app_theme_mode.dart';
+import '../../domain/models/item_shape.dart';
 
 /// Language codes the app is translated into. A stored language outside
 /// this list (e.g. from a newer app after a downgrade) means "follow the
@@ -26,6 +27,14 @@ class SettingsRepository {
   static const _themeKey = 'theme';
   static const _defaultCurrencyKey = 'default_currency';
   static const _defaultPaymentMethodIdKey = 'default_payment_method_id';
+  static const _tileShapeKey = 'tile_shape';
+  static const _buttonShapeKey = 'button_shape';
+  static const _timePickerKeyboardKey = 'time_picker_keyboard';
+  static const _datePickerKeyboardKey = 'date_picker_keyboard';
+  static const _themeColorKey = 'theme_color';
+
+  /// Stored in `theme_color` for "use the wallpaper colors".
+  static const _dynamicThemeColor = 'dynamic';
 
   /// Reads every setting once and applies the defaults.
   Future<AppSettings> load() async {
@@ -42,6 +51,18 @@ class SettingsRepository {
       defaultCurrency:
           _nonEmpty(values[_defaultCurrencyKey]) ?? _deviceCurrency,
       defaultPaymentMethodId: await defaultPaymentMethodId(_db),
+      // An unknown value (a newer app's shape after a downgrade) falls back
+      // to the default, like the theme.
+      tileShape:
+          ItemShape.values.asNameMap()[values[_tileShapeKey]] ??
+          AppSettings.defaultTileShape,
+      buttonShape:
+          ItemShape.values.asNameMap()[values[_buttonShapeKey]] ??
+          AppSettings.defaultButtonShape,
+      timePickerKeyboard: values[_timePickerKeyboardKey] == '1',
+      datePickerKeyboard: values[_datePickerKeyboardKey] == '1',
+      // Missing, 'dynamic' or unreadable all mean the wallpaper colors.
+      themeSeed: int.tryParse(values[_themeColorKey] ?? ''),
     );
   }
 
@@ -99,6 +120,31 @@ class SettingsRepository {
 
   Future<void> setDefaultPaymentMethodId(int id) =>
       _write(_defaultPaymentMethodIdKey, '$id');
+
+  Future<void> setTileShape(ItemShape shape) =>
+      _write(_tileShapeKey, shape.name);
+
+  Future<void> setButtonShape(ItemShape shape) =>
+      _write(_buttonShapeKey, shape.name);
+
+  Future<void> setTimePickerKeyboard(bool keyboard) =>
+      _write(_timePickerKeyboardKey, keyboard ? '1' : '0');
+
+  Future<void> setDatePickerKeyboard(bool keyboard) =>
+      _write(_datePickerKeyboardKey, keyboard ? '1' : '0');
+
+  /// Back to the default theme color and tile and button shapes, in one
+  /// transaction. Removing the rows is enough: a missing row means "use the
+  /// default", so the defaults live in one place only ([load]).
+  Future<void> restoreDefaultLook() => _db.transaction((txn) async {
+    for (final key in [_themeColorKey, _tileShapeKey, _buttonShapeKey]) {
+      await txn.delete('settings', where: 'key = ?', whereArgs: [key]);
+    }
+  });
+
+  /// [seed] as ARGB, or null for the wallpaper colors.
+  Future<void> setThemeSeed(int? seed) =>
+      _write(_themeColorKey, seed?.toString() ?? _dynamicThemeColor);
 
   Future<void> _write(String key, String? value) => _db.insert('settings', {
     'key': key,

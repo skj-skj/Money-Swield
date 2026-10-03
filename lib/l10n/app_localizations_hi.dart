@@ -143,7 +143,7 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get homeEmptyMessage =>
-      'खर्च जोड़ने की सुविधा अगले अपडेट में आ रही है।';
+      'पहला खर्च दर्ज करने के लिए खर्च जोड़ें दबाएँ।';
 
   @override
   String get categoriesTitle => 'श्रेणियाँ';
@@ -267,6 +267,337 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get themeDark => 'डार्क';
+
+  @override
+  String get ok => 'ठीक है';
+
+  @override
+  String get addExpense => 'खर्च जोड़ें';
+
+  @override
+  String get editExpense => 'खर्च बदलें';
+
+  @override
+  String get fieldTitle => 'शीर्षक';
+
+  @override
+  String get fieldAmount => 'राशि';
+
+  @override
+  String get fieldCategory => 'श्रेणी';
+
+  @override
+  String get fieldEvents => 'इवेंट';
+
+  @override
+  String get fieldPaymentMethod => 'भुगतान का तरीका';
+
+  @override
+  String get fieldCurrency => 'मुद्रा';
+
+  @override
+  String get fieldDate => 'तारीख';
+
+  @override
+  String get fieldTime => 'समय';
+
+  @override
+  String get fieldNotes => 'विवरण';
+
+  @override
+  String get fieldDeletedAt => 'हटाने की तारीख';
+
+  @override
+  String get amountErrorEmpty => 'राशि दर्ज करें';
+
+  @override
+  String get amountErrorInvalid => 'सिर्फ़ एक संख्या दर्ज करें, जैसे 110.50';
+
+  @override
+  String amountErrorTooLarge(int max) {
+    return 'दशमलव से पहले ज़्यादा से ज़्यादा $max अंक लिखें';
+  }
+
+  @override
+  String amountErrorTooManyDecimals(int digits, String currency) {
+    String _temp0 = intl.Intl.pluralLogic(
+      digits,
+      locale: localeName,
+      other: '$currency में सिर्फ़ $digits दशमलव अंक होते हैं',
+      one: '$currency में सिर्फ़ 1 दशमलव अंक होता है',
+      zero: '$currency में दशमलव नहीं होते',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get amountErrorNotPositive => 'शून्य से ज़्यादा राशि दर्ज करें';
+
+  @override
+  String amountPreview(String amount) {
+    return '= $amount';
+  }
+
+  @override
+  String get titleRequired => 'शीर्षक दर्ज करें';
+
+  @override
+  String get categoryRequired => 'एक श्रेणी चुनें';
+
+  @override
+  String get discardChangesTitle => 'बदलाव छोड़ दें?';
+
+  @override
+  String get discard => 'छोड़ें';
+
+  @override
+  String get keepEditing => 'बदलाव जारी रखें';
+
+  @override
+  String get expenseGone => 'यह खर्च अब मौजूद नहीं है';
+
+  @override
+  String get search => 'खोजें';
+
+  @override
+  String get closeSearch => 'खोज बंद करें';
+
+  @override
+  String get searchCategories => 'श्रेणियाँ खोजें…';
+
+  @override
+  String get searchEvents => 'इवेंट खोजें…';
+
+  @override
+  String get newCategory => 'नई श्रेणी';
+
+  @override
+  String get newEvent => 'नया इवेंट';
+
+  @override
+  String get moreResults => 'और नतीजे';
+
+  @override
+  String get allCategories => 'सभी श्रेणियाँ';
+
+  @override
+  String get allEvents => 'सभी इवेंट';
+
+  @override
+  String get noMoreMatches => 'और कोई मेल नहीं मिला';
+
+  @override
+  String get noCategoriesYet => 'अभी कोई श्रेणी नहीं है';
+
+  @override
+  String get today => 'आज';
+
+  @override
+  String get yesterday => 'कल';
+
+  @override
+  String get movedToBin => 'रीसायकल बिन में भेजा गया';
+
+  @override
+  String get undo => 'वापस लें';
+
+  @override
+  String get loadMoreFailed => 'और खर्च लोड नहीं हो सके।';
+
+  @override
+  String get bin => 'रीसायकल बिन';
+
+  @override
+  String get binSubtitle => 'हटाए गए खर्च 30 दिन तक रखे जाते हैं';
+
+  @override
+  String get binEmpty => 'हटाए गए खर्च 30 दिन तक यहाँ रहते हैं।';
+
+  @override
+  String get deletedToday => 'आज हटाया गया';
+
+  @override
+  String get deletedYesterday => 'कल हटाया गया';
+
+  @override
+  String deletedDaysAgo(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days दिन पहले हटाया गया',
+      one: '1 दिन पहले हटाया गया',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String removedInDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days दिन में मिट जाएगा',
+      one: '1 दिन में मिट जाएगा',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get removedOnNextStart => 'अगली बार ऐप खुलने पर मिट जाएगा';
+
+  @override
+  String get restore => 'वापस लाएँ';
+
+  @override
+  String get restoreAll => 'सब वापस लाएँ';
+
+  @override
+  String get deletePermanently => 'हमेशा के लिए हटाएँ';
+
+  @override
+  String deletePermanentlyTitle(String title) {
+    return '\"$title\" को हमेशा के लिए हटाएँ?';
+  }
+
+  @override
+  String get emptyBin => 'बिन खाली करें';
+
+  @override
+  String get emptyBinTitle => 'रीसायकल बिन खाली करें?';
+
+  @override
+  String get cannotBeUndone => 'इसे वापस नहीं लाया जा सकता।';
+
+  @override
+  String usedByExpenses(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count खर्चों में',
+      one: '1 खर्च में',
+    );
+    return '\"$name\" $_temp0 इस्तेमाल हुआ है।';
+  }
+
+  @override
+  String usedByExpensesWithBin(String name, int count, int binned) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count खर्चों में',
+      one: '1 खर्च में',
+    );
+    return '\"$name\" $_temp0 इस्तेमाल हुआ है ($binned रीसायकल बिन में)।';
+  }
+
+  @override
+  String get moveExpensesTo => 'इन्हें यहाँ ले जाएँ:';
+
+  @override
+  String get moveAndDelete => 'ले जाएँ और हटाएँ';
+
+  @override
+  String get addAnotherFirst =>
+      'पहले कोई दूसरा जोड़ें, ताकि इसके खर्च उसमें जा सकें।';
+
+  @override
+  String eventDeleteWithCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count खर्चों',
+      one: '1 खर्च',
+    );
+    return 'इसे $_temp0 से हटा दिया जाएगा। खर्च बने रहेंगे।';
+  }
+
+  @override
+  String get recentCurrencies => 'हाल में इस्तेमाल';
+
+  @override
+  String get allCurrencies => 'सभी मुद्राएँ';
+
+  @override
+  String get noneEvent => 'कोई नहीं';
+
+  @override
+  String get settingTileShape => 'टाइल का आकार';
+
+  @override
+  String get settingButtonShape => 'बटन का आकार';
+
+  @override
+  String get shapeSquare => 'चौकोर';
+
+  @override
+  String get shapeRounded => 'गोल कोनों वाला चौकोर';
+
+  @override
+  String get shapeCircle => 'गोल';
+
+  @override
+  String get settingCustomizeTiles => 'टाइल बदलें';
+
+  @override
+  String get settingCustomizeTilesSubtitle =>
+      'श्रेणी और इवेंट चुनने वाले हिस्सों के आकार';
+
+  @override
+  String get preview => 'झलक';
+
+  @override
+  String get settingThemeColor => 'थीम का रंग';
+
+  @override
+  String get themeColorWallpaper => 'वॉलपेपर के रंग';
+
+  @override
+  String get colorPurple => 'बैंगनी';
+
+  @override
+  String get colorBlue => 'नीला';
+
+  @override
+  String get colorTeal => 'हरा-नीला';
+
+  @override
+  String get colorGreen => 'हरा';
+
+  @override
+  String get colorAmber => 'पीला';
+
+  @override
+  String get colorOrange => 'नारंगी';
+
+  @override
+  String get colorRed => 'लाल';
+
+  @override
+  String get colorPink => 'गुलाबी';
+
+  @override
+  String get restoreDefaultLook => 'डिफ़ॉल्ट रूप वापस लाएँ';
+
+  @override
+  String get restoreDefaultLookSubtitle => 'थीम का रंग और टाइल के आकार';
+
+  @override
+  String get restoreDefaultLookTitle => 'डिफ़ॉल्ट रूप वापस लाएँ?';
+
+  @override
+  String get restoreDefaultLookMessage =>
+      'थीम का रंग वॉलपेपर के रंगों पर, टाइलें गोल कोनों वाले चौकोर पर और बटन गोल आकार पर लौट आएँगे।';
+
+  @override
+  String get migrationInstalledTitle => 'डेटाबेस तैयार है';
+
+  @override
+  String get migrationInstalledMessage => 'सब कुछ तैयार है।';
+
+  @override
+  String get migrationUpdatedTitle => 'अपडेट सफलतापूर्वक हो गया';
+
+  @override
+  String get migrationUpdatedMessage => 'आपका डेटा अप-टू-डेट है।';
 
   @override
   String get categoryFood => 'खाना';

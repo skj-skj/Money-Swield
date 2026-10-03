@@ -5,6 +5,7 @@ import 'package:bloc_signals/bloc_signals.dart';
 import '../../../../data/repositories/settings_repository.dart';
 import '../../../../domain/models/app_settings.dart';
 import '../../../../domain/models/app_theme_mode.dart';
+import '../../../../domain/models/item_shape.dart';
 
 /// The app's settings, for the whole app's lifetime: `MaterialApp` reads
 /// the language and theme from it.
@@ -52,6 +53,38 @@ class SettingsCubit extends CubitSignal<AppSettings> {
   Future<void> setDefaultPaymentMethodId(int id) async {
     await _settings.setDefaultPaymentMethodId(id);
     _emitIfOpen(value.copyWith(defaultPaymentMethodId: id));
+  }
+
+  Future<void> setTileShape(ItemShape shape) async {
+    await _settings.setTileShape(shape);
+    _emitIfOpen(value.copyWith(tileShape: shape));
+  }
+
+  Future<void> setButtonShape(ItemShape shape) async {
+    await _settings.setButtonShape(shape);
+    _emitIfOpen(value.copyWith(buttonShape: shape));
+  }
+
+  Future<void> setTimePickerKeyboard(bool keyboard) async {
+    await _settings.setTimePickerKeyboard(keyboard);
+    _emitIfOpen(value.copyWith(timePickerKeyboard: keyboard));
+  }
+
+  Future<void> setDatePickerKeyboard(bool keyboard) async {
+    await _settings.setDatePickerKeyboard(keyboard);
+    _emitIfOpen(value.copyWith(datePickerKeyboard: keyboard));
+  }
+
+  /// [seed] as ARGB, or null for the wallpaper colors.
+  Future<void> setThemeSeed(int? seed) async {
+    await _settings.setThemeSeed(seed);
+    _emitIfOpen(value.withThemeSeed(seed));
+  }
+
+  /// Theme color, tile shape and button shape back to their defaults.
+  Future<void> restoreDefaultLook() async {
+    await _settings.restoreDefaultLook();
+    _emitIfOpen(value.withDefaultLook());
   }
 
   Future<void> setOnboardingCompleted() async {

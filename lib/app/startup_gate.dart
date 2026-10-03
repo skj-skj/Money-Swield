@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import '../domain/models/app_settings.dart';
 import '../l10n/app_localizations.dart';
 import '../ui/core/widgets/error_report_view.dart';
+import '../ui/core/widgets/quiet_loading.dart';
 import '../ui/features/onboarding/views/onboarding_screen.dart';
 import '../ui/features/settings/view_models/settings_cubit.dart';
 import 'app_dependencies.dart';
@@ -47,9 +48,9 @@ class _StartupGateState extends State<StartupGate> {
     return BlocSignalBuilder<StartupCubit, StartupState>(
       bloc: _cubit,
       builder: (context, state) => switch (state) {
-        StartupLoading() => const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        ),
+        // Opening the database and reading the settings takes a moment;
+        // a spinner flashing by on every start looked alarming.
+        StartupLoading() => const QuietLoading(),
         StartupFailed() => _StartupFailedScreen(
           failure: state,
           onRetry: _cubit.start,

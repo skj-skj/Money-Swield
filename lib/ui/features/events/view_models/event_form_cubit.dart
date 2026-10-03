@@ -52,6 +52,9 @@ class EventFormCubit extends CubitSignal<EventFormState> {
     required this._l10n,
     required this.original,
     required List<Event> existing,
+    // Only used when adding: the expense form's picker passes its search
+    // text, so "chai" isn't typed twice (phase-2.md §6.4).
+    String initialName = '',
   }) : _otherNames = [
          for (final event in existing)
            if (event.id != original?.id) eventName(_l10n, event),
@@ -59,7 +62,7 @@ class EventFormCubit extends CubitSignal<EventFormState> {
        super(
          initialState: EventFormState(
            // A built-in shows its localized name, ready to be renamed.
-           name: original == null ? '' : eventName(_l10n, original),
+           name: original == null ? initialName : eventName(_l10n, original),
            description: original?.description ?? '',
            emoji: original?.emoji ?? '',
          ),
@@ -167,7 +170,11 @@ class EventFormCubit extends CubitSignal<EventFormState> {
     }
   }
 
-  /// Deletes the edited event. Nothing can reference an event in Phase 1.
+  /// How many expenses have the edited event, binned ones included. Shown
+  /// in the delete confirmation.
+  Future<int> usage() => _repository.usage(original!.id);
+
+  /// Deletes the edited event. Its links cascade; the expenses stay.
   Future<void> delete() async {
     final original = this.original;
     if (original == null || value.saving) return;

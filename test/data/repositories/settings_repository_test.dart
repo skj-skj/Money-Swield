@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:my_expense_tracker_app/data/repositories/settings_repository.dart';
 import 'package:my_expense_tracker_app/domain/models/app_settings.dart';
 import 'package:my_expense_tracker_app/domain/models/app_theme_mode.dart';
+import 'package:my_expense_tracker_app/domain/models/item_shape.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../../helpers/test_database.dart';
@@ -213,5 +214,75 @@ void main() {
       SettingsRepository(empty, deviceCurrency: 'INR').load(),
       throwsA(isA<DatabaseException>()),
     );
+  });
+
+  group('picker look and picker modes (phase-2.md §12a)', () {
+    test(
+      'default to rounded tiles, circle buttons, dial and calendar',
+      () async {
+        final settings = await repository.load();
+        expect(settings.tileShape, ItemShape.rounded);
+        expect(settings.buttonShape, ItemShape.circle);
+        expect(settings.timePickerKeyboard, isFalse);
+        expect(settings.datePickerKeyboard, isFalse);
+      },
+    );
+
+    test('the theme color follows the wallpaper until one is picked', () async {
+      expect((await repository.load()).themeSeed, isNull);
+
+      await repository.setThemeSeed(0xFF1565C0);
+      expect((await repository.load()).themeSeed, 0xFF1565C0);
+
+      await repository.setThemeSeed(null);
+      expect((await repository.load()).themeSeed, isNull);
+      final row = await db.query(
+        'settings',
+        where: 'key = ?',
+        whereArgs: ['theme_color'],
+      );
+      expect(row.single['value'], 'dynamic');
+    });
+
+    test('an unreadable theme color falls back to the wallpaper', () async {
+      await db.insert('settings', {'key': 'theme_color', 'value': 'blue'});
+      expect((await repository.load()).themeSeed, isNull);
+    });
+
+    test('restoreDefaultLook resets the look and nothing else', () async {
+      await repository.setThemeSeed(0xFF1565C0);
+      await repository.setTileShape(ItemShape.circle);
+      await repository.setButtonShape(ItemShape.square);
+      await repository.setDefaultCurrency('USD');
+      await repository.setTimePickerKeyboard(true);
+
+      await repository.restoreDefaultLook();
+      final settings = await repository.load();
+      expect(settings.themeSeed, isNull);
+      expect(settings.tileShape, ItemShape.rounded);
+      expect(settings.buttonShape, ItemShape.circle);
+      expect(settings.defaultCurrency, 'USD', reason: 'not part of the look');
+      expect(settings.timePickerKeyboard, isTrue);
+    });
+
+    test('round-trip', () async {
+      await repository.setTileShape(ItemShape.circle);
+      await repository.setButtonShape(ItemShape.square);
+      await repository.setTimePickerKeyboard(true);
+      await repository.setDatePickerKeyboard(true);
+      final settings = await repository.load();
+      expect(settings.tileShape, ItemShape.circle);
+      expect(settings.buttonShape, ItemShape.square);
+      expect(settings.timePickerKeyboard, isTrue);
+      expect(settings.datePickerKeyboard, isTrue);
+
+      await repository.setTimePickerKeyboard(false);
+      expect((await repository.load()).timePickerKeyboard, isFalse);
+    });
+
+    test('an unknown shape (a newer app\'s) falls back to rounded', () async {
+      await db.insert('settings', {'key': 'tile_shape', 'value': 'hexagon'});
+      expect((await repository.load()).tileShape, ItemShape.rounded);
+    });
   });
 }

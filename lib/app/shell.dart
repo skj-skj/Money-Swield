@@ -38,12 +38,9 @@ class _ShellState extends State<Shell> {
         body: IndexedStack(
           index: _index,
           children: [
-            const HomeScreen(),
+            HomeScreen(dependencies: deps, isVisible: _index == _home),
             ManageScreen(dependencies: deps),
-            SettingsScreen(
-              paymentMethods: deps.paymentMethods,
-              isVisible: _index == _settings,
-            ),
+            SettingsScreen(dependencies: deps, isVisible: _index == _settings),
           ],
         ),
         bottomNavigationBar: NavigationBar(

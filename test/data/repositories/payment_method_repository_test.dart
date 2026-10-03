@@ -137,4 +137,65 @@ void main() {
       },
     );
   });
+
+  group('usage', () {
+    test('counts active and binned expenses separately', () async {
+      await insertExpenseRow(db, paymentMethodId: 2);
+      await insertExpenseRow(db, paymentMethodId: 2, deletedAt: 5);
+      await insertExpenseRow(db, paymentMethodId: 2, deletedAt: 6);
+      expect(await repository.usage(2), (active: 1, binned: 2));
+      expect(await repository.usage(3), (active: 0, binned: 0));
+    });
+  });
+
+  group('moveExpensesAndDelete', () {
+    Future<List<int>> methodsOfExpenses() async => [
+      for (final row in await db.query('expenses', orderBy: 'id'))
+        row['payment_method_id']! as int,
+    ];
+
+    test('moves every expense, binned ones included, then deletes', () async {
+      await insertExpenseRow(db, paymentMethodId: 2);
+      await insertExpenseRow(db, paymentMethodId: 2, deletedAt: 5);
+      await insertExpenseRow(db, paymentMethodId: 1);
+
+      await repository.moveExpensesAndDelete(2, toId: 3);
+
+      expect(await methodsOfExpenses(), [3, 3, 1]);
+      expect((await repository.all()).any((m) => m.id == 2), isFalse);
+    });
+
+    test('refuses the default and changes nothing', () async {
+      final cash = await builtin('cash');
+      await insertExpenseRow(db, paymentMethodId: cash.id);
+      await insertExpenseRow(db, paymentMethodId: cash.id, deletedAt: 5);
+
+      await expectLater(
+        repository.moveExpensesAndDelete(cash.id, toId: 2),
+        throwsA(isA<CannotDeleteDefault>()),
+      );
+      expect(await methodsOfExpenses(), [cash.id, cash.id]);
+      expect(await repository.all(), hasLength(4));
+    });
+
+    test('refuses to move to the same method', () async {
+      expect(
+        () => repository.moveExpensesAndDelete(2, toId: 2),
+        throwsArgumentError,
+      );
+      expect(await repository.all(), hasLength(4));
+    });
+
+    test('changes nothing when the target was deleted meanwhile', () async {
+      await insertExpenseRow(db, paymentMethodId: 2);
+      await repository.delete(3);
+
+      await expectLater(
+        repository.moveExpensesAndDelete(2, toId: 3),
+        throwsA(isA<DatabaseException>()),
+      );
+      expect(await methodsOfExpenses(), [2]);
+      expect((await repository.all()).any((m) => m.id == 2), isTrue);
+    });
+  });
 }

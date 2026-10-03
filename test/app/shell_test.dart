@@ -16,7 +16,11 @@ void main() {
     await pumpApp(tester, dependencies: await onboarded());
     expect(find.text('No expenses yet'), findsOneWidget);
     expect(
-      find.text('Adding expenses is coming in the next update.'),
+      find.text('Tap Add expense to record your first one.'),
+      findsOneWidget,
+    );
+    expect(
+      find.widgetWithText(FloatingActionButton, 'Add expense'),
       findsOneWidget,
     );
   });

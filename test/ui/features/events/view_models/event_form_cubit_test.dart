@@ -125,4 +125,29 @@ void main() {
       expect(loaded.all, hasLength(5));
     });
   });
+
+  group('initialName (phase-2.md §6.4)', () {
+    EventFormCubit formWith({Event? original, required String name}) {
+      final cubit = EventFormCubit(
+        repository: repository,
+        l10n: l10nFor('en'),
+        original: original,
+        existing: existing,
+        initialName: name,
+      );
+      addTearDown(cubit.close);
+      return cubit;
+    }
+
+    test('prefills the name of a new event', () async {
+      final cubit = formWith(name: 'chai')..emojiChanged('☕');
+      expect(cubit.value.name, 'chai');
+      expect((await cubit.save())!.name, 'chai');
+    });
+
+    test('is ignored when editing: the saved name wins', () {
+      final trip = existing.firstWhere((e) => e.builtinKey == 'trip');
+      expect(formWith(original: trip, name: 'chai').value.name, 'Trip');
+    });
+  });
 }

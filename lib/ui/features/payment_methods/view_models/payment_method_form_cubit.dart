@@ -180,6 +180,22 @@ class PaymentMethodFormCubit extends CubitSignal<PaymentMethodFormState> {
     }
   }
 
+  /// How many expenses use the edited payment method, binned ones included.
+  Future<({int active, int binned})> usage() => _repository.usage(original!.id);
+
+  /// Moves the edited payment method's expenses to [toId] and deletes it, in one
+  /// transaction (D7).
+  Future<void> moveExpensesAndDelete(int toId) async {
+    final original = this.original;
+    if (original == null || value.saving) return;
+    _emitIfOpen(value.copyWith(saving: true));
+    try {
+      await _repository.moveExpensesAndDelete(original.id, toId: toId);
+    } finally {
+      _emitIfOpen(value.copyWith(saving: false));
+    }
+  }
+
   // save(), setAsDefault() and delete() keep going across an await, and the
   // screen closes the cubit when it pops. Emitting after close() asserts.
   void _emitIfOpen(PaymentMethodFormState state) {

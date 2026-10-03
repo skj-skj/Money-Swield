@@ -6,9 +6,11 @@ import '../../../../domain/models/category.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/builtin_names.dart';
 import '../../../core/form_validation.dart';
-import '../../../core/widgets/confirm_dialog.dart';
+import '../../../core/picker_order.dart';
 import '../../../core/widgets/emoji_picker_field.dart';
+import '../../../core/widgets/move_dialog.dart';
 import '../../../core/widgets/save_error.dart';
+import '../../settings/view_models/settings_cubit.dart';
 import '../view_models/category_form_cubit.dart';
 
 /// Adds a category, or edits [original] when it is set. Pops when saved or
@@ -19,6 +21,7 @@ class CategoryFormScreen extends StatefulWidget {
     required this.repository,
     required this.original,
     required this.existing,
+    this.initialName = '',
   });
 
   final CategoryRepository repository;
@@ -26,6 +29,9 @@ class CategoryFormScreen extends StatefulWidget {
 
   /// Every category, to refuse duplicate names.
   final List<Category> existing;
+
+  /// The name a new category starts with; ignored when editing.
+  final String initialName;
 
   @override
   State<CategoryFormScreen> createState() => _CategoryFormScreenState();
@@ -46,6 +52,7 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
       l10n: AppLocalizations.of(context),
       original: widget.original,
       existing: widget.existing,
+      initialName: widget.initialName,
     );
     _cubit = cubit;
     _name = TextEditingController(text: cubit.value.name);
@@ -63,12 +70,38 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
   Future<void> _save() async {
     Category? saved;
     await saveOrShowError(context, () async => saved = await _cubit!.save());
-    if (saved != null && mounted) Navigator.pop(context);
+    // Pops with the saved category, so the expense form can select it.
+    if (saved != null && mounted) Navigator.pop(context, saved);
   }
 
+  /// Delete: a plain confirm when no expense uses it; otherwise ask where
+  /// to move its expenses, binned ones included, then move and delete in
+  /// one transaction (D7, phase-2.md §10.1).
   Future<void> _delete(String name) async {
-    if (!await confirmDelete(context, name) || !mounted) return;
-    final deleted = await saveOrShowError(context, () => _cubit!.delete());
+    final l10n = AppLocalizations.of(context);
+    final original = widget.original!;
+    final shapes = context.read<SettingsCubit>().value;
+    final cubit = _cubit!;
+    final deleted = await deleteOrMoveThenDelete(
+      context,
+      name: name,
+      usage: cubit.usage,
+      targets: [
+        for (final other in widget.existing)
+          if (other.id != original.id)
+            PickerItem(
+              id: other.id,
+              emoji: other.emoji,
+              name: categoryName(l10n, other),
+            ),
+      ],
+      searchHint: l10n.searchCategories,
+      allTitle: l10n.allCategories,
+      tileShape: shapes.tileShape,
+      buttonShape: shapes.buttonShape,
+      delete: cubit.delete,
+      moveAndDelete: cubit.moveExpensesAndDelete,
+    );
     if (deleted && mounted) Navigator.pop(context);
   }
 

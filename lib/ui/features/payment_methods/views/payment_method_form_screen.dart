@@ -7,8 +7,9 @@ import '../../../../domain/models/payment_method.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/builtin_names.dart';
 import '../../../core/form_validation.dart';
-import '../../../core/widgets/confirm_dialog.dart';
+import '../../../core/picker_order.dart';
 import '../../../core/widgets/emoji_picker_field.dart';
+import '../../../core/widgets/move_dialog.dart';
 import '../../../core/widgets/save_error.dart';
 import '../../settings/view_models/settings_cubit.dart';
 import '../view_models/payment_method_form_cubit.dart';
@@ -67,9 +68,35 @@ class _PaymentMethodFormScreenState extends State<PaymentMethodFormScreen> {
     if (saved != null && mounted) Navigator.pop(context);
   }
 
+  /// Delete (never offered for the default, which the repository refuses
+  /// as well): a plain confirm when no expense uses it; otherwise ask where
+  /// to move its expenses, binned ones included, then move and delete in
+  /// one transaction (D7, phase-2.md §10.1).
   Future<void> _delete(String name) async {
-    if (!await confirmDelete(context, name) || !mounted) return;
-    final deleted = await saveOrShowError(context, () => _cubit!.delete());
+    final l10n = AppLocalizations.of(context);
+    final original = widget.original!;
+    final shapes = context.read<SettingsCubit>().value;
+    final cubit = _cubit!;
+    final deleted = await deleteOrMoveThenDelete(
+      context,
+      name: name,
+      usage: cubit.usage,
+      targets: [
+        for (final other in widget.existing)
+          if (other.id != original.id)
+            PickerItem(
+              id: other.id,
+              emoji: other.emoji,
+              name: paymentMethodName(l10n, other),
+            ),
+      ],
+      searchHint: l10n.search,
+      allTitle: l10n.paymentMethodsTitle,
+      tileShape: shapes.tileShape,
+      buttonShape: shapes.buttonShape,
+      delete: cubit.delete,
+      moveAndDelete: cubit.moveExpensesAndDelete,
+    );
     if (deleted && mounted) Navigator.pop(context);
   }
 

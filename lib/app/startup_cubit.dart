@@ -1,4 +1,5 @@
 import 'package:bloc_signals/bloc_signals.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 
 import '../ui/features/settings/view_models/settings_cubit.dart';
 import 'app_dependencies.dart';
@@ -34,8 +35,8 @@ final class StartupReady extends StartupState {
   final AppDependencies dependencies;
 }
 
-/// Opens the database and loads the settings once migrations are done
-/// (phase-1.md §5).
+/// Opens the database, loads the settings and empties old expenses from
+/// the bin once migrations are done (phase-1.md §5, phase-2.md §9.3).
 class StartupCubit extends CubitSignal<StartupState> {
   StartupCubit({required this._openDependencies, required this._settingsCubit})
     : super(initialState: const StartupLoading());
@@ -56,6 +57,7 @@ class StartupCubit extends CubitSignal<StartupState> {
       final dependencies = await _openDependencies();
       step = 'Loading settings';
       await _settingsCubit.load(dependencies.settings);
+      await _purgeBin(dependencies);
       _emitIfOpen(StartupReady(dependencies));
     } catch (error, stackTrace) {
       // Never fall through to onboarding here: with settings unreadable it
@@ -63,6 +65,20 @@ class StartupCubit extends CubitSignal<StartupState> {
       _emitIfOpen(StartupFailed(step, error, stackTrace));
     } finally {
       _isRunning = false;
+    }
+  }
+
+  /// Deletes expenses binned more than 30 days ago. A failure doesn't block
+  /// the app (P2-7): unlike opening the database or reading the settings,
+  /// skipping it loses nothing, and it is retried on the next start.
+  static Future<void> _purgeBin(AppDependencies dependencies) async {
+    try {
+      await dependencies.expenses.purgeBin();
+      // Phase 6 adds the orphan-photo cleanup here.
+    } catch (error, stackTrace) {
+      debugPrint(
+        'Emptying old expenses from the bin failed: $error\n$stackTrace',
+      );
     }
   }
 
