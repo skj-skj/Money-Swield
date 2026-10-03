@@ -52,3 +52,42 @@ Future<SettingsCubit> pumpAppWith(
   await tester.pumpAndSettle();
   return settingsCubit;
 }
+
+/// Pumps until [condition] holds, letting real file I/O and isolates (a
+/// backup, a restore, migrations on a real file) run in between: the
+/// widget test's clock is fake, so they only progress inside `runAsync`.
+///
+/// [timeout] is only a deadline (it returns as soon as [condition] holds),
+/// generous because each real I/O step costs a loop here, and test files
+/// run in parallel.
+Future<void> pumpUntil(
+  WidgetTester tester,
+  bool Function() condition, {
+  String? description,
+  Duration timeout = const Duration(minutes: 2),
+}) async {
+  final deadline = DateTime.now().add(timeout);
+  while (!condition()) {
+    if (DateTime.now().isAfter(deadline)) {
+      throw TestFailure('Not true within $timeout: ${description ?? ''}');
+    }
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 10)),
+    );
+    await tester.pump(const Duration(milliseconds: 50));
+  }
+}
+
+/// [pumpUntil] [finder] finds something.
+Future<void> pumpUntilFound(WidgetTester tester, Finder finder) => pumpUntil(
+  tester,
+  () => finder.evaluate().isNotEmpty,
+  description: '$finder',
+);
+
+/// [pumpUntil] [finder] finds nothing.
+Future<void> pumpUntilGone(WidgetTester tester, Finder finder) => pumpUntil(
+  tester,
+  () => finder.evaluate().isEmpty,
+  description: 'gone: $finder',
+);

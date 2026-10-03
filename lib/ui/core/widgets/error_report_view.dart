@@ -4,7 +4,8 @@ import 'package:material_ui/material_ui.dart';
 import '../../../l10n/app_localizations.dart';
 
 /// A full-screen error with a copyable report and a retry button. Used when
-/// the app can't start: a failed migration or a database that won't open.
+/// the app can't start (a failed migration, a database that won't open) and
+/// when a backup or restore fails.
 class ErrorReportView extends StatelessWidget {
   const ErrorReportView({
     super.key,
@@ -13,6 +14,8 @@ class ErrorReportView extends StatelessWidget {
     this.detail,
     required this.report,
     required this.onRetry,
+    this.retryLabel,
+    this.secondaryAction,
   });
 
   final String title;
@@ -25,6 +28,13 @@ class ErrorReportView extends StatelessWidget {
   final String report;
 
   final VoidCallback onRetry;
+
+  /// Replaces "Try again" when the button does something else (e.g.
+  /// "Restart the app").
+  final String? retryLabel;
+
+  /// Another way out below the button, e.g. "Undo last restore".
+  final Widget? secondaryAction;
 
   @override
   Widget build(BuildContext context) {
@@ -82,7 +92,14 @@ class ErrorReportView extends StatelessWidget {
           label: Text(l10n.copyErrorReport),
         ),
         const SizedBox(height: 8),
-        OutlinedButton(onPressed: onRetry, child: Text(l10n.tryAgain)),
+        OutlinedButton(
+          onPressed: onRetry,
+          child: Text(retryLabel ?? l10n.tryAgain),
+        ),
+        if (secondaryAction case final action?) ...[
+          const SizedBox(height: 8),
+          action,
+        ],
       ],
     );
   }

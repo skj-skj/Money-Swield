@@ -32,6 +32,7 @@ class SettingsRepository {
   static const _timePickerKeyboardKey = 'time_picker_keyboard';
   static const _datePickerKeyboardKey = 'date_picker_keyboard';
   static const _themeColorKey = 'theme_color';
+  static const _lastBackupAtKey = 'last_backup_at';
 
   /// Stored in `theme_color` for "use the wallpaper colors".
   static const _dynamicThemeColor = 'dynamic';
@@ -145,6 +146,26 @@ class SettingsRepository {
   /// [seed] as ARGB, or null for the wallpaper colors.
   Future<void> setThemeSeed(int? seed) =>
       _write(_themeColorKey, seed?.toString() ?? _dynamicThemeColor);
+
+  /// When the last backup was saved, or null if never. Not part of
+  /// [AppSettings], so a backup doesn't rebuild `MaterialApp` (phase-3.md
+  /// §3). An unreadable value reads as "never".
+  Future<DateTime?> lastBackupAt() async {
+    final rows = await _db.query(
+      'settings',
+      columns: ['value'],
+      where: 'key = ?',
+      whereArgs: [_lastBackupAtKey],
+    );
+    final ms = int.tryParse(rows.firstOrNull?['value'] as String? ?? '');
+    return ms == null
+        ? null
+        : DateTime.fromMillisecondsSinceEpoch(ms, isUtc: true);
+  }
+
+  /// Stored as epoch ms UTC, like every time in the database.
+  Future<void> setLastBackupAt(DateTime at) =>
+      _write(_lastBackupAtKey, '${at.millisecondsSinceEpoch}');
 
   Future<void> _write(String key, String? value) => _db.insert('settings', {
     'key': key,

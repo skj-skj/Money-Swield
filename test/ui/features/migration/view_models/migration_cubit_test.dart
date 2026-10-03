@@ -227,4 +227,56 @@ void main() {
       expect(cubit.value, isA<MigrationInProgress>());
     });
   });
+
+  group('restart (after a restore swapped the file)', () {
+    test('runs the migrations again once done', () async {
+      var runs = 0;
+      final cubit = cubitFor(
+        FakeAppDatabase((prompter, onProgress) async => runs++),
+      );
+      await cubit.run();
+      await cubit.run(); // Ignored: done.
+      expect(runs, 1);
+
+      final restart = cubit.restart();
+      expect(
+        cubit.value,
+        isA<MigrationInProgress>(),
+        reason: 'at once, so the old tree is not shown again',
+      );
+      await restart;
+
+      expect(runs, 2);
+      expect(cubit.value, isA<MigrationDone>());
+    });
+
+    test('is ignored while a run is going on', () async {
+      final release = Completer<void>();
+      var runs = 0;
+      final cubit = cubitFor(
+        FakeAppDatabase((prompter, onProgress) async {
+          runs++;
+          await release.future;
+        }),
+      );
+      final run = cubit.run();
+      await cubit.restart();
+      release.complete();
+      await run;
+      expect(runs, 1);
+    });
+
+    test('after a failure, runs again too', () async {
+      var runs = 0;
+      final cubit = cubitFor(
+        FakeAppDatabase((prompter, onProgress) async {
+          if (++runs == 1) throw StateError('first run fails');
+        }),
+      );
+      await cubit.run();
+      expect(cubit.value, isA<MigrationFailed>());
+      await cubit.restart();
+      expect(cubit.value, isA<MigrationDone>());
+    });
+  });
 }

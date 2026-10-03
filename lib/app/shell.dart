@@ -5,6 +5,7 @@ import '../ui/features/home/views/home_screen.dart';
 import '../ui/features/manage/views/manage_screen.dart';
 import '../ui/features/settings/views/settings_screen.dart';
 import 'app_dependencies.dart';
+import 'app_restart.dart';
 
 /// The app after onboarding: Home · Manage · Settings in a navigation bar.
 ///
@@ -25,6 +26,11 @@ class _ShellState extends State<Shell> {
 
   int _index = _home;
 
+  /// Read once: the notice is cleared as it's read, and on the next
+  /// restart.
+  late final RestoreNotice? _restoreNotice = AppRestart.maybeOf(context)
+      ?.takeNotice();
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -38,7 +44,11 @@ class _ShellState extends State<Shell> {
         body: IndexedStack(
           index: _index,
           children: [
-            HomeScreen(dependencies: deps, isVisible: _index == _home),
+            HomeScreen(
+              dependencies: deps,
+              isVisible: _index == _home,
+              restoreNotice: _restoreNotice,
+            ),
             ManageScreen(dependencies: deps),
             SettingsScreen(dependencies: deps, isVisible: _index == _settings),
           ],

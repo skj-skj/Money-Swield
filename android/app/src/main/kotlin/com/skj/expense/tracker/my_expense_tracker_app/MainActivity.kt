@@ -1,7 +1,9 @@
 package com.skj.expense.tracker.my_expense_tracker_app
 
 import android.content.Context
+import android.content.Intent
 import android.os.Build
+import android.os.Bundle
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.engine.FlutterEngineCache
@@ -32,6 +34,7 @@ class MainActivity : FlutterActivity() {
         val engine = FlutterEngine(appContext)
         // Registered before Dart starts, so main() can ask for it at once.
         registerDynamicColor(engine, appContext)
+        documents = DocumentsChannel(engine.dartExecutor.binaryMessenger, appContext)
         engine.dartExecutor.executeDartEntrypoint(
             DartExecutor.DartEntrypoint.createDefault(),
         )
@@ -42,6 +45,26 @@ class MainActivity : FlutterActivity() {
     // A provided engine is not destroyed with the activity by default; said
     // here explicitly because the whole point is that it outlives it.
     override fun shouldDestroyEngineWithHost(): Boolean = false
+
+    // The documents channel lives with the engine; each activity lends
+    // itself to it for the save / open dialogs (DocumentsChannel).
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState) // Calls provideFlutterEngine.
+        documents?.attach(this)
+    }
+
+    override fun onDestroy() {
+        documents?.detach(this)
+        super.onDestroy()
+    }
+
+    // FlutterActivity isn't a ComponentActivity, so no Activity Result API.
+    // super first, so Flutter's own plugins still get their results.
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        documents?.onActivityResult(requestCode, resultCode, data)
+    }
 
     /**
      * Answers `accentColor` with the wallpaper's accent color (Android 12+)
@@ -71,5 +94,8 @@ class MainActivity : FlutterActivity() {
     private companion object {
         const val ENGINE_ID = "main"
         const val DYNAMIC_COLOR_CHANNEL = "expense_tracker/dynamic_color"
+
+        /** Created with the cached engine, so it lives as long as it. */
+        var documents: DocumentsChannel? = null
     }
 }

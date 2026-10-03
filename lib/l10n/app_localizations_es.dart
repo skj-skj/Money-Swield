@@ -600,6 +600,168 @@ class AppLocalizationsEs extends AppLocalizations {
   String get migrationUpdatedMessage => 'Tus datos están al día.';
 
   @override
+  String get backupAndRestore => 'Copia de seguridad';
+
+  @override
+  String get lastBackupNever => 'Nunca se hizo una copia';
+
+  @override
+  String get lastBackupToday => 'hoy';
+
+  @override
+  String get lastBackupYesterday => 'ayer';
+
+  @override
+  String lastBackupDaysAgo(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'hace $days días',
+      one: 'hace 1 día',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String lastBackupSubtitle(String when) {
+    return 'Última copia: $when';
+  }
+
+  @override
+  String get backUpNow => 'Hacer copia ahora';
+
+  @override
+  String get preparingBackup => 'Preparando la copia…';
+
+  @override
+  String get backupSaved => 'Copia guardada';
+
+  @override
+  String get backupFailedTitle => 'No se pudo hacer la copia';
+
+  @override
+  String get backupFailedMessage =>
+      'No se guardó nada y tus datos en este teléfono no cambiaron. Copia el informe de abajo y envíanoslo para que podamos corregirlo.';
+
+  @override
+  String get restoreFromBackup => 'Restaurar una copia';
+
+  @override
+  String get restoreFromBackupSubtitle =>
+      'Reemplaza todos los datos de este teléfono por los de un archivo de copia.';
+
+  @override
+  String get undoLastRestore => 'Deshacer la última restauración';
+
+  @override
+  String undoLastRestoreSubtitle(String date) {
+    return 'Vuelve a tus datos de antes de la restauración del $date.';
+  }
+
+  @override
+  String get restoreConfirmTitle => '¿Restaurar esta copia?';
+
+  @override
+  String get undoConfirmTitle => '¿Deshacer la última restauración?';
+
+  @override
+  String restoreBackupFrom(String date) {
+    return 'Copia del $date';
+  }
+
+  @override
+  String restoreCopyFrom(String date) {
+    return 'Tus datos de antes de la restauración del $date';
+  }
+
+  @override
+  String restoreExpenseCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count gastos',
+      one: '1 gasto',
+      zero: 'Ningún gasto',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String restoreBinCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'y $count en la papelera',
+      one: 'y 1 en la papelera',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String restoreLatestOn(String date) {
+    return 'El último el $date';
+  }
+
+  @override
+  String restoreReplacesData(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count gastos',
+      one: '1 gasto',
+      zero: 'ningún gasto',
+    );
+    return 'Se reemplazan todos los datos de este teléfono ($_temp0).';
+  }
+
+  @override
+  String get restoreKeepsCopy =>
+      'Se guarda una copia y puedes deshacer la restauración.';
+
+  @override
+  String get restoreBackupButton => 'Restaurar';
+
+  @override
+  String get checkingBackup => 'Comprobando la copia…';
+
+  @override
+  String get restoringData => 'Restaurando tus datos…';
+
+  @override
+  String get backupRestored => 'Copia restaurada';
+
+  @override
+  String get backupRestoredDefaultSettings =>
+      'Copia restaurada. Sus ajustes faltaban o no se podían leer, así que se usan los ajustes predeterminados. Puedes cambiarlos en Ajustes.';
+
+  @override
+  String get restoreFailedTitle => 'No se pudo restaurar';
+
+  @override
+  String get restoreFailedMessage =>
+      'Tus datos en este teléfono no cambiaron. Copia el informe de abajo y envíanoslo para que podamos corregirlo.';
+
+  @override
+  String get restoreFailedRestartMessage =>
+      'Tus datos en este teléfono no cambiaron. La app se reinicia para volver a abrirlos. Copia el informe de abajo y envíanoslo para que podamos corregirlo.';
+
+  @override
+  String get restartApp => 'Reiniciar la app';
+
+  @override
+  String get restoreRejectedTitle => 'No se puede restaurar este archivo';
+
+  @override
+  String get notABackup => 'Este archivo no es una copia de Expense Tracker.';
+
+  @override
+  String get backupTooNew =>
+      'Esta copia se hizo con una versión más nueva de la app. Actualiza la app e inténtalo de nuevo.';
+
+  @override
+  String get backupDamaged => 'Esta copia está dañada y no se puede restaurar.';
+
+  @override
   String get categoryFood => 'Comida';
 
   @override

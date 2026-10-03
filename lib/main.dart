@@ -4,7 +4,9 @@ import 'package:material_ui/material_ui.dart';
 
 import 'app/app.dart';
 import 'app/app_dependencies.dart';
+import 'app/restore_tools.dart';
 import 'data/services/database/app_database.dart';
+import 'data/services/document_service.dart';
 import 'data/services/dynamic_color_service.dart';
 import 'domain/models/app_settings.dart';
 import 'domain/models/currency.dart';
@@ -19,6 +21,11 @@ Future<void> main() async {
   final wallpaperSeed = await const DynamicColorService().accentColor();
   final deviceLocale = binding.platformDispatcher.locale;
   final appDatabase = AppDatabase();
+  final restoreTools = RestoreTools(
+    appDatabase: appDatabase,
+    documents: const ChannelDocumentService(),
+    deviceCurrency: deviceCurrency(deviceLocale),
+  );
 
   // Both cubits are created before runApp and live as long as the app, so
   // nothing needs to close them. Migrations start without waiting for the
@@ -38,11 +45,9 @@ Future<void> main() async {
       migrationCubit: migrationCubit,
       settingsCubit: settingsCubit,
       wallpaperSeed: wallpaperSeed,
-      openDependencies: () => AppDependencies.open(
-        appDatabase,
-        deviceCurrency: deviceCurrency(deviceLocale),
-        wallpaperSeed: wallpaperSeed,
-      ),
+      restoreTools: restoreTools,
+      openDependencies: () =>
+          AppDependencies.open(restoreTools, wallpaperSeed: wallpaperSeed),
     ),
   );
 }

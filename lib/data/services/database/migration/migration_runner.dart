@@ -4,6 +4,7 @@ import 'dart:ui' show Locale;
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
+import '../database_checks.dart';
 import 'database_backup.dart';
 import 'migration.dart';
 import 'migration_prompter.dart';
@@ -197,7 +198,7 @@ class MigrationRunner {
           await db.transaction((txn) async {
             final m = Migrator(txn, locale: locale, prompter: prompter);
             await (up ? migration.up(m) : migration.down(m));
-            await _checkForeignKeys(txn);
+            await checkForeignKeys(txn);
             if (up) {
               await txn.insert(historyTable, {
                 'version': migration.version,
@@ -217,7 +218,7 @@ class MigrationRunner {
       report?.call(MigrationStage.verifying, migrations.length);
       await _guard(
         'Checking database integrity',
-        () => _checkIntegrity(db),
+        () => checkIntegrity(db),
         backup: backup,
       );
     } finally {
@@ -258,39 +259,17 @@ class MigrationRunner {
   /// Versions recorded as applied. Throws if any is unknown to this app,
   /// i.e. a newer app changed the database.
   Future<Set<int>> _appliedVersions(Database db) async {
-    final rows = await db.query(historyTable, columns: ['version']);
-    final applied = {for (final row in rows) row['version']! as int};
-    final unknown = applied.difference({
-      for (final m in _migrations) m.version,
-    });
-    if (unknown.isNotEmpty) {
-      throw StateError(
-        'This database was updated by a newer version of the app (unknown migrations: '
-        '${(unknown.toList()..sort()).join(', ')}). Install the latest version of the app.',
-      );
-    }
+    final applied = await appliedVersions(db);
+    checkKnownVersions(applied, {for (final m in _migrations) m.version});
     return applied;
   }
 
-  static Future<void> _checkForeignKeys(DatabaseExecutor db) async {
-    final violations = await db.rawQuery('PRAGMA foreign_key_check');
-    if (violations.isEmpty) return;
-    final details = violations
-        .take(5)
-        .map(
-          (v) =>
-              '${v['table']} row ${v['rowid']} points to a missing row in ${v['parent']}',
-        )
-        .join('; ');
-    throw StateError(
-      'Foreign key check failed (${violations.length} violation(s)): $details',
-    );
-  }
-
-  static Future<void> _checkIntegrity(Database db) async {
-    final rows = await db.rawQuery('PRAGMA integrity_check');
-    final result = rows.map((r) => r.values.first).join('; ');
-    if (result != 'ok') throw StateError('Integrity check failed: $result');
+  /// Versions recorded in [historyTable], without checking them. Restore
+  /// validation reads them the same way, then applies the same rule
+  /// ([checkKnownVersions]).
+  static Future<Set<int>> appliedVersions(DatabaseExecutor db) async {
+    final rows = await db.query(historyTable, columns: ['version']);
+    return {for (final row in rows) row['version']! as int};
   }
 
   /// Runs [action], turning any error into a [MigrationFailure].

@@ -15,9 +15,17 @@ import '../view_models/onboarding_cubit.dart';
 /// finishes, the startup gate replaces it with the shell, so there is no
 /// way back to it.
 class OnboardingScreen extends StatefulWidget {
-  const OnboardingScreen({super.key, required this.paymentMethods});
+  const OnboardingScreen({
+    super.key,
+    required this.paymentMethods,
+    this.onRestoreFromBackup,
+  });
 
   final PaymentMethodRepository paymentMethods;
+
+  /// "Restore from a backup" under the language list (phase-3.md §6.7).
+  /// Hidden when null.
+  final VoidCallback? onRestoreFromBackup;
 
   @override
   State<OnboardingScreen> createState() => _OnboardingScreenState();
@@ -72,6 +80,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   OnboardingStep.language => _LanguageStep(
                     state: state,
                     cubit: _cubit,
+                    onRestoreFromBackup: widget.onRestoreFromBackup,
                   ),
                   OnboardingStep.currency => _StepPage(
                     title: l10n.onboardingCurrencyTitle,
@@ -154,10 +163,15 @@ class _StepPage extends StatelessWidget {
 }
 
 class _LanguageStep extends StatelessWidget {
-  const _LanguageStep({required this.state, required this.cubit});
+  const _LanguageStep({
+    required this.state,
+    required this.cubit,
+    required this.onRestoreFromBackup,
+  });
 
   final OnboardingState state;
   final OnboardingCubit cubit;
+  final VoidCallback? onRestoreFromBackup;
 
   @override
   Widget build(BuildContext context) {
@@ -181,6 +195,18 @@ class _LanguageStep extends StatelessWidget {
           option(l10n.languageSystemDetected(detected), null),
           for (final MapEntry(key: code, value: name) in languageNames.entries)
             option(name, Locale(code)),
+          if (onRestoreFromBackup case final onRestore?)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: TextButton.icon(
+                  onPressed: onRestore,
+                  icon: const Icon(Icons.restore),
+                  label: Text(l10n.restoreFromBackup),
+                ),
+              ),
+            ),
         ],
       ),
     );

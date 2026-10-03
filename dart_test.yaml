@@ -1,0 +1,7 @@
+# Tests on real database files (phase 3) run slowly on Windows: the first
+# file a test file migrates takes ~15 s (each migration step opens, writes
+# and closes files, and the virus scanner checks each). Under `flutter test`'s
+# parallel runner the first test of such a file then came close to the 30 s
+# default and timed out now and then. The same code takes well under a
+# second on the phone (phase-3.md §12a).
+timeout: 2x

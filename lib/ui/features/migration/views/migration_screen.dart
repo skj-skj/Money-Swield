@@ -31,9 +31,13 @@ class MigrationGate extends StatelessWidget {
 }
 
 class MigrationScreen extends StatelessWidget {
-  const MigrationScreen({super.key, required this.state});
+  const MigrationScreen({super.key, required this.state, this.reportContext});
 
   final MigrationState state;
+
+  /// A first line for the failure report, e.g. that it happened while
+  /// restoring a backup (phase-3.md §6.4).
+  final String? reportContext;
 
   @override
   Widget build(BuildContext context) {
@@ -46,6 +50,7 @@ class MigrationScreen extends StatelessWidget {
           child: switch (state) {
             MigrationFailed(:final failure) => _FailureView(
               failure: failure,
+              reportContext: reportContext,
               onRetry: cubit.run,
             ),
             MigrationAsking(:final question) => _QuestionView(
@@ -274,9 +279,14 @@ class _QuestionViewState extends State<_QuestionView> {
 }
 
 class _FailureView extends StatelessWidget {
-  const _FailureView({required this.failure, required this.onRetry});
+  const _FailureView({
+    required this.failure,
+    required this.reportContext,
+    required this.onRetry,
+  });
 
   final MigrationFailure failure;
+  final String? reportContext;
   final VoidCallback onRetry;
 
   @override
@@ -291,7 +301,7 @@ class _FailureView extends StatelessWidget {
       detail: migration == null
           ? failure.step
           : l10n.migrationFailedStep('$migration'),
-      report: failure.report,
+      report: [?reportContext, failure.report].join('\n'),
       onRetry: onRetry,
     );
   }

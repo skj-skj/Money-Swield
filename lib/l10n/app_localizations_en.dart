@@ -597,6 +597,168 @@ class AppLocalizationsEn extends AppLocalizations {
   String get migrationUpdatedMessage => 'Your data is up to date.';
 
   @override
+  String get backupAndRestore => 'Backup & restore';
+
+  @override
+  String get lastBackupNever => 'Never backed up';
+
+  @override
+  String get lastBackupToday => 'today';
+
+  @override
+  String get lastBackupYesterday => 'yesterday';
+
+  @override
+  String lastBackupDaysAgo(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days ago',
+      one: '1 day ago',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String lastBackupSubtitle(String when) {
+    return 'Last backup: $when';
+  }
+
+  @override
+  String get backUpNow => 'Back up now';
+
+  @override
+  String get preparingBackup => 'Preparing backup…';
+
+  @override
+  String get backupSaved => 'Backup saved';
+
+  @override
+  String get backupFailedTitle => 'Backup failed';
+
+  @override
+  String get backupFailedMessage =>
+      'Nothing was saved, and your data on this phone is unchanged. Please copy the report below and send it to us so we can fix it.';
+
+  @override
+  String get restoreFromBackup => 'Restore from a backup';
+
+  @override
+  String get restoreFromBackupSubtitle =>
+      'Replaces all data on this phone with a backup file.';
+
+  @override
+  String get undoLastRestore => 'Undo last restore';
+
+  @override
+  String undoLastRestoreSubtitle(String date) {
+    return 'Go back to your data from before the restore on $date.';
+  }
+
+  @override
+  String get restoreConfirmTitle => 'Restore this backup?';
+
+  @override
+  String get undoConfirmTitle => 'Undo the last restore?';
+
+  @override
+  String restoreBackupFrom(String date) {
+    return 'Backup from $date';
+  }
+
+  @override
+  String restoreCopyFrom(String date) {
+    return 'Your data from before the restore on $date';
+  }
+
+  @override
+  String restoreExpenseCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count expenses',
+      one: '1 expense',
+      zero: 'No expenses',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String restoreBinCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'plus $count in the bin',
+      one: 'plus 1 in the bin',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String restoreLatestOn(String date) {
+    return 'Latest on $date';
+  }
+
+  @override
+  String restoreReplacesData(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count expenses',
+      one: '1 expense',
+      zero: 'no expenses',
+    );
+    return 'All data on this phone ($_temp0) is replaced.';
+  }
+
+  @override
+  String get restoreKeepsCopy =>
+      'A copy is kept, and you can undo the restore.';
+
+  @override
+  String get restoreBackupButton => 'Restore';
+
+  @override
+  String get checkingBackup => 'Checking the backup…';
+
+  @override
+  String get restoringData => 'Restoring your data…';
+
+  @override
+  String get backupRestored => 'Backup restored';
+
+  @override
+  String get backupRestoredDefaultSettings =>
+      'Backup restored. Its settings were missing or unreadable, so the default settings are used. You can change them in Settings.';
+
+  @override
+  String get restoreFailedTitle => 'Restore failed';
+
+  @override
+  String get restoreFailedMessage =>
+      'Your data on this phone is unchanged. Please copy the report below and send it to us so we can fix it.';
+
+  @override
+  String get restoreFailedRestartMessage =>
+      'Your data on this phone is unchanged. The app restarts to open it again. Please copy the report below and send it to us so we can fix it.';
+
+  @override
+  String get restartApp => 'Restart the app';
+
+  @override
+  String get restoreRejectedTitle => 'Can\'t restore this file';
+
+  @override
+  String get notABackup => 'This file isn\'t a backup from Expense Tracker.';
+
+  @override
+  String get backupTooNew =>
+      'This backup was made by a newer version of the app. Update the app, then try again.';
+
+  @override
+  String get backupDamaged => 'This backup is damaged and can\'t be restored.';
+
+  @override
   String get categoryFood => 'Food';
 
   @override

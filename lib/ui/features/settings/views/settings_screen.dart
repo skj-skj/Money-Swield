@@ -13,6 +13,8 @@ import '../../../core/widgets/choice_dialog.dart';
 import '../../../core/widgets/confirm_dialog.dart';
 import '../../../core/widgets/currency_picker_sheet.dart';
 import '../../../core/widgets/save_error.dart';
+import '../../backup/views/backup_screen.dart';
+import '../../backup/views/backup_texts.dart';
 import '../../bin/views/bin_screen.dart';
 import '../../payment_methods/view_models/payment_method_list_cubit.dart';
 import '../view_models/settings_cubit.dart';
@@ -20,7 +22,7 @@ import 'customize_tiles_screen.dart';
 import 'theme_color_dialog.dart';
 
 /// The Settings tab: language, theme, default currency, default payment
-/// method, and the bin. Every change applies at once.
+/// method, backup & restore, and the bin. Every change applies at once.
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
     super.key,
@@ -43,6 +45,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
   PaymentMethodListCubit? _paymentMethodList;
   AppLocalizations? _l10n;
 
+  /// For the Backup & restore row. Not part of the settings cubit (a
+  /// backup mustn't rebuild the app), so read here: on start, when the tab
+  /// comes back, and when the user returns from Backup & restore.
+  DateTime? _lastBackupAt;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLastBackup();
+  }
+
+  Future<void> _loadLastBackup() async {
+    try {
+      final at = await widget.dependencies.backups.lastBackupAt();
+      if (mounted) setState(() => _lastBackupAt = at);
+    } catch (error) {
+      // The row then says "Never backed up" until the next load.
+      debugPrint('Reading the last backup time failed: $error');
+    }
+  }
+
+  Future<void> _openBackup() async {
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BackupScreen(dependencies: widget.dependencies),
+      ),
+    );
+    await _loadLastBackup();
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -61,7 +94,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void didUpdateWidget(SettingsScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.isVisible && !oldWidget.isVisible) _paymentMethodList?.load();
+    if (widget.isVisible && !oldWidget.isVisible) {
+      _paymentMethodList?.load();
+      _loadLastBackup();
+    }
   }
 
   @override
@@ -247,6 +283,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               title: Text(l10n.restoreDefaultLook),
               subtitle: Text(l10n.restoreDefaultLookSubtitle),
               onTap: _restoreDefaultLook,
+            ),
+            ListTile(
+              leading: const Icon(Icons.backup_outlined),
+              title: Text(l10n.backupAndRestore),
+              subtitle: Text(
+                lastBackupText(l10n, _lastBackupAt, widget.dependencies.now()),
+              ),
+              onTap: _openBackup,
             ),
             ListTile(
               leading: const Icon(Icons.delete_outline),

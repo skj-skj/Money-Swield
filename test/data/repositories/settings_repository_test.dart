@@ -285,4 +285,40 @@ void main() {
       expect((await repository.load()).tileShape, ItemShape.rounded);
     });
   });
+
+  group('last backup', () {
+    test('is null (never) until one is recorded', () async {
+      expect(await repository.lastBackupAt(), isNull);
+    });
+
+    test('round trips as the same UTC moment, to the millisecond', () async {
+      final at = DateTime.utc(2026, 10, 3, 8, 35, 12, 345);
+      await repository.setLastBackupAt(at.toLocal());
+      final read = await repository.lastBackupAt();
+      expect(read, at);
+      expect(read!.isUtc, isTrue);
+      expect(
+        (await db.query(
+          'settings',
+          where: "key = 'last_backup_at'",
+        )).single['value'],
+        '${at.millisecondsSinceEpoch}',
+        reason: 'stored as epoch ms like every time in the database',
+      );
+    });
+
+    test('an unreadable value reads as never', () async {
+      await store('last_backup_at', 'yesterday');
+      expect(await repository.lastBackupAt(), isNull);
+    });
+
+    test(
+      'is not part of AppSettings: recording one leaves load() equal',
+      () async {
+        final before = await repository.load();
+        await repository.setLastBackupAt(DateTime.utc(2026));
+        expect(await repository.load(), before);
+      },
+    );
+  });
 }

@@ -1114,6 +1114,228 @@ abstract class AppLocalizations {
   /// **'Your data is up to date.'**
   String get migrationUpdatedMessage;
 
+  /// No description provided for @backupAndRestore.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup & restore'**
+  String get backupAndRestore;
+
+  /// No description provided for @lastBackupNever.
+  ///
+  /// In en, this message translates to:
+  /// **'Never backed up'**
+  String get lastBackupNever;
+
+  /// No description provided for @lastBackupToday.
+  ///
+  /// In en, this message translates to:
+  /// **'today'**
+  String get lastBackupToday;
+
+  /// No description provided for @lastBackupYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'yesterday'**
+  String get lastBackupYesterday;
+
+  /// No description provided for @lastBackupDaysAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, =1{1 day ago} other{{days} days ago}}'**
+  String lastBackupDaysAgo(int days);
+
+  /// No description provided for @lastBackupSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Last backup: {when}'**
+  String lastBackupSubtitle(String when);
+
+  /// No description provided for @backUpNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Back up now'**
+  String get backUpNow;
+
+  /// No description provided for @preparingBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing backup…'**
+  String get preparingBackup;
+
+  /// No description provided for @backupSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup saved'**
+  String get backupSaved;
+
+  /// No description provided for @backupFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup failed'**
+  String get backupFailedTitle;
+
+  /// No description provided for @backupFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing was saved, and your data on this phone is unchanged. Please copy the report below and send it to us so we can fix it.'**
+  String get backupFailedMessage;
+
+  /// No description provided for @restoreFromBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore from a backup'**
+  String get restoreFromBackup;
+
+  /// No description provided for @restoreFromBackupSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Replaces all data on this phone with a backup file.'**
+  String get restoreFromBackupSubtitle;
+
+  /// No description provided for @undoLastRestore.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo last restore'**
+  String get undoLastRestore;
+
+  /// No description provided for @undoLastRestoreSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Go back to your data from before the restore on {date}.'**
+  String undoLastRestoreSubtitle(String date);
+
+  /// No description provided for @restoreConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore this backup?'**
+  String get restoreConfirmTitle;
+
+  /// No description provided for @undoConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo the last restore?'**
+  String get undoConfirmTitle;
+
+  /// No description provided for @restoreBackupFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup from {date}'**
+  String restoreBackupFrom(String date);
+
+  /// No description provided for @restoreCopyFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'Your data from before the restore on {date}'**
+  String restoreCopyFrom(String date);
+
+  /// No description provided for @restoreExpenseCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No expenses} =1{1 expense} other{{count} expenses}}'**
+  String restoreExpenseCount(int count);
+
+  /// No description provided for @restoreBinCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{plus 1 in the bin} other{plus {count} in the bin}}'**
+  String restoreBinCount(int count);
+
+  /// No description provided for @restoreLatestOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Latest on {date}'**
+  String restoreLatestOn(String date);
+
+  /// No description provided for @restoreReplacesData.
+  ///
+  /// In en, this message translates to:
+  /// **'All data on this phone ({count, plural, =0{no expenses} =1{1 expense} other{{count} expenses}}) is replaced.'**
+  String restoreReplacesData(int count);
+
+  /// No description provided for @restoreKeepsCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'A copy is kept, and you can undo the restore.'**
+  String get restoreKeepsCopy;
+
+  /// Confirms restoring a backup. Its own key, not the bin's "restore": some languages use a different word.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get restoreBackupButton;
+
+  /// No description provided for @checkingBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking the backup…'**
+  String get checkingBackup;
+
+  /// No description provided for @restoringData.
+  ///
+  /// In en, this message translates to:
+  /// **'Restoring your data…'**
+  String get restoringData;
+
+  /// No description provided for @backupRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup restored'**
+  String get backupRestored;
+
+  /// Snackbar on Home after restoring a backup whose settings table was missing or damaged: the expenses were restored, the settings were reset to defaults.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup restored. Its settings were missing or unreadable, so the default settings are used. You can change them in Settings.'**
+  String get backupRestoredDefaultSettings;
+
+  /// No description provided for @restoreFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore failed'**
+  String get restoreFailedTitle;
+
+  /// No description provided for @restoreFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your data on this phone is unchanged. Please copy the report below and send it to us so we can fix it.'**
+  String get restoreFailedMessage;
+
+  /// No description provided for @restoreFailedRestartMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your data on this phone is unchanged. The app restarts to open it again. Please copy the report below and send it to us so we can fix it.'**
+  String get restoreFailedRestartMessage;
+
+  /// No description provided for @restartApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart the app'**
+  String get restartApp;
+
+  /// No description provided for @restoreRejectedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t restore this file'**
+  String get restoreRejectedTitle;
+
+  /// No description provided for @notABackup.
+  ///
+  /// In en, this message translates to:
+  /// **'This file isn\'t a backup from Expense Tracker.'**
+  String get notABackup;
+
+  /// No description provided for @backupTooNew.
+  ///
+  /// In en, this message translates to:
+  /// **'This backup was made by a newer version of the app. Update the app, then try again.'**
+  String get backupTooNew;
+
+  /// No description provided for @backupDamaged.
+  ///
+  /// In en, this message translates to:
+  /// **'This backup is damaged and can\'t be restored.'**
+  String get backupDamaged;
+
   /// No description provided for @categoryFood.
   ///
   /// In en, this message translates to:

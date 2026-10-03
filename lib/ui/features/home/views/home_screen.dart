@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../app/app_dependencies.dart';
+import '../../../../app/app_restart.dart';
 import '../../../../domain/models/app_settings.dart';
 import '../../../../domain/models/currency.dart';
 import '../../../../domain/models/expense.dart';
@@ -28,9 +29,15 @@ class HomeScreen extends StatefulWidget {
     super.key,
     required this.dependencies,
     required this.isVisible,
+    this.restoreNotice,
   });
 
   final AppDependencies dependencies;
+
+  /// Said once, right after the app restarted on restored data
+  /// (phase-3.md §6.6): "Backup restored", or that its settings were
+  /// missing and the defaults are used. Null says nothing.
+  final RestoreNotice? restoreNotice;
 
   /// Whether this tab is the one shown. The shell keeps the tab alive while
   /// hidden, and Manage or the bin may change data meanwhile, so the list
@@ -78,6 +85,25 @@ class _HomeScreenState extends State<HomeScreen> {
     _scroll.addListener(_maybeLoadMore);
     _lifecycle = AppLifecycleListener(onResume: _rebuildForNewDay);
     _scheduleMidnight();
+    // On Home's own messenger, like its other snackbars, so the FAB moves
+    // up for it instead of being covered.
+    if (widget.restoreNotice case final notice?) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final l10n = AppLocalizations.of(context);
+        _messenger.currentState?.showSnackBar(switch (notice) {
+          RestoreNotice.restored => SnackBar(
+            content: Text(l10n.backupRestored),
+          ),
+          // Longer: there's more to read, and it says where to go next.
+          RestoreNotice.restoredWithDefaultSettings => SnackBar(
+            content: Text(l10n.backupRestoredDefaultSettings),
+            duration: const Duration(seconds: 10),
+            showCloseIcon: true,
+          ),
+        });
+      });
+    }
   }
 
   void _scheduleMidnight() {

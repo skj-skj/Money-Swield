@@ -4,6 +4,7 @@ import '../../../../data/repositories/category_repository.dart';
 import '../../../../data/repositories/event_repository.dart';
 import '../../../../data/repositories/expense_repository.dart';
 import '../../../../data/repositories/payment_method_repository.dart';
+import '../../../../domain/calendar_days.dart';
 import '../../../../domain/models/category.dart';
 import '../../../../domain/models/event.dart';
 import '../../../../domain/models/expense.dart';
@@ -60,24 +61,15 @@ typedef BinAge = ({int daysAgo, int? daysLeft});
 /// null once that moment has passed (removed on the next start, as the
 /// purge only runs at startup). So the two can add up to 30 or 31.
 BinAge binAge(DateTime deletedAt, DateTime now) {
-  final deletedDay = _localDate(deletedAt);
-  final today = _localDate(now);
   final remaining = deletedAt
       .add(ExpenseRepository.binRetention)
       .difference(now)
       .inMilliseconds;
   const day = Duration.millisecondsPerDay;
   return (
-    daysAgo: today.difference(deletedDay).inDays,
+    daysAgo: calendarDaysAgo(deletedAt, now),
     daysLeft: remaining <= 0 ? null : (remaining + day - 1) ~/ day,
   );
-}
-
-/// The device-local calendar date of [moment], as a UTC midnight so that
-/// day arithmetic can't be shifted by a DST change.
-DateTime _localDate(DateTime moment) {
-  final local = moment.toLocal();
-  return DateTime.utc(local.year, local.month, local.day);
 }
 
 /// The bin: binned expenses with restore and permanent delete

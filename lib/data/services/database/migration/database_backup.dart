@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
+import '../database_files.dart';
+
 /// Copies the database file aside before migrations touch it.
 ///
 /// The copy lives in a `backups` folder next to the database, e.g.
@@ -12,9 +14,6 @@ import 'package:path/path.dart' as p;
 /// instead of adding copies of the partly migrated database.
 class DatabaseBackup {
   const DatabaseBackup._();
-
-  /// Journal files SQLite may keep next to the database.
-  static const _sidecarSuffixes = ['-wal', '-journal'];
 
   /// Copies the (closed) database at [databasePath], or returns the backup a
   /// failed earlier run left. Returns null when there is no database yet,
@@ -36,17 +35,11 @@ class DatabaseBackup {
       return existing.first;
     }
 
-    final stamp = now
-        .toUtc()
-        .toIso8601String()
-        .split('.')
-        .first
-        .replaceAll(':', '-');
     final backupPath = p.join(
       folder.path,
-      '${p.basename(databasePath)}.${stamp}Z.bak',
+      '${p.basename(databasePath)}.${fileStamp(now)}.bak',
     );
-    for (final suffix in _sidecarSuffixes) {
+    for (final suffix in journalSuffixes) {
       final sidecar = File('$databasePath$suffix');
       if (await sidecar.exists()) {
         await _copyVerified(sidecar, '$backupPath$suffix');
@@ -61,7 +54,7 @@ class DatabaseBackup {
   static Future<void> delete(File backup) async {
     for (final file in [
       backup,
-      for (final suffix in _sidecarSuffixes) File('${backup.path}$suffix'),
+      for (final suffix in journalSuffixes) File('${backup.path}$suffix'),
     ]) {
       if (await file.exists()) await file.delete();
     }

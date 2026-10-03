@@ -126,6 +126,15 @@ class MigrationCubit extends CubitSignal<MigrationState>
     }
   }
 
+  /// Runs migrations again after the database file was replaced by a
+  /// restore (phase-3.md §6.6). [run] alone returns early once done. Ignored
+  /// while a run is going on.
+  Future<void> restart() async {
+    if (_isRunning) return;
+    _emitIfOpen(const MigrationInProgress());
+    await run();
+  }
+
   /// Continue on the success screen: opens the app.
   void acknowledge() {
     if (value is MigrationSucceeded) _emitIfOpen(const MigrationDone());

@@ -600,6 +600,168 @@ class AppLocalizationsHi extends AppLocalizations {
   String get migrationUpdatedMessage => 'आपका डेटा अप-टू-डेट है।';
 
   @override
+  String get backupAndRestore => 'बैकअप और रीस्टोर';
+
+  @override
+  String get lastBackupNever => 'कभी बैकअप नहीं लिया गया';
+
+  @override
+  String get lastBackupToday => 'आज';
+
+  @override
+  String get lastBackupYesterday => 'कल';
+
+  @override
+  String lastBackupDaysAgo(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days दिन पहले',
+      one: '1 दिन पहले',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String lastBackupSubtitle(String when) {
+    return 'पिछला बैकअप: $when';
+  }
+
+  @override
+  String get backUpNow => 'अभी बैकअप लें';
+
+  @override
+  String get preparingBackup => 'बैकअप तैयार हो रहा है…';
+
+  @override
+  String get backupSaved => 'बैकअप सेव हो गया';
+
+  @override
+  String get backupFailedTitle => 'बैकअप नहीं हो सका';
+
+  @override
+  String get backupFailedMessage =>
+      'कुछ भी सेव नहीं हुआ, और इस फ़ोन का आपका डेटा नहीं बदला। कृपया नीचे दी गई रिपोर्ट कॉपी करके हमें भेजें ताकि हम इसे ठीक कर सकें।';
+
+  @override
+  String get restoreFromBackup => 'बैकअप से रीस्टोर करें';
+
+  @override
+  String get restoreFromBackupSubtitle =>
+      'इस फ़ोन का सारा डेटा बैकअप फ़ाइल के डेटा से बदल देता है।';
+
+  @override
+  String get undoLastRestore => 'पिछला रीस्टोर वापस लें';
+
+  @override
+  String undoLastRestoreSubtitle(String date) {
+    return '$date के रीस्टोर से पहले वाले अपने डेटा पर वापस जाएँ।';
+  }
+
+  @override
+  String get restoreConfirmTitle => 'यह बैकअप रीस्टोर करें?';
+
+  @override
+  String get undoConfirmTitle => 'पिछला रीस्टोर वापस लें?';
+
+  @override
+  String restoreBackupFrom(String date) {
+    return '$date का बैकअप';
+  }
+
+  @override
+  String restoreCopyFrom(String date) {
+    return '$date के रीस्टोर से पहले का आपका डेटा';
+  }
+
+  @override
+  String restoreExpenseCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count खर्च',
+      one: '1 खर्च',
+      zero: 'कोई खर्च नहीं',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String restoreBinCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'और $count बिन में',
+      one: 'और 1 बिन में',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String restoreLatestOn(String date) {
+    return 'सबसे नया $date का';
+  }
+
+  @override
+  String restoreReplacesData(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count खर्च',
+      one: '1 खर्च',
+      zero: 'कोई खर्च नहीं',
+    );
+    return 'इस फ़ोन का सारा डेटा ($_temp0) बदल दिया जाएगा।';
+  }
+
+  @override
+  String get restoreKeepsCopy =>
+      'एक कॉपी रखी जाती है, और आप रीस्टोर वापस ले सकते हैं।';
+
+  @override
+  String get restoreBackupButton => 'रीस्टोर करें';
+
+  @override
+  String get checkingBackup => 'बैकअप जाँचा जा रहा है…';
+
+  @override
+  String get restoringData => 'आपका डेटा रीस्टोर हो रहा है…';
+
+  @override
+  String get backupRestored => 'बैकअप रीस्टोर हो गया';
+
+  @override
+  String get backupRestoredDefaultSettings =>
+      'बैकअप रीस्टोर हो गया। इसकी सेटिंग नहीं मिली या पढ़ी नहीं जा सकी, इसलिए डिफ़ॉल्ट सेटिंग लागू की गई हैं। आप इन्हें सेटिंग में बदल सकते हैं।';
+
+  @override
+  String get restoreFailedTitle => 'रीस्टोर नहीं हो सका';
+
+  @override
+  String get restoreFailedMessage =>
+      'इस फ़ोन का आपका डेटा नहीं बदला। कृपया नीचे दी गई रिपोर्ट कॉपी करके हमें भेजें ताकि हम इसे ठीक कर सकें।';
+
+  @override
+  String get restoreFailedRestartMessage =>
+      'इस फ़ोन का आपका डेटा नहीं बदला। उसे फिर से खोलने के लिए ऐप दोबारा शुरू होगा। कृपया नीचे दी गई रिपोर्ट कॉपी करके हमें भेजें ताकि हम इसे ठीक कर सकें।';
+
+  @override
+  String get restartApp => 'ऐप दोबारा शुरू करें';
+
+  @override
+  String get restoreRejectedTitle => 'यह फ़ाइल रीस्टोर नहीं हो सकती';
+
+  @override
+  String get notABackup => 'यह फ़ाइल Expense Tracker का बैकअप नहीं है।';
+
+  @override
+  String get backupTooNew =>
+      'यह बैकअप ऐप के नए वर्ज़न से बना है। ऐप अपडेट करें, फिर दोबारा कोशिश करें।';
+
+  @override
+  String get backupDamaged => 'यह बैकअप खराब है और रीस्टोर नहीं हो सकता।';
+
+  @override
   String get categoryFood => 'खाना';
 
   @override
