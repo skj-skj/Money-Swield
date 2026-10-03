@@ -12,6 +12,7 @@ import '../../../../domain/models/expense.dart';
 import '../../../../domain/models/money.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/builtin_names.dart';
+import '../../../core/formatting_locale.dart';
 import '../../../core/money_formatter.dart';
 import '../../../core/widgets/confirm_dialog.dart';
 import '../../../core/widgets/currency_picker_sheet.dart';
@@ -215,6 +216,9 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
       // Future dates are allowed (P2-4); no real limit either way.
       firstDate: DateTime(1900),
       lastDate: DateTime(2200),
+      // The app language with the phone's country, like the rest of the
+      // dates (and money).
+      locale: formattingLocaleValueOf(context),
       // Opens the way the user last left it (calendar or typing).
       initialEntryMode: settings.value.datePickerKeyboard
           ? DatePickerEntryMode.input
@@ -334,7 +338,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
     final fields = state.fields;
     final currency = findCurrency(fields.currencyCode);
     final preview = _form.amountPreview;
-    final locale = Localizations.localeOf(context).toString();
+    final locale = dateLocaleOf(context);
     // Settings can't change while this screen is open (they're on another
     // tab), so reading them once per build is enough.
     final settings = context.read<SettingsCubit>().value;

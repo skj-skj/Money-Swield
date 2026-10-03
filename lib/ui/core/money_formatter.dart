@@ -5,6 +5,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../domain/models/currency.dart';
 import '../../domain/models/money.dart';
+import 'formatting_locale.dart';
 
 /// The one place that turns [Money] into text (phase-2.md §4.4):
 /// `₹1,10,050.00`, `$85.00`, `¥500`.
@@ -18,33 +19,12 @@ class MoneyFormatter {
   factory MoneyFormatter.forLocale(String localeName) =>
       _instances.putIfAbsent(localeName, () => MoneyFormatter._(localeName));
 
-  /// The formatter for the app's language with the device's country.
-  static MoneyFormatter of(BuildContext context) => MoneyFormatter.forLocale(
-    localeNameFor(
-      appLocale: Localizations.localeOf(context),
-      deviceLocale: WidgetsBinding.instance.platformDispatcher.locale,
-    ),
-  );
+  /// The formatter for the app's language with the device's country
+  /// ([formattingLocaleOf], shared with dates).
+  static MoneyFormatter of(BuildContext context) =>
+      MoneyFormatter.forLocale(formattingLocaleOf(context));
 
   static final _instances = <String, MoneyFormatter>{};
-
-  /// The locale digits are grouped by: the app language with the device's
-  /// country when intl knows that pair (`en` on an Indian phone →
-  /// `en_IN` → `1,10,050`), else the app language alone (`hi` already
-  /// groups the Indian way). The app locale has no country, so on its own
-  /// `en` would group `110,050` for an Indian user (P2-11).
-  static String localeNameFor({
-    required Locale appLocale,
-    required Locale deviceLocale,
-  }) {
-    final language = appLocale.languageCode;
-    final country = deviceLocale.countryCode;
-    if (country != null && country.isNotEmpty) {
-      final withCountry = '${language}_$country';
-      if (NumberFormat.localeExists(withCountry)) return withCountry;
-    }
-    return language;
-  }
 
   final String localeName;
   final _formats = <String, NumberFormat>{};

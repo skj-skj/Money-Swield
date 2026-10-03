@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:my_expense_tracker_app/domain/models/money.dart';
+import 'package:my_expense_tracker_app/ui/core/formatting_locale.dart';
 import 'package:my_expense_tracker_app/ui/core/money_formatter.dart';
 
 /// phase-2.md §4.4 and the "Formatting" tests of §13.
@@ -10,10 +11,10 @@ void main() {
 
   const nbsp = ' ';
 
-  group('localeNameFor', () {
+  group('formattingLocaleName', () {
     String localeFor(String app, String device) {
       final [language, country] = device.split('_');
-      return MoneyFormatter.localeNameFor(
+      return formattingLocaleName(
         appLocale: Locale(app),
         deviceLocale: Locale(language, country),
       );
@@ -30,7 +31,7 @@ void main() {
       expect(localeFor('hi', 'hi_IN'), 'hi', reason: 'intl has no hi_IN');
       expect(localeFor('es', 'en_IN'), 'es', reason: 'intl has no es_IN');
       expect(
-        MoneyFormatter.localeNameFor(
+        formattingLocaleName(
           appLocale: const Locale('en'),
           deviceLocale: const Locale('en'),
         ),

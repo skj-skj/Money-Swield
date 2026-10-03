@@ -5,6 +5,7 @@ import '../../../../domain/models/currency.dart';
 import '../../../../domain/models/expense.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/builtin_names.dart';
+import '../../../core/formatting_locale.dart';
 import '../../../core/money_formatter.dart';
 import '../../../core/widgets/confirm_dialog.dart';
 import '../../../core/widgets/save_error.dart';
@@ -47,7 +48,7 @@ class BinDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final locale = Localizations.localeOf(context).toString();
+    final locale = dateLocaleOf(context);
     final category = lookups.categories[expense.categoryId];
     final method = lookups.paymentMethods[expense.paymentMethodId];
     final events = [

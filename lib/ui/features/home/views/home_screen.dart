@@ -10,6 +10,7 @@ import '../../../../domain/models/app_settings.dart';
 import '../../../../domain/models/currency.dart';
 import '../../../../domain/models/expense.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../core/formatting_locale.dart';
 import '../../../core/money_formatter.dart';
 import '../../../core/widgets/currency_picker_sheet.dart';
 import '../../../core/widgets/load_failed_view.dart';
@@ -325,8 +326,9 @@ List<HomeListItem> homeListItems(List<Expense> expenses) {
   return items;
 }
 
-/// "Today", "Yesterday", else e.g. "Fri, 2 Oct", with the year when it
-/// isn't [today]'s year. [today] is the device's local date.
+/// "Today", "Yesterday", else the date the way [locale] writes it ("Fri,
+/// 2 Oct" for en_IN, "Fri, Oct 2" for en_US), with the year when it isn't
+/// [today]'s year. [today] is the device's local date.
 String dayHeaderText(
   AppLocalizations l10n,
   String locale,
@@ -340,8 +342,8 @@ String dayHeaderText(
     return l10n.yesterday;
   }
   return date.year == today.year
-      ? DateFormat('EEE, d MMM', locale).format(date)
-      : DateFormat('EEE, d MMM y', locale).format(date);
+      ? DateFormat.MMMEd(locale).format(date)
+      : DateFormat.yMMMEd(locale).format(date);
 }
 
 class _DayHeader extends StatelessWidget {
@@ -360,7 +362,7 @@ class _DayHeader extends StatelessWidget {
       child: Text(
         dayHeaderText(
           AppLocalizations.of(context),
-          Localizations.localeOf(context).toString(),
+          dateLocaleOf(context),
           occurredOn,
           today.toLocal(),
         ),
@@ -391,7 +393,7 @@ class _ExpenseRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final locale = Localizations.localeOf(context).toString();
+    final locale = dateLocaleOf(context);
     final categoryEmoji =
         state.categories[expense.categoryId]?.emoji ?? _missing;
     final methodEmoji =

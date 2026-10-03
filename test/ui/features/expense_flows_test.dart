@@ -694,6 +694,105 @@ void main() {
     });
   });
 
+  testWidgets('an expense from another time zone keeps its own time and day', (
+    tester,
+  ) async {
+    // Recorded at 23:30 on 1 Oct, on a phone ten hours away from this
+    // machine's zone (the stand-in for "change the phone's time zone",
+    // phase-2.md §13). Home must show that wall clock and day, not the
+    // same moment in the current zone (database.md §1).
+    usePhoneSize(tester);
+    final here = DateTime(2026, 10, 1).timeZoneOffset.inMinutes;
+    final there = here >= 0 ? here - 600 : here + 600;
+    final wallClock = DateTime.utc(2026, 10, 1, 23, 30);
+    await deps.expenses.add(
+      ExpenseInput(
+        title: 'Late dinner',
+        description: null,
+        amount: const Money(11050, 'INR'),
+        occurredAt: wallClock.subtract(Duration(minutes: there)),
+        utcOffsetMinutes: there,
+        categoryId: 1,
+        paymentMethodId: 1,
+        eventIds: const {},
+      ),
+    );
+    await pumpApp(tester, dependencies: deps);
+
+    // intl puts a narrow no-break space before AM/PM.
+    expect(find.textContaining('11:30 PM'), findsOneWidget);
+    // Tests run as a US phone (see 'dates follow the phone country').
+    expect(find.text('Thu, Oct 1'), findsOneWidget);
+
+    await openExpense(tester, 'Late dinner');
+    // The date and time buttons are at the end of the (lazy) form.
+    await tester.scrollUntilVisible(
+      find.byIcon(Icons.schedule),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('11:30 PM'), findsOneWidget, reason: 'form time');
+    expect(find.text('Thu, Oct 1, 2026'), findsOneWidget, reason: 'form date');
+  });
+
+  group('dates follow the phone country, like money', () {
+    /// An expense on Thu 1 Oct 2026, opened on a phone set to [device]
+    /// with the app in English.
+    Future<void> pumpWithPhoneIn(WidgetTester tester, Locale device) async {
+      usePhoneSize(tester);
+      tester.platformDispatcher.localeTestValue = device;
+      tester.platformDispatcher.localesTestValue = [device];
+      addTearDown(tester.platformDispatcher.clearLocaleTestValue);
+      addTearDown(tester.platformDispatcher.clearLocalesTestValue);
+      final noon = DateTime(2026, 10, 1, 12);
+      await deps.expenses.add(
+        ExpenseInput(
+          title: 'Lunch',
+          description: null,
+          amount: const Money(11050, 'INR'),
+          occurredAt: noon.toUtc(),
+          utcOffsetMinutes: noon.timeZoneOffset.inMinutes,
+          categoryId: 1,
+          paymentMethodId: 1,
+          eventIds: const {},
+        ),
+      );
+      await pumpApp(tester, dependencies: deps);
+    }
+
+    Future<void> scrollFormToDate(WidgetTester tester) async {
+      await openExpense(tester, 'Lunch');
+      await tester.scrollUntilVisible(
+        find.byIcon(Icons.calendar_today_outlined),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+    }
+
+    testWidgets('an Indian phone shows the day first', (tester) async {
+      await pumpWithPhoneIn(tester, const Locale('en', 'IN'));
+      expect(find.text('Thu, 1 Oct'), findsOneWidget, reason: 'day header');
+      await scrollFormToDate(tester);
+      expect(find.text('Thu, 1 Oct, 2026'), findsOneWidget, reason: 'form');
+    });
+
+    testWidgets('the date picker follows the phone too', (tester) async {
+      await pumpWithPhoneIn(tester, const Locale('en', 'IN'));
+      await scrollFormToDate(tester);
+      await tester.tap(find.byIcon(Icons.calendar_today_outlined));
+      await tester.pumpAndSettle();
+      expect(find.text('Select date'), findsOneWidget);
+      expect(find.text('Thu, 1 Oct'), findsOneWidget, reason: 'picker');
+    });
+
+    testWidgets('a US phone shows the month first', (tester) async {
+      await pumpWithPhoneIn(tester, const Locale('en', 'US'));
+      expect(find.text('Thu, Oct 1'), findsOneWidget, reason: 'day header');
+      await scrollFormToDate(tester);
+      expect(find.text('Thu, Oct 1, 2026'), findsOneWidget, reason: 'form');
+    });
+  });
+
   group("Home's messages show on Home only", () {
     /// Whether [text] is shown inside Home (its own ScaffoldMessenger), not
     /// on the shell's Scaffold, where it would sit under Home's FAB and

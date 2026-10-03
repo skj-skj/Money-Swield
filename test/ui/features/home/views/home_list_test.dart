@@ -59,12 +59,27 @@ void main() {
     });
 
     test('other days with the weekday, and the year when not this one', () {
-      expect(dayHeaderText(en, 'en', '2026-09-28', today), 'Mon, 28 Sep');
-      expect(dayHeaderText(en, 'en', '2025-12-31', today), 'Wed, 31 Dec 2025');
+      expect(dayHeaderText(en, 'en_IN', '2026-09-28', today), 'Mon, 28 Sept');
       expect(
-        dayHeaderText(en, 'en', '2026-10-05', today),
+        dayHeaderText(en, 'en_IN', '2025-12-31', today),
+        'Wed, 31 Dec, 2025',
+      );
+      expect(
+        dayHeaderText(en, 'en_IN', '2026-10-05', today),
         'Mon, 5 Oct',
         reason: 'a future date is just a date',
+      );
+    });
+
+    test('in the order of the locale', () {
+      expect(dayHeaderText(en, 'en_US', '2026-09-28', today), 'Mon, Sep 28');
+      expect(
+        dayHeaderText(en, 'en_US', '2025-12-31', today),
+        'Wed, Dec 31, 2025',
+      );
+      expect(
+        dayHeaderText(l10nFor('hi'), 'hi', '2026-09-28', today),
+        'सोम, 28 सित॰',
       );
     });
 
