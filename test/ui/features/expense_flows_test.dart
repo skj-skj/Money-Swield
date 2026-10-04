@@ -114,14 +114,20 @@ void main() {
       );
       await tester.enterText(field('Title'), 'Dinner');
       await tester.enterText(field('Amount'), '250');
-      await tapSave(tester);
+      // On an existing expense the save button says Update (P4-18).
+      expect(find.widgetWithText(TextButton, 'Save'), findsNothing);
+      await tester.tap(find.widgetWithText(TextButton, 'Update'));
+      await tester.pumpAndSettle();
 
       expect(find.text('Dinner'), findsOneWidget);
       expect(find.text('Lunch'), findsNothing);
       expect(find.text('₹250.00'), findsOneWidget);
     });
 
-    testWidgets('back on a changed form asks before discarding', (
+    // Phase 4 (D9, P4-13): no "Discard changes?" prompt any more; back
+    // keeps the changes as a draft. The draft flows are in
+    // expense_draft_flows_test.dart.
+    testWidgets('back on a changed form keeps a draft, without a prompt', (
       tester,
     ) async {
       usePhoneSize(tester);
@@ -132,19 +138,11 @@ void main() {
 
       await tester.pageBack();
       await tester.pumpAndSettle();
-      expect(find.text('Discard changes?'), findsOneWidget);
-
-      await tester.tap(find.text('Keep editing'));
-      await tester.pumpAndSettle();
-      expect(find.text('Add expense'), findsOneWidget);
-      expect(field('Title'), findsOneWidget, reason: 'still on the form');
-
-      await tester.pageBack();
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Discard'));
-      await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsNothing);
       expect(field('Title'), findsNothing);
+      expect(find.text('Draft saved'), findsOneWidget);
       expect(find.text('No expenses yet'), findsOneWidget);
+      expect((await deps.drafts.read())?.title, 'Chai');
     });
 
     testWidgets('back on an untouched form just closes it', (tester) async {
@@ -153,7 +151,8 @@ void main() {
       await openAddForm(tester);
       await tester.pageBack();
       await tester.pumpAndSettle();
-      expect(find.text('Discard changes?'), findsNothing);
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.text('Draft saved'), findsNothing);
       expect(find.text('No expenses yet'), findsOneWidget);
     });
   });
@@ -440,11 +439,11 @@ void main() {
         );
         expect(find.text('Bills'), findsOneWidget);
         expect(find.byTooltip('New category'), findsOneWidget);
-        expect(find.text('Discard changes?'), findsNothing);
+        expect(find.text('Draft saved'), findsNothing, reason: 'still here');
 
         await tester.pageBack();
         await tester.pumpAndSettle();
-        expect(find.text('Discard changes?'), findsOneWidget);
+        expect(find.text('Draft saved'), findsOneWidget);
       },
     );
 

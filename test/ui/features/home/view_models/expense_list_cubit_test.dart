@@ -39,7 +39,9 @@ void main() {
       expenses: deps.expenses,
       categories: deps.categories,
       paymentMethods: deps.paymentMethods,
+      drafts: deps.drafts,
       dataVersion: deps.dataVersion,
+      chipCurrency: 'INR',
       pageSize: pageSize,
     );
     addTearDown(cubit.close);
@@ -195,7 +197,9 @@ void main() {
         expenses: gated,
         categories: deps.categories,
         paymentMethods: deps.paymentMethods,
+        drafts: deps.drafts,
         dataVersion: deps.dataVersion,
+        chipCurrency: 'INR',
         pageSize: 3,
       );
       addTearDown(cubit.close);

@@ -308,7 +308,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get amountErrorEmpty => 'Enter an amount';
 
   @override
-  String get amountErrorInvalid => 'Enter a plain number, like 110.50';
+  String get amountErrorInvalid => 'Enter an amount like 110.50 or 50 + 60';
 
   @override
   String amountErrorTooLarge(int max) {
@@ -342,16 +342,80 @@ class AppLocalizationsEn extends AppLocalizations {
   String get categoryRequired => 'Pick a category';
 
   @override
-  String get discardChangesTitle => 'Discard changes?';
-
-  @override
-  String get discard => 'Discard';
-
-  @override
-  String get keepEditing => 'Keep editing';
-
-  @override
   String get expenseGone => 'This expense no longer exists';
+
+  @override
+  String get clear => 'Clear';
+
+  @override
+  String get update => 'Update';
+
+  @override
+  String get done => 'Done';
+
+  @override
+  String get cleared => 'Form cleared';
+
+  @override
+  String get draftDiscarded => 'Draft discarded';
+
+  @override
+  String get discardDraft => 'Discard draft';
+
+  @override
+  String draftRestoredAdd(String age) {
+    return 'Unsaved expense restored ($age)';
+  }
+
+  @override
+  String draftRestoredEdit(String age) {
+    return 'Unsaved changes restored ($age)';
+  }
+
+  @override
+  String get draftSaved => 'Draft saved';
+
+  @override
+  String get draftKeptExpenseGone =>
+      'The expense was deleted; your changes were kept. Tap + to add them as a new expense';
+
+  @override
+  String get unsavedChanges => 'Unsaved changes';
+
+  @override
+  String get itemize => 'Itemize';
+
+  @override
+  String get itemizeTitle => 'Describe the items';
+
+  @override
+  String get amountErrorDivideByZero => 'Can\'t divide by zero';
+
+  @override
+  String amountApprox(String amount) {
+    return '≈ $amount';
+  }
+
+  @override
+  String get keyPlus => 'plus';
+
+  @override
+  String get keyMinus => 'minus';
+
+  @override
+  String get keyTimes => 'times';
+
+  @override
+  String get keyDivide => 'divided by';
+
+  @override
+  String get keyDecimal => 'decimal point';
+
+  @override
+  String get amountChipsLabel => 'Usual amounts';
+
+  @override
+  String get titleSuggestionsLabel => 'Past titles';
 
   @override
   String get search => 'Search';

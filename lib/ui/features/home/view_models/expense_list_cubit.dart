@@ -5,10 +5,15 @@ import 'package:flutter/foundation.dart' show debugPrint;
 
 import '../../../../data/repositories/category_repository.dart';
 import '../../../../data/repositories/data_version.dart';
+import '../../../../data/repositories/expense_draft_repository.dart';
 import '../../../../data/repositories/expense_repository.dart';
 import '../../../../data/repositories/payment_method_repository.dart';
+import '../../../../domain/amount_chips.dart';
 import '../../../../domain/models/category.dart';
+import '../../../../domain/models/currency.dart';
 import '../../../../domain/models/expense.dart';
+import '../../../../domain/models/expense_draft.dart';
+import '../../../../domain/models/money.dart';
 import '../../../../domain/models/payment_method.dart';
 import '../../../core/recent_currencies.dart';
 
@@ -30,6 +35,8 @@ final class ExpenseListLoaded extends ExpenseListState {
     required this.hasMore,
     this.loadingMore = false,
     this.loadMoreFailed = false,
+    this.chips = const [],
+    this.draftExpenseId,
   });
 
   /// Newest first.
@@ -49,11 +56,20 @@ final class ExpenseListLoaded extends ExpenseListState {
   /// The last page failed: the list keeps its rows and shows a retry row.
   final bool loadMoreFailed;
 
+  /// The amount chips, ascending; empty hides the row (phase-4.md §8.1).
+  final List<Money> chips;
+
+  /// The expense with unsaved changes in the draft slot, or null; its row
+  /// shows a mark (phase-4.md §8.2).
+  final int? draftExpenseId;
+
   ExpenseListLoaded copyWith({
     List<Expense>? expenses,
     bool? hasMore,
     bool? loadingMore,
     bool? loadMoreFailed,
+    List<Money>? chips,
+    int? Function()? draftExpenseId,
   }) => ExpenseListLoaded(
     expenses: expenses ?? this.expenses,
     categories: categories,
@@ -61,6 +77,10 @@ final class ExpenseListLoaded extends ExpenseListState {
     hasMore: hasMore ?? this.hasMore,
     loadingMore: loadingMore ?? this.loadingMore,
     loadMoreFailed: loadMoreFailed ?? this.loadMoreFailed,
+    chips: chips ?? this.chips,
+    draftExpenseId: draftExpenseId == null
+        ? this.draftExpenseId
+        : draftExpenseId(),
   );
 }
 
@@ -71,16 +91,23 @@ final class ExpenseListFailed extends ExpenseListState {
 }
 
 /// The Home tab's expense list: keyset pages of [pageSize], newest first
-/// (phase-2.md §7.2).
+/// (phase-2.md §7.2), with the amount chips and the unsaved mark
+/// (phase-4.md §8).
 class ExpenseListCubit extends CubitSignal<ExpenseListState> {
+  /// Chips are for `chipCurrency`, the default currency; Home keeps it up
+  /// to date with [setChipCurrency].
   ExpenseListCubit({
     required this._expenses,
     required this._categories,
     required this._paymentMethods,
+    required this._drafts,
     required this._dataVersion,
+    required this._chipCurrency,
     this.pageSize = 30,
   }) : super(initialState: const ExpenseListLoading());
 
+  final ExpenseDraftRepository _drafts;
+  String _chipCurrency;
   final ExpenseRepository _expenses;
   final CategoryRepository _categories;
   final PaymentMethodRepository _paymentMethods;
@@ -162,6 +189,40 @@ class ExpenseListCubit extends CubitSignal<ExpenseListState> {
     await reload();
   }
 
+  /// Shows the chips of [code] (the default currency changed). Settings
+  /// writes don't bump `DataVersion`, so Home calls this itself.
+  Future<void> setChipCurrency(String code) async {
+    if (code == _chipCurrency) return;
+    _chipCurrency = code;
+    final chips = await _loadChips();
+    final current = value;
+    if (current is ExpenseListLoaded && code == _chipCurrency) {
+      _emitIfOpen(current.copyWith(chips: chips));
+    }
+  }
+
+  /// The draft slot, for opening the form (phase-4.md §7.4). Null when
+  /// empty or when it can't be read (logged): the form then opens without
+  /// a draft.
+  Future<ExpenseDraft?> pendingDraft() async {
+    try {
+      return await _drafts.read();
+    } catch (error) {
+      debugPrint('Reading the expense draft failed: $error');
+      return null;
+    }
+  }
+
+  /// Re-reads which expense has unsaved changes, after a form closed:
+  /// draft writes don't bump `DataVersion` (phase-4.md §8.2).
+  Future<void> refreshDraftMark() async {
+    final id = (await pendingDraft())?.editingExpenseId;
+    final current = value;
+    if (current is ExpenseListLoaded && current.draftExpenseId != id) {
+      _emitIfOpen(current.copyWith(draftExpenseId: () => id));
+    }
+  }
+
   /// The currencies of the latest entered expenses, for the currency
   /// sheet's Recent section. Empty if they can't be read: the sheet still
   /// works without them.
@@ -174,6 +235,10 @@ class ExpenseListCubit extends CubitSignal<ExpenseListState> {
       final expenses = await _expenses.page(limit: limit);
       final categories = await _categories.all();
       final paymentMethods = await _paymentMethods.all();
+      final draft = await pendingDraft();
+      // Last, with no await after it: the chips are for the chip currency
+      // as it is when this emits, even if it changed while loading.
+      final chips = await _loadChips();
       if (generation != _generation) return;
       _loadedVersion = version;
       _emitIfOpen(
@@ -182,6 +247,8 @@ class ExpenseListCubit extends CubitSignal<ExpenseListState> {
           categories: {for (final c in categories) c.id: c},
           paymentMethods: {for (final m in paymentMethods) m.id: m},
           hasMore: expenses.length == limit,
+          chips: chips,
+          draftExpenseId: draft?.editingExpenseId,
         ),
       );
     } catch (error) {
@@ -190,6 +257,29 @@ class ExpenseListCubit extends CubitSignal<ExpenseListState> {
       // the error view.
       if (value is! ExpenseListLoaded) _emitIfOpen(ExpenseListFailed(error));
       debugPrint('Loading expenses failed: $error');
+    }
+  }
+
+  /// The chips of the chip currency. Their own try/catch: a failure hides
+  /// the row (logged) and the list loads normally (phase-4.md §8.1). Read
+  /// again if the currency changed during the query, so a reload in flight
+  /// can't put the old currency's chips back.
+  Future<List<Money>> _loadChips() async {
+    final code = _chipCurrency;
+    try {
+      final popular = await _expenses.amountChipStats(code);
+      if (code != _chipCurrency) return await _loadChips();
+      return [
+        for (final amount in amountChips(
+          popular,
+          currencyCode: code,
+          minorDigits: findCurrency(code)?.minorDigits ?? 2,
+        ))
+          Money(amount, code),
+      ];
+    } catch (error) {
+      debugPrint('Loading the amount chips failed: $error');
+      return const [];
     }
   }
 

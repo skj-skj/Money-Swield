@@ -120,4 +120,27 @@ void main() {
       expect(identical(a.numberFormat('INR'), a.numberFormat('USD')), isFalse);
     });
   });
+
+  group('formatShort (amount chips)', () {
+    String short(Money money, String locale) =>
+        MoneyFormatter.forLocale(locale).formatShort(money);
+
+    test('drops zero decimals of a whole amount', () {
+      expect(short(const Money(5000, 'INR'), 'en_IN'), '₹50');
+      expect(short(const Money(100000000, 'INR'), 'en_IN'), '₹10,00,000');
+      expect(short(const Money(500, 'JPY'), 'en'), '¥500');
+      expect(short(const Money(1000, 'KWD'), 'en'), 'din 1');
+    });
+
+    test('keeps the decimals of an amount that has them', () {
+      expect(short(const Money(1250, 'INR'), 'en_IN'), '₹12.50');
+      expect(short(const Money(1001, 'KWD'), 'en'), 'din 1.001');
+    });
+
+    test('format() is unchanged by it', () {
+      final formatter = MoneyFormatter.forLocale('en_IN');
+      formatter.formatShort(const Money(5000, 'INR'));
+      expect(formatter.format(const Money(5000, 'INR')), '₹50.00');
+    });
+  });
 }

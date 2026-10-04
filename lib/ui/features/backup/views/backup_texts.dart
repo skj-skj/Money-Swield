@@ -1,8 +1,8 @@
 import 'package:intl/intl.dart';
 
-import '../../../../domain/calendar_days.dart';
 import '../../../../domain/models/restore_candidate.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../core/days_ago.dart';
 
 /// Shown where a date is unknown (an unreadable `created_at`, a backup
 /// without an `expenses` table).
@@ -14,12 +14,7 @@ const unknownValue = '—';
 /// time) reads "today", never "-3 days ago".
 String lastBackupText(AppLocalizations l10n, DateTime? at, DateTime now) {
   if (at == null) return l10n.lastBackupNever;
-  final when = switch (calendarDaysAgo(at, now)) {
-    <= 0 => l10n.lastBackupToday,
-    1 => l10n.lastBackupYesterday,
-    final days => l10n.lastBackupDaysAgo(days),
-  };
-  return l10n.lastBackupSubtitle(when);
+  return l10n.lastBackupSubtitle(daysAgoText(l10n, at, now));
 }
 
 /// "3 Oct 2026, 2:05 PM" in the device's time zone.

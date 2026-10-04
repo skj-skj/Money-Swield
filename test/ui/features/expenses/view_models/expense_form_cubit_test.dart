@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_expense_tracker_app/app/app_dependencies.dart';
-import 'package:my_expense_tracker_app/domain/amount_input.dart';
+import 'package:my_expense_tracker_app/domain/amount_expression.dart';
 import 'package:my_expense_tracker_app/domain/models/expense.dart';
 import 'package:my_expense_tracker_app/domain/models/money.dart';
 import 'package:my_expense_tracker_app/ui/core/picker_order.dart';
@@ -23,6 +23,7 @@ void main() {
       categories: deps.categories,
       events: deps.events,
       paymentMethods: deps.paymentMethods,
+      drafts: deps.drafts,
       l10n: l10nFor('en'),
       defaultCurrency: 'INR',
       defaultPaymentMethodId: 1,
@@ -84,6 +85,7 @@ void main() {
           categories: deps.categories,
           events: deps.events,
           paymentMethods: deps.paymentMethods,
+          drafts: deps.drafts,
           l10n: l10nFor('en'),
           defaultCurrency: 'INR',
           defaultPaymentMethodId: 3,
@@ -119,7 +121,7 @@ void main() {
 
         expect(await cubit.save(), isNull);
         expect(cubit.titleError, TitleError.required);
-        expect(cubit.amountError, AmountError.empty);
+        expect(cubit.amountError, ExpressionError.empty);
         expect(cubit.categoryMissing, isTrue);
         expect(await deps.expenses.page(), isEmpty);
       },
@@ -159,8 +161,8 @@ void main() {
         await cubit.save();
         expect(cubit.amountError, isNull);
         cubit.currencyChanged('JPY');
-        expect(cubit.amountError, AmountError.tooManyDecimals);
-        expect(fieldsOf(cubit).amountText, '10.50', reason: 'text untouched');
+        expect(cubit.amountError, ExpressionError.tooManyDecimals);
+        expect(fieldsOf(cubit).expression, '10.50', reason: 'text untouched');
 
         cubit.currencyChanged('USD');
         expect(cubit.amountError, isNull);
@@ -172,21 +174,28 @@ void main() {
       await cubit.save();
       cubit.titleChanged('Lunch');
       expect(cubit.titleError, isNull);
-      expect(cubit.amountError, AmountError.empty);
+      expect(cubit.amountError, ExpressionError.empty);
     });
   });
 
-  group('amount preview', () {
-    test('shows only for a , or more than one .', () async {
+  group('amount result line', () {
+    int? valueOf(ExpressionResult? result) => switch (result) {
+      ExpressionValue(:final amountMinor) => amountMinor,
+      _ => null,
+    };
+
+    test('shows only for an operator, a , or more than one .', () async {
       final cubit = await openForm();
       cubit.amountChanged('110.50');
-      expect(cubit.amountPreview, isNull);
+      expect(cubit.amountResult, isNull);
       cubit.amountChanged('10,5');
-      expect(cubit.amountPreview, const AmountParsed(1050));
+      expect(valueOf(cubit.amountResult), 1050);
+      cubit.amountChanged('50+60×2');
+      expect(valueOf(cubit.amountResult), 17000);
       cubit.amountChanged('1.000.000');
       expect(
-        cubit.amountPreview,
-        const AmountRejected(AmountError.invalid),
+        cubit.amountResult,
+        const ExpressionRejected(ExpressionError.invalid),
         reason: 'shown before the first save too',
       );
     });
@@ -195,11 +204,11 @@ void main() {
       final cubit = await openForm()
         ..amountChanged('1,000');
       expect(
-        cubit.amountPreview,
-        const AmountRejected(AmountError.tooManyDecimals),
+        cubit.amountResult,
+        const ExpressionRejected(ExpressionError.tooManyDecimals),
       );
       cubit.currencyChanged('KWD');
-      expect(cubit.amountPreview, const AmountParsed(1000));
+      expect(valueOf(cubit.amountResult), 1000);
     });
   });
 
@@ -254,7 +263,7 @@ void main() {
       final cubit = await openForm(expenseId: expense.id);
       final fields = fieldsOf(cubit);
       expect(fields.title, 'Seeded');
-      expect(fields.amountText, '110.50');
+      expect(fields.expression, '110.50');
       expect(fields.description, 'Note');
       expect(fields.eventIds, {2});
       expect(fields.paymentMethodId, 2);

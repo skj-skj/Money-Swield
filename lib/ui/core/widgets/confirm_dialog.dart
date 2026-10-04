@@ -59,14 +59,3 @@ Future<bool> confirmAction(
   );
   return confirmed ?? false;
 }
-
-/// "Discard changes?" with Discard / Keep editing. True means discard.
-Future<bool> confirmDiscard(BuildContext context) {
-  final l10n = AppLocalizations.of(context);
-  return confirmAction(
-    context,
-    title: l10n.discardChangesTitle,
-    confirmLabel: l10n.discard,
-    cancelLabel: l10n.keepEditing,
-  );
-}

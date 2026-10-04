@@ -22,3 +22,13 @@ class Money {
   @override
   String toString() => 'Money($amountMinor $currencyCode)';
 }
+
+/// Minor units in one major unit for a currency with [minorDigits]
+/// decimals: 100 for INR, 1 for JPY. Integer only, no `double`.
+int minorUnitsPerMajor(int minorDigits) {
+  var scale = 1;
+  for (var i = 0; i < minorDigits; i++) {
+    scale *= 10;
+  }
+  return scale;
+}

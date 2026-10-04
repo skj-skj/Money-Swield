@@ -4,6 +4,7 @@ import '../data/repositories/backup_repository.dart';
 import '../data/repositories/category_repository.dart';
 import '../data/repositories/data_version.dart';
 import '../data/repositories/event_repository.dart';
+import '../data/repositories/expense_draft_repository.dart';
 import '../data/repositories/expense_repository.dart';
 import '../data/repositories/payment_method_repository.dart';
 import '../data/repositories/settings_repository.dart';
@@ -22,6 +23,7 @@ class AppDependencies {
     required this.events,
     required this.paymentMethods,
     required this.expenses,
+    required this.drafts,
     required this.backups,
     required this.restoreTools,
     required this.dataVersion,
@@ -67,6 +69,7 @@ class AppDependencies {
         now: now,
       ),
       expenses: ExpenseRepository(database, dataVersion: dataVersion, now: now),
+      drafts: ExpenseDraftRepository(database),
       backups: BackupRepository(
         database,
         appDatabase: tools.appDatabase,
@@ -92,8 +95,9 @@ class AppDependencies {
   );
 
   /// Runs one small query per repository on [db], the way the app does on
-  /// start: settings, a page of expenses, the categories, events and
-  /// payment methods. A restore runs it on the candidate before swapping it
+  /// start: settings, a page of expenses, the categories, events, payment
+  /// methods and the draft slot (read-only: an unreadable draft is fine
+  /// and stays, R10). A restore runs it on the candidate before swapping it
   /// in, so a database that can't start the app is refused (§6.4 step 3).
   static Future<void> probe(
     Database db, {
@@ -110,6 +114,16 @@ class AppDependencies {
       settings: settings,
       dataVersion: dataVersion,
     ).all();
+    await ExpenseDraftRepository.probe(db);
+  }
+
+  /// Closes the database for a restore's swap (phase-3.md §6.4): first
+  /// writes the draft that is due and stops further draft writes, so
+  /// nothing of this database is written after it closes, nor into the
+  /// restored one (phase-4.md §6.4).
+  Future<void> closeForRestore() async {
+    await drafts.close();
+    await database.close();
   }
 
   /// Stays open for the app's lifetime, like the cubits made in main().
@@ -121,6 +135,11 @@ class AppDependencies {
   final EventRepository events;
   final PaymentMethodRepository paymentMethods;
   final ExpenseRepository expenses;
+
+  /// The unsaved Add/Edit form (phase-4.md §6.4). Not part of
+  /// [dataVersion]: a draft changes nothing Home counts.
+  final ExpenseDraftRepository drafts;
+
   final BackupRepository backups;
   final RestoreTools restoreTools;
 

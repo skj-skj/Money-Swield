@@ -432,16 +432,8 @@ void main() {
       },
     );
 
-    test(
-      'moving an already binned expense keeps its first deletion time',
-      () async {
-        final added = await addBinned();
-        final first = (await repository.binned()).single.deletedAt;
-        clock.advance(const Duration(days: 1));
-        await repository.moveToBin(added.id);
-        expect((await repository.binned()).single.deletedAt, first);
-      },
-    );
+    // Binning an already binned expense throws since Phase 4 (R14) and
+    // keeps its first deletion time: expense_repository_smart_entry_test.
 
     test('binned is ordered by deletion, newest first', () async {
       final a = await addBinned(input(title: 'A'));

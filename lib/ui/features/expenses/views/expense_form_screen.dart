@@ -1,20 +1,21 @@
 import 'package:bloc_signals_flutter/bloc_signals_flutter.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../app/app_dependencies.dart';
+import '../../../../domain/amount_expression.dart';
+import '../../../../domain/amount_field_input.dart';
 import '../../../../domain/amount_input.dart';
 import '../../../../domain/models/category.dart';
 import '../../../../domain/models/currency.dart';
 import '../../../../domain/models/event.dart';
 import '../../../../domain/models/expense.dart';
+import '../../../../domain/models/expense_draft.dart';
 import '../../../../domain/models/money.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/builtin_names.dart';
 import '../../../core/formatting_locale.dart';
 import '../../../core/money_formatter.dart';
-import '../../../core/widgets/confirm_dialog.dart';
 import '../../../core/widgets/currency_picker_sheet.dart';
 import '../../../core/widgets/load_failed_view.dart';
 import '../../../core/widgets/save_error.dart';
@@ -23,23 +24,36 @@ import '../../categories/views/category_form_screen.dart';
 import '../../events/views/event_form_screen.dart';
 import '../../settings/view_models/settings_cubit.dart';
 import '../view_models/expense_form_cubit.dart';
+import 'draft_banner.dart';
+import 'itemize_sheet.dart';
+import 'operator_row.dart';
+import 'title_suggestions_field.dart';
 
 /// Which picker is in search mode. View state, not in the cubit: it
 /// doesn't affect what gets saved (phase-2.md §6.2).
 enum _Searching { none, category, events }
 
-/// Adds an expense, or edits the one with [expenseId]. Pops with an
-/// [ExpenseFormResult] after Save or Delete, or when the expense turned out
-/// to be gone, and with nothing on back.
+/// Adds an expense, or edits the one with [expenseId]. Every back pops
+/// with a result: [ExpenseDraftKept] when the unsaved changes are in the
+/// draft slot, else null (phase-4.md §7.7). Save, Delete and "gone" pop
+/// with their own [ExpenseFormResult].
 class ExpenseFormScreen extends StatefulWidget {
   const ExpenseFormScreen({
     super.key,
     required this.dependencies,
     this.expenseId,
+    this.draft,
+    this.chipAmount,
   });
 
   final AppDependencies dependencies;
   final int? expenseId;
+
+  /// The slot's draft, when Home opens the form from it (phase-4.md §7.4).
+  final ExpenseDraft? draft;
+
+  /// A Home chip's amount (phase-4.md §8.1).
+  final Money? chipAmount;
 
   @override
   State<ExpenseFormScreen> createState() => _ExpenseFormScreenState();
@@ -49,8 +63,12 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   // Created in didChangeDependencies because it needs the localizations.
   ExpenseFormCubit? _cubit;
 
-  // The text fields own their text; the cubit gets a copy on every change
-  // and never writes it back, so the cursor doesn't jump.
+  /// The formatting locale's decimal separator, for the row's key and the
+  /// amounts the form writes.
+  late String _decimalSeparator;
+
+  // The text fields own their text while the user types; the cubit gets a
+  // copy. Only its programmatic changes (textRevision) are copied back.
   final _title = TextEditingController();
   final _amount = TextEditingController();
   final _description = TextEditingController();
@@ -62,13 +80,35 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   /// (found on a device).
   final _titleFocus = FocusNode();
 
+  /// The operator row shows while this has focus and the keyboard is up.
+  final _amountFocus = FocusNode();
+
   // For scrolling the first invalid field into view.
   final _titleKey = GlobalKey();
   final _amountKey = GlobalKey();
   final _descriptionKey = GlobalKey();
   final _categoryKey = GlobalKey();
 
+  /// The form's own messenger: "Cleared" and its Undo go away with the
+  /// form instead of showing on Home.
+  final _messenger = GlobalKey<ScaffoldMessengerState>();
+
   var _searching = _Searching.none;
+
+  /// Writes the draft when the app goes to the background, so a phone call
+  /// or the app being killed loses nothing (phase-4.md §7.3).
+  late final AppLifecycleListener _lifecycle;
+
+  @override
+  void initState() {
+    super.initState();
+    _amountFocus.addListener(_onAmountFocus);
+    _titleFocus.addListener(_onTitleFocus);
+    _lifecycle = AppLifecycleListener(
+      onHide: _flushDraftInBackground,
+      onPause: _flushDraftInBackground,
+    );
+  }
 
   @override
   void didChangeDependencies() {
@@ -76,55 +116,90 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
     if (_cubit != null) return;
     final deps = widget.dependencies;
     final settings = context.read<SettingsCubit>().value;
-    final cubit = ExpenseFormCubit(
+    _decimalSeparator = decimalSeparatorOf(context);
+    _cubit = ExpenseFormCubit(
       expenses: deps.expenses,
       categories: deps.categories,
       events: deps.events,
       paymentMethods: deps.paymentMethods,
+      drafts: deps.drafts,
       l10n: AppLocalizations.of(context),
       defaultCurrency: settings.defaultCurrency,
       defaultPaymentMethodId: settings.defaultPaymentMethodId,
+      decimalSeparator: _decimalSeparator,
       expenseId: widget.expenseId,
+      openingDraft: widget.draft,
+      chipAmount: widget.chipAmount,
+      now: deps.now,
     );
-    _cubit = cubit;
-    _load();
+    _form.load();
   }
 
   @override
   void dispose() {
+    // Whatever is due reaches the database even though the form is gone.
+    _flushDraft();
+    _lifecycle.dispose();
     _cubit?.close();
     _title.dispose();
     _amount.dispose();
     _description.dispose();
     _titleFocus.dispose();
+    _amountFocus.dispose();
     super.dispose();
   }
 
   ExpenseFormCubit get _form => _cubit!;
 
-  Future<void> _load() async {
-    await _form.load();
-    if (!mounted) return;
-    switch (_form.value) {
-      case ExpenseFormReady(:final fields):
-        _title.text = fields.title;
-        if (!_form.isEditing) {
+  void _flushDraft() => _cubit?.flushDraft();
+
+  void _flushDraftInBackground() => _cubit?.flushDraftInBackground();
+
+  /// Leaving the title without a pick makes a title typed after a prefill
+  /// the user's own (phase-4.md §12a).
+  void _onTitleFocus() {
+    if (!_titleFocus.hasFocus) _cubit?.titleLeft();
+  }
+
+  void _onAmountFocus() => setState(() {});
+
+  /// Reacts to the cubit: copies programmatic text changes into the
+  /// controllers, focuses the title of a new form once, and leaves when
+  /// the expense turned out to be gone.
+  void _onState(BuildContext context, ExpenseFormState state) {
+    switch (state) {
+      case ExpenseFormReady(:final fields, :final textRevision)
+          when textRevision != _appliedRevision:
+        final first = _appliedRevision == 0;
+        _appliedRevision = textRevision;
+        _setText(_title, fields.title);
+        _setText(_amount, fields.expression);
+        _setText(_description, fields.description);
+        if (first && !_form.isEditing) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) _titleFocus.requestFocus();
           });
         }
-        _amount.text = fields.amountText;
-        _description.text = fields.description;
-      case ExpenseFormGone():
-        _leaveBecauseGone();
-      case ExpenseFormLoading() || ExpenseFormLoadFailed():
+      case ExpenseFormGone(:final draftKept):
+        Navigator.pop(context, ExpenseGone(draftKept: draftKept));
+      case ExpenseFormReady() ||
+          ExpenseFormLoading() ||
+          ExpenseFormLoadFailed():
         break;
     }
   }
 
-  /// The expense was binned or deleted meanwhile (e.g. from another
-  /// screen): go back; Home says so (phase-2.md §6.3).
-  void _leaveBecauseGone() => Navigator.pop(context, const ExpenseGone());
+  int _appliedRevision = 0;
+
+  /// Sets [text] with the cursor at the end; leaves an equal text (and
+  /// its cursor) alone.
+  static void _setText(TextEditingController controller, String text) {
+    if (controller.text == text) return;
+    controller.value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+  }
 
   Future<void> _save() async {
     FocusScope.of(context).unfocus();
@@ -132,18 +207,22 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
     if (!mounted) return;
     if (saved != null) {
       Navigator.pop(context, ExpenseSaved(saved));
-    } else if (_form.value is ExpenseFormGone) {
-      _leaveBecauseGone();
-    } else {
+    } else if (_form.value is! ExpenseFormGone) {
       _showFirstError();
     }
   }
 
   Future<Expense?> _saveOrNull() async {
     Expense? saved;
-    await saveOrShowError(context, () async => saved = await _form.save());
+    await saveOrShowError(_messengerContext, () async {
+      saved = await _form.save();
+    });
     return saved;
   }
+
+  /// Below the form's own messenger, so errors show on the form.
+  BuildContext get _messengerContext =>
+      _messenger.currentState?.context ?? context;
 
   void _showFirstError() {
     final firstInvalid = [
@@ -166,22 +245,34 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   Future<void> _delete() async {
     int? binned;
     await saveOrShowError(
-      context,
+      _messengerContext,
       () async => binned = await _form.moveToBin(),
     );
     final id = binned;
     if (id != null && mounted) Navigator.pop(context, ExpenseBinned(id));
   }
 
-  /// Back: close a picker's search first, then ask before dropping
-  /// changes (Phase 4 replaces the prompt with a saved draft, D9).
-  Future<void> _onBack() async {
+  /// Back (phase-4.md §7.7): close the suggestions, then a picker's
+  /// search, then leave, saying whether a draft was kept. No prompt: the
+  /// changes are in the draft (D9).
+  void _onBack() {
+    if (_titleFocus.hasFocus && _readyState?.suggestions.isNotEmpty == true) {
+      _form.dismissSuggestions();
+      return;
+    }
     if (_searching != _Searching.none) {
       _setSearching(_Searching.none);
       return;
     }
-    if (await confirmDiscard(context) && mounted) Navigator.pop(context);
+    // Back while the title has focus leaves it too.
+    _form.titleLeft();
+    Navigator.pop(context, _form.ownsDraft ? const ExpenseDraftKept() : null);
   }
+
+  ExpenseFormReady? get _readyState => switch (_form.value) {
+    final ExpenseFormReady ready => ready,
+    _ => null,
+  };
 
   void _setSearching(_Searching searching) {
     // Only one picker searches at a time; leaving search closes the
@@ -194,6 +285,53 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   /// they close, so after picking a date the keyboard came back for the
   /// title (found on a device). Dropping the focus first prevents that.
   void _dropFocus() => FocusManager.instance.primaryFocus?.unfocus();
+
+  Future<void> _clear() async {
+    await _form.clear();
+    if (!mounted) return;
+    _titleFocus.requestFocus();
+    _showUndo(AppLocalizations.of(context).cleared);
+  }
+
+  Future<void> _discardDraft() async {
+    _dropFocus();
+    await _form.discardDraft();
+    if (mounted) _showUndo(AppLocalizations.of(context).draftDiscarded);
+  }
+
+  /// "Cleared" / "Draft discarded" with Undo: a mis-tap never loses data
+  /// (phase-4.md §7.6).
+  void _showUndo(String message) {
+    final l10n = AppLocalizations.of(context);
+    _messenger.currentState
+      ?..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          // Undo is only offered for a moment.
+          persist: false,
+          action: SnackBarAction(label: l10n.undo, onPressed: _form.undoReset),
+        ),
+      );
+  }
+
+  void _onRowKey(RowKey key) {
+    final text = applyRowKeyTo(_amount, key, _decimalSeparator);
+    if (text != null) _form.amountChanged(text);
+  }
+
+  Future<void> _itemize() async {
+    final terms = _form.itemizeTerms;
+    if (terms == null) return;
+    _dropFocus();
+    final labels = await showItemizeSheet(
+      context,
+      terms: terms,
+      labels: _form.itemizeLabels,
+      decimalSeparator: _decimalSeparator,
+    );
+    if (labels != null) _form.itemize(labels);
+  }
 
   Future<void> _pickCurrency(String selected) async {
     _dropFocus();
@@ -293,51 +431,87 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return BlocSignalBuilder<ExpenseFormCubit, ExpenseFormState>(
+    return BlocSignalListener<ExpenseFormCubit, ExpenseFormState>(
       bloc: _form,
-      builder: (context, state) {
-        final ready = state is ExpenseFormReady ? state : null;
-        return PopScope(
-          canPop: _searching == _Searching.none && !_form.isDirty,
+      listener: _onState,
+      child: BlocSignalBuilder<ExpenseFormCubit, ExpenseFormState>(
+        bloc: _form,
+        builder: (context, state) => PopScope(
+          // Every back goes through _onBack, so it can carry a result.
+          canPop: false,
           onPopInvokedWithResult: (didPop, _) {
             if (!didPop) _onBack();
           },
-          child: Scaffold(
-            appBar: AppBar(
-              title: Text(_form.isEditing ? l10n.editExpense : l10n.addExpense),
-              actions: [
-                if (_form.isEditing)
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline),
-                    tooltip: l10n.delete,
-                    onPressed: ready == null || ready.saving ? null : _delete,
-                  ),
-                TextButton(
-                  onPressed: ready == null || ready.saving ? null : _save,
-                  child: Text(l10n.save),
+          child: ScaffoldMessenger(
+            key: _messenger,
+            child: Scaffold(
+              appBar: _appBar(state),
+              body: switch (state) {
+                ExpenseFormReady() => _body(state),
+                ExpenseFormLoadFailed() => LoadFailedView(onRetry: _form.load),
+                ExpenseFormLoading() || ExpenseFormGone() => const Center(
+                  child: CircularProgressIndicator(),
                 ),
-              ],
+              },
             ),
-            body: switch (state) {
-              ExpenseFormReady() => _formBody(state),
-              ExpenseFormLoadFailed() => LoadFailedView(onRetry: _load),
-              ExpenseFormLoading() || ExpenseFormGone() => const Center(
-                child: CircularProgressIndicator(),
-              ),
-            },
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
-  Widget _formBody(ExpenseFormReady state) {
+  PreferredSizeWidget _appBar(ExpenseFormState state) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
+    final ready = state is ExpenseFormReady ? state : null;
+    final busy = ready == null || ready.saving;
+    return AppBar(
+      title: Text(_form.isEditing ? l10n.editExpense : l10n.addExpense),
+      actions: [
+        if (_form.isEditing)
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            tooltip: l10n.delete,
+            onPressed: busy ? null : _delete,
+          )
+        else
+          TextButton(
+            onPressed: busy || !_form.canClear ? null : _clear,
+            child: Text(l10n.clear),
+          ),
+        // The same button; "Update" on an existing expense (P4-18).
+        TextButton(
+          onPressed: _form.canSave ? _save : null,
+          child: Text(_form.isEditing ? l10n.update : l10n.save),
+        ),
+      ],
+    );
+  }
+
+  /// The form, a banner above it when it came from a draft, and the
+  /// operator row below it, right on top of the keyboard (the Scaffold
+  /// already shrinks the body above it).
+  Widget _body(ExpenseFormReady state) {
+    final restoredAt = state.restoredAt;
+    final keyboardUp = MediaQuery.viewInsetsOf(context).bottom > 0;
+    return Column(
+      children: [
+        if (restoredAt != null)
+          DraftBanner(
+            isEditing: _form.isEditing,
+            savedAt: restoredAt,
+            now: widget.dependencies.now(),
+            onDiscard: _form.isEditing ? _discardDraft : null,
+          ),
+        Expanded(child: _formList(state)),
+        if (_amountFocus.hasFocus && keyboardUp)
+          OperatorRow(decimalSeparator: _decimalSeparator, onKey: _onRowKey),
+      ],
+    );
+  }
+
+  Widget _formList(ExpenseFormReady state) {
+    final l10n = AppLocalizations.of(context);
     final fields = state.fields;
-    final currency = findCurrency(fields.currencyCode);
-    final preview = _form.amountPreview;
     final locale = dateLocaleOf(context);
     // Settings can't change while this screen is open (they're on another
     // tab), so reading them once per build is enough.
@@ -346,60 +520,32 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
       children: [
-        TextField(
+        TitleSuggestionsField(
           key: _titleKey,
-          controller: _title,
           focusNode: _titleFocus,
-          onChanged: _form.titleChanged,
-          textCapitalization: TextCapitalization.sentences,
-          textInputAction: TextInputAction.next,
-          decoration: InputDecoration(
-            labelText: l10n.fieldTitle,
-            errorText: switch (_form.titleError) {
-              null => null,
-              TitleError.required => l10n.titleRequired,
-              TitleError.tooLong => l10n.errorTooLong(maxTitleLength),
-            },
-            border: const OutlineInputBorder(),
+          suggestions: state.suggestions,
+          categoryEmoji: _form.categoryEmoji,
+          onPick: _form.pickSuggestion,
+          field: TextField(
+            controller: _title,
+            focusNode: _titleFocus,
+            onChanged: _form.titleChanged,
+            textCapitalization: TextCapitalization.sentences,
+            textInputAction: TextInputAction.next,
+            decoration: InputDecoration(
+              labelText: l10n.fieldTitle,
+              errorText: switch (_form.titleError) {
+                null => null,
+                TitleError.required => l10n.titleRequired,
+                TitleError.tooLong => l10n.errorTooLong(maxTitleLength),
+              },
+              border: const OutlineInputBorder(),
+            ),
           ),
         ),
         const SizedBox(height: 16),
-        TextField(
-          key: _amountKey,
-          controller: _amount,
-          onChanged: _form.amountChanged,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          inputFormatters: [
-            FilteringTextInputFormatter.allow(RegExp('[0-9.,]')),
-          ],
-          style: theme.textTheme.headlineMedium,
-          decoration: InputDecoration(
-            labelText: l10n.fieldAmount,
-            prefixText: '${currency?.symbol ?? fields.currencyCode} ',
-            errorText: _amountErrorText(l10n, _form.amountError, fields),
-            helperText: switch (preview) {
-              AmountParsed(:final amountMinor) => l10n.amountPreview(
-                MoneyFormatter.of(context)
-                    .format(Money(amountMinor, fields.currencyCode)),
-              ),
-              _ => null,
-            },
-            border: const OutlineInputBorder(),
-          ),
-        ),
-        // A preview that doesn't parse shows its error right away, even
-        // before the first Save (phase-2.md §6.1).
-        if (preview case AmountRejected(:final error)
-            when _form.amountError == null)
-          Padding(
-            padding: const EdgeInsetsDirectional.only(start: 12, top: 4),
-            child: Text(
-              _amountErrorText(l10n, error, fields)!,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.error,
-              ),
-            ),
-          ),
+        _amountField(fields),
+        _resultLine(fields),
         const SizedBox(height: 16),
         TextField(
           key: _descriptionKey,
@@ -517,20 +663,98 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
     );
   }
 
+  Widget _amountField(ExpenseFields fields) {
+    final l10n = AppLocalizations.of(context);
+    final currency = findCurrency(fields.currencyCode);
+    return TextField(
+      key: _amountKey,
+      controller: _amount,
+      focusNode: _amountFocus,
+      onChanged: _form.amountChanged,
+      // The system keyboard (P4-6); the operator row adds + − × ÷.
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      inputFormatters: const [AmountKeyboardFormatter()],
+      style: Theme.of(context).textTheme.headlineMedium,
+      decoration: InputDecoration(
+        labelText: l10n.fieldAmount,
+        prefixText: '${currency?.symbol ?? fields.currencyCode} ',
+        errorText: _amountErrorText(l10n, _form.amountError, fields),
+        border: const OutlineInputBorder(),
+      ),
+    );
+  }
+
+  /// `= ₹170.00` / `≈ ₹1.32`, or the error right away, under the amount
+  /// (R8), with Itemize next to it when the sum has ≥ 2 terms. A live
+  /// region, so TalkBack reads it after a change.
+  Widget _resultLine(ExpenseFields fields) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final result = _form.amountResult;
+    final String? text;
+    var isError = false;
+    switch (result) {
+      case null:
+        text = null;
+      case ExpressionValue(:final amountMinor, :final rounded):
+        final shown = MoneyFormatter.of(context)
+            .format(Money(amountMinor, fields.currencyCode));
+        text = rounded ? l10n.amountApprox(shown) : l10n.amountPreview(shown);
+      case ExpressionRejected(:final error):
+        // Already under the field once errors are shown.
+        isError = true;
+        text = _form.amountError == null
+            ? _amountErrorText(l10n, error, fields)
+            : null;
+    }
+    final canItemize = _form.itemizeTerms != null;
+    if (text == null && !canItemize) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(start: 12, top: 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: text == null
+                ? const SizedBox.shrink()
+                : Semantics(
+                    liveRegion: true,
+                    child: Text(
+                      text,
+                      key: const ValueKey('amountResult'),
+                      style: isError
+                          ? theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.error,
+                            )
+                          : theme.textTheme.titleMedium,
+                    ),
+                  ),
+          ),
+          if (canItemize)
+            TextButton.icon(
+              icon: const Icon(Icons.format_list_bulleted),
+              label: Text(l10n.itemize),
+              onPressed: _itemize,
+            ),
+        ],
+      ),
+    );
+  }
+
   static String? _amountErrorText(
     AppLocalizations l10n,
-    AmountError? error,
+    ExpressionError? error,
     ExpenseFields fields,
   ) => switch (error) {
     null => null,
-    AmountError.empty => l10n.amountErrorEmpty,
-    AmountError.invalid => l10n.amountErrorInvalid,
-    AmountError.tooLarge => l10n.amountErrorTooLarge(maxIntegerDigits),
-    AmountError.tooManyDecimals => l10n.amountErrorTooManyDecimals(
+    ExpressionError.empty => l10n.amountErrorEmpty,
+    ExpressionError.invalid => l10n.amountErrorInvalid,
+    ExpressionError.tooLarge => l10n.amountErrorTooLarge(maxIntegerDigits),
+    ExpressionError.tooManyDecimals => l10n.amountErrorTooManyDecimals(
       findCurrency(fields.currencyCode)?.minorDigits ?? 2,
       fields.currencyCode,
     ),
-    AmountError.notPositive => l10n.amountErrorNotPositive,
+    ExpressionError.divideByZero => l10n.amountErrorDivideByZero,
+    ExpressionError.notPositive => l10n.amountErrorNotPositive,
   };
 }
 

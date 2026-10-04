@@ -3,10 +3,11 @@ import 'package:sqflite/sqflite.dart';
 import '../../domain/models/expense.dart';
 import '../../domain/models/money.dart';
 import '../../domain/popularity.dart';
+import '../../domain/title_suggestions.dart';
 import 'data_version.dart';
 
-/// Thrown by [ExpenseRepository.update] when the expense was deleted or
-/// moved to the bin meanwhile. An exception rather than a `StateError`, so
+/// Thrown by [ExpenseRepository.update] and [ExpenseRepository.moveToBin]
+/// when the expense was deleted or moved to the bin meanwhile. An exception rather than a `StateError`, so
 /// the form can catch exactly this case and nothing else.
 class ExpenseNotFound implements Exception {
   const ExpenseNotFound(this.id);
@@ -42,6 +43,15 @@ class ExpenseRepository {
   /// The window popularity counts uses in (application-design.md A3).
   static const popularityWindowDays = 90;
 
+  /// The window title suggestions count uses in (phase-4.md §6.1).
+  static const titleWindowDays = 180;
+
+  /// The window amount chips count uses in (phase-4.md §6.2).
+  static const chipWindowDays = 90;
+
+  /// The fewest uses an amount needs to be a chip.
+  static const chipMinUses = 2;
+
   /// The bin filter, in one place: every method except the bin ones uses it.
   ///
   /// The unary `+` is deliberate: it stops SQLite from using
@@ -60,7 +70,12 @@ class ExpenseRepository {
   static const _maxIdsPerQuery = 500;
 
   /// Inserts the expense and its events in one transaction.
-  Future<Expense> add(ExpenseInput input) async {
+  ///
+  /// With [clearDraft], the form's draft row is deleted in the same
+  /// transaction (phase-4.md §6.3): killed after the commit, there is no
+  /// draft left to save the same expense twice; killed before, nothing was
+  /// saved and the draft is still there.
+  Future<Expense> add(ExpenseInput input, {bool clearDraft = false}) async {
     final now = _now().millisecondsSinceEpoch;
     final expense = await _db.transaction((txn) async {
       final id = await txn.insert('expenses', {
@@ -69,6 +84,7 @@ class ExpenseRepository {
         'updated_at': now,
       });
       await _insertEvents(txn, id, input.eventIds);
+      if (clearDraft) await _deleteDraft(txn);
       return (await _read(txn, where: 'id = ?', whereArgs: [id])).single;
     });
     _dataVersion.bump();
@@ -78,8 +94,12 @@ class ExpenseRepository {
   /// Saves [input] over the active expense [id] and replaces its events, in
   /// one transaction. Throws [ExpenseNotFound] if the expense was deleted or
   /// moved to the bin meanwhile: binned expenses can't be edited
-  /// (database.md §3.5).
-  Future<Expense> update(int id, ExpenseInput input) async {
+  /// (database.md §3.5). [clearDraft] as for [add].
+  Future<Expense> update(
+    int id,
+    ExpenseInput input, {
+    bool clearDraft = false,
+  }) async {
     final now = _now().millisecondsSinceEpoch;
     final expense = await _db.transaction((txn) async {
       final changed = await txn.update(
@@ -95,6 +115,7 @@ class ExpenseRepository {
         whereArgs: [id],
       );
       await _insertEvents(txn, id, input.eventIds);
+      if (clearDraft) await _deleteDraft(txn);
       return (await _read(txn, where: 'id = ?', whereArgs: [id])).single;
     });
     _dataVersion.bump();
@@ -120,14 +141,20 @@ class ExpenseRepository {
   );
 
   /// Moves the active expense [id] to the bin. `updated_at` is left alone:
-  /// the expense itself didn't change.
-  Future<void> moveToBin(int id) async {
-    await _db.update(
-      'expenses',
-      {'deleted_at': _now().millisecondsSinceEpoch},
-      where: 'id = ? AND $_active',
-      whereArgs: [id],
-    );
+  /// the expense itself didn't change. Throws [ExpenseNotFound] if it was
+  /// already binned or is gone, so nobody offers Undo for nothing (R14).
+  /// [clearDraft] as for [add].
+  Future<void> moveToBin(int id, {bool clearDraft = false}) async {
+    await _db.transaction((txn) async {
+      final changed = await txn.update(
+        'expenses',
+        {'deleted_at': _now().millisecondsSinceEpoch},
+        where: 'id = ? AND $_active',
+        whereArgs: [id],
+      );
+      if (changed == 0) throw ExpenseNotFound(id);
+      if (clearDraft) await _deleteDraft(txn);
+    });
     _dataVersion.bump();
   }
 
@@ -187,7 +214,7 @@ class ExpenseRepository {
   /// month doesn't count as "most recent". Categories without uses are
   /// missing from the map.
   Future<Map<int, ItemUsage>> categoryUsage() async {
-    final (from, today) = _popularityWindow();
+    final (from, today) = _window(popularityWindowDays);
     final rows = await _db.rawQuery(
       'SELECT category_id AS id, '
       'SUM(occurred_on >= ?) AS recent, MAX(occurred_at) AS last '
@@ -200,7 +227,7 @@ class ExpenseRepository {
 
   /// Like [categoryUsage], per event id.
   Future<Map<int, ItemUsage>> eventUsage() async {
-    final (from, today) = _popularityWindow();
+    final (from, today) = _window(popularityWindowDays);
     final rows = await _db.rawQuery(
       'SELECT ee.event_id AS id, '
       'SUM(e.occurred_on >= ?) AS recent, MAX(e.occurred_at) AS last '
@@ -225,6 +252,74 @@ class ExpenseRepository {
     return [for (final row in rows) row['currency_code']! as String];
   }
 
+  /// Every distinct title of the active expenses up to today, exact
+  /// spellings, with the newest row's amount and category and the uses in
+  /// the last [titleWindowDays] (phase-4.md §6.1). Grouping spellings and
+  /// matching happen in Dart (`title_suggestions.dart`).
+  ///
+  /// The amount and category are SQLite's bare columns next to the one
+  /// `MAX()`: they come from the newest row, any one of them on a tie
+  /// (sqlite.md §5.3). Display only; [prefillSource] is the exact query.
+  /// The bin filter is in the `WHERE`, so a binned row is never that row.
+  Future<List<TitleHistoryRow>> titleHistory() async {
+    final (from, today) = _window(titleWindowDays);
+    final rows = await _db.rawQuery(
+      'SELECT title, amount_minor, currency_code, category_id, '
+      'MAX(occurred_at) AS last_at, SUM(occurred_on >= ?) AS recent '
+      'FROM expenses WHERE $_active AND occurred_on <= ? '
+      'GROUP BY title',
+      [from, today],
+    );
+    return [
+      for (final row in rows)
+        TitleHistoryRow(
+          title: row['title']! as String,
+          amountMinor: row['amount_minor']! as int,
+          currencyCode: row['currency_code']! as String,
+          categoryId: row['category_id']! as int,
+          lastAt: _dateTime(row['last_at']! as int),
+          recent: row['recent']! as int,
+        ),
+    ];
+  }
+
+  /// The newest active expense, up to today, titled exactly one of
+  /// [spellings], with its events: what a picked suggestion prefills the
+  /// form from (phase-4.md §6.1). Ties on `occurred_at` go to the highest
+  /// id. Null if there is none (it was binned meanwhile).
+  Future<Expense?> prefillSource(List<String> spellings) async {
+    if (spellings.isEmpty) return null;
+    // A title has a handful of spellings; the cap only keeps the statement
+    // under SQLite 3.22's 999 variables.
+    final some = spellings.take(_maxIdsPerQuery).toList();
+    final (_, today) = _window(0);
+    return (await _read(
+      _db,
+      where:
+          'title IN (${List.filled(some.length, '?').join(', ')}) '
+          'AND $_active AND occurred_on <= ?',
+      whereArgs: [...some, today],
+      orderBy: 'occurred_at DESC, id DESC',
+      limit: 1,
+    )).firstOrNull;
+  }
+
+  /// Amounts in [currencyCode] used at least [chipMinUses] times in the
+  /// last [chipWindowDays] up to today, most used first, then most recent,
+  /// then smallest; at most six (phase-4.md §6.2).
+  Future<List<int>> amountChipStats(String currencyCode) async {
+    final (from, today) = _window(chipWindowDays);
+    final rows = await _db.rawQuery(
+      'SELECT amount_minor, COUNT(*) AS uses, MAX(occurred_at) AS last_at '
+      'FROM expenses WHERE $_active AND currency_code = ? '
+      'AND occurred_on BETWEEN ? AND ? '
+      'GROUP BY amount_minor HAVING COUNT(*) >= ? '
+      'ORDER BY uses DESC, last_at DESC, amount_minor ASC LIMIT 6',
+      [currencyCode, from, today, chipMinUses],
+    );
+    return [for (final row in rows) row['amount_minor']! as int];
+  }
+
   /// The local date `YYYY-MM-DD` of an expense at [occurredAt] (UTC) with
   /// [utcOffsetMinutes]. The only place `occurred_on` is computed.
   static String occurredOnFor(DateTime occurredAt, int utcOffsetMinutes) =>
@@ -243,6 +338,11 @@ class ExpenseRepository {
     'category_id': input.categoryId,
     'payment_method_id': input.paymentMethodId,
   };
+
+  /// The draft slot's row. The only place this class touches
+  /// `expense_draft` (phase-4.md §6.3); `ExpenseDraftRepository` owns it.
+  static Future<void> _deleteDraft(Transaction txn) =>
+      txn.delete('expense_draft');
 
   static Future<void> _insertEvents(
     Transaction txn,
@@ -321,16 +421,12 @@ class ExpenseRepository {
         },
       );
 
-  /// The first and last `occurred_on` popularity counts: today on the
-  /// device and [popularityWindowDays] before it.
-  (String from, String today) _popularityWindow() {
+  /// Today's `occurred_on` on the device and the one [days] before it.
+  (String from, String today) _window(int days) {
     final local = _now().toLocal();
     // Calendar arithmetic in UTC, so a DST change can't shift the date.
     final today = DateTime.utc(local.year, local.month, local.day);
-    return (
-      _isoDate(today.subtract(const Duration(days: popularityWindowDays))),
-      _isoDate(today),
-    );
+    return (_isoDate(today.subtract(Duration(days: days))), _isoDate(today));
   }
 
   static Map<int, ItemUsage> _usageMap(List<Map<String, Object?>> rows) => {

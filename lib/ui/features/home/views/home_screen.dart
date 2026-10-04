@@ -10,6 +10,7 @@ import '../../../../app/app_restart.dart';
 import '../../../../domain/models/app_settings.dart';
 import '../../../../domain/models/currency.dart';
 import '../../../../domain/models/expense.dart';
+import '../../../../domain/models/money.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/formatting_locale.dart';
 import '../../../core/money_formatter.dart';
@@ -20,6 +21,7 @@ import '../../expenses/view_models/expense_form_cubit.dart';
 import '../../expenses/views/expense_form_screen.dart';
 import '../../settings/view_models/settings_cubit.dart';
 import '../view_models/expense_list_cubit.dart';
+import 'amount_chips_row.dart';
 
 /// The Home tab: every expense, newest first, with a header per day
 /// (phase-2.md §7). Phase 5 replaces the day headers with Week / Month /
@@ -53,8 +55,15 @@ class _HomeScreenState extends State<HomeScreen> {
     expenses: widget.dependencies.expenses,
     categories: widget.dependencies.categories,
     paymentMethods: widget.dependencies.paymentMethods,
+    drafts: widget.dependencies.drafts,
     dataVersion: widget.dependencies.dataVersion,
+    chipCurrency: context.read<SettingsCubit>().value.defaultCurrency,
   )..load();
+
+  /// A form is being opened: reading the draft slot first is async, and
+  /// taps on the FAB, a chip or a row in that gap would open a second form
+  /// (R12). Every open is ignored until the current one is pushed.
+  bool _opening = false;
 
   final _scroll = ScrollController();
   bool _fabExtended = true;
@@ -142,16 +151,33 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _openForm({int? expenseId}) async {
-    final result = await Navigator.push<ExpenseFormResult>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ExpenseFormScreen(
-          dependencies: widget.dependencies,
-          expenseId: expenseId,
+  /// Opens Add (no [expenseId]; [chipAmount] from a chip) or Edit. The
+  /// form starts from the draft slot when the slot holds a draft for it:
+  /// an Add draft for Add, this expense's Edit draft for Edit; otherwise
+  /// the slot is left alone until the form gets a change (phase-4.md §7.4).
+  Future<void> _openForm({int? expenseId, Money? chipAmount}) async {
+    if (_opening) return;
+    _opening = true;
+    final Future<ExpenseFormResult?> closed;
+    try {
+      final slot = await _cubit.pendingDraft();
+      if (!mounted) return;
+      final draft = slot?.editingExpenseId == expenseId ? slot : null;
+      closed = Navigator.push<ExpenseFormResult>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ExpenseFormScreen(
+            dependencies: widget.dependencies,
+            expenseId: expenseId,
+            draft: draft,
+            chipAmount: chipAmount,
+          ),
         ),
-      ),
-    );
+      );
+    } finally {
+      _opening = false;
+    }
+    final result = await closed;
     // Snackbars are shown here, after the pop, not by the form before it,
     // so they show on Home's own messenger only (phase-2.md §9.1, §12a).
     if (!mounted) return;
@@ -161,14 +187,26 @@ class _HomeScreenState extends State<HomeScreen> {
       case ExpenseBinned(:final id):
         await _cubit.reload();
         if (mounted) _showMovedToBin(id);
-      case ExpenseGone():
+      case ExpenseGone(:final draftKept):
         await _cubit.reload();
-        if (mounted) _showGone();
-      case null:
-        // Back, or the expense was gone: reload only if that changed data.
+        if (mounted) {
+          _showMessage(
+            draftKept ? _l10n.draftKeptExpenseGone : _l10n.expenseGone,
+            long: draftKept,
+          );
+        }
+      case ExpenseDraftKept():
         await _cubit.reloadIfChanged();
+        await _cubit.refreshDraftMark();
+        if (mounted) _showMessage(_l10n.draftSaved);
+      case null:
+        // Back without changes: reload only if something changed data.
+        await _cubit.reloadIfChanged();
+        await _cubit.refreshDraftMark();
     }
   }
+
+  AppLocalizations get _l10n => AppLocalizations.of(context);
 
   void _showMovedToBin(int id) {
     final l10n = AppLocalizations.of(context);
@@ -189,11 +227,19 @@ class _HomeScreenState extends State<HomeScreen> {
       );
   }
 
-  void _showGone() {
-    final l10n = AppLocalizations.of(context);
+  /// A plain message on Home's messenger; [long] for one with more to read.
+  void _showMessage(String message, {bool long = false}) {
     _messenger.currentState
       ?..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(l10n.expenseGone)));
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          duration: long
+              ? const Duration(seconds: 8)
+              : const Duration(seconds: 4),
+          showCloseIcon: long,
+        ),
+      );
   }
 
   Future<void> _pickCurrency(AppSettings settings) async {
@@ -212,6 +258,10 @@ class _HomeScreenState extends State<HomeScreen> {
       () => settingsCubit.setDefaultCurrency(code),
     );
   }
+
+  /// The chips follow the default currency, wherever it is changed.
+  void _onSettings(BuildContext context, AppSettings settings) =>
+      _cubit.setChipCurrency(settings.defaultCurrency);
 
   bool _onUserScroll(UserScrollNotification notification) {
     final extended = switch (notification.direction) {
@@ -257,17 +307,33 @@ class _HomeScreenState extends State<HomeScreen> {
         label: Text(l10n.addExpense),
         tooltip: _fabExtended ? null : l10n.addExpense,
       ),
-      body: BlocSignalBuilder<ExpenseListCubit, ExpenseListState>(
-        bloc: _cubit,
-        builder: (context, state) => switch (state) {
-          ExpenseListLoading() => const Center(
-            child: CircularProgressIndicator(),
-          ),
-          ExpenseListFailed() => LoadFailedView(onRetry: _cubit.load),
-          ExpenseListLoaded(:final expenses) when expenses.isEmpty =>
-            const _EmptyState(),
-          ExpenseListLoaded() => _list(state),
-        },
+      body: BlocSignalListener<SettingsCubit, AppSettings>(
+        listenWhen: (previous, current) =>
+            previous.defaultCurrency != current.defaultCurrency,
+        listener: _onSettings,
+        child: BlocSignalBuilder<ExpenseListCubit, ExpenseListState>(
+          bloc: _cubit,
+          builder: (context, state) => switch (state) {
+            ExpenseListLoading() => const Center(
+              child: CircularProgressIndicator(),
+            ),
+            ExpenseListFailed() => LoadFailedView(onRetry: _cubit.load),
+            ExpenseListLoaded() => Column(
+              children: [
+                // Shown on the empty state too (phase-4.md §8.1).
+                AmountChipsRow(
+                  chips: state.chips,
+                  onTap: (amount) => _openForm(chipAmount: amount),
+                ),
+                Expanded(
+                  child: state.expenses.isEmpty
+                      ? const _EmptyState()
+                      : _list(state),
+                ),
+              ],
+            ),
+          },
+        ),
       ),
     );
   }
@@ -306,6 +372,7 @@ class _HomeScreenState extends State<HomeScreen> {
               key: ValueKey(expense.id),
               expense: expense,
               state: state,
+              hasDraft: expense.id == state.draftExpenseId,
               onTap: () => _openForm(expenseId: expense.id),
             ),
           };
@@ -405,11 +472,16 @@ class _ExpenseRow extends StatelessWidget {
     super.key,
     required this.expense,
     required this.state,
+    required this.hasDraft,
     required this.onTap,
   });
 
   final Expense expense;
   final ExpenseListLoaded state;
+
+  /// The draft slot holds unsaved changes to this expense: a mark after
+  /// the amount. The row still shows the stored values (P4-21).
+  final bool hasDraft;
   final VoidCallback onTap;
 
   /// Shown when a row's category or payment method is missing. RESTRICT
@@ -431,9 +503,24 @@ class _ExpenseRow extends StatelessWidget {
       leading: Text(categoryEmoji, style: const TextStyle(fontSize: 28)),
       title: Text(expense.title, maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: Text('$methodEmoji  $time'),
-      trailing: Text(
-        MoneyFormatter.of(context).format(expense.amount),
-        style: theme.textTheme.titleMedium,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            MoneyFormatter.of(context).format(expense.amount),
+            style: theme.textTheme.titleMedium,
+          ),
+          if (hasDraft)
+            Padding(
+              padding: const EdgeInsetsDirectional.only(start: 4),
+              child: Icon(
+                Icons.edit_note,
+                key: const ValueKey('unsavedMark'),
+                color: theme.colorScheme.tertiary,
+                semanticLabel: AppLocalizations.of(context).unsavedChanges,
+              ),
+            ),
+        ],
       ),
     );
   }

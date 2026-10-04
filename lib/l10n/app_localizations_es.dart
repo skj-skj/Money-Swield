@@ -310,7 +310,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get amountErrorEmpty => 'Introduce un importe';
 
   @override
-  String get amountErrorInvalid => 'Introduce solo un número, como 110,50';
+  String get amountErrorInvalid => 'Introduce un importe como 110,50 o 50 + 60';
 
   @override
   String amountErrorTooLarge(int max) {
@@ -344,16 +344,80 @@ class AppLocalizationsEs extends AppLocalizations {
   String get categoryRequired => 'Elige una categoría';
 
   @override
-  String get discardChangesTitle => '¿Descartar los cambios?';
-
-  @override
-  String get discard => 'Descartar';
-
-  @override
-  String get keepEditing => 'Seguir editando';
-
-  @override
   String get expenseGone => 'Este gasto ya no existe';
+
+  @override
+  String get clear => 'Borrar';
+
+  @override
+  String get update => 'Actualizar';
+
+  @override
+  String get done => 'Listo';
+
+  @override
+  String get cleared => 'Formulario borrado';
+
+  @override
+  String get draftDiscarded => 'Borrador descartado';
+
+  @override
+  String get discardDraft => 'Descartar borrador';
+
+  @override
+  String draftRestoredAdd(String age) {
+    return 'Gasto sin guardar recuperado ($age)';
+  }
+
+  @override
+  String draftRestoredEdit(String age) {
+    return 'Cambios sin guardar recuperados ($age)';
+  }
+
+  @override
+  String get draftSaved => 'Borrador guardado';
+
+  @override
+  String get draftKeptExpenseGone =>
+      'El gasto se eliminó; tus cambios se guardaron. Toca + para añadirlos como un gasto nuevo';
+
+  @override
+  String get unsavedChanges => 'Cambios sin guardar';
+
+  @override
+  String get itemize => 'Desglosar';
+
+  @override
+  String get itemizeTitle => 'Describe los artículos';
+
+  @override
+  String get amountErrorDivideByZero => 'No se puede dividir entre cero';
+
+  @override
+  String amountApprox(String amount) {
+    return '≈ $amount';
+  }
+
+  @override
+  String get keyPlus => 'más';
+
+  @override
+  String get keyMinus => 'menos';
+
+  @override
+  String get keyTimes => 'por';
+
+  @override
+  String get keyDivide => 'entre';
+
+  @override
+  String get keyDecimal => 'separador decimal';
+
+  @override
+  String get amountChipsLabel => 'Importes habituales';
+
+  @override
+  String get titleSuggestionsLabel => 'Títulos anteriores';
 
   @override
   String get search => 'Buscar';

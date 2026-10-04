@@ -655,7 +655,7 @@ abstract class AppLocalizations {
   /// No description provided for @amountErrorInvalid.
   ///
   /// In en, this message translates to:
-  /// **'Enter a plain number, like 110.50'**
+  /// **'Enter an amount like 110.50 or 50 + 60'**
   String get amountErrorInvalid;
 
   /// No description provided for @amountErrorTooLarge.
@@ -694,29 +694,143 @@ abstract class AppLocalizations {
   /// **'Pick a category'**
   String get categoryRequired;
 
-  /// No description provided for @discardChangesTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Discard changes?'**
-  String get discardChangesTitle;
-
-  /// No description provided for @discard.
-  ///
-  /// In en, this message translates to:
-  /// **'Discard'**
-  String get discard;
-
-  /// No description provided for @keepEditing.
-  ///
-  /// In en, this message translates to:
-  /// **'Keep editing'**
-  String get keepEditing;
-
   /// No description provided for @expenseGone.
   ///
   /// In en, this message translates to:
   /// **'This expense no longer exists'**
   String get expenseGone;
+
+  /// No description provided for @clear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get clear;
+
+  /// No description provided for @update.
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get update;
+
+  /// No description provided for @done.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get done;
+
+  /// No description provided for @cleared.
+  ///
+  /// In en, this message translates to:
+  /// **'Form cleared'**
+  String get cleared;
+
+  /// No description provided for @draftDiscarded.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft discarded'**
+  String get draftDiscarded;
+
+  /// No description provided for @discardDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard draft'**
+  String get discardDraft;
+
+  /// No description provided for @draftRestoredAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsaved expense restored ({age})'**
+  String draftRestoredAdd(String age);
+
+  /// No description provided for @draftRestoredEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsaved changes restored ({age})'**
+  String draftRestoredEdit(String age);
+
+  /// No description provided for @draftSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft saved'**
+  String get draftSaved;
+
+  /// No description provided for @draftKeptExpenseGone.
+  ///
+  /// In en, this message translates to:
+  /// **'The expense was deleted; your changes were kept. Tap + to add them as a new expense'**
+  String get draftKeptExpenseGone;
+
+  /// No description provided for @unsavedChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsaved changes'**
+  String get unsavedChanges;
+
+  /// No description provided for @itemize.
+  ///
+  /// In en, this message translates to:
+  /// **'Itemize'**
+  String get itemize;
+
+  /// No description provided for @itemizeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe the items'**
+  String get itemizeTitle;
+
+  /// No description provided for @amountErrorDivideByZero.
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t divide by zero'**
+  String get amountErrorDivideByZero;
+
+  /// No description provided for @amountApprox.
+  ///
+  /// In en, this message translates to:
+  /// **'≈ {amount}'**
+  String amountApprox(String amount);
+
+  /// No description provided for @keyPlus.
+  ///
+  /// In en, this message translates to:
+  /// **'plus'**
+  String get keyPlus;
+
+  /// No description provided for @keyMinus.
+  ///
+  /// In en, this message translates to:
+  /// **'minus'**
+  String get keyMinus;
+
+  /// No description provided for @keyTimes.
+  ///
+  /// In en, this message translates to:
+  /// **'times'**
+  String get keyTimes;
+
+  /// No description provided for @keyDivide.
+  ///
+  /// In en, this message translates to:
+  /// **'divided by'**
+  String get keyDivide;
+
+  /// No description provided for @keyDecimal.
+  ///
+  /// In en, this message translates to:
+  /// **'decimal point'**
+  String get keyDecimal;
+
+  /// No description provided for @amountChipsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Usual amounts'**
+  String get amountChipsLabel;
+
+  /// No description provided for @titleSuggestionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Past titles'**
+  String get titleSuggestionsLabel;
 
   /// No description provided for @search.
   ///

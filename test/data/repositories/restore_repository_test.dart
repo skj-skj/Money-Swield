@@ -374,8 +374,21 @@ void main() {
     // expenses are fine.
     final broken = <String, Future<void> Function(Database db)>{
       'the table is gone': (db) => db.execute('DROP TABLE settings'),
-      'a column was renamed by hand': (db) =>
-          db.execute('ALTER TABLE settings RENAME COLUMN value TO v'),
+      // `RENAME COLUMN` needs SQLite 3.25; the tests run Android 10's 3.22
+      // (sqlite.md §3), so the rename is a rebuild by hand. The columns
+      // are CreateSettings' with `value` called `v`.
+      'a column was renamed by hand': (db) async {
+        await db.execute(
+          'CREATE TABLE settings_new '
+          '("key" TEXT NOT NULL, v TEXT, PRIMARY KEY ("key"))',
+        );
+        await db.execute(
+          'INSERT INTO settings_new ("key", v) SELECT "key", value '
+          'FROM settings',
+        );
+        await db.execute('DROP TABLE settings');
+        await db.execute('ALTER TABLE settings_new RENAME TO settings');
+      },
       "a value isn't text": (db) => db.insert('settings', {
         'key': 'theme',
         'value': Uint8List.fromList([1, 2, 3]),

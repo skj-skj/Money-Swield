@@ -28,6 +28,7 @@ class MoneyFormatter {
 
   final String localeName;
   final _formats = <String, NumberFormat>{};
+  final _wholeFormats = <String, NumberFormat>{};
 
   String format(Money money) {
     final digits = _minorDigits(money.currencyCode);
@@ -41,32 +42,45 @@ class MoneyFormatter {
         .format(money.amountMinor / math.pow(10, digits));
   }
 
+  /// Like [format], but a whole amount without its zero decimals: `₹50`,
+  /// while `₹12.50` stays as it is. For the amount chips, where six have to
+  /// share one row (found on the Oppo: `₹10.00` let only 3½ show).
+  String formatShort(Money money) {
+    final code = money.currencyCode;
+    final scale = minorUnitsPerMajor(_minorDigits(code));
+    if (money.amountMinor % scale != 0) return format(money);
+    return _wholeFormats
+        .putIfAbsent(code, () => _build(code, decimalDigits: 0))
+        .format(money.amountMinor ~/ scale);
+  }
+
   /// The cached `NumberFormat` for [currencyCode].
   @visibleForTesting
   NumberFormat numberFormat(String currencyCode) =>
       _formats.putIfAbsent(currencyCode, () => _build(currencyCode));
 
-  NumberFormat _build(String code) {
+  NumberFormat _build(String code, {int? decimalDigits}) {
     // An unknown code (only from a newer app's data) shows as the code
     // with 2 digits instead of crashing.
     final symbol = findCurrency(code)?.symbol ?? code;
-    final format = _currencyFormat(code, symbol);
+    final digits = decimalDigits ?? _minorDigits(code);
+    final format = _currencyFormat(code, symbol, digits);
     // intl writes a symbol made of letters right against the number
     // (`din1.000`, `XYZ110.50`). A no-break space keeps it readable and on
     // one line. Symbols after the number already get a space.
     if (format.positivePrefix.isNotEmpty &&
         RegExp(r'\p{L}$', unicode: true).hasMatch(format.positivePrefix)) {
-      return _currencyFormat(code, '$symbol ');
+      return _currencyFormat(code, '$symbol ', digits);
     }
     return format;
   }
 
-  NumberFormat _currencyFormat(String code, String symbol) =>
+  NumberFormat _currencyFormat(String code, String symbol, int digits) =>
       NumberFormat.currency(
         locale: localeName,
         name: code,
         symbol: symbol,
-        decimalDigits: _minorDigits(code),
+        decimalDigits: digits,
       );
 
   static int _minorDigits(String code) => findCurrency(code)?.minorDigits ?? 2;

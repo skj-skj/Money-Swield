@@ -346,6 +346,40 @@ void main() {
     });
   });
 
+  // On SQLite 3.22 (Android 10, what the tests run), copying no rows into
+  // an AUTOINCREMENT table while `sqlite_sequence` is still empty writes
+  // `sqlite_sequence (t, NULL)` (with any row in it, `0`). The second
+  // rebuild read that NULL with a `!` and crashed (phase-4.md §3.1, R15).
+  // These tests start from an empty database, so no other table has handed
+  // out an id yet.
+  group('AUTOINCREMENT counter with an empty sqlite_sequence', () {
+    test('an empty table can be rebuilt twice', () async {
+      await m.createTable('notes', (t) => t.text('body'));
+      await m.changeColumn('notes', 'body', SqliteType.integer); // Rebuilds.
+      expect(await db.rawQuery('SELECT seq FROM sqlite_sequence'), [
+        {'seq': null},
+      ], reason: 'the 3.22 behaviour this group guards against');
+      await m.changeColumn('notes', 'body', SqliteType.text); // Again.
+
+      expect(await m.insert('notes', {'body': 'first'}), 1);
+    });
+
+    test('a table emptied by deletes keeps its counter', () async {
+      await m.createTable('notes', (t) => t.text('body'));
+      await m.insert('notes', {'body': 'a'});
+      await m.insert('notes', {'body': 'b'});
+      await m.delete('notes');
+      await m.changeColumn('notes', 'body', SqliteType.integer);
+      await m.changeColumn('notes', 'body', SqliteType.text);
+
+      expect(
+        await m.insert('notes', {'body': 'c'}),
+        3,
+        reason: 'ids of deleted rows are never reused',
+      );
+    });
+  });
+
   group('references', () {
     setUp(createCategoriesAndExpenses);
 

@@ -311,7 +311,7 @@ class AppLocalizationsHi extends AppLocalizations {
   String get amountErrorEmpty => 'राशि दर्ज करें';
 
   @override
-  String get amountErrorInvalid => 'सिर्फ़ एक संख्या दर्ज करें, जैसे 110.50';
+  String get amountErrorInvalid => '110.50 या 50 + 60 जैसी राशि दर्ज करें';
 
   @override
   String amountErrorTooLarge(int max) {
@@ -345,16 +345,80 @@ class AppLocalizationsHi extends AppLocalizations {
   String get categoryRequired => 'एक श्रेणी चुनें';
 
   @override
-  String get discardChangesTitle => 'बदलाव छोड़ दें?';
-
-  @override
-  String get discard => 'छोड़ें';
-
-  @override
-  String get keepEditing => 'बदलाव जारी रखें';
-
-  @override
   String get expenseGone => 'यह खर्च अब मौजूद नहीं है';
+
+  @override
+  String get clear => 'साफ़ करें';
+
+  @override
+  String get update => 'अपडेट करें';
+
+  @override
+  String get done => 'हो गया';
+
+  @override
+  String get cleared => 'फ़ॉर्म साफ़ किया गया';
+
+  @override
+  String get draftDiscarded => 'ड्राफ़्ट हटाया गया';
+
+  @override
+  String get discardDraft => 'ड्राफ़्ट हटाएँ';
+
+  @override
+  String draftRestoredAdd(String age) {
+    return 'बिना सहेजा खर्च वापस लाया गया ($age)';
+  }
+
+  @override
+  String draftRestoredEdit(String age) {
+    return 'बिना सहेजे बदलाव वापस लाए गए ($age)';
+  }
+
+  @override
+  String get draftSaved => 'ड्राफ़्ट सहेजा गया';
+
+  @override
+  String get draftKeptExpenseGone =>
+      'खर्च हटा दिया गया था; आपके बदलाव रखे गए हैं। उन्हें नए खर्च के रूप में जोड़ने के लिए + दबाएँ';
+
+  @override
+  String get unsavedChanges => 'बिना सहेजे बदलाव';
+
+  @override
+  String get itemize => 'ब्योरा जोड़ें';
+
+  @override
+  String get itemizeTitle => 'चीज़ों का ब्योरा दें';
+
+  @override
+  String get amountErrorDivideByZero => 'शून्य से भाग नहीं दिया जा सकता';
+
+  @override
+  String amountApprox(String amount) {
+    return '≈ $amount';
+  }
+
+  @override
+  String get keyPlus => 'जोड़';
+
+  @override
+  String get keyMinus => 'घटा';
+
+  @override
+  String get keyTimes => 'गुणा';
+
+  @override
+  String get keyDivide => 'भाग';
+
+  @override
+  String get keyDecimal => 'दशमलव';
+
+  @override
+  String get amountChipsLabel => 'आम राशियाँ';
+
+  @override
+  String get titleSuggestionsLabel => 'पिछले शीर्षक';
 
   @override
   String get search => 'खोजें';

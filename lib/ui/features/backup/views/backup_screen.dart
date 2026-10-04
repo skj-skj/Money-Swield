@@ -55,7 +55,7 @@ class _BackupScreenState extends State<BackupScreen> {
   Future<void> _restore({PreRestoreCopy? copy}) => RestoreScreen.open(
     context,
     tools: _deps.restoreTools,
-    closeLiveConnection: _deps.database.close,
+    closeLiveConnection: _deps.closeForRestore,
     currentExpenseCount: _deps.backups.activeExpenseCount,
     copy: copy,
   );

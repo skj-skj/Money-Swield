@@ -73,7 +73,7 @@ class _StartupGateState extends State<StartupGate> {
       RestoreScreen.open(
         context,
         tools: dependencies.restoreTools,
-        closeLiveConnection: dependencies.database.close,
+        closeLiveConnection: dependencies.closeForRestore,
       );
 
   @override

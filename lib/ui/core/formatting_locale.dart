@@ -44,3 +44,15 @@ Locale formattingLocaleValueOf(BuildContext context) {
   final [language, ...country] = formattingLocaleOf(context).split('_');
   return Locale(language, country.firstOrNull);
 }
+
+/// The decimal separator money is typed and shown with in [localeName]:
+/// `.` for en and hi, `,` for es. Only `.` and `,` are ever returned: the
+/// amount parser knows no other (phase-4.md §5.1).
+String decimalSeparatorFor(String localeName) {
+  final separator = NumberFormat.decimalPattern(localeName).symbols.DECIMAL_SEP;
+  return separator == ',' ? ',' : '.';
+}
+
+/// [decimalSeparatorFor] the formatting locale ([formattingLocaleOf]).
+String decimalSeparatorOf(BuildContext context) =>
+    decimalSeparatorFor(formattingLocaleOf(context));
