@@ -54,6 +54,42 @@ dev_dependencies:
     sdk: flutter
   sqflite_common_ffi: ^2.4.3
 
+# Tests run on the SQLite that Android 10 (minSdk 29) ships: 3.22.0, built
+# from Android's own source with Android's flags, so SQL that only a newer
+# SQLite accepts fails in tests, not on a phone. Only the `sqlite3` package
+# (via sqflite_common_ffi, a dev dependency) reads this; the app on a phone
+# uses Android's SQLite through sqflite. Why each flag and what still
+# differs from a phone: notes/spec/sqlite.md.
+hooks:
+  user_defines:
+    sqlite3:
+      source:
+        windows: source
+      path: third_party/sqlite_android_10/sqlite3.c
+      defines:
+        default_options: false
+        defines:
+          # Needed to build a Windows DLL; not an Android flag.
+          - SQLITE_API=__declspec(dllexport)
+          # Android 10's flags (dist/Android.bp), minus the Unix-only ones,
+          # ICU, and SQLITE_OMIT_COMPILEOPTION_DIAGS (the sqlite3 package
+          # calls sqlite3_compileoption_used when it loads).
+          - NDEBUG=1
+          - SQLITE_HAVE_ISNAN
+          - SQLITE_DEFAULT_JOURNAL_SIZE_LIMIT=1048576
+          - SQLITE_THREADSAFE=2
+          - SQLITE_TEMP_STORE=3
+          - SQLITE_POWERSAFE_OVERWRITE=1
+          - SQLITE_DEFAULT_FILE_FORMAT=4
+          - SQLITE_DEFAULT_AUTOVACUUM=1
+          - SQLITE_ENABLE_MEMORY_MANAGEMENT=1
+          - SQLITE_ENABLE_FTS3
+          - SQLITE_ENABLE_FTS3_BACKWARDS
+          - SQLITE_ENABLE_FTS4
+          - SQLITE_OMIT_BUILTIN_TEST
+          - SQLITE_OMIT_LOAD_EXTENSION
+          - SQLITE_SECURE_DELETE
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 

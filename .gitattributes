@@ -1,0 +1,2 @@
+# Vendored sources are kept byte for byte (their README lists a hash).
+third_party/** -text
