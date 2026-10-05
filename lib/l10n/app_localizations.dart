@@ -1623,6 +1623,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Trip'**
   String get eventTrip;
+
+  /// No description provided for @eventWedding.
+  ///
+  /// In en, this message translates to:
+  /// **'Wedding'**
+  String get eventWedding;
+
+  /// No description provided for @eventDiningOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Dining out'**
+  String get eventDiningOut;
 }
 
 class _AppLocalizationsDelegate

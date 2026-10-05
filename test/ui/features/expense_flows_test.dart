@@ -1,10 +1,13 @@
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:my_expense_tracker_app/app/app_dependencies.dart';
 import 'package:my_expense_tracker_app/domain/models/expense.dart';
 import 'package:my_expense_tracker_app/domain/models/item_shape.dart';
 import 'package:my_expense_tracker_app/domain/models/money.dart';
 import 'package:my_expense_tracker_app/ui/core/widgets/emoji_picker_field.dart';
+import 'package:my_expense_tracker_app/ui/core/widgets/tile_picker.dart';
 import 'package:my_expense_tracker_app/ui/features/home/views/home_screen.dart';
 
 import '../../helpers/pump_app.dart';
@@ -18,6 +21,16 @@ void main() {
     deps = await openTestDependencies();
     await deps.settings.setOnboardingCompleted();
   });
+
+  /// Today is Mon 5 Oct 2026, for tests whose expenses are dated 2026: the
+  /// form and Home show the year only for another year, so with the real
+  /// clock they would fail from 2027.
+  Future<void> useFixedClock() async {
+    deps = await openTestDependencies(
+      clock: TestClock(DateTime(2026, 10, 5, 12).toUtc()),
+    );
+    await deps.settings.setOnboardingCompleted();
+  }
 
   /// A phone-sized screen, so the whole form fits without scrolling much.
   void usePhoneSize(WidgetTester tester) {
@@ -84,6 +97,249 @@ void main() {
       expect(saved.title, 'Chai');
       expect(saved.amount, const Money(2050, 'INR'));
       expect(saved.description, isNull);
+    });
+
+    testWidgets('the payment method is picked from a dropdown', (tester) async {
+      usePhoneSize(tester);
+      await pumpApp(tester, dependencies: deps);
+      await openAddForm(tester);
+      expect(find.text('💵 Cash'), findsOneWidget, reason: 'the default');
+
+      await tester.tap(find.text('💵 Cash'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('📱 UPI').last);
+      await tester.pumpAndSettle();
+      await tester.enterText(field('Title'), 'Metro');
+      await tester.enterText(field('Amount'), '40');
+      await tester.tap(find.text('Bills'));
+      await tester.pump();
+      await tapSave(tester);
+
+      expect((await deps.expenses.page()).single.paymentMethodId, 2);
+    });
+
+    testWidgets('the currency is picked next to the amount', (tester) async {
+      usePhoneSize(tester);
+      await pumpApp(tester, dependencies: deps);
+      await openAddForm(tester);
+      final box = find.byKey(const ValueKey('formCurrency'));
+      expect(
+        find.descendant(of: box, matching: find.text('₹ INR')),
+        findsOneWidget,
+      );
+      expect(find.text('Currency'), findsOneWidget, reason: 'its label only');
+      // TalkBack reaches the box and the amount separately: they were one
+      // merged node, and the amount field was gone (Oppo, 2026-10-04).
+      final semantics = tester.ensureSemantics();
+      final boxNode = tester.getSemantics(box);
+      expect(boxNode.label, 'Currency: ₹  INR · Indian Rupee');
+      expect(tester.getSemantics(field('Amount')), isNot(same(boxNode)));
+      semantics.dispose();
+
+      await tester.tap(box);
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).last, 'usd');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('US Dollar'));
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(of: box, matching: find.text(r'$ USD')),
+        findsOneWidget,
+      );
+
+      await tester.enterText(field('Title'), 'Taxi');
+      await tester.enterText(field('Amount'), '12');
+      await tester.tap(find.text('Bills'));
+      await tester.pump();
+      await tapSave(tester);
+      expect(
+        (await deps.expenses.page()).single.amount,
+        const Money(1200, 'USD'),
+      );
+      expect(
+        (await deps.settings.load()).defaultCurrency,
+        'INR',
+        reason: 'this expense only',
+      );
+    });
+
+    group('date, time and payment method', () {
+      /// Opens an expense on [date] (7:54 PM, Credit card) on a phone
+      /// [widthDp] wide with the font at [textScale].
+      Future<void> openAt(
+        WidgetTester tester, {
+        required double widthDp,
+        required double textScale,
+        required DateTime date,
+      }) async {
+        tester.view.physicalSize = Size(widthDp * 2, 1600);
+        tester.view.devicePixelRatio = 2.0;
+        tester.platformDispatcher.textScaleFactorTestValue = textScale;
+        addTearDown(tester.view.reset);
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        final at = DateTime(date.year, date.month, date.day, 19, 54);
+        await deps.expenses.add(
+          ExpenseInput(
+            title: 'Old card',
+            description: null,
+            amount: const Money(12300, 'INR'),
+            occurredAt: at.toUtc(),
+            utcOffsetMinutes: at.timeZoneOffset.inMinutes,
+            categoryId: 1,
+            paymentMethodId: 4, // Credit card
+            eventIds: const {},
+          ),
+        );
+        await pumpApp(tester, dependencies: deps);
+        await tester.scrollUntilVisible(
+          find.text('Old card'),
+          300,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.tap(find.text('Old card'));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        expect(find.text('Title'), findsOneWidget, reason: 'the form shows');
+        expect(find.text('💳 Credit card'), findsOneWidget);
+      }
+
+      Rect box(WidgetTester tester, String label) => tester.getRect(
+        find
+            .ancestor(
+              of: find.text(label),
+              matching: find.byType(InputDecorator),
+            )
+            .first,
+      );
+
+      /// Date and time show their whole text, never cut short.
+      void expectWholeText(WidgetTester tester, List<String> texts) {
+        for (final text in texts) {
+          final paragraph = tester.renderObject<RenderParagraph>(
+            find.text(text),
+          );
+          expect(
+            paragraph.getMaxIntrinsicWidth(double.infinity),
+            lessThanOrEqualTo(paragraph.size.width + 0.5),
+            reason: text,
+          );
+          // Nor cut off at the bottom (the largest font, Pixel).
+          expect(
+            paragraph.getMaxIntrinsicHeight(paragraph.size.width),
+            lessThanOrEqualTo(paragraph.size.height + 0.5),
+            reason: text,
+          );
+        }
+      }
+
+      final now = DateTime.now();
+      final lastYear = DateTime(now.year - 1, 10, 1);
+
+      // The largest font, on the Oppo A77s (360 dp) and a Pixel (412 dp):
+      // the tiles overflowed and the payment method kept to the row, its
+      // label cut to "Payment…" (Oppo, 2026-10-05). Logical pixels only, so
+      // the screen's density doesn't matter.
+      for (final widthDp in [360.0, 412.0]) {
+        for (final shape in ItemShape.values) {
+          testWidgets('at the largest font nothing overflows '
+              '($widthDp dp, ${shape.name} tiles)', (tester) async {
+            await deps.settings.setTileShape(shape);
+            await openAt(tester, widthDp: widthDp, textScale: 2, date: now);
+            final date = box(tester, 'Date');
+            expect(
+              box(tester, 'Payment method').top,
+              greaterThan(date.bottom),
+              reason: 'its own row',
+            );
+            expectWholeText(tester, [
+              DateFormat.MMMd('en_US').format(now),
+              '7:54 PM',
+            ]);
+            expect(
+              tester.getSize(find.byKey(const ValueKey('formCurrency'))).height,
+              moreOrLessEquals(box(tester, 'Amount').height, epsilon: 1),
+              reason: 'currency and amount equally tall',
+            );
+            // 2 + 2 tiles, so the names are readable: Drinks, the 3rd
+            // category, starts the 2nd column, half the picker along.
+            final picker = tester.getRect(find.byType(TilePicker).first);
+            final step =
+                tester.getCenter(find.text('Drinks')).dx -
+                tester.getCenter(find.text('Bills')).dx;
+            expect(step, greaterThan(picker.width / 3));
+            if (shape == ItemShape.circle) {
+              // A full-size disc with the whole name line under it: the
+              // rows grow instead (in 64 both were shrunk to fit, and the
+              // disc looked small, Oppo, 2026-10-05).
+              final disc = tester.getRect(
+                find
+                    .ancestor(
+                      of: find.text('🧾'),
+                      matching: find.byType(DecoratedBox),
+                    )
+                    .first,
+              );
+              expect(disc.width, moreOrLessEquals(44, epsilon: 0.5));
+              expect(
+                tester.getRect(find.text('Bills')).top,
+                greaterThan(disc.bottom),
+              );
+              expect(
+                picker.height,
+                greaterThan(TilePicker.tileHeight * 2 + 8),
+                reason: 'taller rows',
+              );
+              expectWholeText(tester, ['Bills']);
+            }
+            // The events picker too, further down.
+            await tester.scrollUntilVisible(
+              find.text('Events'),
+              300,
+              scrollable: find.byType(Scrollable).first,
+            );
+            await tester.pumpAndSettle();
+            expect(tester.takeException(), isNull);
+          });
+        }
+      }
+
+      testWidgets('share one row at the normal font', (tester) async {
+        // 600 dp: the test font draws every letter a full square, far wider
+        // than a phone's font (on the 360 dp Oppo this is one row too).
+        await openAt(tester, widthDp: 600, textScale: 1, date: now);
+        final date = box(tester, 'Date');
+        expect(box(tester, 'Time').top, date.top);
+        expect(box(tester, 'Payment method').top, date.top);
+      });
+
+      testWidgets('with a large font the payment method gets its own row', (
+        tester,
+      ) async {
+        // The row overflowed instead (2026-10-05). The fields keep their
+        // full text, so they stay easy to tap.
+        await openAt(tester, widthDp: 432, textScale: 1.3, date: now);
+        final date = box(tester, 'Date');
+        final method = box(tester, 'Payment method');
+        expect(box(tester, 'Time').top, date.top);
+        expect(method.top, greaterThan(date.bottom));
+        expect(method.width, greaterThan(date.width * 2), reason: 'full width');
+        expectWholeText(tester, [
+          DateFormat.MMMd('en_US').format(now),
+          '7:54 PM',
+        ]);
+      });
+
+      testWidgets('on a 360 dp phone with a large font and a past year, '
+          'date and time stack too', (tester) async {
+        // The Oppo A77s is 360 dp wide; a past year makes the date its
+        // widest.
+        await openAt(tester, widthDp: 360, textScale: 1.3, date: lastYear);
+        final date = box(tester, 'Date');
+        final time = box(tester, 'Time');
+        expect(time.top, greaterThan(date.bottom));
+        expect(box(tester, 'Payment method').top, greaterThan(time.bottom));
+        expectWholeText(tester, ['Oct 1, ${lastYear.year}', '7:54 PM']);
+      });
     });
 
     testWidgets('saving shows the errors and keeps the form open', (
@@ -447,6 +703,176 @@ void main() {
       },
     );
 
+    /// The category picker's area on screen.
+    Rect categoryPicker(WidgetTester tester) =>
+        tester.getRect(find.byType(TilePicker).first);
+
+    /// Whether [name]'s tile is fully inside the category picker.
+    bool inCategoryView(WidgetTester tester, String name) {
+      final tile = find.text(name);
+      if (tile.evaluate().isEmpty) return false;
+      final rect = tester.getRect(tile);
+      final view = categoryPicker(tester);
+      return rect.left >= view.left && rect.right <= view.right - 56;
+    }
+
+    testWidgets('every category, column by column, the two rows scroll '
+        'together', (tester) async {
+      // A new install orders them by name: Bills, Clothes, Drinks, …,
+      // Travel (the 20th, in the 10th column).
+      usePhoneSize(tester);
+      await pumpApp(tester, dependencies: deps);
+      await openAddForm(tester);
+      final bills = tester.getCenter(find.text('Bills'));
+      final clothes = tester.getCenter(find.text('Clothes'));
+      final drinks = tester.getCenter(find.text('Drinks'));
+      expect(clothes.dx, bills.dx, reason: '2nd under the 1st');
+      expect(clothes.dy, greaterThan(bills.dy));
+      expect(drinks.dy, bills.dy, reason: '3rd next to the 1st');
+      expect(drinks.dx, greaterThan(bills.dx));
+      expect(inCategoryView(tester, 'Travel'), isFalse);
+
+      await tester.drag(find.text('Bills'), const Offset(-1000, 0));
+      await tester.pumpAndSettle();
+      expect(inCategoryView(tester, 'Travel'), isTrue);
+      expect(inCategoryView(tester, 'Transport'), isTrue, reason: 'above it');
+      expect(inCategoryView(tester, 'Bills'), isFalse);
+      // The buttons don't move.
+      expect(find.byTooltip('New category'), findsOneWidget);
+    });
+
+    testWidgets('a tapped tile stays where it is', (tester) async {
+      usePhoneSize(tester);
+      await pumpApp(tester, dependencies: deps);
+      await openAddForm(tester);
+      await tester.drag(find.text('Bills'), const Offset(-1000, 0));
+      await tester.pumpAndSettle();
+      final travel = tester.getTopLeft(find.text('Travel'));
+
+      await tester.tap(find.text('Travel'));
+      await tester.pumpAndSettle();
+      expect(tester.getTopLeft(find.text('Travel')), travel);
+      expect(
+        isSemantics(isSelected: true)
+            .matches(tester.getSemantics(find.text('Travel')), {}),
+        isTrue,
+      );
+    });
+
+    testWidgets('a lone tile in the last column is its own size for TalkBack', (
+      tester,
+    ) async {
+      // 21 categories: Zoo is alone in the 11th column.
+      usePhoneSize(tester);
+      await deps.categories.add(name: 'Zoo', emoji: '🦁');
+      await pumpApp(tester, dependencies: deps);
+      await openAddForm(tester);
+      await tester.drag(find.text('Bills'), const Offset(-1000, 0));
+      await tester.pumpAndSettle();
+
+      final semantics = tester.ensureSemantics();
+      final zoo = tester.getSemantics(find.text('Zoo'));
+      expect(zoo.label, contains('Zoo'));
+      expect(zoo.rect.height, TilePicker.tileHeight);
+      semantics.dispose();
+    });
+
+    testWidgets('TalkBack finds the Search button as itself', (tester) async {
+      // Its node was the whole picker, so a double-tap hit the tiles
+      // (Oppo, 2026-10-04).
+      usePhoneSize(tester);
+      await pumpApp(tester, dependencies: deps);
+      await openAddForm(tester);
+      final semantics = tester.ensureSemantics();
+      final search = tester.getSemantics(categorySearch());
+      expect(search.rect.width, lessThanOrEqualTo(48));
+      semantics.dispose();
+    });
+
+    testWidgets('search matches are one row that scrolls on its own', (
+      tester,
+    ) async {
+      usePhoneSize(tester);
+      await pumpApp(tester, dependencies: deps);
+      await openAddForm(tester);
+      await tester.tap(categorySearch());
+      await tester.pumpAndSettle();
+      // An empty search matches every category.
+      final first = tester.getTopLeft(find.text('Bills'));
+      expect(inCategoryView(tester, 'Travel'), isFalse);
+
+      // 20 in one row: twice as far as the two rows scroll.
+      await tester.drag(find.text('Bills'), const Offset(-2000, 0));
+      await tester.pumpAndSettle();
+      expect(inCategoryView(tester, 'Travel'), isTrue);
+      expect(
+        tester.getTopLeft(find.text('Travel')).dy,
+        first.dy,
+        reason: 'one row',
+      );
+      expect(find.byTooltip('More results'), findsOneWidget);
+    });
+
+    testWidgets('a category picked in search is scrolled into view', (
+      tester,
+    ) async {
+      usePhoneSize(tester);
+      await pumpApp(tester, dependencies: deps);
+      await openAddForm(tester);
+      await tester.tap(categorySearch());
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Search categories…'),
+        'trav',
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Travel'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.widgetWithText(TextField, 'Search categories…'),
+        findsNothing,
+      );
+      expect(inCategoryView(tester, 'Travel'), isTrue);
+    });
+
+    testWidgets('editing an expense shows its category in view', (
+      tester,
+    ) async {
+      usePhoneSize(tester);
+      final categories = await deps.categories.all();
+      final travel = categories.singleWhere((c) => c.builtinKey == 'travel');
+      // 9 categories used more recently than Travel: it is the 10th, in
+      // the 5th column, out of view until the picker scrolls to it.
+      final now = DateTime.now();
+      Future<void> spend(String title, int categoryId, DateTime at) =>
+          deps.expenses.add(
+            ExpenseInput(
+              title: title,
+              description: null,
+              amount: const Money(100, 'INR'),
+              occurredAt: at.toUtc(),
+              utcOffsetMinutes: at.timeZoneOffset.inMinutes,
+              categoryId: categoryId,
+              paymentMethodId: 1,
+              eventIds: const {},
+            ),
+          );
+      await spend('Trip', travel.id, now.subtract(const Duration(days: 1)));
+      for (final c in categories.where((c) => c.id != travel.id).take(9)) {
+        await spend('Other ${c.id}', c.id, now);
+      }
+      await pumpApp(tester, dependencies: deps);
+      await tester.scrollUntilVisible(
+        find.text('Trip'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await openExpense(tester, 'Trip');
+
+      expect(inCategoryView(tester, 'Travel'), isTrue);
+    });
+
     testWidgets('a category search result is selected and closes search', (
       tester,
     ) async {
@@ -701,6 +1127,7 @@ void main() {
     // phase-2.md §13). Home must show that wall clock and day, not the
     // same moment in the current zone (database.md §1).
     usePhoneSize(tester);
+    await useFixedClock();
     final here = DateTime(2026, 10, 1).timeZoneOffset.inMinutes;
     final there = here >= 0 ? here - 600 : here + 600;
     final wallClock = DateTime.utc(2026, 10, 1, 23, 30);
@@ -724,14 +1151,14 @@ void main() {
     expect(find.text('Thu, Oct 1'), findsOneWidget);
 
     await openExpense(tester, 'Late dinner');
-    // The date and time buttons are at the end of the (lazy) form.
+    // The date and time are under the description, in the (lazy) form.
     await tester.scrollUntilVisible(
-      find.byIcon(Icons.schedule),
+      find.text('Time'),
       200,
       scrollable: find.byType(Scrollable).first,
     );
     expect(find.text('11:30 PM'), findsOneWidget, reason: 'form time');
-    expect(find.text('Thu, Oct 1, 2026'), findsOneWidget, reason: 'form date');
+    expect(find.text('Oct 1'), findsOneWidget, reason: 'form date');
   });
 
   group('dates follow the phone country, like money', () {
@@ -743,6 +1170,7 @@ void main() {
       tester.platformDispatcher.localesTestValue = [device];
       addTearDown(tester.platformDispatcher.clearLocaleTestValue);
       addTearDown(tester.platformDispatcher.clearLocalesTestValue);
+      await useFixedClock();
       final noon = DateTime(2026, 10, 1, 12);
       await deps.expenses.add(
         ExpenseInput(
@@ -762,7 +1190,7 @@ void main() {
     Future<void> scrollFormToDate(WidgetTester tester) async {
       await openExpense(tester, 'Lunch');
       await tester.scrollUntilVisible(
-        find.byIcon(Icons.calendar_today_outlined),
+        find.text('Date'),
         200,
         scrollable: find.byType(Scrollable).first,
       );
@@ -772,13 +1200,13 @@ void main() {
       await pumpWithPhoneIn(tester, const Locale('en', 'IN'));
       expect(find.text('Thu, 1 Oct'), findsOneWidget, reason: 'day header');
       await scrollFormToDate(tester);
-      expect(find.text('Thu, 1 Oct, 2026'), findsOneWidget, reason: 'form');
+      expect(find.text('1 Oct'), findsOneWidget, reason: 'form');
     });
 
     testWidgets('the date picker follows the phone too', (tester) async {
       await pumpWithPhoneIn(tester, const Locale('en', 'IN'));
       await scrollFormToDate(tester);
-      await tester.tap(find.byIcon(Icons.calendar_today_outlined));
+      await tester.tap(find.text('Date'));
       await tester.pumpAndSettle();
       expect(find.text('Select date'), findsOneWidget);
       expect(find.text('Thu, 1 Oct'), findsOneWidget, reason: 'picker');
@@ -788,7 +1216,7 @@ void main() {
       await pumpWithPhoneIn(tester, const Locale('en', 'US'));
       expect(find.text('Thu, Oct 1'), findsOneWidget, reason: 'day header');
       await scrollFormToDate(tester);
-      expect(find.text('Thu, Oct 1, 2026'), findsOneWidget, reason: 'form');
+      expect(find.text('Oct 1'), findsOneWidget, reason: 'form');
     });
   });
 
@@ -924,8 +1352,8 @@ void main() {
       await openAddForm(tester);
       expect(focusedField(), isNotNull, reason: 'the title has it');
 
-      await scrollFormTo(tester, find.byIcon(Icons.calendar_today_outlined));
-      await tester.tap(find.byIcon(Icons.calendar_today_outlined));
+      await scrollFormTo(tester, find.text('Date'));
+      await tester.tap(find.text('Date'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('OK'));
       await tester.pumpAndSettle();
@@ -945,8 +1373,8 @@ void main() {
       usePhoneSize(tester);
       await pumpApp(tester, dependencies: deps);
       await openAddForm(tester);
-      await scrollFormTo(tester, find.byIcon(Icons.schedule));
-      await tester.tap(find.byIcon(Icons.schedule));
+      await scrollFormTo(tester, find.text('Time'));
+      await tester.tap(find.text('Time'));
       await tester.pumpAndSettle();
       expect(find.text('Select time'), findsOneWidget, reason: 'the dial');
 
@@ -955,7 +1383,7 @@ void main() {
       await tester.tap(find.text('OK'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.schedule));
+      await tester.tap(find.text('Time'));
       await tester.pumpAndSettle();
       expect(find.text('Enter time'), findsOneWidget, reason: 'the keyboard');
       expect((await deps.settings.load()).timePickerKeyboard, isTrue);
@@ -968,6 +1396,11 @@ void main() {
       await deps.settings.setTileShape(ItemShape.circle);
       await pumpApp(tester, dependencies: deps);
       await openAddForm(tester);
+      // At the normal font the rows keep their 64.
+      expect(
+        tester.getSize(find.byType(TilePicker).first).height,
+        TilePicker.tileHeight * 2 + 8,
+      );
       final disc = find.ancestor(
         of: find.text('🧾'),
         matching: find.byWidgetPredicate(

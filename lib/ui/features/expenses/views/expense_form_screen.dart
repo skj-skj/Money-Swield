@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:bloc_signals_flutter/bloc_signals_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
@@ -544,7 +546,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        _amountField(fields),
+        _amountRow(fields),
         _resultLine(fields),
         const SizedBox(height: 16),
         TextField(
@@ -562,6 +564,8 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
             border: const OutlineInputBorder(),
           ),
         ),
+        const SizedBox(height: 16),
+        _whenAndHowRow(state, locale),
         const SizedBox(height: 24),
         _SectionLabel(
           key: _categoryKey,
@@ -570,7 +574,6 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
         ),
         TilePicker(
           items: _form.categoryItems,
-          tiles: _form.categoryTiles,
           selectedIds: {?fields.categoryId},
           multiSelect: false,
           tileShape: settings.tileShape,
@@ -589,7 +592,6 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
         _SectionLabel(text: l10n.fieldEvents),
         TilePicker(
           items: _form.eventItems,
-          tiles: _form.eventTiles,
           selectedIds: fields.eventIds,
           multiSelect: true,
           tileShape: settings.tileShape,
@@ -605,67 +607,195 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
           newLabel: l10n.newEvent,
           onNew: _newEvent,
         ),
-        const SizedBox(height: 24),
-        _SectionLabel(text: l10n.fieldPaymentMethod),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final method in state.paymentMethods)
-              ChoiceChip(
-                label: Text(
-                  '${method.emoji}  ${paymentMethodName(l10n, method)}',
+      ],
+    );
+  }
+
+  /// Date, time and payment method in one row under the description.
+  /// Date and time take the width they need; the dropdown gets the rest,
+  /// so a long method name is cut short instead of the date.
+  ///
+  /// With a large font the dropdown would get too narrow (and date + time
+  /// overflowed the row), so it moves to a row of its own; if date and time
+  /// don't fit side by side either, they stack too. They are never shrunk
+  /// below their text, so they stay easy to read and tap (owner,
+  /// 2026-10-05). See [_PickerField.minDropdownWidth] for "too narrow".
+  Widget _whenAndHowRow(ExpenseFormReady state, String locale) {
+    final l10n = AppLocalizations.of(context);
+    final fields = state.fields;
+    final time = DateFormat.jm(locale).format(fields.wallClock);
+    // Short, to leave the dropdown room: the year only when it isn't this
+    // one. TalkBack reads the full date.
+    final thisYear = fields.wallClock.year == widget.dependencies.now().year;
+    final date = (thisYear ? DateFormat.MMMd(locale) : DateFormat.yMMMd(locale))
+        .format(fields.wallClock);
+    // An expense's method may be missing from the list (a dropdown must
+    // hold its value exactly once), so then nothing shows as selected.
+    final methodId =
+        state.paymentMethods.any((m) => m.id == fields.paymentMethodId)
+        ? fields.paymentMethodId
+        : null;
+    final methodNames = [
+      for (final method in state.paymentMethods)
+        '${method.emoji} ${paymentMethodName(l10n, method)}',
+    ];
+    final dateField = _PickerField(
+      label: l10n.fieldDate,
+      value: date,
+      semanticsValue: DateFormat.yMMMMEEEEd(locale).format(fields.wallClock),
+      onTap: () => _pickDate(fields.wallClock),
+    );
+    final timeField = _PickerField(
+      label: l10n.fieldTime,
+      value: time,
+      semanticsValue: time,
+      onTap: () => _pickTime(fields.wallClock),
+    );
+    final methodField = InputDecorator(
+      decoration: _PickerField.decoration(l10n.fieldPaymentMethod),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<int>(
+          value: methodId,
+          // One size smaller than the text fields, like the date and time
+          // (see _PickerField.textStyle).
+          style: _PickerField.textStyle(context),
+          isDense: true,
+          isExpanded: true,
+          onTap: _dropFocus,
+          onChanged: (id) {
+            if (id != null) _form.paymentMethodSelected(id);
+          },
+          items: [
+            for (final (i, method) in state.paymentMethods.indexed)
+              DropdownMenuItem(
+                value: method.id,
+                child: Text(
+                  methodNames[i],
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                selected: method.id == fields.paymentMethodId,
-                onSelected: (_) => _form.paymentMethodSelected(method.id),
               ),
           ],
         ),
-        const SizedBox(height: 24),
-        _SectionLabel(text: l10n.fieldCurrency),
-        Align(
-          alignment: AlignmentDirectional.centerStart,
-          child: ActionChip(
-            avatar: const Icon(Icons.currency_exchange, size: 18),
-            label: Text(currencyLabel(fields.currencyCode)),
-            onPressed: () => _pickCurrency(fields.currencyCode),
+      ),
+    );
+
+    const gap = 8.0;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final dateWidth = _PickerField.boxWidth(context, date);
+        final timeWidth = _PickerField.boxWidth(context, time);
+        final whenWidth = dateWidth + gap + timeWidth;
+        final minMethodWidth = _PickerField.minDropdownWidth(
+          context,
+          label: l10n.fieldPaymentMethod,
+          names: methodNames,
+          rowWidth: width,
+        );
+        if (whenWidth + gap + minMethodWidth <= width) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // An InputDecorator needs a bounded width; IntrinsicWidth
+              // gives it its text's width (a bare one in a Row threw, and
+              // the whole form went blank).
+              IntrinsicWidth(child: dateField),
+              const SizedBox(width: gap),
+              IntrinsicWidth(child: timeField),
+              const SizedBox(width: gap),
+              Expanded(child: methodField),
+            ],
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (whenWidth <= width)
+              Row(
+                children: [
+                  // Flex by text width, so each gets at least its own.
+                  Expanded(flex: dateWidth.round(), child: dateField),
+                  const SizedBox(width: gap),
+                  Expanded(flex: timeWidth.round(), child: timeField),
+                ],
+              )
+            else ...[
+              dateField,
+              const SizedBox(height: 16),
+              timeField,
+            ],
+            const SizedBox(height: 16),
+            methodField,
+          ],
+        );
+      },
+    );
+  }
+
+  /// This expense's currency, then the amount, like `₹ 120` is read
+  /// (owner, 2026-10-04: was a chip at the end of the form). The box shows the
+  /// currency, so the amount has no symbol prefix any more.
+  Widget _amountRow(ExpenseFields fields) {
+    final l10n = AppLocalizations.of(context);
+    final textTheme = Theme.of(context).textTheme;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Looks like a dropdown but opens the currency sheet: ~150
+        // currencies need its search and Recent section, not a menu.
+        // IntrinsicWidth: an InputDecorator in a Row needs a bounded width
+        // (see _whenAndHowRow).
+        IntrinsicWidth(
+          child: Semantics(
+            // Its own node: without it TalkBack merged the box with the
+            // amount field next to it, which it then couldn't reach (probe
+            // + Oppo, 2026-10-04).
+            container: true,
+            button: true,
+            label:
+                '${l10n.fieldCurrency}: ${currencyLabel(fields.currencyCode)}',
+            excludeSemantics: true,
+            child: InkWell(
+              key: const ValueKey('formCurrency'),
+              onTap: () => _pickCurrency(fields.currencyCode),
+              borderRadius: BorderRadius.circular(4),
+              child: InputDecorator(
+                decoration: InputDecoration(
+                  labelText: l10n.fieldCurrency,
+                  border: const OutlineInputBorder(),
+                  suffixIcon: const Icon(Icons.arrow_drop_down),
+                ),
+                // The amount's line height, so both boxes are equally tall;
+                // scaled like its text, or the box fell short at a large
+                // font (Pixel, 2026-10-05).
+                child: SizedBox(
+                  height:
+                      MediaQuery.textScalerOf(context)
+                          .scale(textTheme.headlineMedium?.fontSize ?? 28) *
+                      (textTheme.headlineMedium?.height ?? 1.3),
+                  child: Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: Text(
+                      currencyShortLabel(fields.currencyCode),
+                      maxLines: 1,
+                      softWrap: false,
+                      style: textTheme.titleMedium,
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
-        const SizedBox(height: 24),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.calendar_today_outlined),
-                label: Text(
-                  DateFormat.yMMMEd(locale).format(fields.wallClock),
-                  semanticsLabel:
-                      '${l10n.fieldDate}: '
-                      '${DateFormat.yMMMMEEEEd(locale).format(fields.wallClock)}',
-                ),
-                onPressed: () => _pickDate(fields.wallClock),
-              ),
-            ),
-            const SizedBox(width: 12),
-            OutlinedButton.icon(
-              icon: const Icon(Icons.schedule),
-              label: Text(
-                DateFormat.jm(locale).format(fields.wallClock),
-                semanticsLabel:
-                    '${l10n.fieldTime}: '
-                    '${DateFormat.jm(locale).format(fields.wallClock)}',
-              ),
-              onPressed: () => _pickTime(fields.wallClock),
-            ),
-          ],
-        ),
+        const SizedBox(width: 8),
+        Expanded(child: _amountField(fields)),
       ],
     );
   }
 
   Widget _amountField(ExpenseFields fields) {
     final l10n = AppLocalizations.of(context);
-    final currency = findCurrency(fields.currencyCode);
     return TextField(
       key: _amountKey,
       controller: _amount,
@@ -677,7 +807,6 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
       style: Theme.of(context).textTheme.headlineMedium,
       decoration: InputDecoration(
         labelText: l10n.fieldAmount,
-        prefixText: '${currency?.symbol ?? fields.currencyCode} ',
         errorText: _amountErrorText(l10n, _form.amountError, fields),
         border: const OutlineInputBorder(),
       ),
@@ -756,6 +885,149 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
     ExpressionError.divideByZero => l10n.amountErrorDivideByZero,
     ExpressionError.notPositive => l10n.amountErrorNotPositive,
   };
+}
+
+/// A tappable, outlined box with a floating label, like the text fields
+/// above it, that opens a picker.
+class _PickerField extends StatelessWidget {
+  const _PickerField({
+    required this.label,
+    required this.value,
+    required this.semanticsValue,
+    required this.onTap,
+  });
+
+  final String label;
+  final String value;
+  final String semanticsValue;
+  final VoidCallback onTap;
+
+  /// The row's values: one size below the text fields (14 sp, not 16).
+  /// At 16 sp a date with its year left "💳 Cred…" and "Payment meth…"
+  /// on a 360 dp phone (Oppo A77s, 2026-10-04).
+  static TextStyle? textStyle(BuildContext context) =>
+      Theme.of(context).textTheme.bodyMedium;
+
+  /// Shared with the payment method dropdown, so the row looks even. Side
+  /// padding 8, not the default 12: at 12 "Debit card" was cut short on a
+  /// 360 dp phone (Oppo A77s).
+  static InputDecoration decoration(String label) => InputDecoration(
+    labelText: label,
+    border: const OutlineInputBorder(),
+    contentPadding: const EdgeInsets.symmetric(
+      horizontal: _sidePadding,
+      vertical: 16,
+    ),
+  );
+
+  static const _sidePadding = 8.0;
+
+  /// Material 3 keeps the text this far inside an outlined border, besides
+  /// the content padding: `OutlineInputBorder.gapPadding`. Left out, the
+  /// boxes were measured 6 too narrow and the date was cut short.
+  static const _gap = 4.0;
+
+  /// A dense `DropdownButton`'s height for [textStyle] (its own formula):
+  /// 24, or the text's scaled line if that is taller.
+  static double denseHeight(BuildContext context) {
+    final style = textStyle(context);
+    final line = (style?.fontSize ?? 14) * (style?.height ?? 1);
+    return math.max(24, MediaQuery.textScalerOf(context).scale(line));
+  }
+
+  /// The width a box showing [value] takes in a row, as the InputDecorator
+  /// measures it (the label isn't counted): its text, then each side the
+  /// side padding and the outline's [_gap], plus a pixel each side for
+  /// rounding.
+  static double boxWidth(BuildContext context, String value) =>
+      _textWidth(context, value, textStyle(context)) +
+      (_sidePadding + _gap) * 2 +
+      2;
+
+  /// The narrowest the payment method dropdown may get next to the date
+  /// and time: its whole floating [label], and its longest name (of
+  /// [names]) with the arrow (24), so the menu, as wide as the box, shows
+  /// every name in full. The name part is capped at half the row, so one
+  /// long custom name gets "…" instead of always taking a row of its own.
+  ///
+  /// Room for "💳 Debit" alone was too little: at the Oppo's largest font
+  /// the label read "Payment…" and the menu "Credi…" (owner, 2026-10-05).
+  static double minDropdownWidth(
+    BuildContext context, {
+    required String label,
+    required List<String> names,
+    required double rowWidth,
+  }) {
+    final longestName = names.fold(
+      0.0,
+      (widest, name) => math.max(widest, boxWidth(context, name) + 24),
+    );
+    return math.max(
+      labelBoxWidth(context, label),
+      math.min(longestName, rowWidth / 2),
+    );
+  }
+
+  /// The width a box needs for its floating [label]: the label is drawn at
+  /// 3/4 of the field text's size (bodyLarge), in the border's notch, which
+  /// has a [_gap] each side; then the same padding as [boxWidth].
+  static double labelBoxWidth(BuildContext context, String label) =>
+      _textWidth(context, label, Theme.of(context).textTheme.bodyLarge) * 0.75 +
+      _gap * 2 +
+      (_sidePadding + _gap) * 2 +
+      2;
+
+  /// [text] on one line in [style], at the phone's font size.
+  static double _textWidth(
+    BuildContext context,
+    String text,
+    TextStyle? style,
+  ) {
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      locale: Localizations.localeOf(context),
+      maxLines: 1,
+    )..layout();
+    final width = painter.width;
+    painter.dispose();
+    return width;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      // Its own node, not merged with its neighbours (see _amountRow).
+      container: true,
+      button: true,
+      label: '$label: $semanticsValue',
+      excludeSemantics: true,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(4),
+        child: InputDecorator(
+          decoration: decoration(label),
+          // A dense dropdown's height, so the three boxes line up (with
+          // 14 sp text alone these were a few pixels shorter). Its formula,
+          // not a fixed 24: at the largest font the text outgrew 24 and was
+          // cut off at the bottom (Pixel, 2026-10-05).
+          child: SizedBox(
+            height: denseHeight(context),
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Text(
+                value,
+                maxLines: 1,
+                softWrap: false,
+                style: textStyle(context),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// A field's heading above a picker, with its error under it.

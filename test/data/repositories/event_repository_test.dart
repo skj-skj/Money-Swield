@@ -19,7 +19,7 @@ void main() {
   Future<Event> byId(int id) async =>
       (await repository.all()).singleWhere((e) => e.id == id);
 
-  test('all returns the 5 seeded built-ins, none archived', () async {
+  test('all returns the 7 seeded built-ins, none archived', () async {
     final events = await repository.all();
     expect(events.map((e) => e.builtinKey), [
       'birthday',
@@ -27,6 +27,8 @@ void main() {
       'party',
       'festival',
       'trip',
+      'wedding',
+      'dining_out',
     ]);
     expect(events.any((e) => e.isArchived), isFalse);
   });
@@ -89,7 +91,9 @@ void main() {
 
   group('archive', () {
     test('sets archived_at and updated_at to now', () async {
-      final trip = (await repository.all()).last;
+      final trip = (await repository.all()).singleWhere(
+        (e) => e.builtinKey == 'trip',
+      );
       clock.advance(const Duration(days: 1));
       await repository.setArchived(trip.id, true);
 
@@ -100,7 +104,9 @@ void main() {
     });
 
     test('unarchiving clears archived_at', () async {
-      final trip = (await repository.all()).last;
+      final trip = (await repository.all()).singleWhere(
+        (e) => e.builtinKey == 'trip',
+      );
       await repository.setArchived(trip.id, true);
       clock.advance(const Duration(days: 1));
       await repository.setArchived(trip.id, false);
@@ -111,7 +117,9 @@ void main() {
     });
 
     test('archiving twice keeps the first archive date', () async {
-      final trip = (await repository.all()).last;
+      final trip = (await repository.all()).singleWhere(
+        (e) => e.builtinKey == 'trip',
+      );
       await repository.setArchived(trip.id, true);
       final firstDate = (await byId(trip.id)).archivedAt;
       clock.advance(const Duration(days: 3));
@@ -122,7 +130,9 @@ void main() {
     test(
       'unarchiving an active event changes nothing, not even updated_at',
       () async {
-        final trip = (await repository.all()).last;
+        final trip = (await repository.all()).singleWhere(
+          (e) => e.builtinKey == 'trip',
+        );
         clock.advance(const Duration(days: 3));
         await repository.setArchived(trip.id, false);
         expect(await byId(trip.id), trip);
@@ -130,9 +140,11 @@ void main() {
     );
 
     test('archived events are still returned by all()', () async {
-      final trip = (await repository.all()).last;
+      final trip = (await repository.all()).singleWhere(
+        (e) => e.builtinKey == 'trip',
+      );
       await repository.setArchived(trip.id, true);
-      expect(await repository.all(), hasLength(5));
+      expect(await repository.all(), hasLength(7));
     });
   });
 
@@ -145,6 +157,8 @@ void main() {
       'anniversary',
       'party',
       'festival',
+      'trip',
+      'wedding',
     ]);
   });
 

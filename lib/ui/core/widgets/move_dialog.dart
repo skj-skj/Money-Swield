@@ -160,9 +160,6 @@ class _MoveDialogState extends State<_MoveDialog> {
                   tileShape: widget.tileShape,
                   buttonShape: widget.buttonShape,
                   items: widget.items,
-                  tiles: pickerTiles(widget.items, {
-                    ?selected,
-                  }, multiSelect: false),
                   selectedIds: {?selected},
                   multiSelect: false,
                   searching: _searching,

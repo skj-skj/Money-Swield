@@ -90,8 +90,9 @@ class _CustomizeTilesScreenState extends State<CustomizeTilesScreen> {
 }
 
 /// The Add expense pickers as a picture: the real `TilePicker`, so it looks
-/// exactly the same, but nothing in it reacts to taps (no selection, no
-/// search, no animation) and screen readers skip it. It shows a fresh
+/// exactly the same, but nothing in it reacts to taps or drags (no
+/// selection, no search, no scrolling, no animation; owner, 2026-10-04)
+/// and screen readers skip it. It shows a fresh
 /// form: no category picked, "None" for the events.
 class _PickersPreview extends StatelessWidget {
   const _PickersPreview({required this.settings, required this.items});
@@ -116,7 +117,6 @@ class _PickersPreview extends StatelessWidget {
             const SizedBox(height: 8),
             TilePicker(
               items: categories,
-              tiles: pickerTiles(categories, const {}, multiSelect: false),
               selectedIds: const {},
               multiSelect: false,
               tileShape: settings.tileShape,
@@ -136,12 +136,6 @@ class _PickersPreview extends StatelessWidget {
             const SizedBox(height: 8),
             TilePicker(
               items: events,
-              tiles: pickerTiles(
-                events,
-                const {},
-                multiSelect: true,
-                size: pickerGridSize - 1,
-              ),
               selectedIds: const {},
               multiSelect: true,
               tileShape: settings.tileShape,

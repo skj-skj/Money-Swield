@@ -908,4 +908,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get eventTrip => 'Trip';
+
+  @override
+  String get eventWedding => 'Wedding';
+
+  @override
+  String get eventDiningOut => 'Dining out';
 }

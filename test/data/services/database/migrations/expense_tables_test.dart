@@ -60,7 +60,7 @@ void main() {
     await db.insert('expense_events', {'expense_id': id, 'event_id': 1});
     await db.delete('expenses', where: 'id = ?', whereArgs: [id]);
     expect(await count('expense_events'), 0);
-    expect(await count('events'), 5, reason: 'the event itself stays');
+    expect(await count('events'), 7, reason: 'the event itself stays');
   });
 
   test('deleting an event unlinks it and keeps the expense', () async {

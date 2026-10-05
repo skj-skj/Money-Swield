@@ -326,5 +326,7 @@
   "eventAnniversary": "Anniversary",
   "eventParty": "Party",
   "eventFestival": "Festival",
-  "eventTrip": "Trip"
+  "eventTrip": "Trip",
+  "eventWedding": "Wedding",
+  "eventDiningOut": "Dining out"
 }

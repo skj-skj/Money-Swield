@@ -273,5 +273,7 @@
   "eventAnniversary": "सालगिरह",
   "eventParty": "पार्टी",
   "eventFestival": "त्योहार",
-  "eventTrip": "ट्रिप"
+  "eventTrip": "ट्रिप",
+  "eventWedding": "शादी",
+  "eventDiningOut": "बाहर खाना"
 }

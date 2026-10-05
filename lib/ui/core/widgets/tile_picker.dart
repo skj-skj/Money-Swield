@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:material_ui/material_ui.dart';
 
 import '../../../domain/models/item_shape.dart';
@@ -11,10 +13,19 @@ import 'picker_results_screen.dart';
 /// same; the uses differ only in the items, single vs. multi select, and
 /// whether **New** (and **None**) is offered.
 ///
-/// Normal state: the [tiles] as 4 + 4, with Search and New in a narrow
-/// column on the right. Search state: the first row becomes a search bar,
-/// the second shows the first 4 matches, and New becomes ⋯ (all the other
-/// matches on their own screen).
+/// Normal state: every item in two rows that scroll sideways together,
+/// filled column by column (1 top, 2 under it, 3 top …), so the most
+/// popular are at the start of both rows; 4 columns show at a time (2 with
+/// a large font, see `_visibleColumns`). Search
+/// and New stay in a narrow column on the right. Search state: the first
+/// row becomes a search bar, the second shows the matches in one row that
+/// scrolls on its own, and New becomes ⋯ (the matches after the first 4 on
+/// their own screen). (owner, 2026-10-04: was a fixed 4 + 4 of the top 8.)
+///
+/// Tiles keep their place when picked; instead the rows scroll to a
+/// selected tile that changed while off screen (an edited expense, a pick
+/// from search, ⋯ or New, a title suggestion). Moving it to the front, as
+/// the fixed grid did, would pull it from under the thumb.
 ///
 /// Switching between them is animated: the Search button itself widens
 /// into the search bar, its fill fading to the field's background, while
@@ -27,7 +38,6 @@ class TilePicker extends StatefulWidget {
   const TilePicker({
     super.key,
     required this.items,
-    required this.tiles,
     required this.selectedIds,
     required this.multiSelect,
     required this.searching,
@@ -44,12 +54,9 @@ class TilePicker extends StatefulWidget {
     this.onNone,
   });
 
-  /// Every item that can be picked, most popular first. Search runs on it.
+  /// Every item that can be picked, most popular first: the tiles of the
+  /// normal state, and what search runs on.
   final List<PickerItem> items;
-
-  /// The tiles of the normal state, see `pickerTiles`: 8, or 7 with a
-  /// [noneLabel] tile taking the first slot.
-  final List<PickerItem> tiles;
 
   final Set<int> selectedIds;
 
@@ -83,12 +90,14 @@ class TilePicker extends StatefulWidget {
   /// something was created (and selected by the caller). Null hides New.
   final Future<bool> Function(String initialName)? onNew;
 
-  /// A "None" tile in the first slot, selected while nothing is; tapping it
+  /// A "None" tile at the very start, selected while nothing is; tapping it
   /// calls [onNone] to clear the selection. For multi-select pickers
   /// (events), where "no event" is a choice of its own.
   final String? noneLabel;
   final VoidCallback? onNone;
 
+  /// A tile row's height at the normal font; more at a large one (see
+  /// `_rowHeight`).
   static const tileHeight = 64.0;
   static const _gap = 8.0;
   static const _actionWidth = 48.0;
@@ -105,6 +114,17 @@ class _TilePickerState extends State<TilePicker>
     with SingleTickerProviderStateMixin {
   final _query = TextEditingController();
   final _searchFocus = FocusNode();
+  final _tilesScroll = ScrollController();
+  final _resultsScroll = ScrollController();
+
+  /// One column's width plus its gap, from the last layout.
+  double _columnExtent = 0;
+
+  /// Width of the scrolling rows, from the last layout.
+  double _rowsWidth = 0;
+
+  /// Set by a tap on a tile: that tile is in view, nothing to scroll to.
+  bool _tappedInRows = false;
 
   late final AnimationController _search = AnimationController(
     vsync: this,
@@ -115,6 +135,7 @@ class _TilePickerState extends State<TilePicker>
   void initState() {
     super.initState();
     _searchFocus.addListener(_onFocusChange);
+    _revealAfterBuild(widget.selectedIds, animate: false);
   }
 
   @override
@@ -129,10 +150,21 @@ class _TilePickerState extends State<TilePicker>
   @override
   void didUpdateWidget(TilePicker oldWidget) {
     super.didUpdateWidget(oldWidget);
+    final added = widget.selectedIds.difference(oldWidget.selectedIds);
+    if (_tappedInRows) {
+      _tappedInRows = false;
+    } else if (added.isNotEmpty) {
+      _revealAfterBuild(added, animate: true);
+    }
     if (widget.searching == oldWidget.searching) return;
     // The query is not kept between searches.
     _query.clear();
     if (widget.searching) {
+      // A new search starts at the first match. The results row is gone
+      // once search has fully closed, and comes back at 0; this is for
+      // one reopened while the old row is still fading out. Not done on
+      // closing: the fading row would jump.
+      if (_resultsScroll.hasClients) _resultsScroll.jumpTo(0);
       _search.forward();
     } else {
       _searchFocus.unfocus();
@@ -159,9 +191,38 @@ class _TilePickerState extends State<TilePicker>
   // The bar's border follows the focus.
   void _onFocusChange() => setState(() {});
 
+  /// Scrolls the rows, once laid out, so the first of [ids] (in the rows'
+  /// order) is fully in view; nothing if it already is.
+  void _revealAfterBuild(Set<int> ids, {required bool animate}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_tilesScroll.hasClients || _columnExtent == 0) return;
+      final index = _gridTiles.indexWhere((t) => ids.contains(t.id));
+      if (index < 0) return;
+      final offset = revealOffset(
+        column: index ~/ 2,
+        columnExtent: _columnExtent,
+        viewport: _rowsWidth,
+        current: _tilesScroll.offset,
+        max: _tilesScroll.position.maxScrollExtent,
+      );
+      if (offset == _tilesScroll.offset) return;
+      if (animate && _search.duration != Duration.zero) {
+        _tilesScroll.animateTo(
+          offset,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutCubic,
+        );
+      } else {
+        _tilesScroll.jumpTo(offset);
+      }
+    });
+  }
+
   @override
   void dispose() {
     _search.dispose();
+    _tilesScroll.dispose();
+    _resultsScroll.dispose();
     _query.dispose();
     _searchFocus.dispose();
     super.dispose();
@@ -208,11 +269,15 @@ class _TilePickerState extends State<TilePicker>
           emoji: TilePicker.noneEmoji,
           name: noneLabel,
         ),
-      ...widget.tiles,
+      ...widget.items,
     ];
   }
 
   void _tapTile(int id) {
+    _tappedInRows = true;
+    // Consumed by didUpdateWidget in the next frame; cleared after it in
+    // case the tap changed nothing.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _tappedInRows = false);
     if (id == TilePicker._noneId) {
       widget.onNone?.call();
     } else {
@@ -246,8 +311,15 @@ class _TilePickerState extends State<TilePicker>
 
     const actionWidth = TilePicker._actionWidth;
     const gap = TilePicker._gap;
-    const rowHeight = TilePicker.tileHeight;
+    final rowHeight = _rowHeight(context);
     final gridWidth = width - actionWidth - gap;
+    // At 4 columns, the same tile size as the fixed 4 + 4 grid had. The
+    // rows run on under the gap before the buttons, so the last column's
+    // trailing gap doesn't make the columns in view scroll.
+    final columns = _visibleColumns(context, gridWidth);
+    final tileWidth = (gridWidth - gap * (columns - 1)) / columns;
+    _columnExtent = tileWidth + gap;
+    _rowsWidth = gridWidth + gap;
     final buttonHeight = widget.buttonShape == ItemShape.circle
         ? actionWidth
         : rowHeight;
@@ -255,43 +327,51 @@ class _TilePickerState extends State<TilePicker>
     final grid = _gridTiles;
     final emptyText = widget.emptyText;
     final showEmpty = grid.isEmpty && emptyText != null;
+    final results = growNew > 0 ? _results : const <PickerItem>[];
 
     return SizedBox(
       height: rowHeight * 2 + gap,
       child: Stack(
         children: [
-          // Normal state: two rows of tiles (or "No categories yet").
-          if (shrinkOld > 0)
-            Positioned(
-              left: 0,
-              top: 0,
-              width: gridWidth,
-              height: rowHeight * 2 + gap,
+          // Normal state: two rows of tiles (or "No categories yet"). Kept
+          // (hidden) while searching, so the rows keep their scroll offset
+          // and can scroll to a tile picked in search.
+          Positioned(
+            left: 0,
+            top: 0,
+            width: _rowsWidth,
+            height: rowHeight * 2 + gap,
+            child: Visibility(
+              visible: shrinkOld > 0,
+              maintainState: true,
               child: showEmpty
                   ? Opacity(
                       opacity: shrinkOld,
-                      child: Center(child: Text(emptyText)),
+                      child: SizedBox(
+                        width: gridWidth,
+                        child: Center(child: Text(emptyText)),
+                      ),
                     )
-                  : Column(
-                      children: [
-                        _row(grid.take(4).toList(), _tapTile, shrinkOld),
-                        const SizedBox(height: gap),
-                        _row(
-                          grid.skip(4).take(4).toList(),
-                          _tapTile,
-                          shrinkOld,
-                        ),
-                      ],
-                    ),
+                  : _columns(grid, rowHeight, shrinkOld),
             ),
-          // Search state: the first matches in the second row.
+          ),
+          // Search state: the matches in the second row.
           if (growNew > 0)
             Positioned(
               left: 0,
               top: rowHeight + gap,
-              width: gridWidth,
+              width: _rowsWidth,
               height: rowHeight,
-              child: _row(_results.take(4).toList(), _tapResult, growNew),
+              child: ListView.builder(
+                controller: _resultsScroll,
+                scrollDirection: Axis.horizontal,
+                itemExtent: _columnExtent,
+                itemCount: results.length,
+                itemBuilder: (context, index) => Padding(
+                  padding: const EdgeInsetsDirectional.only(end: gap),
+                  child: _tile(results[index], _tapResult, growNew, rowHeight),
+                ),
+              ),
             ),
           // New shrinking away, then ⋯ growing in.
           Positioned(
@@ -305,6 +385,7 @@ class _TilePickerState extends State<TilePicker>
                       : _scaled(
                           shrinkOld,
                           _ActionButton(
+                            rowHeight: rowHeight,
                             icon: Icons.add,
                             tooltip: widget.newLabel ?? '',
                             shape: widget.buttonShape,
@@ -314,6 +395,7 @@ class _TilePickerState extends State<TilePicker>
                 : _scaled(
                     growNew,
                     _ActionButton(
+                      rowHeight: rowHeight,
                       icon: Icons.more_horiz,
                       tooltip: l10n.moreResults,
                       shape: widget.buttonShape,
@@ -331,6 +413,7 @@ class _TilePickerState extends State<TilePicker>
               progress: widen,
               shape: widget.buttonShape,
               height: buttonHeight,
+              rowHeight: rowHeight,
               controller: _query,
               focusNode: _searchFocus,
               hint: widget.searchHint,
@@ -344,36 +427,102 @@ class _TilePickerState extends State<TilePicker>
     );
   }
 
-  /// One row of 4 slots, each tile shrunk to [scale]; missing items leave
-  /// their slot empty, so the grid keeps its shape.
-  Widget _row(List<PickerItem> items, ValueChanged<int> onTap, double scale) {
-    return SizedBox(
-      height: TilePicker.tileHeight,
-      child: Row(
-        children: [
-          for (var slot = 0; slot < 4; slot++) ...[
-            if (slot > 0) const SizedBox(width: TilePicker._gap),
-            Expanded(
-              child: slot < items.length
-                  ? _scaled(
-                      scale,
-                      _Tile(
-                        item: items[slot],
-                        selected: _isSelected(items[slot].id),
-                        showCheck:
-                            widget.multiSelect &&
-                            items[slot].id != TilePicker._noneId,
-                        shape: widget.tileShape,
-                        onTap: () => onTap(items[slot].id),
-                      ),
-                    )
-                  : const SizedBox.shrink(),
-            ),
-          ],
-        ],
-      ),
+  /// Columns in view: 4, or 2 (so 2 + 2 tiles) when the font is so large
+  /// that a quarter-wide tile would show only a few letters of a name
+  /// (owner, 2026-10-05). Decided in logical pixels from the row's width
+  /// and the scaled name size, so it is the same on any screen density.
+  int _visibleColumns(BuildContext context, double gridWidth) {
+    const gap = TilePicker._gap;
+    final nameSize = MediaQuery.textScalerOf(context)
+        .scale(Theme.of(context).textTheme.labelSmall?.fontSize ?? 11);
+    // The name's room in a tile (4 of padding each side), against about 6
+    // to 7 letters: a letter is roughly 0.6 of the font size. On a 360 dp
+    // phone that keeps 4 columns up to 1.1x the font; on a 411 dp one up to
+    // 1.5x.
+    final nameRoom = (gridWidth - gap * 3) / 4 - 8;
+    return nameRoom >= nameSize * 4 ? 4 : 2;
+  }
+
+  /// Each row's height: [TilePicker.tileHeight], or more when a tile's
+  /// emoji (a circle tile's disc) and name need it, at a large font. They
+  /// then keep their size; in 64 they were shrunk to fit, and a circle
+  /// tile's disc looked small (owner, 2026-10-05). The name's line follows
+  /// the font size, the emoji and disc don't.
+  double _rowHeight(BuildContext context) {
+    double lineHeight(String text, TextStyle? style, TextScaler scaler) {
+      final painter = TextPainter(
+        text: TextSpan(text: text, style: style),
+        textDirection: Directionality.of(context),
+        textScaler: scaler,
+        maxLines: 1,
+      )..layout();
+      final height = painter.height;
+      painter.dispose();
+      return height;
+    }
+
+    final name = lineHeight(
+      'Ag',
+      Theme.of(context).textTheme.labelSmall,
+      MediaQuery.textScalerOf(context),
+    );
+    final top = widget.tileShape == ItemShape.circle
+        ? _Tile._circleSize
+        : lineHeight('🧾', _Tile._emojiStyle, TextScaler.noScaling);
+    // The 2 between them, and 1 above and below.
+    return math.max(TilePicker.tileHeight, top + 2 + name + 2);
+  }
+
+  /// The two rows, one column (top and bottom tile) per item of the list,
+  /// each [rowHeight] tall and shrunk to [scale]. Built lazily: only the
+  /// columns in view.
+  Widget _columns(List<PickerItem> tiles, double rowHeight, double scale) {
+    const gap = TilePicker._gap;
+    return ListView.builder(
+      controller: _tilesScroll,
+      scrollDirection: Axis.horizontal,
+      itemExtent: _columnExtent,
+      itemCount: (tiles.length + 1) ~/ 2,
+      itemBuilder: (context, column) {
+        final top = column * 2;
+        return Padding(
+          padding: const EdgeInsetsDirectional.only(end: gap),
+          child: Column(
+            children: [
+              SizedBox(
+                height: rowHeight,
+                child: _tile(tiles[top], _tapTile, scale, rowHeight),
+              ),
+              const SizedBox(height: gap),
+              SizedBox(
+                height: rowHeight,
+                child: top + 1 < tiles.length
+                    ? _tile(tiles[top + 1], _tapTile, scale, rowHeight)
+                    : null,
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
+
+  Widget _tile(
+    PickerItem item,
+    ValueChanged<int> onTap,
+    double scale,
+    double height,
+  ) => _scaled(
+    scale,
+    _Tile(
+      item: item,
+      height: height,
+      selected: _isSelected(item.id),
+      showCheck: widget.multiSelect && item.id != TilePicker._noneId,
+      shape: widget.tileShape,
+      onTap: () => onTap(item.id),
+    ),
+  );
 
   static Widget _scaled(double scale, Widget child) =>
       scale >= 1 ? child : Transform.scale(scale: scale, child: child);
@@ -388,6 +537,7 @@ class _SearchBar extends StatelessWidget {
     required this.progress,
     required this.shape,
     required this.height,
+    required this.rowHeight,
     required this.controller,
     required this.focusNode,
     required this.hint,
@@ -399,6 +549,9 @@ class _SearchBar extends StatelessWidget {
   final double progress;
   final ItemShape shape;
   final double height;
+
+  /// The tile rows' height, for the matches row under the bar.
+  final double rowHeight;
   final TextEditingController controller;
   final FocusNode focusNode;
   final String hint;
@@ -458,11 +611,11 @@ class _SearchBar extends StatelessWidget {
                     onChanged: onChanged,
                     // Scroll far enough that the matches under the bar stay
                     // above the keyboard, not just the bar itself.
-                    scrollPadding: const EdgeInsets.fromLTRB(
+                    scrollPadding: EdgeInsets.fromLTRB(
                       20,
                       20,
                       20,
-                      20 + TilePicker.tileHeight + TilePicker._gap,
+                      20 + rowHeight + TilePicker._gap,
                     ),
                     decoration: InputDecoration.collapsed(hintText: hint),
                   ),
@@ -481,13 +634,22 @@ class _SearchBar extends StatelessWidget {
         ),
       ),
     );
-    return closed ? Tooltip(message: l10n.search, child: bar) : bar;
+    // Its own node: the tooltip's label otherwise went to the picker's
+    // node, and TalkBack's "Search" was the whole picker, a double-tap
+    // landing on the tiles (Oppo, 2026-10-04).
+    return closed
+        ? Semantics(
+            container: true,
+            child: Tooltip(message: l10n.search, child: bar),
+          )
+        : bar;
   }
 }
 
 class _Tile extends StatelessWidget {
   const _Tile({
     required this.item,
+    required this.height,
     required this.selected,
     required this.showCheck,
     required this.shape,
@@ -495,6 +657,10 @@ class _Tile extends StatelessWidget {
   });
 
   final PickerItem item;
+
+  /// The row's height (see `_rowHeight`), for the corner radius.
+  final double height;
+
   final bool selected;
 
   /// Multi-select tiles mark selection with a check as well as the color.
@@ -506,6 +672,8 @@ class _Tile extends StatelessWidget {
   /// Diameter of a circle tile's emoji disc; the name goes under it.
   static const _circleSize = 44.0;
 
+  static const _emojiStyle = TextStyle(fontSize: 22);
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -513,7 +681,13 @@ class _Tile extends StatelessWidget {
     final fill = selected
         ? colors.primaryContainer
         : colors.surfaceContainerHighest;
-    final emoji = Text(item.emoji, style: const TextStyle(fontSize: 22));
+    // An icon, so a fixed size like Material icons: following the font
+    // size it left no room for the name (largest font, Oppo, 2026-10-05).
+    final emoji = Text(
+      item.emoji,
+      style: _emojiStyle,
+      textScaler: TextScaler.noScaling,
+    );
     final check = Icon(Icons.check_circle, size: 16, color: colors.primary);
     final name = Text(
       item.name,
@@ -529,49 +703,48 @@ class _Tile extends StatelessWidget {
     );
 
     if (shape == ItemShape.circle) {
-      // A disc with the emoji, the name under it (it wouldn't fit inside).
+      final disc = Stack(
+        clipBehavior: Clip.none,
+        children: [
+          SizedBox.square(
+            dimension: _circleSize,
+            child: DecoratedBox(
+              decoration: BoxDecoration(color: fill, shape: BoxShape.circle),
+              child: Center(child: emoji),
+            ),
+          ),
+          if (showCheck && selected)
+            PositionedDirectional(top: -2, end: -2, child: check),
+        ],
+      );
       return Semantics(
+        // Its own node: the last column's lone tile otherwise merged into
+        // the column's, two rows tall, and TalkBack's double-tap hit the
+        // gap (Oppo, 2026-10-04).
+        container: true,
         selected: selected,
         button: true,
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(12),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  SizedBox.square(
-                    dimension: _circleSize,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: fill,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(child: emoji),
-                    ),
-                  ),
-                  if (showCheck && selected)
-                    PositionedDirectional(top: -2, end: -2, child: check),
-                ],
-              ),
-              const SizedBox(height: 2),
-              name,
-            ],
+          // The disc, the name under it (it wouldn't fit inside).
+          child: _fitted(
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [disc, const SizedBox(height: 2), name],
+            ),
           ),
         ),
       );
     }
 
     return Semantics(
+      container: true, // See the circle tile above.
       selected: selected,
       button: true,
       child: Material(
         color: fill,
-        borderRadius: BorderRadius.circular(
-          shapeRadius(shape, TilePicker.tileHeight),
-        ),
+        borderRadius: BorderRadius.circular(shapeRadius(shape, height)),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
@@ -583,9 +756,11 @@ class _Tile extends StatelessWidget {
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [emoji, const SizedBox(height: 2), name],
+                child: _fitted(
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [emoji, const SizedBox(height: 2), name],
+                  ),
                 ),
               ),
               if (showCheck && selected)
@@ -598,14 +773,28 @@ class _Tile extends StatelessWidget {
   }
 }
 
+/// [child] at the tile's width (so a long name still ends in "…"), shrunk
+/// as a whole when it is taller than the tile, as with the largest font,
+/// instead of overflowing it (owner, 2026-10-05). The tile keeps its size:
+/// the rows and buttons around it are laid out for it.
+Widget _fitted(Widget child) => LayoutBuilder(
+  builder: (context, box) => FittedBox(
+    fit: BoxFit.scaleDown,
+    child: SizedBox(width: box.maxWidth, child: child),
+  ),
+);
+
 class _ActionButton extends StatelessWidget {
   const _ActionButton({
+    required this.rowHeight,
     required this.icon,
     required this.tooltip,
     required this.shape,
     required this.onPressed,
   });
 
+  /// The tile rows' height: a non-circle button is as tall as a row.
+  final double rowHeight;
   final IconData icon;
   final String tooltip;
   final ItemShape shape;
@@ -615,7 +804,7 @@ class _ActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final height = shape == ItemShape.circle
         ? TilePicker._actionWidth
-        : TilePicker.tileHeight;
+        : rowHeight;
     return Center(
       child: SizedBox(
         height: height,

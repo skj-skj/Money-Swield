@@ -911,4 +911,10 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get eventTrip => 'ट्रिप';
+
+  @override
+  String get eventWedding => 'शादी';
+
+  @override
+  String get eventDiningOut => 'बाहर खाना';
 }

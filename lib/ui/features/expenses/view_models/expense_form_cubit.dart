@@ -801,21 +801,6 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState> {
       PickerItem(id: e.id, emoji: e.emoji, name: eventName(_l10n, e)),
   ];
 
-  /// The 8 tiles of the category grid: the selected category is always
-  /// one of them.
-  List<PickerItem> get categoryTiles => pickerTiles(categoryItems, {
-    ?_ready?.fields.categoryId,
-  }, multiSelect: false);
-
-  /// The 7 event tiles after the "None" tile: selected events take the
-  /// slots from the end.
-  List<PickerItem> get eventTiles => pickerTiles(
-    eventItems,
-    _ready?.fields.eventIds ?? const {},
-    multiSelect: true,
-    size: pickerGridSize - 1,
-  );
-
   /// The emoji of category [id], for a suggestion row; null if unknown.
   String? categoryEmoji(int id) =>
       _ready?.categories.where((c) => c.id == id).firstOrNull?.emoji;

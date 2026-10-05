@@ -8,7 +8,6 @@ import 'package:material_ui/material_ui.dart';
 import '../../../../app/app_dependencies.dart';
 import '../../../../app/app_restart.dart';
 import '../../../../domain/models/app_settings.dart';
-import '../../../../domain/models/currency.dart';
 import '../../../../domain/models/expense.dart';
 import '../../../../domain/models/money.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -292,7 +291,7 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsetsDirectional.only(end: 8),
               child: ActionChip(
                 key: const ValueKey('currencyChip'),
-                label: Text(_chipLabel(settings.defaultCurrency)),
+                label: Text(currencyShortLabel(settings.defaultCurrency)),
                 tooltip: l10n.settingDefaultCurrency,
                 onPressed: () => _pickCurrency(settings),
               ),
@@ -380,11 +379,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
-  static String _chipLabel(String code) => switch (findCurrency(code)) {
-    final Currency c when c.symbol != c.code => '${c.symbol} ${c.code}',
-    _ => code,
-  };
 }
 
 /// One entry of the Home list: a day header or an expense.

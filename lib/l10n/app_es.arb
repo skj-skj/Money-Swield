@@ -273,5 +273,7 @@
   "eventAnniversary": "Aniversario",
   "eventParty": "Fiesta",
   "eventFestival": "Festival",
-  "eventTrip": "Viaje"
+  "eventTrip": "Viaje",
+  "eventWedding": "Boda",
+  "eventDiningOut": "Comer fuera"
 }

@@ -16,6 +16,9 @@ class CreateEvents extends Migration {
     ('party', '🎉'),
     ('festival', '🪔'),
     ('trip', '🧳'),
+    ('wedding', '💒'),
+    // Not 🍽️, the food category's, so the two tiles look different.
+    ('dining_out', '🍴'),
   ];
 
   @override

@@ -50,7 +50,11 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// Scrolls [text] into view first: with the keyboard up the category
+  /// tiles sit below the date / time / payment row, under the operator row.
   Future<void> tapText(WidgetTester tester, String text) async {
+    await tester.ensureVisible(find.text(text).first);
+    await tester.pumpAndSettle();
     await tester.tap(find.text(text).first);
     await tester.pumpAndSettle();
   }

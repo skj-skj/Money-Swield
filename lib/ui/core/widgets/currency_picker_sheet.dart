@@ -13,6 +13,13 @@ String currencyLabel(String code) => switch (findCurrency(code)) {
   null => code,
 };
 
+/// e.g. `₹ INR`, for Home's currency chip and the form's currency box;
+/// just the code when intl has no symbol for it.
+String currencyShortLabel(String code) => switch (findCurrency(code)) {
+  final Currency c when c.symbol != c.code => '${c.symbol} ${c.code}',
+  _ => code,
+};
+
 /// Opens the currency picker as a bottom sheet and returns the picked ISO
 /// code, or null if dismissed. [recent] (most recent first) fills a
 /// "Recent" section above the full list while the search box is empty.

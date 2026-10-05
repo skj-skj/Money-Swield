@@ -23,42 +23,22 @@ class PickerItem {
   String toString() => 'PickerItem($id, $emoji $name)';
 }
 
-/// How many tiles the picker grid shows: two rows of four.
-const pickerGridSize = 8;
-
-/// The tiles of the grid in its normal state, from [ordered] (most popular
-/// first): the top [pickerGridSize], except that selected items are always
-/// visible (phase-2.md §6.2).
-///
-/// With [multiSelect] off, a selected item outside the top 8 takes the 8th
-/// slot. With it on, selected items outside the top 8 take the slots from
-/// the end (8th, 7th …), never pushing out another selected one; any left
-/// over stay selected and are reachable through search.
-///
-/// [size] is smaller than [pickerGridSize] when a "None" tile takes a slot.
-List<PickerItem> pickerTiles(
-  List<PickerItem> ordered,
-  Set<int> selectedIds, {
-  required bool multiSelect,
-  int size = pickerGridSize,
+/// The scroll offset that brings [column] fully into a [viewport] of
+/// sideways-scrolling columns, each [columnExtent] wide (gap included):
+/// [current] if it already is in view, else just enough to show it at the
+/// nearer edge, never past `0` or [max].
+double revealOffset({
+  required int column,
+  required double columnExtent,
+  required double viewport,
+  required double current,
+  required double max,
 }) {
-  final tiles = ordered.take(size).toList();
-  final shown = {for (final tile in tiles) tile.id};
-  final outside = [
-    for (final item in ordered.skip(size))
-      if (selectedIds.contains(item.id) && !shown.contains(item.id)) item,
-  ];
-  if (outside.isEmpty) return tiles;
-  if (!multiSelect) {
-    tiles[tiles.length - 1] = outside.first;
-    return tiles;
-  }
-  for (var slot = tiles.length - 1; slot >= 0 && outside.isNotEmpty; slot--) {
-    if (!selectedIds.contains(tiles[slot].id)) {
-      tiles[slot] = outside.removeAt(0);
-    }
-  }
-  return tiles;
+  final start = column * columnExtent;
+  final end = start + columnExtent;
+  if (start < current) return start.clamp(0, max);
+  if (end > current + viewport) return (end - viewport).clamp(0, max);
+  return current;
 }
 
 /// The items of [ordered] (most popular first) whose name matches [query],

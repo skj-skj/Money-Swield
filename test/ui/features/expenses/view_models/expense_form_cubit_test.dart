@@ -337,7 +337,7 @@ void main() {
 
     test('order by popularity; a new install by name', () async {
       final fresh = await openForm();
-      expect(names(fresh.categoryTiles), [
+      expect(names(fresh.categoryItems).take(8), [
         'Bills',
         'Clothes',
         'Drinks',
@@ -354,41 +354,16 @@ void main() {
       clock.advance(const Duration(hours: 1));
       await seed(categoryId: 8, occurredAt: clock.now);
       final used = await openForm();
-      expect(names(used.categoryTiles).take(3), ['Other', 'Rent', 'Bills']);
+      expect(names(used.categoryItems).take(3), ['Other', 'Rent', 'Bills']);
     });
 
-    test('a selected category outside the top 8 takes the 8th slot', () async {
-      final cubit = await openForm()
-        ..categorySelected(19); // Investment
-      final tiles = names(cubit.categoryTiles);
-      expect(tiles, hasLength(8));
-      expect(tiles.last, 'Investment');
-      expect(tiles.take(7), [
-        'Bills',
-        'Clothes',
-        'Drinks',
-        'Education',
-        'Entertainment',
-        'Food',
-        'Fuel',
-      ]);
-    });
-
-    test('selected events outside the top 8 take slots from the end', () async {
-      for (final name in ['A1', 'A2', 'A3', 'A4', 'Z1', 'Z2']) {
-        await deps.events.add(name: name, emoji: '🔹');
-      }
+    test('picking keeps every item in its popularity place', () async {
+      // The pickers scroll, so a pick no longer moves a tile into the top 8
+      // (owner, 2026-10-04); the picker scrolls to it instead.
       final cubit = await openForm();
-      final z2 = (await deps.events.all()).singleWhere((e) => e.name == 'Z2');
-      final z1 = (await deps.events.all()).singleWhere((e) => e.name == 'Z1');
-      cubit
-        ..eventToggled(z2.id)
-        ..eventToggled(z1.id);
-      final tiles = names(cubit.eventTiles);
-      // 7 tiles: "None" takes the first slot of the grid. The most popular
-      // of them (by name here: Z1) takes the last slot.
-      expect(tiles, hasLength(7));
-      expect(tiles.sublist(5), ['Z2', 'Z1']);
+      final before = names(cubit.categoryItems);
+      cubit.categorySelected(19); // Investment
+      expect(names(cubit.categoryItems), before);
     });
 
     test(
@@ -416,7 +391,7 @@ void main() {
       final pets = await deps.categories.add(name: 'Pets', emoji: '🐶');
       cubit.categoryAdded(pets);
       expect(fieldsOf(cubit).categoryId, pets.id);
-      expect(names(cubit.categoryTiles), contains('Pets'));
+      expect(names(cubit.categoryItems), contains('Pets'));
     });
 
     test('None clears the events', () async {

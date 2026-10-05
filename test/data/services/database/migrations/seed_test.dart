@@ -84,6 +84,9 @@ void main() {
       ('party', null, '🎉'),
       ('festival', null, '🪔'),
       ('trip', null, '🧳'),
+      ('wedding', null, '💒'),
+      // Not 🍽️: that is the food category's.
+      ('dining_out', null, '🍴'),
     ]);
     final archived = await db.query('events', where: 'archived_at IS NOT NULL');
     expect(archived, isEmpty);

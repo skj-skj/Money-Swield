@@ -53,6 +53,8 @@ String eventBuiltinName(AppLocalizations l10n, String builtinKey) =>
       'party' => l10n.eventParty,
       'festival' => l10n.eventFestival,
       'trip' => l10n.eventTrip,
+      'wedding' => l10n.eventWedding,
+      'dining_out' => l10n.eventDiningOut,
       _ => builtinKey,
     };
 

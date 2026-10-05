@@ -4,57 +4,47 @@ import 'package:my_expense_tracker_app/ui/core/builtin_names.dart';
 import 'package:my_expense_tracker_app/ui/core/picker_order.dart';
 
 void main() {
-  /// Items 1..n named "Item 1" …, in that (popularity) order.
-  List<PickerItem> items(int count) => [
-    for (var i = 1; i <= count; i++)
-      PickerItem(id: i, emoji: '🔹', name: 'Item $i'),
-  ];
-
   List<int> ids(List<PickerItem> items) => [for (final i in items) i.id];
 
-  group('pickerTiles, single select', () {
-    test('shows the top 8', () {
-      expect(ids(pickerTiles(items(12), {}, multiSelect: false)), [
-        1, 2, 3, 4, 5, 6, 7, 8, //
-      ]);
+  group('revealOffset', () {
+    // Columns 70 wide (gap included), 4 in a 280 viewport, 10 columns: the
+    // rows scroll up to 420.
+    double reveal(int column, double current) => revealOffset(
+      column: column,
+      columnExtent: 70,
+      viewport: 280,
+      current: current,
+      max: 420,
+    );
+
+    test('a column already in view: no scroll', () {
+      expect(reveal(0, 0), 0);
+      expect(reveal(3, 0), 0);
+      expect(reveal(5, 140), 140);
     });
 
-    test('a selection inside the top 8 changes nothing', () {
-      expect(ids(pickerTiles(items(12), {3}, multiSelect: false)), [
-        1, 2, 3, 4, 5, 6, 7, 8, //
-      ]);
+    test('a column past the end: just enough to show it at the end', () {
+      expect(reveal(4, 0), 70);
+      expect(reveal(7, 0), 280);
     });
 
-    test('a selection outside the top 8 takes the 8th slot', () {
-      expect(ids(pickerTiles(items(12), {11}, multiSelect: false)), [
-        1, 2, 3, 4, 5, 6, 7, 11, //
-      ]);
+    test('a column before the start: it becomes the first one', () {
+      expect(reveal(1, 300), 70);
     });
 
-    test('fewer than 8 items are all shown', () {
-      expect(ids(pickerTiles(items(3), {2}, multiSelect: false)), [1, 2, 3]);
-      expect(pickerTiles(items(0), {}, multiSelect: false), isEmpty);
-    });
-  });
-
-  group('pickerTiles, multi select', () {
-    test('selected events outside the top 8 take the slots from the end', () {
-      expect(ids(pickerTiles(items(12), {10, 12}, multiSelect: true)), [
-        1, 2, 3, 4, 5, 6, 12, 10, //
-      ]);
-    });
-
-    test('never pushes out a selected tile inside the top 8', () {
-      expect(ids(pickerTiles(items(12), {8, 7, 11}, multiSelect: true)), [
-        1, 2, 3, 4, 5, 11, 7, 8, //
-      ]);
-    });
-
-    test('more than 8 selected: the rest stay out of the grid', () {
-      final selected = {for (var i = 3; i <= 12; i++) i};
-      final tiles = ids(pickerTiles(items(12), selected, multiSelect: true));
-      expect(tiles, hasLength(8));
-      expect(tiles.every(selected.contains), isTrue);
+    test('never past the scroll range', () {
+      expect(reveal(9, 0), 420);
+      expect(
+        revealOffset(
+          column: 2,
+          columnExtent: 70,
+          viewport: 280,
+          current: 0,
+          max: 0,
+        ),
+        0,
+        reason: 'fits without scrolling',
+      );
     });
   });
 

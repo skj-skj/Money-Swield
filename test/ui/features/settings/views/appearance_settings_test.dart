@@ -136,7 +136,7 @@ void main() {
       expect((await deps.settings.load()).buttonShape, ItemShape.square);
     });
 
-    testWidgets('the preview is only a picture: taps do nothing', (
+    testWidgets('the preview is only a picture: taps and drags do nothing', (
       tester,
     ) async {
       usePhoneSize(tester);
@@ -144,6 +144,17 @@ void main() {
       await openSettings(tester, deps);
       await tester.tap(find.text('Customize tiles'));
       await tester.pumpAndSettle();
+
+      // The pickers' rows scroll sideways, but not in the preview (owner,
+      // 2026-10-04).
+      final bills = tester.getTopLeft(find.text('Bills'));
+      await tester.drag(
+        find.text('Bills'),
+        const Offset(-300, 0),
+        warnIfMissed: false,
+      );
+      await tester.pumpAndSettle();
+      expect(tester.getTopLeft(find.text('Bills')), bills);
 
       // warnIfMissed: false, as the preview ignores taps on purpose.
       await tester.tap(find.text('Bills'), warnIfMissed: false);
