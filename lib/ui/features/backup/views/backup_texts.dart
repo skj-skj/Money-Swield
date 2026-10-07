@@ -1,7 +1,6 @@
-import 'package:intl/intl.dart';
-
 import '../../../../domain/models/restore_candidate.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../core/date_texts.dart';
 import '../../../core/days_ago.dart';
 
 /// Shown where a date is unknown (an unreadable `created_at`, a backup
@@ -16,10 +15,6 @@ String lastBackupText(AppLocalizations l10n, DateTime? at, DateTime now) {
   if (at == null) return l10n.lastBackupNever;
   return l10n.lastBackupSubtitle(daysAgoText(l10n, at, now));
 }
-
-/// "3 Oct 2026, 2:05 PM" in the device's time zone.
-String dateTimeText(String locale, DateTime at) =>
-    DateFormat.yMMMd(locale).add_jm().format(at.toLocal());
 
 /// The confirm dialog's lines (§6.3), without the title and buttons.
 List<String> restoreSummary(
@@ -62,7 +57,7 @@ String _countsLine(
     if (binned > 0) l10n.restoreBinCount(binned),
   ].join(', ');
   if (latest == null || active == 0) return counts;
-  return '$counts. ${l10n.restoreLatestOn(DateFormat.yMMMd(locale).format(latest))}';
+  return '$counts. ${l10n.restoreLatestOn(shortDateText(locale, latest))}';
 }
 
 /// The text for a file that can't be restored.

@@ -1,10 +1,14 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:my_expense_tracker_app/domain/models/money.dart';
 import 'package:my_expense_tracker_app/ui/core/formatting_locale.dart';
 import 'package:my_expense_tracker_app/ui/core/money_formatter.dart';
 
-/// phase-2.md §4.4 and the "Formatting" tests of §13.
+/// phase-2.md §4.4 and the "Formatting" tests of §13; phase-5.md §5.7
+/// (R2, R3).
 void main() {
   String format(Money money, {required String locale}) =>
       MoneyFormatter.forLocale(locale).format(money);
@@ -108,6 +112,88 @@ void main() {
         final text = format(Money(minor, 'KWD'), locale: 'en');
         expect(text.replaceAll(RegExp('[^0-9]'), ''), '$minor', reason: text);
       }
+    });
+  });
+
+  group('exact for any amount (phase-5.md R2)', () {
+    test('the same text as the old double path, 420 cases', () {
+      // Captured from the old `amountMinor / 10^digits` path before the
+      // change: 7 locales × 6 currencies × 10 amounts, all within the
+      // double's exact range, so the old output was right.
+      final expected = jsonDecode(
+        File('test/ui/core/money_formatter_expected.json').readAsStringSync(),
+      ) as Map<String, Object?>;
+      expect(expected, hasLength(420));
+      for (final MapEntry(:key, :value) in expected.entries) {
+        final [locale, code, minor] = key.split(' ');
+        expect(
+          format(Money(int.parse(minor), code), locale: locale),
+          value,
+          reason: key,
+        );
+      }
+    });
+
+    test('past 2⁵³ every digit stays (the double path lost them)', () {
+      expect(
+        format(const Money(9007199254740993, 'INR'), locale: 'en_IN'),
+        '₹9,00,71,99,25,47,409.93',
+      );
+      expect(
+        format(const Money(12345678901234567, 'INR'), locale: 'en_IN'),
+        '₹12,34,56,78,90,12,345.67',
+      );
+    });
+
+    test('max int64 in INR, KWD and JPY', () {
+      const max = 9223372036854775807;
+      for (final (code, digits) in [('INR', 2), ('KWD', 3), ('JPY', 0)]) {
+        final got = format(Money(max, code), locale: 'en');
+        expect(got.replaceAll(RegExp('[^0-9]'), ''), '$max', reason: got);
+        if (digits > 0) {
+          expect(got, endsWith('.${'$max'.substring(19 - digits)}'));
+        }
+      }
+    });
+
+    test('Spanish with a Mexican phone uses the dot (es_MX)', () {
+      expect(
+        format(const Money(11005000, 'INR'), locale: 'es_MX'),
+        startsWith('₹110,050.00'),
+      );
+      expect(
+        format(const Money(11005000, 'INR'), locale: 'es'),
+        '110.050,00$nbsp₹',
+      );
+    });
+  });
+
+  group('formatTotal (phase-5.md R3)', () {
+    final formatter = MoneyFormatter.forLocale('en_IN');
+    final max = BigInt.from(9223372036854775807);
+
+    test('3 × (2⁶³ − 1) paise prints exactly', () {
+      final total = max * BigInt.from(3);
+      final text = formatter.formatTotal('INR', total)!;
+      expect(text.replaceAll(RegExp('[^0-9]'), ''), '$total');
+    });
+
+    test('a major part beyond 2⁶³ − 1 is null ("Too large")', () {
+      expect(
+        formatter.formatTotal('INR', (max + BigInt.one) * BigInt.from(100)),
+        isNull,
+      );
+      expect(
+        formatter.formatTotal('INR', max * BigInt.from(100) + BigInt.from(99)),
+        isNotNull,
+      );
+    });
+
+    test('the same as format for an int', () {
+      expect(
+        formatter.formatTotal('INR', BigInt.from(11005000)),
+        formatter.format(const Money(11005000, 'INR')),
+      );
     });
   });
 

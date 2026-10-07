@@ -1,9 +1,13 @@
 import 'package:sqflite/sqflite.dart';
 
+import '../../domain/expense_filter.dart';
 import '../../domain/models/expense.dart';
 import '../../domain/models/money.dart';
+import '../../domain/periods.dart';
 import '../../domain/popularity.dart';
 import '../../domain/title_suggestions.dart';
+import '../../domain/totals.dart';
+import '../services/database/sql_helpers.dart';
 import 'data_version.dart';
 
 /// Thrown by [ExpenseRepository.update] and [ExpenseRepository.moveToBin]
@@ -65,9 +69,10 @@ class ExpenseRepository {
   /// For the bin queries, which do use the `deleted_at` index.
   static const _binned = 'deleted_at IS NOT NULL';
 
-  /// Android 10–11 ship SQLite versions that allow at most 999 bound
-  /// variables per statement, so `IN (…)` lists are sent in chunks.
-  static const _maxIdsPerQuery = 500;
+  /// Home's list order (phase-5.md §4.1, R1): by local date first, so a
+  /// traveller's day stays together, then newest moment, then id. Served
+  /// by `index_expenses_on_occurred_on_and_occurred_at_and_id`.
+  static const _listOrder = 'occurred_on DESC, occurred_at DESC, id DESC';
 
   /// Inserts the expense and its events in one transaction.
   ///
@@ -129,16 +134,109 @@ class ExpenseRepository {
     whereArgs: [id],
   )).firstOrNull;
 
-  /// Active expenses, newest first, continuing after [after] (keyset
-  /// pagination, database.md §4). Row values need SQLite 3.15; Android 10
-  /// (minSdk 29) ships 3.22.
-  Future<List<Expense>> page({ExpenseCursor? after, int limit = 30}) => _read(
+  /// Active expenses that pass [filter]'s category and event part, in list
+  /// order (local date, then moment, then id; phase-5.md §4.1),
+  /// continuing after [after] (keyset pagination, database.md §4). Its
+  /// text part is matched in Dart ([searchEntries]). Row values need
+  /// SQLite 3.15; Android 10 (minSdk 29) ships 3.22.
+  Future<List<Expense>> page({
+    ExpenseFilter filter = ExpenseFilter.none,
+    ExpenseCursor? after,
+    int limit = 30,
+  }) => _read(
     _db,
-    where: after == null ? _active : '$_active AND (occurred_at, id) < (?, ?)',
-    whereArgs: after == null ? null : [after.occurredAtMs, after.id],
-    orderBy: 'occurred_at DESC, id DESC',
+    where: [
+      _active,
+      ..._filterWhere(filter),
+      if (after != null) '(occurred_on, occurred_at, id) < (?, ?, ?)',
+    ].join(' AND '),
+    whereArgs: after == null
+        ? null
+        : [after.occurredOn, after.occurredAtMs, after.id],
+    orderBy: _listOrder,
     limit: limit,
   );
+
+  /// The rows a total from [from] to [to] (inclusive) covers, for
+  /// [filter]'s category and event part: date, currency and amount. The
+  /// adding is Dart's (`sumByCurrency`, a `BigInt`; no SQL `SUM`, which
+  /// throws at 2⁶³, phase-5.md R3). Future-dated rows are included
+  /// (P5-13); drafts are another table.
+  Future<List<AmountRow>> amountsIn({
+    required String from,
+    required String to,
+    ExpenseFilter filter = ExpenseFilter.none,
+  }) async {
+    final rows = await _db.query(
+      'expenses',
+      columns: ['occurred_on', 'currency_code', 'amount_minor'],
+      where: [
+        _active,
+        ..._filterWhere(filter),
+        'occurred_on BETWEEN ? AND ?',
+      ].join(' AND '),
+      whereArgs: [from, to],
+    );
+    return [
+      for (final row in rows)
+        (
+          row['occurred_on']! as String,
+          row['currency_code']! as String,
+          row['amount_minor']! as int,
+        ),
+    ];
+  }
+
+  /// Every active expense that passes [filter]'s category and event part,
+  /// in list order, as the text filter sees it (phase-5.md §6.3): read
+  /// once when a text filter is applied, then matched in Dart.
+  Future<List<SearchEntry>> searchEntries({
+    ExpenseFilter filter = ExpenseFilter.none,
+  }) async {
+    final rows = await _db.query(
+      'expenses',
+      columns: [
+        'id',
+        'occurred_on',
+        'occurred_at',
+        'amount_minor',
+        'currency_code',
+        'title',
+        'description',
+      ],
+      where: [_active, ..._filterWhere(filter)].join(' AND '),
+      orderBy: _listOrder,
+    );
+    return [
+      for (final row in rows)
+        (
+          id: row['id']! as int,
+          day: row['occurred_on']! as String,
+          occurredAtMs: row['occurred_at']! as int,
+          amountMinor: row['amount_minor']! as int,
+          currencyCode: row['currency_code']! as String,
+          folded: foldForSearch(
+            row['title']! as String,
+            row['description'] as String?,
+          ),
+        ),
+    ];
+  }
+
+  /// The active expenses among [ids], with their events, in list order.
+  /// Ids not found (binned or deleted meanwhile) are left out. Sent in
+  /// chunks, for SQLite 3.22's 999-variable limit.
+  Future<List<Expense>> byIds(List<int> ids) async {
+    final found = await inChunks(
+      ids,
+      (chunk) => _read(
+        _db,
+        where: 'id IN (${sqlPlaceholders(chunk.length)}) AND $_active',
+        whereArgs: chunk,
+      ),
+    );
+    return found..sort(_compareListOrder);
+  }
 
   /// Moves the active expense [id] to the bin. `updated_at` is left alone:
   /// the expense itself didn't change. Throws [ExpenseNotFound] if it was
@@ -277,7 +375,7 @@ class ExpenseRepository {
           amountMinor: row['amount_minor']! as int,
           currencyCode: row['currency_code']! as String,
           categoryId: row['category_id']! as int,
-          lastAt: _dateTime(row['last_at']! as int),
+          lastAt: utcFromEpochMs(row['last_at']! as int),
           recent: row['recent']! as int,
         ),
     ];
@@ -291,12 +389,12 @@ class ExpenseRepository {
     if (spellings.isEmpty) return null;
     // A title has a handful of spellings; the cap only keeps the statement
     // under SQLite 3.22's 999 variables.
-    final some = spellings.take(_maxIdsPerQuery).toList();
+    final some = spellings.take(maxBoundValues).toList();
     final (_, today) = _window(0);
     return (await _read(
       _db,
       where:
-          'title IN (${List.filled(some.length, '?').join(', ')}) '
+          'title IN (${sqlPlaceholders(some.length)}) '
           'AND $_active AND occurred_on <= ?',
       whereArgs: [...some, today],
       orderBy: 'occurred_at DESC, id DESC',
@@ -323,7 +421,7 @@ class ExpenseRepository {
   /// The local date `YYYY-MM-DD` of an expense at [occurredAt] (UTC) with
   /// [utcOffsetMinutes]. The only place `occurred_on` is computed.
   static String occurredOnFor(DateTime occurredAt, int utcOffsetMinutes) =>
-      _isoDate(occurredAt.toUtc().add(Duration(minutes: utcOffsetMinutes)));
+      isoDay(occurredAt.toUtc().add(Duration(minutes: utcOffsetMinutes)));
 
   Map<String, Object?> _columns(ExpenseInput input) => {
     'title': input.title,
@@ -375,22 +473,19 @@ class ExpenseRepository {
     );
     final events = <int, Set<int>>{};
     final ids = [for (final row in rows) row['id']! as int];
-    for (var start = 0; start < ids.length; start += _maxIdsPerQuery) {
-      final chunk = ids.sublist(
-        start,
-        (start + _maxIdsPerQuery).clamp(0, ids.length),
-      );
-      final links = await db.query(
+    final links = await inChunks(
+      ids,
+      (chunk) => db.query(
         'expense_events',
         columns: ['expense_id', 'event_id'],
-        where: 'expense_id IN (${List.filled(chunk.length, '?').join(', ')})',
+        where: 'expense_id IN (${sqlPlaceholders(chunk.length)})',
         whereArgs: chunk,
-      );
-      for (final link in links) {
-        events
-            .putIfAbsent(link['expense_id']! as int, () => {})
-            .add(link['event_id']! as int);
-      }
+      ),
+    );
+    for (final link in links) {
+      events
+          .putIfAbsent(link['expense_id']! as int, () => {})
+          .add(link['event_id']! as int);
     }
     return [
       for (final row in rows) _fromRow(row, events[row['id']! as int] ?? {}),
@@ -407,16 +502,16 @@ class ExpenseRepository {
           row['currency_code']! as String,
         ),
         amountExpression: row['amount_expression'] as String?,
-        occurredAt: _dateTime(row['occurred_at']! as int),
+        occurredAt: utcFromEpochMs(row['occurred_at']! as int),
         utcOffsetMinutes: row['utc_offset_minutes']! as int,
         occurredOn: row['occurred_on']! as String,
         categoryId: row['category_id']! as int,
         paymentMethodId: row['payment_method_id']! as int,
         eventIds: eventIds,
-        createdAt: _dateTime(row['created_at']! as int),
-        updatedAt: _dateTime(row['updated_at']! as int),
+        createdAt: utcFromEpochMs(row['created_at']! as int),
+        updatedAt: utcFromEpochMs(row['updated_at']! as int),
         deletedAt: switch (row['deleted_at']) {
-          final int millis => _dateTime(millis),
+          final int millis => utcFromEpochMs(millis),
           _ => null,
         },
       );
@@ -426,23 +521,39 @@ class ExpenseRepository {
     final local = _now().toLocal();
     // Calendar arithmetic in UTC, so a DST change can't shift the date.
     final today = DateTime.utc(local.year, local.month, local.day);
-    return (_isoDate(today.subtract(Duration(days: days))), _isoDate(today));
+    return (isoDay(today.subtract(Duration(days: days))), isoDay(today));
+  }
+
+  /// [filter]'s category and event part as SQL terms (phase-5.md §6.1).
+  /// The ids are written into the SQL as literals, so a long selection
+  /// never meets the 999-variable limit; they're `int`s from the app's
+  /// own models, never text, so nothing can be injected.
+  static List<String> _filterWhere(ExpenseFilter filter) => [
+    if (filter.categoryIds.isNotEmpty)
+      'category_id IN (${_idList(filter.categoryIds)})',
+    if (filter.eventIds.isNotEmpty) _withAnyEvent(filter.eventIds),
+  ];
+
+  /// Any one of [eventIds]: an expense with two of them is still one row.
+  static String _withAnyEvent(Set<int> eventIds) =>
+      'id IN (SELECT expense_id FROM expense_events '
+      'WHERE event_id IN (${_idList(eventIds)}))';
+
+  static String _idList(Set<int> ids) => (ids.toList()..sort()).join(', ');
+
+  /// [_listOrder] in Dart, for rows read in chunks.
+  static int _compareListOrder(Expense a, Expense b) {
+    final byDay = b.occurredOn.compareTo(a.occurredOn);
+    if (byDay != 0) return byDay;
+    final byMoment = b.occurredAt.compareTo(a.occurredAt);
+    return byMoment != 0 ? byMoment : b.id.compareTo(a.id);
   }
 
   static Map<int, ItemUsage> _usageMap(List<Map<String, Object?>> rows) => {
     for (final row in rows)
       row['id']! as int: (
         recentCount: row['recent']! as int,
-        lastUsedAt: _dateTime(row['last']! as int),
+        lastUsedAt: utcFromEpochMs(row['last']! as int),
       ),
   };
-
-  static String _isoDate(DateTime date) =>
-      '${date.year.toString().padLeft(4, '0')}-'
-      '${date.month.toString().padLeft(2, '0')}-'
-      '${date.day.toString().padLeft(2, '0')}';
-
-  /// Timestamps are stored as epoch milliseconds, UTC (database.md §1).
-  static DateTime _dateTime(int millis) =>
-      DateTime.fromMillisecondsSinceEpoch(millis, isUtc: true);
 }

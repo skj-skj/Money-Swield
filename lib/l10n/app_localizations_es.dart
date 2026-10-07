@@ -826,6 +826,280 @@ class AppLocalizationsEs extends AppLocalizations {
   String get backupDamaged => 'Esta copia está dañada y no se puede restaurar.';
 
   @override
+  String get periodDay => 'Día';
+
+  @override
+  String get periodWeek => 'Semana';
+
+  @override
+  String get periodMonth => 'Mes';
+
+  @override
+  String get periodYear => 'Año';
+
+  @override
+  String weekNumber(int number) {
+    return 'Semana $number';
+  }
+
+  @override
+  String weekNumberWithYear(int number, String year) {
+    return 'Semana $number de $year';
+  }
+
+  @override
+  String weekOfMonth(String month, int number) {
+    return 'Semana $number de $month';
+  }
+
+  @override
+  String dayWithSubtotal(String date, String amount) {
+    return '$date – $amount';
+  }
+
+  @override
+  String daySubtotalSemantics(String date, String amount) {
+    return '$date, $amount';
+  }
+
+  @override
+  String get trendEmptyWeek => 'No hay gastos esta semana';
+
+  @override
+  String get trendEmptyMonth => 'No hay gastos este mes';
+
+  @override
+  String get trendEmptyYear => 'No hay gastos este año';
+
+  @override
+  String get trendNoMatchWeek => 'Ningún gasto coincide esta semana';
+
+  @override
+  String get trendNoMatchMonth => 'Ningún gasto coincide este mes';
+
+  @override
+  String get trendNoMatchYear => 'Ningún gasto coincide este año';
+
+  @override
+  String get trendFiltered => 'Filtrado';
+
+  @override
+  String trendPointLabel(String date, String amount) {
+    return '$date · $amount';
+  }
+
+  @override
+  String trendCardSemantics(String period, String amount) {
+    return '$period, total $amount';
+  }
+
+  @override
+  String trendCardSemanticsFiltered(String period, String amount) {
+    return '$period, filtrado, total $amount';
+  }
+
+  @override
+  String get totalsLoadFailed => 'No se pudieron cargar los totales';
+
+  @override
+  String get nextPeriod => 'Periodo siguiente';
+
+  @override
+  String get previousPeriod => 'Periodo anterior';
+
+  @override
+  String get nextCurrency => 'Moneda siguiente';
+
+  @override
+  String get previousCurrency => 'Moneda anterior';
+
+  @override
+  String chartCurrencyAnnounce(String currency, String amount) {
+    return '$currency, $amount';
+  }
+
+  @override
+  String totalsJoin(String first, String rest) {
+    return '$first + $rest';
+  }
+
+  @override
+  String totalsJoinSpoken(String first, String rest) {
+    return '$first y $rest';
+  }
+
+  @override
+  String get totalTooLarge => 'Demasiado grande';
+
+  @override
+  String get showSubtotal => 'Ver subtotal';
+
+  @override
+  String get subtotalLoadFailed => 'No se pudo cargar el subtotal';
+
+  @override
+  String groupSubtotalSemantics(String name, String amount) {
+    return '$name, subtotal $amount';
+  }
+
+  @override
+  String get close => 'Cerrar';
+
+  @override
+  String get filters => 'Filtros';
+
+  @override
+  String get filterSearchHint => 'Buscar en títulos y descripciones';
+
+  @override
+  String get filterCategories => 'Categorías';
+
+  @override
+  String get filterEvents => 'Eventos';
+
+  @override
+  String get filterArchived => 'Archivados';
+
+  @override
+  String get groupBy => 'Agrupar por';
+
+  @override
+  String get groupedByDay => 'Por día';
+
+  @override
+  String get groupedByWeek => 'Por semana';
+
+  @override
+  String get groupedByMonth => 'Por mes';
+
+  @override
+  String get groupedByYear => 'Por año';
+
+  @override
+  String get clearFilters => 'Quitar filtros';
+
+  @override
+  String get showResults => 'Ver resultados';
+
+  @override
+  String get noFilterMatches => 'Ningún gasto coincide con estos filtros';
+
+  @override
+  String filterMore(String name, int count) {
+    return '$name +$count';
+  }
+
+  @override
+  String filterSearchChip(String text) {
+    return '«$text»';
+  }
+
+  @override
+  String get removeFilter => 'Quitar filtro';
+
+  @override
+  String get settingsLook => 'Aspecto';
+
+  @override
+  String get settingsHome => 'Inicio';
+
+  @override
+  String get settingsDefaults => 'Predeterminados';
+
+  @override
+  String get settingWeekStart => 'La semana empieza el';
+
+  @override
+  String get settingWeekNames => 'Nombres de las semanas';
+
+  @override
+  String get settingTrendChart => 'Gráfico de tendencia';
+
+  @override
+  String get chartLineFilled => 'Línea suave, rellena';
+
+  @override
+  String get chartLine => 'Línea suave';
+
+  @override
+  String get chartBars => 'Barras';
+
+  @override
+  String get chartDots => 'Puntos';
+
+  @override
+  String get chartRunningTotal => 'Total acumulado';
+
+  @override
+  String get settingTrendCardSize => 'Tamaño de la tarjeta';
+
+  @override
+  String get cardSizeSmall => 'Pequeña';
+
+  @override
+  String get cardSizeMedium => 'Mediana';
+
+  @override
+  String get cardSizeLarge => 'Grande';
+
+  @override
+  String get settingCardHaptics => 'Vibración de la tarjeta';
+
+  @override
+  String get hapticsOff => 'Desactivada';
+
+  @override
+  String get hapticsLight => 'Suave';
+
+  @override
+  String get hapticsMedium => 'Media';
+
+  @override
+  String get hapticsStrong => 'Fuerte';
+
+  @override
+  String trendRunningTotalPoint(String date, String amount) {
+    return 'Hasta $date · $amount';
+  }
+
+  @override
+  String get restoreHomeDefaults => 'Restaurar valores predeterminados';
+
+  @override
+  String get restoreHomeDefaultsSubtitle =>
+      'Gráfico, tarjeta y semanas como al principio';
+
+  @override
+  String get restoreHomeDefaultsTitle => '¿Restaurar los valores de Inicio?';
+
+  @override
+  String get restoreHomeDefaultsMessage =>
+      'El gráfico, la tarjeta, su tamaño, el inicio de semana y los nombres de las semanas vuelven a sus valores predeterminados.';
+
+  @override
+  String get settingTrendCard => 'Tarjeta de tendencia';
+
+  @override
+  String get trendCardLocked => 'Fija arriba';
+
+  @override
+  String get trendCardScrolls => 'Se desplaza con la lista';
+
+  @override
+  String get trendCardLockedShort => 'Fija';
+
+  @override
+  String get trendCardScrollsShort => 'Se desplaza';
+
+  @override
+  String get binTileSummary => 'Se guardan 30 días';
+
+  @override
+  String settingsTileSummary(String first, String rest) {
+    return '$first · $rest';
+  }
+
+  @override
   String get categoryFood => 'Comida';
 
   @override

@@ -8,6 +8,7 @@ import 'package:my_expense_tracker_app/domain/models/item_shape.dart';
 import 'package:my_expense_tracker_app/domain/models/money.dart';
 import 'package:my_expense_tracker_app/ui/core/widgets/emoji_picker_field.dart';
 import 'package:my_expense_tracker_app/ui/core/widgets/tile_picker.dart';
+import 'package:my_expense_tracker_app/ui/features/home/views/home_list_slivers.dart';
 import 'package:my_expense_tracker_app/ui/features/home/views/home_screen.dart';
 
 import '../../helpers/pump_app.dart';
@@ -40,6 +41,18 @@ void main() {
   }
 
   Finder field(String label) => find.widgetWithText(TextField, label);
+
+  /// [text] on an expense row; Phase 5 shows the same amount in the trend
+  /// card and the subtotals too.
+  Finder onRow(String text) =>
+      find.descendant(of: find.byType(ExpenseRow), matching: find.text(text));
+
+  /// Home's list (the filter bar and chips scroll sideways).
+  final homeList = find
+      .byWidgetPredicate(
+        (w) => w is Scrollable && w.axisDirection == AxisDirection.down,
+      )
+      .first;
 
   Future<void> tapSave(WidgetTester tester) async {
     await tester.tap(find.widgetWithText(TextButton, 'Save'));
@@ -91,7 +104,6 @@ void main() {
       expect(titles, ['Chai', 'Older']);
       expect(find.text('₹20.50'), findsOneWidget);
       expect(find.text('🧾'), findsOneWidget);
-      expect(find.text('Today'), findsOneWidget);
 
       final saved = (await deps.expenses.page()).first;
       expect(saved.title, 'Chai');
@@ -132,7 +144,7 @@ void main() {
       // merged node, and the amount field was gone (Oppo, 2026-10-04).
       final semantics = tester.ensureSemantics();
       final boxNode = tester.getSemantics(box);
-      expect(boxNode.label, 'Currency: ₹  INR · Indian Rupee');
+      expect(boxNode.label, 'Currency: ₹ INR · Indian Rupee');
       expect(tester.getSemantics(field('Amount')), isNot(same(boxNode)));
       semantics.dispose();
 
@@ -191,12 +203,16 @@ void main() {
           ),
         );
         await pumpApp(tester, dependencies: deps);
-        await tester.scrollUntilVisible(
-          find.text('Old card'),
-          300,
-          scrollable: find.byType(Scrollable).first,
-        );
-        await tester.tap(find.text('Old card'));
+        // The row may sit under the sticky headers on this short screen;
+        // this test is about the form, so the row's tap is called directly.
+        tester
+            .widget<ListTile>(
+              find.descendant(
+                of: find.byType(ExpenseRow, skipOffstage: false),
+                matching: find.byType(ListTile, skipOffstage: false),
+              ),
+            )
+            .onTap!();
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
         expect(find.text('Title'), findsOneWidget, reason: 'the form shows');
@@ -377,7 +393,7 @@ void main() {
 
       expect(find.text('Dinner'), findsOneWidget);
       expect(find.text('Lunch'), findsNothing);
-      expect(find.text('₹250.00'), findsOneWidget);
+      expect(onRow('₹250.00'), findsOneWidget);
     });
 
     // Phase 4 (D9, P4-13): no "Discard changes?" prompt any more; back
@@ -622,8 +638,8 @@ void main() {
       await tester.tap(find.text('Food'));
       await tapSave(tester);
 
-      expect(find.text(r'$12.00'), findsOneWidget);
-      expect(find.text('₹110.50'), findsOneWidget, reason: 'unchanged');
+      expect(onRow(r'$12.00'), findsOneWidget);
+      expect(onRow('₹110.50'), findsOneWidget, reason: 'unchanged');
 
       // Both are now recent: each shows once in Recent, with the selected
       // one first.
@@ -866,7 +882,7 @@ void main() {
       await tester.scrollUntilVisible(
         find.text('Trip'),
         300,
-        scrollable: find.byType(Scrollable).first,
+        scrollable: homeList,
       );
       await openExpense(tester, 'Trip');
 
@@ -1055,12 +1071,19 @@ void main() {
     expect(find.text('Moved to bin'), findsNothing, reason: 'dismissed');
   });
 
-  group('day headers follow the date', () {
+  // Phase 5 names days by their date only (no "Today", P5-10); what a new
+  // day changes is the trend card's current period (R5).
+  group('the trend card follows the date', () {
+    Finder cardText(String text) => find.descendant(
+      of: find.byKey(const ValueKey('trendCard')),
+      matching: find.text(text),
+    );
+
     Future<TestClock> pumpAt23h59m50s(WidgetTester tester) async {
-      final clock = TestClock(DateTime(2026, 10, 2, 23, 59, 50).toUtc());
+      final clock = TestClock(DateTime(2026, 9, 30, 23, 59, 50).toUtc());
       deps = await openTestDependencies(clock: clock);
       await deps.settings.setOnboardingCompleted();
-      final noon = DateTime(2026, 10, 2, 12);
+      final noon = DateTime(2026, 9, 30, 12);
       await deps.expenses.add(
         ExpenseInput(
           title: 'Lunch',
@@ -1074,21 +1097,14 @@ void main() {
         ),
       );
       await pumpApp(tester, dependencies: deps);
-      expect(find.text('Today'), findsOneWidget);
+      expect(cardText('Sep'), findsOneWidget);
       return clock;
     }
 
-    testWidgets('"Today" becomes "Yesterday" at midnight', (tester) async {
-      usePhoneSize(tester);
-      final clock = await pumpAt23h59m50s(tester);
+    // The midnight timer: dashboard_flows_test, "midnight: the card shows
+    // the new week".
 
-      clock.now = clock.now.add(const Duration(seconds: 20));
-      await tester.pump(const Duration(seconds: 20));
-      expect(find.text('Today'), findsNothing);
-      expect(find.text('Yesterday'), findsOneWidget);
-    });
-
-    testWidgets('coming back to the app the next day updates them', (
+    testWidgets('coming back to the app the next day updates it', (
       tester,
     ) async {
       usePhoneSize(tester);
@@ -1114,8 +1130,8 @@ void main() {
         AppLifecycleState.inactive,
         AppLifecycleState.resumed,
       ]);
-      await tester.pump();
-      expect(find.text('Yesterday'), findsOneWidget);
+      await tester.pumpAndSettle();
+      expect(cardText('Oct'), findsOneWidget);
     });
   });
 
@@ -1148,7 +1164,7 @@ void main() {
     // intl puts a narrow no-break space before AM/PM.
     expect(find.textContaining('11:30 PM'), findsOneWidget);
     // Tests run as a US phone (see 'dates follow the phone country').
-    expect(find.text('Thu, Oct 1'), findsOneWidget);
+    expect(find.textContaining('Thu, Oct 1 –'), findsOneWidget);
 
     await openExpense(tester, 'Late dinner');
     // The date and time are under the description, in the (lazy) form.
@@ -1198,7 +1214,11 @@ void main() {
 
     testWidgets('an Indian phone shows the day first', (tester) async {
       await pumpWithPhoneIn(tester, const Locale('en', 'IN'));
-      expect(find.text('Thu, 1 Oct'), findsOneWidget, reason: 'day header');
+      expect(
+        find.textContaining('Thu, 1 Oct –'),
+        findsOneWidget,
+        reason: 'day header',
+      );
       await scrollFormToDate(tester);
       expect(find.text('1 Oct'), findsOneWidget, reason: 'form');
     });
@@ -1214,7 +1234,11 @@ void main() {
 
     testWidgets('a US phone shows the month first', (tester) async {
       await pumpWithPhoneIn(tester, const Locale('en', 'US'));
-      expect(find.text('Thu, Oct 1'), findsOneWidget, reason: 'day header');
+      expect(
+        find.textContaining('Thu, Oct 1 –'),
+        findsOneWidget,
+        reason: 'day header',
+      );
       await scrollFormToDate(tester);
       expect(find.text('Oct 1'), findsOneWidget, reason: 'form');
     });

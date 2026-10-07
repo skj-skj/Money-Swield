@@ -3,26 +3,26 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../../app/app_dependencies.dart';
 import '../../../../domain/models/app_settings.dart';
-import '../../../../domain/models/app_theme_mode.dart';
-import '../../../../domain/models/payment_method.dart';
+import '../../../../domain/models/dashboard_options.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../../core/builtin_names.dart';
+import '../../../core/formatting_locale.dart';
+import '../../../core/item_labels.dart';
 import '../../../core/languages.dart';
-import '../../../core/recent_currencies.dart';
 import '../../../core/widgets/choice_dialog.dart';
-import '../../../core/widgets/confirm_dialog.dart';
-import '../../../core/widgets/currency_picker_sheet.dart';
 import '../../../core/widgets/save_error.dart';
 import '../../backup/views/backup_screen.dart';
 import '../../backup/views/backup_texts.dart';
 import '../../bin/views/bin_screen.dart';
 import '../../payment_methods/view_models/payment_method_list_cubit.dart';
 import '../view_models/settings_cubit.dart';
-import 'customize_tiles_screen.dart';
+import 'defaults_settings_screen.dart';
+import 'home_settings_screen.dart';
+import 'look_settings_screen.dart';
 import 'theme_color_dialog.dart';
 
-/// The Settings tab: language, theme, default currency, default payment
-/// method, backup & restore, and the bin. Every change applies at once.
+/// The Settings tab (phase-5.md §8.5, P5-16): a two-column grid of tiles,
+/// each with an icon, a title and one muted summary line. Language opens
+/// its dialog; the others open their screen.
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
     super.key,
@@ -42,10 +42,11 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  /// For the Defaults tile's summary.
   PaymentMethodListCubit? _paymentMethodList;
   AppLocalizations? _l10n;
 
-  /// For the Backup & restore row. Not part of the settings cubit (a
+  /// For the Backup & restore tile. Not part of the settings cubit (a
   /// backup mustn't rebuild the app), so read here: on start, when the tab
   /// comes back, and when the user returns from Backup & restore.
   DateTime? _lastBackupAt;
@@ -61,19 +62,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final at = await widget.dependencies.backups.lastBackupAt();
       if (mounted) setState(() => _lastBackupAt = at);
     } catch (error) {
-      // The row then says "Never backed up" until the next load.
+      // The tile then says "Never backed up" until the next load.
       debugPrint('Reading the last backup time failed: $error');
     }
-  }
-
-  Future<void> _openBackup() async {
-    await Navigator.push<void>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => BackupScreen(dependencies: widget.dependencies),
-      ),
-    );
-    await _loadLastBackup();
   }
 
   @override
@@ -106,8 +97,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.dispose();
   }
 
-  SettingsCubit get _settings => context.read<SettingsCubit>();
-
   Future<void> _pickLanguage(AppSettings settings) async {
     final l10n = AppLocalizations.of(context);
     final locales = [null, for (final code in languageNames.keys) Locale(code)];
@@ -123,203 +112,200 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
     if (index == null || !mounted) return;
-    await saveOrShowError(context, () => _settings.setLocale(locales[index]));
+    final cubit = context.read<SettingsCubit>();
+    await saveOrShowError(context, () => cubit.setLocale(locales[index]));
   }
 
-  Future<void> _pickTheme(AppSettings settings) async {
-    final l10n = AppLocalizations.of(context);
-    const themes = AppThemeMode.values;
-    final index = await showChoiceDialog(
+  /// Opens [screen]; back here, the summaries are read again (a payment
+  /// method renamed, a backup saved).
+  Future<void> _open(Widget screen) async {
+    await Navigator.push<void>(
       context,
-      title: l10n.settingTheme,
-      options: [for (final theme in themes) Text(_themeName(l10n, theme))],
-      selectedIndex: themes.indexOf(settings.theme),
+      MaterialPageRoute(builder: (_) => screen),
     );
-    if (index == null || !mounted) return;
-    await saveOrShowError(context, () => _settings.setTheme(themes[index]));
-  }
-
-  Future<void> _pickCurrency(AppSettings settings) async {
-    final recent = await recentCurrenciesOrEmpty(widget.dependencies.expenses);
     if (!mounted) return;
-    final code = await showCurrencyPicker(
-      context,
-      selected: settings.defaultCurrency,
-      recent: recent,
-    );
-    if (code == null || !mounted) return;
-    await saveOrShowError(context, () => _settings.setDefaultCurrency(code));
-  }
-
-  Future<void> _pickPaymentMethod(AppSettings settings) async {
-    final l10n = AppLocalizations.of(context);
-    // Fresh, in case one was added or renamed since the tab was shown.
-    await _paymentMethodList!.load();
-    if (!mounted) return;
-    final list = _paymentMethodList!.value;
-    if (list is! PaymentMethodListLoaded) {
-      // The row now says so too; tapping it again retries.
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(l10n.loadFailed)));
-      return;
-    }
-    final methods = list.paymentMethods;
-    final index = await showChoiceDialog(
-      context,
-      title: l10n.settingDefaultPaymentMethod,
-      options: [
-        for (final method in methods)
-          Text('${method.emoji}  ${paymentMethodName(l10n, method)}'),
-      ],
-      selectedIndex: methods.indexWhere(
-        (m) => m.id == settings.defaultPaymentMethodId,
-      ),
-    );
-    if (index == null || !mounted) return;
-    await saveOrShowError(
-      context,
-      () => _settings.setDefaultPaymentMethodId(methods[index].id),
-    );
-  }
-
-  Future<void> _restoreDefaultLook() async {
-    final l10n = AppLocalizations.of(context);
-    final confirmed = await confirmAction(
-      context,
-      title: l10n.restoreDefaultLookTitle,
-      message: l10n.restoreDefaultLookMessage,
-      confirmLabel: l10n.restore,
-    );
-    if (!confirmed || !mounted) return;
-    await saveOrShowError(context, _settings.restoreDefaultLook);
-  }
-
-  Future<void> _pickThemeColor(AppSettings settings) async {
-    final choice = await showThemeColorDialog(
-      context,
-      current: settings.themeSeed,
-      wallpaperSeed: widget.dependencies.wallpaperSeed,
-    );
-    if (choice == null || !mounted) return;
-    await saveOrShowError(context, () => _settings.setThemeSeed(choice.seed));
+    await _paymentMethodList?.load();
+    await _loadLastBackup();
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final dependencies = widget.dependencies;
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settingsTitle)),
       body: BlocSignalBuilder<SettingsCubit, AppSettings>(
-        builder: (context, settings) => ListView(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.language),
-              title: Text(l10n.settingLanguage),
-              subtitle: Text(
-                languageNames[settings.locale?.languageCode] ??
-                    l10n.languageSystem,
-              ),
-              onTap: () => _pickLanguage(settings),
-            ),
-            ListTile(
-              leading: const Icon(Icons.brightness_6_outlined),
-              title: Text(l10n.settingTheme),
-              subtitle: Text(_themeName(l10n, settings.theme)),
-              onTap: () => _pickTheme(settings),
-            ),
-            ListTile(
-              leading: const Icon(Icons.palette_outlined),
-              title: Text(l10n.settingThemeColor),
-              subtitle: Text(
-                themeColorName(
-                  l10n,
-                  seed: settings.themeSeed,
-                  wallpaperSeed: widget.dependencies.wallpaperSeed,
-                ),
-              ),
-              onTap: () => _pickThemeColor(settings),
-            ),
-            ListTile(
-              leading: const Icon(Icons.currency_exchange),
-              title: Text(l10n.settingDefaultCurrency),
-              subtitle: Text(currencyLabel(settings.defaultCurrency)),
-              onTap: () => _pickCurrency(settings),
-            ),
+        builder: (context, settings) =>
             BlocSignalBuilder<PaymentMethodListCubit, PaymentMethodListState>(
               bloc: _paymentMethodList!,
-              builder: (context, list) {
-                final method = _findMethod(
-                  list,
-                  settings.defaultPaymentMethodId,
-                );
-                return ListTile(
-                  leading: const Icon(Icons.payments_outlined),
-                  title: Text(l10n.settingDefaultPaymentMethod),
-                  subtitle: list is PaymentMethodListFailed
-                      ? Text(l10n.loadFailed)
-                      : method == null
-                      ? null
-                      : Text(
-                          '${method.emoji}  ${paymentMethodName(l10n, method)}',
+              builder: (context, methods) {
+                final tiles = [
+                  _SettingsTile(
+                    key: const ValueKey('settingsLanguage'),
+                    icon: Icons.language,
+                    title: l10n.settingLanguage,
+                    summary:
+                        languageNames[settings.locale?.languageCode] ??
+                        l10n.languageSystem,
+                    onTap: () => _pickLanguage(settings),
+                  ),
+                  _SettingsTile(
+                    key: const ValueKey('settingsLook'),
+                    icon: Icons.palette_outlined,
+                    title: l10n.settingsLook,
+                    summary: l10n.settingsTileSummary(
+                      themeModeName(l10n, settings.theme),
+                      themeColorName(
+                        l10n,
+                        seed: settings.themeSeed,
+                        wallpaperSeed: dependencies.wallpaperSeed,
+                      ),
+                    ),
+                    onTap: () =>
+                        _open(LookSettingsScreen(dependencies: dependencies)),
+                  ),
+                  _SettingsTile(
+                    key: const ValueKey('settingsHome'),
+                    icon: Icons.insights,
+                    title: l10n.settingsHome,
+                    summary: _homeSummary(l10n, settings),
+                    onTap: () =>
+                        _open(HomeSettingsScreen(dependencies: dependencies)),
+                  ),
+                  _SettingsTile(
+                    key: const ValueKey('settingsDefaults'),
+                    icon: Icons.tune,
+                    title: l10n.settingsDefaults,
+                    summary: _defaultsSummary(l10n, settings, methods),
+                    onTap: () => _open(
+                      DefaultsSettingsScreen(dependencies: dependencies),
+                    ),
+                  ),
+                  _SettingsTile(
+                    key: const ValueKey('settingsBackup'),
+                    icon: Icons.backup_outlined,
+                    title: l10n.backupAndRestore,
+                    summary: lastBackupText(
+                      l10n,
+                      _lastBackupAt,
+                      dependencies.now(),
+                    ),
+                    onTap: () =>
+                        _open(BackupScreen(dependencies: dependencies)),
+                  ),
+                  _SettingsTile(
+                    key: const ValueKey('settingsBin'),
+                    icon: Icons.delete_outline,
+                    title: l10n.bin,
+                    summary: l10n.binTileSummary,
+                    onTap: () => _open(BinScreen(dependencies: dependencies)),
+                  ),
+                ];
+                return ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    for (var i = 0; i < tiles.length; i += 2)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        // Both tiles of a row as tall as the taller one; an
+                        // odd count leaves the last tile at the left.
+                        child: IntrinsicHeight(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(child: tiles[i]),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: i + 1 < tiles.length
+                                    ? tiles[i + 1]
+                                    : const SizedBox.shrink(),
+                              ),
+                            ],
+                          ),
                         ),
-                  onTap: () => _pickPaymentMethod(settings),
+                      ),
+                  ],
                 );
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.grid_view),
-              title: Text(l10n.settingCustomizeTiles),
-              subtitle: Text(l10n.settingCustomizeTilesSubtitle),
-              onTap: () => Navigator.push<void>(
-                context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                      CustomizeTilesScreen(dependencies: widget.dependencies),
-                ),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.settings_backup_restore),
-              title: Text(l10n.restoreDefaultLook),
-              subtitle: Text(l10n.restoreDefaultLookSubtitle),
-              onTap: _restoreDefaultLook,
-            ),
-            ListTile(
-              leading: const Icon(Icons.backup_outlined),
-              title: Text(l10n.backupAndRestore),
-              subtitle: Text(
-                lastBackupText(l10n, _lastBackupAt, widget.dependencies.now()),
-              ),
-              onTap: _openBackup,
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_outline),
-              title: Text(l10n.bin),
-              subtitle: Text(l10n.binSubtitle),
-              onTap: () => Navigator.push<void>(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => BinScreen(dependencies: widget.dependencies),
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
 
-  static PaymentMethod? _findMethod(PaymentMethodListState list, int? id) =>
-      switch (list) {
-        PaymentMethodListLoaded(:final paymentMethods) =>
-          paymentMethods.where((m) => m.id == id).firstOrNull,
-        _ => null,
-      };
+  /// "Smooth line, filled · Locked · Monday".
+  String _homeSummary(AppLocalizations l10n, AppSettings settings) =>
+      l10n.settingsTileSummary(
+        l10n.settingsTileSummary(
+          chartStyleName(l10n, settings.trendChartStyle),
+          switch (settings.trendCardPosition) {
+            TrendCardPosition.locked => l10n.trendCardLockedShort,
+            TrendCardPosition.scrolls => l10n.trendCardScrollsShort,
+          },
+        ),
+        weekStartName(dateLocaleOf(context), settings.weekStart),
+      );
 
-  static String _themeName(AppLocalizations l10n, AppThemeMode theme) =>
-      switch (theme) {
-        AppThemeMode.system => l10n.themeSystem,
-        AppThemeMode.light => l10n.themeLight,
-        AppThemeMode.dark => l10n.themeDark,
-      };
+  /// "INR · 💵 Cash".
+  String _defaultsSummary(
+    AppLocalizations l10n,
+    AppSettings settings,
+    PaymentMethodListState methods,
+  ) {
+    final method = findPaymentMethod(methods, settings.defaultPaymentMethodId);
+    if (method == null) return settings.defaultCurrency;
+    return l10n.settingsTileSummary(
+      settings.defaultCurrency,
+      paymentMethodLabel(l10n, method),
+    );
+  }
+}
+
+/// One tile of the grid: an icon, a title and a muted summary.
+class _SettingsTile extends StatelessWidget {
+  const _SettingsTile({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.summary,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String summary;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card.outlined(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, color: theme.colorScheme.primary),
+              const SizedBox(height: 8),
+              Text(title, style: theme.textTheme.titleSmall),
+              const SizedBox(height: 2),
+              Text(
+                summary,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                // Long names (a user's payment method) are cut, so a tile
+                // never runs away; the full value is on its screen.
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

@@ -23,6 +23,7 @@ import '../../../../domain/popularity.dart';
 import '../../../../domain/title_suggestions.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/builtin_names.dart';
+import '../../../core/emit_if_open.dart';
 import '../../../core/picker_order.dart';
 import '../../../core/recent_currencies.dart';
 
@@ -286,7 +287,8 @@ typedef _Prefill = ({
 });
 
 /// The Add/Edit expense form (phase-2.md §6, phase-4.md §7).
-class ExpenseFormCubit extends CubitSignal<ExpenseFormState> {
+class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
+    with EmitIfOpen<ExpenseFormState> {
   /// [expenseId] is the expense to edit, or null to add one. New expenses
   /// start with the default currency and payment method passed in.
   ///
@@ -393,7 +395,7 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState> {
           ? null
           : await _expenses.byId(expenseId!);
       if (expenseId != null && original == null) {
-        _emitIfOpen(const ExpenseFormGone());
+        emitIfOpen(const ExpenseFormGone());
         return;
       }
       final categories = await _categories.all();
@@ -403,9 +405,9 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState> {
       _eventUsage = await _expenses.eventUsage();
       _original = original;
       _allEvents = events;
-      _emitIfOpen(_opened(categories, paymentMethods));
+      emitIfOpen(_opened(categories, paymentMethods));
     } catch (error) {
-      _emitIfOpen(ExpenseFormLoadFailed(error));
+      emitIfOpen(ExpenseFormLoadFailed(error));
       return;
     }
     await _loadTitleHistory();
@@ -608,7 +610,7 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState> {
     // Typed before the history arrived: suggest for it now.
     final ready = _ready;
     if (ready != null && _titleTyped) {
-      _emitIfOpen(ready.copyWith(suggestions: _suggestionsFor(ready.fields)));
+      emitIfOpen(ready.copyWith(suggestions: _suggestionsFor(ready.fields)));
     }
   }
 
@@ -663,7 +665,7 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState> {
     if (changed == _titleChanged) return;
     _titleChanged = changed;
     if (changed && ready.suggestions.isNotEmpty) {
-      _emitIfOpen(ready.copyWith(suggestions: const []));
+      emitIfOpen(ready.copyWith(suggestions: const []));
     }
     _syncDraft();
   }
@@ -949,7 +951,7 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState> {
 
   /// Emits [next] and mirrors it to the draft slot.
   void _apply(ExpenseFormReady next) {
-    _emitIfOpen(next);
+    emitIfOpen(next);
     _syncDraft();
   }
 
@@ -959,7 +961,7 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState> {
   void dismissSuggestions() {
     final ready = _ready;
     if (ready == null || ready.suggestions.isEmpty) return;
-    _emitIfOpen(ready.copyWith(suggestions: const []));
+    emitIfOpen(ready.copyWith(suggestions: const []));
   }
 
   /// Sets the title to [suggestion]'s spelling, then fills the untouched
@@ -1170,7 +1172,7 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState> {
     ItemizeMemory itemize,
   ) async {
     _titleTyped = false;
-    _emitIfOpen(
+    emitIfOpen(
       ready.copyWith(
         fields: fields,
         touched: touched,
@@ -1271,7 +1273,7 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState> {
         _descriptionTooLong(fields) != null ||
         _categoryMissing(fields) != null ||
         paymentMethodId == null) {
-      _emitIfOpen(ready.copyWith(showErrors: true));
+      emitIfOpen(ready.copyWith(showErrors: true));
       return null;
     }
 
@@ -1291,7 +1293,7 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState> {
       eventIds: fields.eventIds,
     );
 
-    _emitIfOpen(ready.copyWith(saving: true));
+    emitIfOpen(ready.copyWith(saving: true));
     var saved = false;
     try {
       final owns = await _settleDraft();
@@ -1308,11 +1310,11 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState> {
       // Add draft, so nothing typed is lost.
       _drafts.update(_draftOf(ready, asAdd: true));
       _ownsDraft = true;
-      _emitIfOpen(const ExpenseFormGone(draftKept: true));
+      emitIfOpen(const ExpenseFormGone(draftKept: true));
       return null;
     } finally {
       final current = _ready;
-      if (current != null) _emitIfOpen(current.copyWith(saving: false));
+      if (current != null) emitIfOpen(current.copyWith(saving: false));
       // Changes typed while saving reach the draft now.
       if (!saved) _syncDraft();
     }
@@ -1326,7 +1328,7 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState> {
     final ready = _ready;
     final id = expenseId;
     if (ready == null || id == null || ready.saving) return null;
-    _emitIfOpen(ready.copyWith(saving: true));
+    emitIfOpen(ready.copyWith(saving: true));
     try {
       final owns = await _settleDraft();
       await _expenses.moveToBin(id, clearDraft: owns);
@@ -1337,11 +1339,11 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState> {
         _ownsDraft = false;
         await _drafts.clear();
       }
-      _emitIfOpen(const ExpenseFormGone());
+      emitIfOpen(const ExpenseFormGone());
       return null;
     } finally {
       final current = _ready;
-      if (current != null) _emitIfOpen(current.copyWith(saving: false));
+      if (current != null) emitIfOpen(current.copyWith(saving: false));
     }
   }
 
@@ -1449,10 +1451,4 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState> {
     local.second,
     local.millisecond,
   );
-
-  // Every method keeps going across awaits, and the screen closes the
-  // cubit when it pops. Emitting after close() asserts in debug mode.
-  void _emitIfOpen(ExpenseFormState state) {
-    if (!isClosed) emit(state);
-  }
 }

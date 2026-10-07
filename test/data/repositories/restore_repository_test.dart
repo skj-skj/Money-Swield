@@ -166,28 +166,9 @@ void main() {
         await expectRejected(RestoreRejection.notABackup);
       });
 
-      test('a zip without manifest', () async {
-        await Directory(files.paths.restoreWorkFolder).create(recursive: true);
-        await File(files.paths.pickedZip).writeAsBytes(
-          buildZip([
-            entry(
-              'expense_tracker.db',
-              await File(await sourceDatabase()).readAsBytes(),
-            ),
-          ]),
-        );
-        await expectRejected(RestoreRejection.notABackup);
-      });
-
-      test('another app\'s manifest', () async {
-        await pick(await sourceDatabase(), manifest: {'app': 'other'});
-        await expectRejected(RestoreRejection.notABackup);
-      });
-
-      test('format 2', () async {
-        await pick(await sourceDatabase(), manifest: {'format': 2});
-        await expectRejected(RestoreRejection.tooNew);
-      });
+      // Missing manifest, another app's, format 2 and the other
+      // archive-level rejections: backup_archive_test. The one above
+      // shows they reach the caller.
 
       test('corrupted database pages (integrity check)', () async {
         final source = await sourceDatabase(

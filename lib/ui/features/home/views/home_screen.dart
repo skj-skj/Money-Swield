@@ -2,29 +2,41 @@ import 'dart:async';
 
 import 'package:bloc_signals_flutter/bloc_signals_flutter.dart';
 import 'package:flutter/rendering.dart' show ScrollDirection;
-import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../app/app_dependencies.dart';
 import '../../../../app/app_restart.dart';
+import '../../../../domain/expense_filter.dart';
 import '../../../../domain/models/app_settings.dart';
-import '../../../../domain/models/expense.dart';
+import '../../../../domain/models/dashboard_options.dart';
 import '../../../../domain/models/money.dart';
+import '../../../../domain/periods.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../core/currency_labels.dart';
 import '../../../core/formatting_locale.dart';
-import '../../../core/money_formatter.dart';
+import '../../../core/period_names.dart';
+import '../../../core/widgets/async_body.dart';
 import '../../../core/widgets/currency_picker_sheet.dart';
-import '../../../core/widgets/load_failed_view.dart';
+import '../../../core/widgets/empty_state_view.dart';
+import '../../../core/widgets/retry_row.dart';
 import '../../../core/widgets/save_error.dart';
+import '../../../core/widgets/show_message.dart';
 import '../../expenses/view_models/expense_form_cubit.dart';
 import '../../expenses/views/expense_form_screen.dart';
 import '../../settings/view_models/settings_cubit.dart';
 import '../view_models/expense_list_cubit.dart';
+import '../view_models/trend_cubit.dart';
+import 'add_expense_fab.dart';
 import 'amount_chips_row.dart';
+import 'filter_bar.dart';
+import 'filter_sheet.dart';
+import 'home_list_slivers.dart';
+import 'trend_card.dart';
 
-/// The Home tab: every expense, newest first, with a header per day
-/// (phase-2.md §7). Phase 5 replaces the day headers with Week / Month /
-/// Year grouping and subtotals.
+/// The Home tab (phase-2.md §7, phase-5.md §8.1): the trend card, the
+/// filter bar, the amount chips and every expense in outlined groups (a
+/// day, week, month or year each) with sticky tops, day headers inside
+/// them and subtotals per currency.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
     super.key,
@@ -50,13 +62,26 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  late final AppSettings _startSettings = context.read<SettingsCubit>().value;
+
   late final ExpenseListCubit _cubit = ExpenseListCubit(
     expenses: widget.dependencies.expenses,
     categories: widget.dependencies.categories,
     paymentMethods: widget.dependencies.paymentMethods,
+    events: widget.dependencies.events,
     drafts: widget.dependencies.drafts,
     dataVersion: widget.dependencies.dataVersion,
-    chipCurrency: context.read<SettingsCubit>().value.defaultCurrency,
+    defaultCurrency: _startSettings.defaultCurrency,
+    grouping: _startSettings.listGrouping,
+    weekStart: _startSettings.weekStart,
+  )..load();
+
+  late final TrendCubit _trend = TrendCubit(
+    expenses: widget.dependencies.expenses,
+    now: widget.dependencies.now,
+    defaultCurrency: _startSettings.defaultCurrency,
+    period: _startSettings.cardPeriod,
+    weekStart: _startSettings.weekStart,
   )..load();
 
   /// A form is being opened: reading the draft slot first is async, and
@@ -81,9 +106,10 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Next page once fewer than about 5 rows are left below the screen.
   static const _loadMoreLead = 5 * 72.0;
 
-  /// Fires at the next local midnight, so "Today" becomes "Yesterday"
-  /// while the app is open. Timers don't run while the app is in the
-  /// background, so resuming checks again ([_lifecycle]).
+  /// Fires at the next local midnight, so a new day can start a new week,
+  /// month or year on the card and in the names (R5) while the app is
+  /// open. Timers don't run while the app is in the background, so
+  /// resuming checks again ([_lifecycle]).
   Timer? _midnight;
   late final AppLifecycleListener _lifecycle;
 
@@ -99,17 +125,13 @@ class _HomeScreenState extends State<HomeScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         final l10n = AppLocalizations.of(context);
-        _messenger.currentState?.showSnackBar(switch (notice) {
-          RestoreNotice.restored => SnackBar(
-            content: Text(l10n.backupRestored),
-          ),
+        switch (notice) {
+          case RestoreNotice.restored:
+            _showMessage(l10n.backupRestored);
           // Longer: there's more to read, and it says where to go next.
-          RestoreNotice.restoredWithDefaultSettings => SnackBar(
-            content: Text(l10n.backupRestoredDefaultSettings),
-            duration: const Duration(seconds: 10),
-            showCloseIcon: true,
-          ),
-        });
+          case RestoreNotice.restoredWithDefaultSettings:
+            _showMessage(l10n.backupRestoredDefaultSettings, long: true);
+        }
       });
     }
   }
@@ -121,18 +143,27 @@ class _HomeScreenState extends State<HomeScreen> {
     _midnight = Timer(nextMidnight.difference(now), _rebuildForNewDay);
   }
 
-  /// The day headers are computed in build from the clock; rebuilding is
-  /// all a new day needs.
+  /// Names are computed in build from the clock; the card reloads, so it
+  /// shows the new current period (R5).
   void _rebuildForNewDay() {
     if (!mounted) return;
     setState(() {});
+    _trend.load();
     _scheduleMidnight();
   }
 
   @override
   void didUpdateWidget(HomeScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.isVisible && !oldWidget.isVisible) _cubit.reloadIfChanged();
+    if (widget.isVisible && !oldWidget.isVisible) _reloadIfChanged();
+  }
+
+  /// Reloads the list and the card after a write (save, bin, Undo).
+  Future<void> _reload() => Future.wait([_cubit.reload(), _trend.load()]);
+
+  /// Only if something was written since the last load (P2-14).
+  Future<void> _reloadIfChanged() async {
+    if (await _cubit.reloadIfChanged()) await _trend.load();
   }
 
   @override
@@ -141,6 +172,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _lifecycle.dispose();
     _scroll.dispose();
     _cubit.close();
+    _trend.close();
     super.dispose();
   }
 
@@ -182,12 +214,12 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
     switch (result) {
       case ExpenseSaved():
-        await _cubit.reload();
+        await _reload();
       case ExpenseBinned(:final id):
-        await _cubit.reload();
+        await _reload();
         if (mounted) _showMovedToBin(id);
       case ExpenseGone(:final draftKept):
-        await _cubit.reload();
+        await _reload();
         if (mounted) {
           _showMessage(
             draftKept ? _l10n.draftKeptExpenseGone : _l10n.expenseGone,
@@ -195,12 +227,12 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         }
       case ExpenseDraftKept():
-        await _cubit.reloadIfChanged();
+        await _reloadIfChanged();
         await _cubit.refreshDraftMark();
         if (mounted) _showMessage(_l10n.draftSaved);
       case null:
         // Back without changes: reload only if something changed data.
-        await _cubit.reloadIfChanged();
+        await _reloadIfChanged();
         await _cubit.refreshDraftMark();
     }
   }
@@ -209,37 +241,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _showMovedToBin(int id) {
     final l10n = AppLocalizations.of(context);
-    _messenger.currentState
-      ?..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(l10n.movedToBin),
-          // A snackbar with an action stays until dismissed by default;
-          // Undo is only offered for a moment.
-          persist: false,
-          action: SnackBarAction(
-            label: l10n.undo,
-            onPressed: () =>
-                saveOrShowError(_messengerContext, () => _cubit.restore(id)),
-          ),
-        ),
-      );
+    showMessage(
+      _messenger.currentState,
+      l10n.movedToBin,
+      action: SnackBarAction(
+        label: l10n.undo,
+        onPressed: () => saveOrShowError(_messengerContext, () async {
+          await _cubit.restore(id);
+          await _trend.load();
+        }),
+      ),
+    );
   }
 
-  /// A plain message on Home's messenger; [long] for one with more to read.
-  void _showMessage(String message, {bool long = false}) {
-    _messenger.currentState
-      ?..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          duration: long
-              ? const Duration(seconds: 8)
-              : const Duration(seconds: 4),
-          showCloseIcon: long,
-        ),
-      );
-  }
+  /// A message on Home's own messenger, so the FAB moves up for it.
+  void _showMessage(String message, {bool long = false}) =>
+      showMessage(_messenger.currentState, message, long: long);
 
   Future<void> _pickCurrency(AppSettings settings) async {
     final recent = await _cubit.recentCurrencies();
@@ -258,9 +275,67 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// The chips follow the default currency, wherever it is changed.
-  void _onSettings(BuildContext context, AppSettings settings) =>
-      _cubit.setChipCurrency(settings.defaultCurrency);
+  /// The chips, groups and card follow the settings, wherever they are
+  /// changed (Home or Settings): settings writes don't bump `DataVersion`
+  /// (R6). Each setter does nothing when its value didn't change.
+  void _onSettings(BuildContext context, AppSettings settings) {
+    _cubit.setDefaultCurrency(settings.defaultCurrency);
+    _trend.setDefaultCurrency(settings.defaultCurrency);
+    final list = _cubit.value;
+    if (list is ExpenseListLoaded && list.grouping != settings.listGrouping) {
+      _cubit.setGrouping(settings.listGrouping);
+      _scrollToTop();
+    }
+    _cubit.setWeekStart(settings.weekStart);
+    _trend.setWeekStart(settings.weekStart);
+  }
+
+  /// After the filters or the grouping changed (P5-34).
+  void _scrollToTop() {
+    if (_scroll.hasClients) _scroll.jumpTo(0);
+  }
+
+  /// Applies [filter] to the list; the card follows (the list's listener),
+  /// with categories or events deleted meanwhile already left out.
+  Future<void> _setFilter(ExpenseFilter filter) async {
+    // Only whitespace is no text filter; spaces around words don't count.
+    final words = searchWords(filter.text);
+    final shown = await _cubit.setFilter(
+      filter.copyWith(text: words.isEmpty ? '' : filter.text.trim()),
+    );
+    if (!mounted) return;
+    // The list kept the old filter and its rows: say the new one failed.
+    if (!shown) return _showMessage(_l10n.loadFailed);
+    _scrollToTop();
+  }
+
+  Future<void> _openFilters(ExpenseListLoaded state) async {
+    final result = await showFilterSheet(
+      context,
+      filter: state.filter,
+      grouping: state.grouping,
+      categories: state.categories,
+      events: state.events,
+    );
+    if (!mounted) return;
+    if (result.grouping != state.grouping) {
+      final settings = context.read<SettingsCubit>();
+      // The settings listener regroups the list once it is saved.
+      await saveOrShowError(
+        _messengerContext,
+        () => settings.setListGrouping(result.grouping),
+      );
+    }
+    if (result.filter != state.filter) await _setFilter(result.filter);
+  }
+
+  /// A swipe on the card turned it [steps] faces: shown at once, then
+  /// saved, once per swipe however far the reel spun (P5-1).
+  void _turnCard(int steps) {
+    final period = _trend.turn(steps);
+    final settings = context.read<SettingsCubit>();
+    saveOrShowError(_messengerContext, () => settings.setCardPeriod(period));
+  }
 
   bool _onUserScroll(UserScrollNotification notification) {
     final extended = switch (notification.direction) {
@@ -299,281 +374,185 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: AddExpenseFab(
+        extended: _fabExtended,
+        label: l10n.addExpense,
         onPressed: _openForm,
-        isExtended: _fabExtended,
-        icon: const Icon(Icons.add),
-        label: Text(l10n.addExpense),
-        tooltip: _fabExtended ? null : l10n.addExpense,
       ),
       body: BlocSignalListener<SettingsCubit, AppSettings>(
         listenWhen: (previous, current) =>
-            previous.defaultCurrency != current.defaultCurrency,
+            previous.defaultCurrency != current.defaultCurrency ||
+            previous.listGrouping != current.listGrouping ||
+            previous.weekStart != current.weekStart,
         listener: _onSettings,
-        child: BlocSignalBuilder<ExpenseListCubit, ExpenseListState>(
+        child: BlocSignalListener<ExpenseListCubit, ExpenseListState>(
           bloc: _cubit,
-          builder: (context, state) => switch (state) {
-            ExpenseListLoading() => const Center(
-              child: CircularProgressIndicator(),
-            ),
-            ExpenseListFailed() => LoadFailedView(onRetry: _cubit.load),
-            ExpenseListLoaded() => Column(
-              children: [
-                // Shown on the empty state too (phase-4.md §8.1).
-                AmountChipsRow(
-                  chips: state.chips,
-                  onTap: (amount) => _openForm(chipAmount: amount),
+          // The card follows the list's filter (P5-31), including when a
+          // reload dropped a deleted category from it.
+          listenWhen: (previous, current) =>
+              current is ExpenseListLoaded &&
+              (previous is! ExpenseListLoaded ||
+                  previous.filter != current.filter),
+          listener: (context, state) =>
+              _trend.setFilter((state as ExpenseListLoaded).filter),
+          child: BlocSignalBuilder<SettingsCubit, AppSettings>(
+            buildWhen: (previous, current) =>
+                previous.defaultCurrency != current.defaultCurrency ||
+                previous.weekLabel != current.weekLabel ||
+                previous.trendChartStyle != current.trendChartStyle ||
+                previous.trendCardPosition != current.trendCardPosition ||
+                previous.trendCardSize != current.trendCardSize ||
+                previous.trendCardHaptics != current.trendCardHaptics,
+            builder: (context, settings) =>
+                BlocSignalBuilder<ExpenseListCubit, ExpenseListState>(
+                  bloc: _cubit,
+                  // Subtotals alone don't rebuild the list: each header
+                  // watches its own.
+                  buildWhen: (previous, current) =>
+                      previous is! ExpenseListLoaded ||
+                      current is! ExpenseListLoaded ||
+                      !current.sameListAs(previous),
+                  // The empty state needs the chips row too: _loaded shows it.
+                  builder: (context, state) => AsyncBody(
+                    phase: switch (state) {
+                      ExpenseListLoading() => LoadPhase.loading,
+                      ExpenseListFailed() => LoadPhase.failed,
+                      ExpenseListLoaded() => LoadPhase.loaded,
+                    },
+                    onRetry: _cubit.load,
+                    empty: const SizedBox.shrink(),
+                    builder: (context) =>
+                        _loaded(state as ExpenseListLoaded, settings),
+                  ),
                 ),
-                Expanded(
-                  child: state.expenses.isEmpty
-                      ? const _EmptyState()
-                      : _list(state),
-                ),
-              ],
-            ),
-          },
+          ),
         ),
       ),
     );
   }
 
-  Widget _list(ExpenseListLoaded state) {
+  Widget _loaded(ExpenseListLoaded state, AppSettings settings) {
+    final chips = AmountChipsRow(
+      chips: state.chips,
+      onTap: (amount) => _openForm(chipAmount: amount),
+    );
+    // No active expenses at all: no card, no filter bar (P5-20).
+    if (state.expenses.isEmpty && state.filter.isEmpty) {
+      return Column(
+        children: [
+          // Shown on the empty state too (phase-4.md §8.1).
+          chips,
+          Expanded(
+            child: EmptyStateView(
+              icon: Icons.receipt_long_outlined,
+              title: AppLocalizations.of(context).homeEmptyTitle,
+              message: AppLocalizations.of(context).homeEmptyMessage,
+            ),
+          ),
+        ],
+      );
+    }
     // A short first page may not fill the screen, and then no scroll ever
     // asks for the next one.
     if (state.hasMore && !state.loadingMore && !state.loadMoreFailed) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _maybeLoadMore());
     }
-    final items = homeListItems(state.expenses);
-    final today = widget.dependencies.now();
-    final hasFooter = state.loadingMore || state.loadMoreFailed;
-    return NotificationListener<UserScrollNotification>(
+    final names = PeriodNames(
+      l10n: AppLocalizations.of(context),
+      locale: dateLocaleOf(context),
+      today: todayOn(widget.dependencies.now()),
+      weekLabel: settings.weekLabel,
+    );
+    final card = _trendCard(settings, names);
+    final bar = FilterBar(
+      filter: state.filter,
+      grouping: state.grouping,
+      categories: state.categories,
+      events: state.events,
+      onOpen: () => _openFilters(state),
+      onChange: _setFilter,
+    );
+    final locked = settings.trendCardPosition == TrendCardPosition.locked;
+    final list = NotificationListener<UserScrollNotification>(
       onNotification: _onUserScroll,
-      child: ListView.builder(
+      child: CustomScrollView(
         controller: _scroll,
-        // Room for the floating button under the last row.
-        padding: const EdgeInsets.only(bottom: 88),
-        itemCount: items.length + (hasFooter ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (index == items.length) {
-            return state.loadMoreFailed
-                ? _LoadMoreFailedRow(onRetry: _cubit.loadMore)
-                : const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-          }
-          return switch (items[index]) {
-            HomeDayHeader(:final occurredOn) => _DayHeader(
-              occurredOn: occurredOn,
-              today: today,
-            ),
-            HomeExpenseRow(:final expense) => _ExpenseRow(
-              key: ValueKey(expense.id),
-              expense: expense,
+        slivers: [
+          if (!locked) ...[
+            SliverToBoxAdapter(child: card),
+            PinnedHeaderSliver(child: bar),
+          ],
+          SliverToBoxAdapter(child: chips),
+          if (state.expenses.isEmpty)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: EmptyStateView(
+                icon: Icons.filter_alt_off,
+                title: AppLocalizations.of(context).noFilterMatches,
+                actionLabel: AppLocalizations.of(context).clearFilters,
+                actionKey: const ValueKey('clearFilters'),
+                scrollable: false,
+                onAction: () => _setFilter(ExpenseFilter.none),
+              ),
+            )
+          else
+            ...homeListSlivers(
+              context: context,
               state: state,
-              hasDraft: expense.id == state.draftExpenseId,
-              onTap: () => _openForm(expenseId: expense.id),
+              cubit: _cubit,
+              names: names,
+              defaultCurrency: settings.defaultCurrency,
+              onOpen: (id) => _openForm(expenseId: id),
             ),
-          };
-        },
+          // Room for the floating button under the last row.
+          const SliverToBoxAdapter(child: SizedBox(height: 88)),
+        ],
       ),
     );
-  }
-}
-
-/// One entry of the Home list: a day header or an expense.
-sealed class HomeListItem {
-  const HomeListItem();
-}
-
-final class HomeDayHeader extends HomeListItem {
-  const HomeDayHeader(this.occurredOn);
-
-  final String occurredOn;
-}
-
-final class HomeExpenseRow extends HomeListItem {
-  const HomeExpenseRow(this.expense);
-
-  final Expense expense;
-}
-
-/// [expenses] (newest first) with a header before the first expense of
-/// each `occurred_on`.
-List<HomeListItem> homeListItems(List<Expense> expenses) {
-  final items = <HomeListItem>[];
-  String? day;
-  for (final expense in expenses) {
-    if (expense.occurredOn != day) {
-      day = expense.occurredOn;
-      items.add(HomeDayHeader(day));
-    }
-    items.add(HomeExpenseRow(expense));
-  }
-  return items;
-}
-
-/// "Today", "Yesterday", else the date the way [locale] writes it ("Fri,
-/// 2 Oct" for en_IN, "Fri, Oct 2" for en_US), with the year when it isn't
-/// [today]'s year. [today] is the device's local date.
-String dayHeaderText(
-  AppLocalizations l10n,
-  String locale,
-  String occurredOn,
-  DateTime today,
-) {
-  final date = DateTime.parse(occurredOn);
-  final todayDate = DateTime(today.year, today.month, today.day);
-  if (date == todayDate) return l10n.today;
-  if (date == DateTime(today.year, today.month, today.day - 1)) {
-    return l10n.yesterday;
-  }
-  return date.year == today.year
-      ? DateFormat.MMMEd(locale).format(date)
-      : DateFormat.yMMMEd(locale).format(date);
-}
-
-class _DayHeader extends StatelessWidget {
-  const _DayHeader({required this.occurredOn, required this.today});
-
-  final String occurredOn;
-
-  /// The device's local now, for "Today" / "Yesterday".
-  final DateTime today;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-      child: Text(
-        dayHeaderText(
-          AppLocalizations.of(context),
-          dateLocaleOf(context),
-          occurredOn,
-          today.toLocal(),
-        ),
-        style: theme.textTheme.titleSmall?.copyWith(
-          color: theme.colorScheme.primary,
-        ),
-      ),
+    if (!locked) return list;
+    return Column(
+      children: [
+        card,
+        bar,
+        Expanded(child: list),
+      ],
     );
   }
-}
 
-class _ExpenseRow extends StatelessWidget {
-  const _ExpenseRow({
-    super.key,
-    required this.expense,
-    required this.state,
-    required this.hasDraft,
-    required this.onTap,
-  });
-
-  final Expense expense;
-  final ExpenseListLoaded state;
-
-  /// The draft slot holds unsaved changes to this expense: a mark after
-  /// the amount. The row still shows the stored values (P4-21).
-  final bool hasDraft;
-  final VoidCallback onTap;
-
-  /// Shown when a row's category or payment method is missing. RESTRICT
-  /// forbids that, but a crash would be worse than a question mark.
-  static const _missing = '❓';
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final locale = dateLocaleOf(context);
-    final categoryEmoji =
-        state.categories[expense.categoryId]?.emoji ?? _missing;
-    final methodEmoji =
-        state.paymentMethods[expense.paymentMethodId]?.emoji ?? _missing;
-    // The time as it was on the clock where it was recorded.
-    final time = DateFormat.jm(locale).format(expense.wallClock);
-    return ListTile(
-      onTap: onTap,
-      leading: Text(categoryEmoji, style: const TextStyle(fontSize: 28)),
-      title: Text(expense.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-      subtitle: Text('$methodEmoji  $time'),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            MoneyFormatter.of(context).format(expense.amount),
-            style: theme.textTheme.titleMedium,
-          ),
-          if (hasDraft)
-            Padding(
-              padding: const EdgeInsetsDirectional.only(start: 4),
-              child: Icon(
-                Icons.edit_note,
-                key: const ValueKey('unsavedMark'),
-                color: theme.colorScheme.tertiary,
-                semanticLabel: AppLocalizations.of(context).unsavedChanges,
+  Widget _trendCard(AppSettings settings, PeriodNames names) =>
+      BlocSignalBuilder<TrendCubit, TrendState>(
+        bloc: _trend,
+        builder: (context, state) => switch (state) {
+          TrendLoading() => const Card(
+            margin: EdgeInsets.fromLTRB(16, 4, 16, 4),
+            child: SizedBox(
+              height: 160,
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: LinearProgressIndicator(minHeight: 2),
               ),
             ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LoadMoreFailedRow extends StatelessWidget {
-  const _LoadMoreFailedRow({required this.onRetry});
-
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          Text(l10n.loadMoreFailed),
-          const SizedBox(height: 8),
-          OutlinedButton(onPressed: onRetry, child: Text(l10n.tryAgain)),
-        ],
-      ),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.receipt_long_outlined,
-              size: 72,
-              color: theme.colorScheme.primary,
+          ),
+          TrendFailed() => Card(
+            margin: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+            child: Center(
+              child: RetryRow(
+                message: AppLocalizations.of(context).totalsLoadFailed,
+                onRetry: _trend.load,
+              ),
             ),
-            const SizedBox(height: 16),
-            Text(
-              l10n.homeEmptyTitle,
-              style: theme.textTheme.titleLarge,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.homeEmptyMessage,
-              style: theme.textTheme.bodyMedium,
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+          ),
+          TrendLoaded() => TrendCard(
+            state: state,
+            names: names,
+            style: settings.trendChartStyle,
+            size: settings.trendCardSize,
+            haptics: settings.trendCardHaptics,
+            defaultCurrency: settings.defaultCurrency,
+            onTurn: _turnCard,
+            onCurrency: _trend.moveCurrency,
+            onSelect: _trend.select,
+          ),
+        },
+      );
 }

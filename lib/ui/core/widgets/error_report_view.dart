@@ -2,6 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../l10n/app_localizations.dart';
+import 'show_message.dart';
 
 /// A full-screen error with a copyable report and a retry button. Used when
 /// the app can't start (a failed migration, a database that won't open) and
@@ -84,8 +85,7 @@ class ErrorReportView extends StatelessWidget {
           onPressed: () async {
             await Clipboard.setData(ClipboardData(text: report));
             if (context.mounted) {
-              ScaffoldMessenger.of(context)
-                  .showSnackBar(SnackBar(content: Text(l10n.reportCopied)));
+              showMessage(ScaffoldMessenger.of(context), l10n.reportCopied);
             }
           },
           icon: const Icon(Icons.copy_rounded),

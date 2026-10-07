@@ -826,6 +826,279 @@ class AppLocalizationsHi extends AppLocalizations {
   String get backupDamaged => 'यह बैकअप खराब है और रीस्टोर नहीं हो सकता।';
 
   @override
+  String get periodDay => 'दिन';
+
+  @override
+  String get periodWeek => 'सप्ताह';
+
+  @override
+  String get periodMonth => 'महीना';
+
+  @override
+  String get periodYear => 'साल';
+
+  @override
+  String weekNumber(int number) {
+    return 'सप्ताह $number';
+  }
+
+  @override
+  String weekNumberWithYear(int number, String year) {
+    return 'सप्ताह $number, $year';
+  }
+
+  @override
+  String weekOfMonth(String month, int number) {
+    return '$month सप्ताह $number';
+  }
+
+  @override
+  String dayWithSubtotal(String date, String amount) {
+    return '$date – $amount';
+  }
+
+  @override
+  String daySubtotalSemantics(String date, String amount) {
+    return '$date, $amount';
+  }
+
+  @override
+  String get trendEmptyWeek => 'इस सप्ताह कोई खर्च नहीं';
+
+  @override
+  String get trendEmptyMonth => 'इस महीने कोई खर्च नहीं';
+
+  @override
+  String get trendEmptyYear => 'इस साल कोई खर्च नहीं';
+
+  @override
+  String get trendNoMatchWeek => 'इस सप्ताह कोई मिलता-जुलता खर्च नहीं';
+
+  @override
+  String get trendNoMatchMonth => 'इस महीने कोई मिलता-जुलता खर्च नहीं';
+
+  @override
+  String get trendNoMatchYear => 'इस साल कोई मिलता-जुलता खर्च नहीं';
+
+  @override
+  String get trendFiltered => 'फ़िल्टर किया गया';
+
+  @override
+  String trendPointLabel(String date, String amount) {
+    return '$date · $amount';
+  }
+
+  @override
+  String trendCardSemantics(String period, String amount) {
+    return '$period, कुल $amount';
+  }
+
+  @override
+  String trendCardSemanticsFiltered(String period, String amount) {
+    return '$period, फ़िल्टर किया गया, कुल $amount';
+  }
+
+  @override
+  String get totalsLoadFailed => 'कुल लोड नहीं हो सके';
+
+  @override
+  String get nextPeriod => 'अगली अवधि';
+
+  @override
+  String get previousPeriod => 'पिछली अवधि';
+
+  @override
+  String get nextCurrency => 'अगली मुद्रा';
+
+  @override
+  String get previousCurrency => 'पिछली मुद्रा';
+
+  @override
+  String chartCurrencyAnnounce(String currency, String amount) {
+    return '$currency, $amount';
+  }
+
+  @override
+  String totalsJoin(String first, String rest) {
+    return '$first + $rest';
+  }
+
+  @override
+  String totalsJoinSpoken(String first, String rest) {
+    return '$first और $rest';
+  }
+
+  @override
+  String get totalTooLarge => 'बहुत बड़ा';
+
+  @override
+  String get showSubtotal => 'उप-योग देखें';
+
+  @override
+  String get subtotalLoadFailed => 'उप-योग लोड नहीं हो सका';
+
+  @override
+  String groupSubtotalSemantics(String name, String amount) {
+    return '$name, उप-योग $amount';
+  }
+
+  @override
+  String get close => 'बंद करें';
+
+  @override
+  String get filters => 'फ़िल्टर';
+
+  @override
+  String get filterSearchHint => 'शीर्षक और विवरण में खोजें';
+
+  @override
+  String get filterCategories => 'श्रेणियाँ';
+
+  @override
+  String get filterEvents => 'इवेंट';
+
+  @override
+  String get filterArchived => 'संग्रहीत';
+
+  @override
+  String get groupBy => 'समूह बनाएँ';
+
+  @override
+  String get groupedByDay => 'दिन के अनुसार';
+
+  @override
+  String get groupedByWeek => 'सप्ताह के अनुसार';
+
+  @override
+  String get groupedByMonth => 'महीने के अनुसार';
+
+  @override
+  String get groupedByYear => 'साल के अनुसार';
+
+  @override
+  String get clearFilters => 'फ़िल्टर हटाएँ';
+
+  @override
+  String get showResults => 'नतीजे देखें';
+
+  @override
+  String get noFilterMatches => 'इन फ़िल्टर से कोई खर्च नहीं मिला';
+
+  @override
+  String filterMore(String name, int count) {
+    return '$name +$count';
+  }
+
+  @override
+  String filterSearchChip(String text) {
+    return '\"$text\"';
+  }
+
+  @override
+  String get removeFilter => 'फ़िल्टर हटाएँ';
+
+  @override
+  String get settingsLook => 'रूप';
+
+  @override
+  String get settingsHome => 'होम';
+
+  @override
+  String get settingsDefaults => 'डिफ़ॉल्ट';
+
+  @override
+  String get settingWeekStart => 'सप्ताह शुरू होता है';
+
+  @override
+  String get settingWeekNames => 'सप्ताह के नाम';
+
+  @override
+  String get settingTrendChart => 'ट्रेंड चार्ट';
+
+  @override
+  String get chartLineFilled => 'स्मूद लाइन, भरी हुई';
+
+  @override
+  String get chartLine => 'स्मूद लाइन';
+
+  @override
+  String get chartBars => 'बार';
+
+  @override
+  String get chartDots => 'बिंदु';
+
+  @override
+  String get chartRunningTotal => 'चालू कुल';
+
+  @override
+  String get settingTrendCardSize => 'कार्ड का आकार';
+
+  @override
+  String get cardSizeSmall => 'छोटा';
+
+  @override
+  String get cardSizeMedium => 'मध्यम';
+
+  @override
+  String get cardSizeLarge => 'बड़ा';
+
+  @override
+  String get settingCardHaptics => 'कार्ड का कंपन';
+
+  @override
+  String get hapticsOff => 'बंद';
+
+  @override
+  String get hapticsLight => 'हल्का';
+
+  @override
+  String get hapticsMedium => 'मध्यम';
+
+  @override
+  String get hapticsStrong => 'तेज़';
+
+  @override
+  String trendRunningTotalPoint(String date, String amount) {
+    return '$date तक · $amount';
+  }
+
+  @override
+  String get restoreHomeDefaults => 'डिफ़ॉल्ट वापस लाएँ';
+
+  @override
+  String get restoreHomeDefaultsSubtitle => 'चार्ट, कार्ड और सप्ताह पहले जैसे';
+
+  @override
+  String get restoreHomeDefaultsTitle => 'होम के डिफ़ॉल्ट वापस लाएँ?';
+
+  @override
+  String get restoreHomeDefaultsMessage =>
+      'ट्रेंड चार्ट, ट्रेंड कार्ड, कार्ड का आकार, सप्ताह की शुरुआत और सप्ताह के नाम डिफ़ॉल्ट पर लौट आते हैं।';
+
+  @override
+  String get settingTrendCard => 'ट्रेंड कार्ड';
+
+  @override
+  String get trendCardLocked => 'ऊपर स्थिर';
+
+  @override
+  String get trendCardScrolls => 'सूची के साथ स्क्रॉल हो';
+
+  @override
+  String get trendCardLockedShort => 'स्थिर';
+
+  @override
+  String get trendCardScrollsShort => 'स्क्रॉल';
+
+  @override
+  String get binTileSummary => '30 दिन तक रखे जाते हैं';
+
+  @override
+  String settingsTileSummary(String first, String rest) {
+    return '$first · $rest';
+  }
+
+  @override
   String get categoryFood => 'खाना';
 
   @override

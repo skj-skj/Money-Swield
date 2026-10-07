@@ -10,6 +10,7 @@ import '../data/repositories/payment_method_repository.dart';
 import '../data/repositories/settings_repository.dart';
 import '../data/services/database/app_database.dart';
 import '../data/services/document_service.dart';
+import '../domain/periods.dart';
 import 'restore_tools.dart';
 
 /// The open database and the repositories built on it. Created once by the
@@ -95,7 +96,8 @@ class AppDependencies {
   );
 
   /// Runs one small query per repository on [db], the way the app does on
-  /// start: settings, a page of expenses, the categories, events, payment
+  /// start: settings, a page of expenses, today's amounts (Home's totals,
+  /// phase-5.md R10), the categories, events, payment
   /// methods and the draft slot (read-only: an unreadable draft is fine
   /// and stays, R10). A restore runs it on the candidate before swapping it
   /// in, so a database that can't start the app is refused (§6.4 step 3).
@@ -106,7 +108,12 @@ class AppDependencies {
     final dataVersion = DataVersion();
     final settings = SettingsRepository(db, deviceCurrency: deviceCurrency);
     await settings.load();
-    await ExpenseRepository(db, dataVersion: dataVersion).page(limit: 1);
+    final expenses = ExpenseRepository(db, dataVersion: dataVersion);
+    await expenses.page(limit: 1);
+    // `page` is `SELECT *`, which passes on an empty table that lacks a
+    // column; this names the columns the totals read.
+    final today = todayOn(DateTime.now());
+    await expenses.amountsIn(from: today, to: today);
     await CategoryRepository(db, dataVersion: dataVersion).all();
     await EventRepository(db, dataVersion: dataVersion).all();
     await PaymentMethodRepository(

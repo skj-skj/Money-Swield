@@ -1,7 +1,9 @@
 import 'package:sqflite/sqflite.dart';
 
 import '../../domain/models/category.dart';
+import '../services/database/sql_helpers.dart';
 import 'data_version.dart';
+import 'expense_owner.dart';
 
 /// Reads and writes the `categories` table (database.md §3.2).
 ///
@@ -50,8 +52,8 @@ class CategoryRepository {
       name: name,
       description: description,
       emoji: emoji,
-      createdAt: _dateTime(now),
-      updatedAt: _dateTime(now),
+      createdAt: utcFromEpochMs(now),
+      updatedAt: utcFromEpochMs(now),
     );
   }
 
@@ -75,7 +77,7 @@ class CategoryRepository {
       throw StateError('Category ${category.id} no longer exists');
     }
     _dataVersion.bump();
-    return category.copyWith(updatedAt: _dateTime(now));
+    return category.copyWith(updatedAt: utcFromEpochMs(now));
   }
 
   /// Deletes the category. Fails on the foreign key (RESTRICT) if an
@@ -88,32 +90,21 @@ class CategoryRepository {
   /// How many expenses use the category. Binned ones are counted on
   /// purpose: they block the delete too and must be moved (database.md
   /// §3.2).
-  Future<({int active, int binned})> usage(int id) async {
-    final row = (await _db.rawQuery(
-      'SELECT COALESCE(SUM(deleted_at IS NULL), 0) AS active, '
-      'COALESCE(SUM(deleted_at IS NOT NULL), 0) AS binned '
-      'FROM expenses WHERE category_id = ?',
-      [id],
-    )).single;
-    return (active: row['active']! as int, binned: row['binned']! as int);
-  }
+  Future<({int active, int binned})> usage(int id) =>
+      ExpenseOwner.category.usage(_db, id);
 
   /// Moves every expense of category [id], binned ones included, to [toId]
   /// and deletes [id], in one transaction (D7). If [toId] no longer exists
   /// the move fails on the foreign key and nothing changes.
   Future<void> moveExpensesAndDelete(int id, {required int toId}) async {
-    if (toId == id) {
-      throw ArgumentError.value(toId, 'toId', 'must differ from id');
-    }
-    await _db.transaction((txn) async {
-      await txn.update(
-        'expenses',
-        {'category_id': toId, 'updated_at': _now().millisecondsSinceEpoch},
-        where: 'category_id = ?',
-        whereArgs: [id],
-      );
-      await txn.delete('categories', where: 'id = ?', whereArgs: [id]);
-    });
+    await _db.transaction(
+      (txn) => ExpenseOwner.category.moveExpensesAndDelete(
+        txn,
+        id,
+        toId: toId,
+        updatedAtMs: _now().millisecondsSinceEpoch,
+      ),
+    );
     _dataVersion.bump();
   }
 
@@ -123,11 +114,7 @@ class CategoryRepository {
     name: row['name'] as String?,
     description: row['description'] as String?,
     emoji: row['emoji']! as String,
-    createdAt: _dateTime(row['created_at']! as int),
-    updatedAt: _dateTime(row['updated_at']! as int),
+    createdAt: utcFromEpochMs(row['created_at']! as int),
+    updatedAt: utcFromEpochMs(row['updated_at']! as int),
   );
-
-  /// Timestamps are stored as epoch milliseconds, UTC (database.md §1).
-  static DateTime _dateTime(int millis) =>
-      DateTime.fromMillisecondsSinceEpoch(millis, isUtc: true);
 }

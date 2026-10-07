@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart' show debugPrint;
 
 import '../data/services/backup/pre_restore_copy.dart';
 import '../domain/error_report.dart';
+import '../ui/core/emit_if_open.dart';
 import '../ui/features/settings/view_models/settings_cubit.dart';
 import 'app_dependencies.dart';
 
@@ -45,7 +46,8 @@ final class StartupReady extends StartupState {
 /// Opens the database, loads the settings, empties old expenses from the
 /// bin and deletes what a cut-short backup or restore left, once
 /// migrations are done (phase-1.md §5, phase-2.md §9.3, phase-3.md §6.6).
-class StartupCubit extends CubitSignal<StartupState> {
+class StartupCubit extends CubitSignal<StartupState>
+    with EmitIfOpen<StartupState> {
   StartupCubit({
     required this._openDependencies,
     required this._settingsCubit,
@@ -66,7 +68,7 @@ class StartupCubit extends CubitSignal<StartupState> {
   Future<void> start() async {
     if (_isRunning || value is StartupReady) return;
     _isRunning = true;
-    _emitIfOpen(const StartupLoading());
+    emitIfOpen(const StartupLoading());
     var step = 'Opening database';
     AppDependencies? dependencies;
     try {
@@ -75,14 +77,14 @@ class StartupCubit extends CubitSignal<StartupState> {
       await _settingsCubit.load(dependencies.settings);
       await _purgeBin(dependencies);
       await _cleanUpLeftovers(dependencies);
-      _emitIfOpen(StartupReady(dependencies));
+      emitIfOpen(StartupReady(dependencies));
     } catch (error, stackTrace) {
       // Closed so that Retry starts afresh and Undo last restore can
       // replace the file.
       await _closeQuietly(dependencies);
       // Never fall through to onboarding here: with settings unreadable it
       // would overwrite a real user's settings.
-      _emitIfOpen(
+      emitIfOpen(
         StartupFailed(
           step,
           error,
@@ -138,11 +140,5 @@ class StartupCubit extends CubitSignal<StartupState> {
       debugPrint('Looking for pre-restore copies failed: $error');
       return null;
     }
-  }
-
-  // start() keeps going across awaits, so the cubit may have been closed by
-  // the time a result arrives. Emitting after close() asserts in debug mode.
-  void _emitIfOpen(StartupState state) {
-    if (!isClosed) emit(state);
   }
 }

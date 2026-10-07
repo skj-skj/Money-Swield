@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show debugPrint;
 
 import '../../../../data/repositories/payment_method_repository.dart';
 import '../../../../domain/models/payment_method.dart';
+import '../../../core/emit_if_open.dart';
 import '../../settings/view_models/settings_cubit.dart';
 
 /// The onboarding steps, in order.
@@ -86,7 +87,8 @@ class OnboardingState {
 /// `SettingsRepository`): it is the one owner of the settings the whole app
 /// shows, and its write-then-emit is what makes a picked language apply at
 /// once.
-class OnboardingCubit extends CubitSignal<OnboardingState> {
+class OnboardingCubit extends CubitSignal<OnboardingState>
+    with EmitIfOpen<OnboardingState> {
   OnboardingCubit({required this._settings, required this._paymentMethods})
     : super(
         initialState: OnboardingState(
@@ -104,14 +106,14 @@ class OnboardingCubit extends CubitSignal<OnboardingState> {
   /// Loads the payment methods for the last step. A failure sets
   /// [OnboardingState.paymentMethodsFailed]; calling this again retries.
   Future<void> loadPaymentMethods() async {
-    _emitIfOpen(value.copyWith(paymentMethodsFailed: false));
+    emitIfOpen(value.copyWith(paymentMethodsFailed: false));
     try {
       final methods = await _paymentMethods.all();
       methods.sort((a, b) => a.id.compareTo(b.id));
-      _emitIfOpen(value.copyWith(paymentMethods: methods));
+      emitIfOpen(value.copyWith(paymentMethods: methods));
     } catch (error, stackTrace) {
       debugPrint('Loading payment methods failed: $error\n$stackTrace');
-      _emitIfOpen(value.copyWith(paymentMethodsFailed: true));
+      emitIfOpen(value.copyWith(paymentMethodsFailed: true));
     }
   }
 
@@ -134,14 +136,14 @@ class OnboardingCubit extends CubitSignal<OnboardingState> {
 
   void next() {
     if (value.isLastStep) return;
-    _emitIfOpen(
+    emitIfOpen(
       value.copyWith(step: OnboardingStep.values[value.step.index + 1]),
     );
   }
 
   void back() {
     if (value.isFirstStep) return;
-    _emitIfOpen(
+    emitIfOpen(
       value.copyWith(step: OnboardingStep.values[value.step.index - 1]),
     );
   }
@@ -152,7 +154,7 @@ class OnboardingCubit extends CubitSignal<OnboardingState> {
   Future<void> finish() async {
     final state = value;
     if (state.busy) return;
-    _emitIfOpen(state.copyWith(busy: true));
+    emitIfOpen(state.copyWith(busy: true));
     try {
       await _settings.setDefaultCurrency(state.currency);
       final paymentMethodId = state.paymentMethodId;
@@ -162,7 +164,7 @@ class OnboardingCubit extends CubitSignal<OnboardingState> {
       // Last, so a failure above leaves onboarding open to retry.
       await _settings.setOnboardingCompleted();
     } finally {
-      _emitIfOpen(value.copyWith(busy: false));
+      emitIfOpen(value.copyWith(busy: false));
     }
   }
 
@@ -173,19 +175,12 @@ class OnboardingCubit extends CubitSignal<OnboardingState> {
     OnboardingState Function(OnboardingState) apply,
   ) async {
     if (value.busy) return;
-    _emitIfOpen(value.copyWith(busy: true));
+    emitIfOpen(value.copyWith(busy: true));
     try {
       await save();
-      _emitIfOpen(apply(value));
+      emitIfOpen(apply(value));
     } finally {
-      _emitIfOpen(value.copyWith(busy: false));
+      emitIfOpen(value.copyWith(busy: false));
     }
-  }
-
-  // The screen goes away (and closes this cubit) as soon as onboarding is
-  // marked done, while finish() is still running. Emitting after close()
-  // asserts in debug mode.
-  void _emitIfOpen(OnboardingState state) {
-    if (!isClosed) emit(state);
   }
 }

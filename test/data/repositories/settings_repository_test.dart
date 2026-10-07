@@ -3,7 +3,9 @@ import 'package:material_ui/material_ui.dart';
 import 'package:my_expense_tracker_app/data/repositories/settings_repository.dart';
 import 'package:my_expense_tracker_app/domain/models/app_settings.dart';
 import 'package:my_expense_tracker_app/domain/models/app_theme_mode.dart';
+import 'package:my_expense_tracker_app/domain/models/dashboard_options.dart';
 import 'package:my_expense_tracker_app/domain/models/item_shape.dart';
+import 'package:my_expense_tracker_app/domain/periods.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../../helpers/test_database.dart';
@@ -284,6 +286,213 @@ void main() {
       await db.insert('settings', {'key': 'tile_shape', 'value': 'hexagon'});
       expect((await repository.load()).tileShape, ItemShape.rounded);
     });
+  });
+
+  group('Home settings (phase-5.md §4.2)', () {
+    test('defaults: Monday, month names, card Month, list Week, filled '
+        'line, locked', () async {
+      final settings = await repository.load();
+      expect(settings.weekStart, WeekStart.monday);
+      expect(settings.weekLabel, WeekLabel.month);
+      expect(settings.cardPeriod, Period.month);
+      expect(settings.listGrouping, Period.week);
+      expect(settings.trendChartStyle, TrendChartStyle.lineFilled);
+      expect(settings.trendCardPosition, TrendCardPosition.locked);
+      expect(settings.trendCardSize, TrendCardSize.medium);
+      expect(settings.trendCardHaptics, CardHaptics.light);
+    });
+
+    test('restoreHomeDefaults resets the six Home settings and nothing '
+        'else', () async {
+      await repository.setTrendChartStyle(TrendChartStyle.bar);
+      await repository.setTrendCardPosition(TrendCardPosition.scrolls);
+      await repository.setTrendCardSize(TrendCardSize.small);
+      await repository.setTrendCardHaptics(CardHaptics.off);
+      await repository.setWeekStart(WeekStart.sunday);
+      await repository.setWeekLabel(WeekLabel.number);
+      await repository.setCardPeriod(Period.year);
+      await repository.setListGrouping(Period.day);
+      await repository.setDefaultCurrency('USD');
+      await repository.setTileShape(ItemShape.square);
+
+      await repository.restoreHomeDefaults();
+      final settings = await repository.load();
+      expect(settings.trendChartStyle, TrendChartStyle.lineFilled);
+      expect(settings.trendCardPosition, TrendCardPosition.locked);
+      expect(settings.trendCardSize, TrendCardSize.medium);
+      expect(settings.trendCardHaptics, CardHaptics.light);
+      expect(settings.weekStart, WeekStart.monday);
+      expect(settings.weekLabel, WeekLabel.month);
+      expect(settings.cardPeriod, Period.year, reason: 'set on Home itself');
+      expect(settings.listGrouping, Period.day, reason: 'set on Home itself');
+      expect(settings.defaultCurrency, 'USD');
+      expect(settings.tileShape, ItemShape.square);
+    });
+
+    test(
+      'card size, vibration and the two later chart styles round-trip',
+      () async {
+        for (final size in TrendCardSize.values) {
+          await repository.setTrendCardSize(size);
+          expect((await repository.load()).trendCardSize, size);
+        }
+        for (final haptics in CardHaptics.values) {
+          await repository.setTrendCardHaptics(haptics);
+          expect((await repository.load()).trendCardHaptics, haptics);
+        }
+        expect(
+          (await db.query(
+            'settings',
+            where: 'key = ?',
+            whereArgs: ['trend_card_haptics'],
+          )).single['value'],
+          'strong',
+        );
+        for (final style in TrendChartStyle.values) {
+          await repository.setTrendChartStyle(style);
+          expect((await repository.load()).trendChartStyle, style);
+        }
+        final stored = await db.query(
+          'settings',
+          where: 'key = ?',
+          whereArgs: ['trend_chart_style'],
+        );
+        expect(stored.single['value'], 'running_total');
+        await db.update(
+          'settings',
+          {'value': 'huge'},
+          where: 'key = ?',
+          whereArgs: ['trend_card_size'],
+        );
+        expect((await repository.load()).trendCardSize, TrendCardSize.medium);
+      },
+    );
+
+    test('round trip of each, with the stored values of database.md', () async {
+      await repository.setWeekStart(WeekStart.sunday);
+      await repository.setWeekLabel(WeekLabel.number);
+      await repository.setCardPeriod(Period.year);
+      await repository.setListGrouping(Period.day);
+      await repository.setTrendChartStyle(TrendChartStyle.bar);
+      await repository.setTrendCardPosition(TrendCardPosition.scrolls);
+      final settings = await repository.load();
+      expect(settings.weekStart, WeekStart.sunday);
+      expect(settings.weekLabel, WeekLabel.number);
+      expect(settings.cardPeriod, Period.year);
+      expect(settings.listGrouping, Period.day);
+      expect(settings.trendChartStyle, TrendChartStyle.bar);
+      expect(settings.trendCardPosition, TrendCardPosition.scrolls);
+
+      await repository.setTrendChartStyle(TrendChartStyle.lineFilled);
+      final rows = {
+        for (final row in await db.query('settings'))
+          row['key']! as String: row['value'],
+      };
+      expect(rows, containsPair('week_start', 'sunday'));
+      expect(rows, containsPair('week_label', 'number'));
+      expect(rows, containsPair('dashboard_period', 'year'));
+      expect(rows, containsPair('list_grouping', 'day'));
+      expect(rows, containsPair('trend_chart_style', 'line_filled'));
+      expect(rows, containsPair('trend_card_position', 'scrolls'));
+    });
+
+    test('an unknown value (a newer app\'s) reads as the default', () async {
+      for (final key in [
+        'week_start',
+        'week_label',
+        'dashboard_period',
+        'list_grouping',
+        'trend_chart_style',
+        'trend_card_position',
+      ]) {
+        await store(key, 'saturday');
+      }
+      // The card has no Day face.
+      await db.update(
+        'settings',
+        {'value': 'day'},
+        where: 'key = ?',
+        whereArgs: ['dashboard_period'],
+      );
+      expect(
+        await repository.load(),
+        AppSettings(
+          onboardingCompleted: false,
+          locale: null,
+          theme: AppThemeMode.system,
+          defaultCurrency: 'INR',
+          defaultPaymentMethodId: await paymentMethodId('cash'),
+        ),
+      );
+    });
+
+    test('every enum setting: junk, wrong case or empty reads as the '
+        'default, never as another value', () async {
+      const keys = [
+        'theme',
+        'tile_shape',
+        'button_shape',
+        'week_start',
+        'week_label',
+        'dashboard_period',
+        'list_grouping',
+        'trend_chart_style',
+        'trend_card_position',
+        'trend_card_size',
+        'trend_card_haptics',
+      ];
+      final defaults = await repository.load();
+      for (final stored in ['junk', 'Monday', 'WEEK', 'Large', '', ' ']) {
+        await db.delete('settings');
+        for (final key in keys) {
+          await store(key, stored);
+        }
+        expect(await repository.load(), defaults, reason: '"$stored"');
+      }
+    });
+
+    test('the picker keyboards are on only for "1", and are written as '
+        '"1" / "0"', () async {
+      for (final stored in ['0', 'true', 'yes', '', null]) {
+        await db.delete('settings');
+        await store('time_picker_keyboard', stored);
+        await store('date_picker_keyboard', stored);
+        final settings = await repository.load();
+        expect(settings.timePickerKeyboard, isFalse, reason: '$stored');
+        expect(settings.datePickerKeyboard, isFalse, reason: '$stored');
+      }
+      Future<String?> raw(String key) async =>
+          (await db.query(
+                'settings',
+                where: 'key = ?',
+                whereArgs: [key],
+              )).single['value']
+              as String?;
+      await repository.setTimePickerKeyboard(true);
+      await repository.setDatePickerKeyboard(false);
+      expect(await raw('time_picker_keyboard'), '1');
+      expect(await raw('date_picker_keyboard'), '0');
+      final settings = await repository.load();
+      expect(settings.timePickerKeyboard, isTrue);
+      expect(settings.datePickerKeyboard, isFalse);
+    });
+
+    test(
+      'restoreDefaultLook leaves every Home setting alone (P5-33)',
+      () async {
+        await repository.setTrendCardSize(TrendCardSize.small);
+        await repository.setTrendCardHaptics(CardHaptics.strong);
+        await repository.setWeekStart(WeekStart.sunday);
+        await repository.setWeekLabel(WeekLabel.number);
+        await repository.setCardPeriod(Period.year);
+        await repository.setListGrouping(Period.day);
+        await repository.setTrendChartStyle(TrendChartStyle.bar);
+        await repository.setTrendCardPosition(TrendCardPosition.scrolls);
+        final before = await repository.load();
+        await repository.restoreDefaultLook();
+        expect(await repository.load(), before);
+      },
+    );
   });
 
   group('last backup', () {

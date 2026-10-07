@@ -315,18 +315,23 @@ void main() {
       );
     });
 
-    test('uses the (occurred_at, id) index with no sort step', () async {
-      for (final cursor in [null, (occurredAtMs: 1, id: 1)]) {
+    test('uses the (occurred_on, occurred_at, id) index with no sort step', () async {
+      for (final cursor in [
+        null,
+        (occurredOn: '2026-10-01', occurredAtMs: 1, id: 1),
+      ]) {
         final plan = await db.rawQuery(
           'EXPLAIN QUERY PLAN SELECT * FROM expenses WHERE +deleted_at IS NULL'
-          '${cursor == null ? '' : ' AND (occurred_at, id) < (?, ?)'} '
-          'ORDER BY occurred_at DESC, id DESC LIMIT 30',
-          cursor == null ? null : [cursor.occurredAtMs, cursor.id],
+          '${cursor == null ? '' : ' AND (occurred_on, occurred_at, id) < (?, ?, ?)'} '
+          'ORDER BY occurred_on DESC, occurred_at DESC, id DESC LIMIT 30',
+          cursor == null
+              ? null
+              : [cursor.occurredOn, cursor.occurredAtMs, cursor.id],
         );
         final details = [for (final row in plan) row['detail']! as String];
         expect(
           details.join('\n'),
-          contains('index_expenses_on_occurred_at_and_id'),
+          contains('index_expenses_on_occurred_on_and_occurred_at_and_id'),
           reason: '$details',
         );
         expect(
@@ -345,12 +350,12 @@ void main() {
         _LoggingDatabase(db, logged),
         dataVersion: DataVersion(),
       );
-      await spy.page(after: (occurredAtMs: 1, id: 1));
+      await spy.page(after: (occurredOn: '2026-10-01', occurredAtMs: 1, id: 1));
       expect(
         logged.first,
         allOf(
           contains('+deleted_at IS NULL'),
-          contains('(occurred_at, id) < (?, ?)'),
+          contains('(occurred_on, occurred_at, id) < (?, ?, ?)'),
         ),
       );
     });

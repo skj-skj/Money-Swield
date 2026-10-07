@@ -1109,29 +1109,27 @@ void main() {
   });
 
   group('the amount is read with the locale\'s separator', () {
-    test(
-      'en: 1,000 × 2 is grouping, refused; 1.000 × 2 is a quantity',
-      () async {
-        final cubit = await openForm()
-          ..amountChanged('1,000×2');
+    // The rule itself (grouping vs decimal, both separators):
+    // amount_expression_test. Here: the form reads with the locale's.
+    test('en reads `.` as the decimal, es reads `,`', () async {
+      for (final (separator, decimal, grouping) in [
+        ('.', '1.000×2', '1,000×2'),
+        (',', '1,000×2', '1.000×2'),
+      ]) {
+        final cubit = await openForm(separator: separator)
+          ..amountChanged(grouping);
         expect(
           cubit.amountResult,
           const ExpressionRejected(ExpressionError.tooManyDecimals),
+          reason: separator,
         );
-        cubit.amountChanged('1.000×2');
-        expect((cubit.amountResult! as ExpressionValue).amountMinor, 200);
-      },
-    );
-
-    test('es: the other way round', () async {
-      final cubit = await openForm(separator: ',')
-        ..amountChanged('1.000×2');
-      expect(
-        cubit.amountResult,
-        const ExpressionRejected(ExpressionError.tooManyDecimals),
-      );
-      cubit.amountChanged('1,000×2');
-      expect((cubit.amountResult! as ExpressionValue).amountMinor, 200);
+        cubit.amountChanged(decimal);
+        expect(
+          (cubit.amountResult! as ExpressionValue).amountMinor,
+          200,
+          reason: separator,
+        );
+      }
     });
   });
 

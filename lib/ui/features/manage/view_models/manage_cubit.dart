@@ -4,13 +4,15 @@ import 'package:flutter/foundation.dart' show debugPrint;
 import '../../../../data/repositories/category_repository.dart';
 import '../../../../data/repositories/event_repository.dart';
 import '../../../../data/repositories/payment_method_repository.dart';
+import '../../../core/emit_if_open.dart';
 
 /// How many rows each list on the Manage tab has.
 typedef ManageCounts = ({int categories, int events, int paymentMethods});
 
 /// The counts shown on the Manage tab. Null until loaded, or if loading
 /// failed (the tab then shows no counts; the lists still open).
-class ManageCubit extends CubitSignal<ManageCounts?> {
+class ManageCubit extends CubitSignal<ManageCounts?>
+    with EmitIfOpen<ManageCounts?> {
   ManageCubit({
     required this._categories,
     required this._events,
@@ -29,7 +31,7 @@ class ManageCubit extends CubitSignal<ManageCounts?> {
         events: (await _events.all()).length,
         paymentMethods: (await _paymentMethods.all()).length,
       );
-      if (!isClosed) emit(counts);
+      emitIfOpen(counts);
     } catch (error, stackTrace) {
       // The counts are a convenience: keep showing the last ones and only
       // log the error. (No BlocSignalObserver is installed, so addError

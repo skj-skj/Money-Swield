@@ -3,6 +3,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:my_expense_tracker_app/data/repositories/settings_repository.dart';
 import 'package:my_expense_tracker_app/domain/models/app_settings.dart';
 import 'package:my_expense_tracker_app/domain/models/app_theme_mode.dart';
+import 'package:my_expense_tracker_app/domain/models/dashboard_options.dart';
+import 'package:my_expense_tracker_app/domain/periods.dart';
 import 'package:my_expense_tracker_app/ui/features/settings/view_models/settings_cubit.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -152,6 +154,101 @@ void main() {
         cubit.value.copyWith(),
         reason: 'memory and database agree',
       );
+    });
+  });
+
+  group('Home settings (phase-5.md §6.2)', () {
+    test('each setter writes, then emits', () async {
+      final cubit = await loadedCubit();
+      await cubit.setWeekStart(WeekStart.sunday);
+      await cubit.setWeekLabel(WeekLabel.number);
+      await cubit.setCardPeriod(Period.week);
+      await cubit.setListGrouping(Period.year);
+      await cubit.setTrendChartStyle(TrendChartStyle.line);
+      await cubit.setTrendCardPosition(TrendCardPosition.scrolls);
+      expect(await repository.load(), cubit.value);
+      expect(cubit.value.weekStart, WeekStart.sunday);
+      expect(cubit.value.trendCardPosition, TrendCardPosition.scrolls);
+    });
+
+    test('a failed write keeps the state', () async {
+      final cubit = await loadedCubit();
+      final before = cubit.value;
+      await db.execute('DROP TABLE settings');
+      await expectLater(
+        cubit.setListGrouping(Period.day),
+        throwsA(isA<DatabaseException>()),
+      );
+      await expectLater(
+        cubit.setCardPeriod(Period.year),
+        throwsA(isA<DatabaseException>()),
+      );
+      expect(cubit.value, before);
+    });
+
+    test('setLocale, setThemeSeed and restoreDefaultLook keep the new '
+        'fields (R14)', () async {
+      final cubit = await loadedCubit();
+      await cubit.setWeekStart(WeekStart.sunday);
+      await cubit.setWeekLabel(WeekLabel.number);
+      await cubit.setCardPeriod(Period.year);
+      await cubit.setListGrouping(Period.day);
+      await cubit.setTrendChartStyle(TrendChartStyle.bar);
+      await cubit.setTrendCardPosition(TrendCardPosition.scrolls);
+      await cubit.setTrendCardSize(TrendCardSize.small);
+      await cubit.setTrendCardHaptics(CardHaptics.strong);
+      await cubit.setTimePickerKeyboard(true);
+      final home = cubit.value;
+
+      await cubit.setLocale(const Locale('es'));
+      await cubit.setThemeSeed(0xFF1565C0);
+      await cubit.restoreDefaultLook();
+      for (final settings in [cubit.value, await repository.load()]) {
+        expect(settings.weekStart, home.weekStart);
+        expect(settings.weekLabel, home.weekLabel);
+        expect(settings.cardPeriod, home.cardPeriod);
+        expect(settings.listGrouping, home.listGrouping);
+        expect(settings.trendChartStyle, home.trendChartStyle);
+        expect(settings.trendCardPosition, home.trendCardPosition);
+        expect(settings.trendCardSize, TrendCardSize.small);
+        expect(settings.trendCardHaptics, CardHaptics.strong);
+        expect(settings.timePickerKeyboard, isTrue);
+      }
+      expect(cubit.value.locale, const Locale('es'));
+    });
+
+    test('restoreHomeDefaults writes, then emits the defaults', () async {
+      final cubit = await loadedCubit();
+      await cubit.setTrendChartStyle(TrendChartStyle.dots);
+      await cubit.setTrendCardSize(TrendCardSize.large);
+      await cubit.setTrendCardHaptics(CardHaptics.off);
+      await cubit.setWeekLabel(WeekLabel.number);
+      await cubit.setListGrouping(Period.year);
+      await cubit.restoreHomeDefaults();
+      expect(cubit.value.trendCardHaptics, CardHaptics.light);
+      expect(cubit.value.trendChartStyle, TrendChartStyle.lineFilled);
+      expect(cubit.value.trendCardSize, TrendCardSize.medium);
+      expect(cubit.value.weekLabel, WeekLabel.month);
+      expect(cubit.value.listGrouping, Period.year);
+      expect(await repository.load(), cubit.value);
+    });
+
+    test('toString names every field', () {
+      final text = AppSettings.beforeLoad.toString();
+      for (final field in [
+        'timePickerKeyboard',
+        'datePickerKeyboard',
+        'weekStart',
+        'weekLabel',
+        'cardPeriod',
+        'listGrouping',
+        'trendChartStyle',
+        'trendCardPosition',
+        'trendCardSize',
+        'trendCardHaptics',
+      ]) {
+        expect(text, contains(field));
+      }
     });
   });
 

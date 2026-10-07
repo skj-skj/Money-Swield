@@ -25,14 +25,19 @@ void main() {
     addTearDown(tester.view.reset);
   }
 
+  /// Settings → Look, where these rows live since Phase 5's grid.
   Future<void> openSettings(WidgetTester tester, AppDependencies deps) async {
     await pumpApp(tester, dependencies: deps);
     await tester.tap(find.widgetWithText(NavigationDestination, 'Settings'));
     await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('settingsLook')));
+    await tester.pumpAndSettle();
   }
 
   Color primary(WidgetTester tester) =>
-      Theme.of(tester.element(find.byType(Shell))).colorScheme.primary;
+      Theme.of(tester.element(find.byType(Shell, skipOffstage: false)))
+          .colorScheme
+          .primary;
 
   Color primaryFrom(int seed) =>
       ColorScheme.fromSeed(seedColor: Color(seed)).primary;

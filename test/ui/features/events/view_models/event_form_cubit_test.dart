@@ -116,13 +116,16 @@ void main() {
       await cubit.load();
 
       final loaded = cubit.value as EventListLoaded;
+      // Seven seeded events (database.md §3.4), sorted by English name.
       expect(loaded.active.map((e) => e.builtinKey), [
         'anniversary',
+        'dining_out',
         'festival',
         'party',
+        'wedding',
       ]);
       expect(loaded.archived.map((e) => e.builtinKey), ['birthday', 'trip']);
-      expect(loaded.all, hasLength(5));
+      expect(loaded.all, hasLength(7));
     });
   });
 

@@ -4,6 +4,7 @@ import '../../../../data/repositories/event_repository.dart';
 import '../../../../domain/models/event.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/builtin_names.dart';
+import '../../../core/emit_if_open.dart';
 
 /// What the events screen shows. States don't override `==`, so every
 /// emitted state reaches the screen.
@@ -35,7 +36,8 @@ final class EventListFailed extends EventListState {
 
 /// Loads the events for the list screen, sorted by display name in the
 /// current language and split into active and archived.
-class EventListCubit extends CubitSignal<EventListState> {
+class EventListCubit extends CubitSignal<EventListState>
+    with EmitIfOpen<EventListState> {
   EventListCubit({required this._repository, required this._l10n})
     : super(initialState: const EventListLoading());
 
@@ -57,22 +59,20 @@ class EventListCubit extends CubitSignal<EventListState> {
         final byName = compareNames(eventName(_l10n, a), eventName(_l10n, b));
         return byName != 0 ? byName : a.id.compareTo(b.id);
       });
-      if (!isClosed) {
-        emit(
-          EventListLoaded(
-            active: [
-              for (final e in events)
-                if (!e.isArchived) e,
-            ],
-            archived: [
-              for (final e in events)
-                if (e.isArchived) e,
-            ],
-          ),
-        );
-      }
+      emitIfOpen(
+        EventListLoaded(
+          active: [
+            for (final e in events)
+              if (!e.isArchived) e,
+          ],
+          archived: [
+            for (final e in events)
+              if (e.isArchived) e,
+          ],
+        ),
+      );
     } catch (error) {
-      if (!isClosed) emit(EventListFailed(error));
+      emitIfOpen(EventListFailed(error));
     }
   }
 }

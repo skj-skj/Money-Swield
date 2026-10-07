@@ -15,12 +15,16 @@ import '../../../../domain/models/expense.dart';
 import '../../../../domain/models/expense_draft.dart';
 import '../../../../domain/models/money.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../../core/builtin_names.dart';
+import '../../../core/currency_labels.dart';
+import '../../../core/date_texts.dart';
 import '../../../core/formatting_locale.dart';
+import '../../../core/item_labels.dart';
 import '../../../core/money_formatter.dart';
 import '../../../core/widgets/currency_picker_sheet.dart';
 import '../../../core/widgets/load_failed_view.dart';
 import '../../../core/widgets/save_error.dart';
+import '../../../core/widgets/section_heading.dart';
+import '../../../core/widgets/show_message.dart';
 import '../../../core/widgets/tile_picker.dart';
 import '../../categories/views/category_form_screen.dart';
 import '../../events/views/event_form_screen.dart';
@@ -304,17 +308,14 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   /// "Cleared" / "Draft discarded" with Undo: a mis-tap never loses data
   /// (phase-4.md §7.6).
   void _showUndo(String message) {
-    final l10n = AppLocalizations.of(context);
-    _messenger.currentState
-      ?..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          // Undo is only offered for a moment.
-          persist: false,
-          action: SnackBarAction(label: l10n.undo, onPressed: _form.undoReset),
-        ),
-      );
+    showMessage(
+      _messenger.currentState,
+      message,
+      action: SnackBarAction(
+        label: AppLocalizations.of(context).undo,
+        onPressed: _form.undoReset,
+      ),
+    );
   }
 
   void _onRowKey(RowKey key) {
@@ -567,9 +568,9 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
         const SizedBox(height: 16),
         _whenAndHowRow(state, locale),
         const SizedBox(height: 24),
-        _SectionLabel(
+        SectionHeading(
+          l10n.fieldCategory,
           key: _categoryKey,
-          text: l10n.fieldCategory,
           error: _form.categoryMissing ? l10n.categoryRequired : null,
         ),
         TilePicker(
@@ -589,7 +590,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
           onNew: (name) => _newCategory(name, state.categories),
         ),
         const SizedBox(height: 24),
-        _SectionLabel(text: l10n.fieldEvents),
+        SectionHeading(l10n.fieldEvents),
         TilePicker(
           items: _form.eventItems,
           selectedIds: fields.eventIds,
@@ -623,7 +624,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   Widget _whenAndHowRow(ExpenseFormReady state, String locale) {
     final l10n = AppLocalizations.of(context);
     final fields = state.fields;
-    final time = DateFormat.jm(locale).format(fields.wallClock);
+    final time = timeText(locale, fields.wallClock);
     // Short, to leave the dropdown room: the year only when it isn't this
     // one. TalkBack reads the full date.
     final thisYear = fields.wallClock.year == widget.dependencies.now().year;
@@ -637,12 +638,12 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
         : null;
     final methodNames = [
       for (final method in state.paymentMethods)
-        '${method.emoji} ${paymentMethodName(l10n, method)}',
+        paymentMethodLabel(l10n, method),
     ];
     final dateField = _PickerField(
       label: l10n.fieldDate,
       value: date,
-      semanticsValue: DateFormat.yMMMMEEEEd(locale).format(fields.wallClock),
+      semanticsValue: longDateText(locale, fields.wallClock),
       onTap: () => _pickDate(fields.wallClock),
     );
     final timeField = _PickerField(
@@ -1025,36 +1026,6 @@ class _PickerField extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// A field's heading above a picker, with its error under it.
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel({super.key, required this.text, this.error});
-
-  final String text;
-  final String? error;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final error = this.error;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(text, style: theme.textTheme.titleSmall),
-          if (error != null)
-            Text(
-              error,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.error,
-              ),
-            ),
-        ],
       ),
     );
   }

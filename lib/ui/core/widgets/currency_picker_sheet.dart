@@ -2,23 +2,8 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../domain/models/currency.dart';
 import '../../../l10n/app_localizations.dart';
-
-/// e.g. `₹  INR · Indian Rupee`, the symbol first like the payment
-/// method's emoji. intl falls back to the code for currencies it has no
-/// symbol for, so then the symbol is left out instead of repeating it.
-String currencyLabel(String code) => switch (findCurrency(code)) {
-  final Currency c when c.symbol == c.code => '${c.code} · ${c.englishName}',
-  final Currency c => '${c.symbol}  ${c.code} · ${c.englishName}',
-  // A code from a newer app's catalog: show it as is.
-  null => code,
-};
-
-/// e.g. `₹ INR`, for Home's currency chip and the form's currency box;
-/// just the code when intl has no symbol for it.
-String currencyShortLabel(String code) => switch (findCurrency(code)) {
-  final Currency c when c.symbol != c.code => '${c.symbol} ${c.code}',
-  _ => code,
-};
+import 'app_sheet.dart';
+import 'section_heading.dart';
 
 /// Opens the currency picker as a bottom sheet and returns the picked ISO
 /// code, or null if dismissed. [recent] (most recent first) fills a
@@ -28,10 +13,8 @@ Future<String?> showCurrencyPicker(
   required String selected,
   List<String> recent = const [],
 }) {
-  return showModalBottomSheet<String>(
-    context: context,
-    isScrollControlled: true,
-    showDragHandle: true,
+  return showAppSheet<String>(
+    context,
     builder: (context) => SizedBox(
       height: MediaQuery.sizeOf(context).height * 0.8,
       child: CurrencySearchList(
@@ -139,7 +122,13 @@ class _CurrencySearchListState extends State<CurrencySearchList> {
                   itemCount: entries.length,
                   itemBuilder: (context, index) {
                     final entry = entries[index];
-                    if (entry is String) return _SectionHeader(entry);
+                    if (entry is String) {
+                      return SectionHeading(
+                        entry,
+                        accent: true,
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+                      );
+                    }
                     final currency = entry as Currency;
                     final isSelected = currency.code == widget.selected;
                     final tile = ListTile(
@@ -170,26 +159,6 @@ class _CurrencySearchListState extends State<CurrencySearchList> {
                 ),
         ),
       ],
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader(this.title);
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-      child: Text(
-        title,
-        style: theme.textTheme.titleSmall?.copyWith(
-          color: theme.colorScheme.primary,
-        ),
-      ),
     );
   }
 }

@@ -4,6 +4,9 @@
 # out to run on the whole project:
 #   make format FILES="lib/ui/core/picker_order.dart test/ui/core"
 #   make test FILES=test/ui/core/picker_order_test.dart
+#
+# A full `make test` runs the generated suites (tool/test_suites.dart): the
+# same tests, compiled as two files instead of one per test file.
 
 # Bash on every OS. Without this, make on Windows may run recipes in
 # cmd.exe, where the shell syntax below fails.
@@ -25,7 +28,7 @@ APK := build/app/outputs/flutter-apk/app-$(MODE).apk
 help:
 	@echo 'make format    [FILES=...]   dart format (whole project by default)'
 	@echo 'make analyze   [FILES=...]   flutter analyze'
-	@echo 'make test      [FILES=...]   flutter test'
+	@echo 'make test      [FILES=...]   flutter test (full run: two suites)'
 	@echo 'make build     [MODE=debug|release]  build the APK'
 	@echo 'make install   [MODE=debug|release]  install the built APK over adb'
 	@echo 'make uninstall               uninstall the app (deletes its data)'
@@ -40,7 +43,12 @@ analyze:
 	flutter analyze $(FILES)
 
 test:
+ifeq ($(FILES),)
+	dart tool/test_suites.dart
+	flutter test test_suites
+else
 	flutter test $(FILES)
+endif
 
 build:
 	flutter build apk --$(MODE)

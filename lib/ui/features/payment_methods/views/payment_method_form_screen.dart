@@ -6,11 +6,10 @@ import '../../../../domain/models/app_settings.dart';
 import '../../../../domain/models/payment_method.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/builtin_names.dart';
-import '../../../core/form_validation.dart';
 import '../../../core/picker_order.dart';
-import '../../../core/widgets/emoji_picker_field.dart';
 import '../../../core/widgets/move_dialog.dart';
 import '../../../core/widgets/save_error.dart';
+import '../../manage/views/item_form_scaffold.dart';
 import '../../settings/view_models/settings_cubit.dart';
 import '../view_models/payment_method_form_cubit.dart';
 
@@ -38,34 +37,23 @@ class PaymentMethodFormScreen extends StatefulWidget {
 class _PaymentMethodFormScreenState extends State<PaymentMethodFormScreen> {
   // Created in didChangeDependencies because it needs the localizations.
   PaymentMethodFormCubit? _cubit;
-  late final TextEditingController _name;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_cubit != null) return;
-    final cubit = PaymentMethodFormCubit(
+    _cubit ??= PaymentMethodFormCubit(
       repository: widget.repository,
       settings: context.read<SettingsCubit>(),
       l10n: AppLocalizations.of(context),
       original: widget.original,
       existing: widget.existing,
     );
-    _cubit = cubit;
-    _name = TextEditingController(text: cubit.value.name);
   }
 
   @override
   void dispose() {
     _cubit?.close();
-    _name.dispose();
     super.dispose();
-  }
-
-  Future<void> _save() async {
-    PaymentMethod? saved;
-    await saveOrShowError(context, () async => saved = await _cubit!.save());
-    if (saved != null && mounted) Navigator.pop(context);
   }
 
   /// Delete (never offered for the default, which the repository refuses
@@ -100,106 +88,59 @@ class _PaymentMethodFormScreenState extends State<PaymentMethodFormScreen> {
     if (deleted && mounted) Navigator.pop(context);
   }
 
-  void _resetName() {
-    _cubit!.resetName();
-    _name.text = _cubit!.value.name;
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final cubit = _cubit!;
-    final original = widget.original;
-    return BlocSignalBuilder<PaymentMethodFormCubit, PaymentMethodFormState>(
-      bloc: cubit,
-      builder: (context, state) => Scaffold(
-        appBar: AppBar(
-          title: Text(
-            cubit.isEditing ? l10n.editPaymentMethod : l10n.addPaymentMethod,
-          ),
-          actions: [
-            TextButton(
-              onPressed: state.saving ? null : _save,
-              child: Text(l10n.save),
-            ),
-          ],
-        ),
-        body: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            EmojiPickerField(
-              emoji: state.emoji,
-              onChanged: cubit.emojiChanged,
-              errorText: emojiErrorText(l10n, cubit.emojiError),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              key: const ValueKey('name'),
-              controller: _name,
-              onChanged: cubit.nameChanged,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: InputDecoration(
-                labelText: l10n.fieldName,
-                errorText: nameErrorText(l10n, cubit.nameError, state.name),
-                border: const OutlineInputBorder(),
-              ),
-            ),
-            if (cubit.canResetName)
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: TextButton(
-                  onPressed: _resetName,
-                  child: Text(l10n.resetToDefaultName),
+    return ItemFormScaffold<PaymentMethod>(
+      cubit: cubit,
+      title: cubit.isEditing ? l10n.editPaymentMethod : l10n.addPaymentMethod,
+      // Opened only from the list, which reloads on return.
+      popWithSaved: false,
+      actions: (context, state) => [
+        // Rebuilds when the default changes, e.g. after "Set as default".
+        BlocSignalBuilder<SettingsCubit, AppSettings>(
+          builder: (context, settings) {
+            final isDefault = cubit.isDefault;
+            final original = widget.original!;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 32),
+                if (isDefault)
+                  Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: Chip(label: Text(l10n.defaultBadge)),
+                  )
+                else
+                  OutlinedButton.icon(
+                    onPressed: state.saving
+                        ? null
+                        : () => saveOrShowError(context, cubit.setAsDefault),
+                    icon: const Icon(Icons.check_circle_outline),
+                    label: Text(l10n.setAsDefault),
+                  ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: state.saving || isDefault
+                      ? null
+                      : () => _delete(paymentMethodName(l10n, original)),
+                  icon: const Icon(Icons.delete_outline),
+                  label: Text(l10n.delete),
                 ),
-              ),
-            if (original != null)
-              // Rebuilds when the default changes, e.g. after "Set as default".
-              BlocSignalBuilder<SettingsCubit, AppSettings>(
-                builder: (context, settings) {
-                  final isDefault = cubit.isDefault;
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const SizedBox(height: 32),
-                      if (isDefault)
-                        Align(
-                          alignment: AlignmentDirectional.centerStart,
-                          child: Chip(label: Text(l10n.defaultBadge)),
-                        )
-                      else
-                        OutlinedButton.icon(
-                          onPressed: state.saving
-                              ? null
-                              : () => saveOrShowError(
-                                  context,
-                                  cubit.setAsDefault,
-                                ),
-                          icon: const Icon(Icons.check_circle_outline),
-                          label: Text(l10n.setAsDefault),
-                        ),
-                      const SizedBox(height: 8),
-                      OutlinedButton.icon(
-                        onPressed: state.saving || isDefault
-                            ? null
-                            : () => _delete(paymentMethodName(l10n, original)),
-                        icon: const Icon(Icons.delete_outline),
-                        label: Text(l10n.delete),
-                      ),
-                      if (isDefault) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          l10n.cannotDeleteDefaultHint,
-                          style: Theme.of(context).textTheme.bodySmall,
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ],
-                  );
-                },
-              ),
-          ],
+                if (isDefault) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    l10n.cannotDeleteDefaultHint,
+                    style: Theme.of(context).textTheme.bodySmall,
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ],
+            );
+          },
         ),
-      ),
+      ],
     );
   }
 }

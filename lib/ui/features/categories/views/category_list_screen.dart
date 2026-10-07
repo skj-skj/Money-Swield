@@ -5,9 +5,8 @@ import '../../../../data/repositories/category_repository.dart';
 import '../../../../domain/models/category.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/builtin_names.dart';
-import '../../../core/widgets/item_card.dart';
-import '../../../core/widgets/load_failed_view.dart';
-import '../../../core/widgets/two_column_masonry.dart';
+import '../../../core/widgets/async_body.dart';
+import '../../manage/views/manage_list_scaffold.dart';
 import '../view_models/category_list_cubit.dart';
 import 'category_form_screen.dart';
 
@@ -62,37 +61,35 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
     final l10n = AppLocalizations.of(context);
     return BlocSignalBuilder<CategoryListCubit, CategoryListState>(
       bloc: _cubit!,
-      builder: (context, state) => Scaffold(
-        appBar: AppBar(title: Text(l10n.categoriesTitle)),
-        floatingActionButton: state is CategoryListLoaded
-            ? FloatingActionButton.extended(
-                onPressed: () => _openForm(all: state.categories),
-                icon: const Icon(Icons.add),
-                label: Text(l10n.addCategory),
-              )
-            : null,
-        body: switch (state) {
-          CategoryListLoading() => const Center(
-            child: CircularProgressIndicator(),
-          ),
-          CategoryListFailed() => LoadFailedView(onRetry: () => _cubit?.load()),
+      builder: (context, state) => ManageListScaffold(
+        title: l10n.categoriesTitle,
+        addLabel: l10n.addCategory,
+        phase: switch (state) {
+          CategoryListLoading() => LoadPhase.loading,
+          CategoryListFailed() => LoadPhase.failed,
           CategoryListLoaded(:final categories) when categories.isEmpty =>
-            Center(child: Text(l10n.listEmpty)),
-          CategoryListLoaded(:final categories) => SingleChildScrollView(
-            // Room for the floating button under the last row.
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 88),
-            child: TwoColumnMasonry(
-              children: [
-                for (final category in categories)
-                  ItemCard(
-                    emoji: category.emoji,
-                    title: categoryName(l10n, category),
-                    description: category.description,
-                    onTap: () => _openForm(category: category, all: categories),
-                  ),
-              ],
-            ),
-          ),
+            LoadPhase.empty,
+          CategoryListLoaded() => LoadPhase.loaded,
+        },
+        onRetry: () => _cubit?.load(),
+        onAdd: () => _openForm(all: (state as CategoryListLoaded).categories),
+        emptyIcon: Icons.category_outlined,
+        emptyText: l10n.listEmpty,
+        builder: (context) {
+          final categories = (state as CategoryListLoaded).categories;
+          return ItemCardGrid(
+            items: [
+              for (final category in categories)
+                (
+                  key: category.id,
+                  emoji: category.emoji,
+                  title: categoryName(l10n, category),
+                  description: category.description,
+                  badge: null,
+                  onTap: () => _openForm(category: category, all: categories),
+                ),
+            ],
+          );
         },
       ),
     );

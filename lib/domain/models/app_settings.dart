@@ -1,6 +1,8 @@
 import 'dart:ui' show Locale;
 
+import '../periods.dart';
 import 'app_theme_mode.dart';
+import 'dashboard_options.dart';
 import 'item_shape.dart';
 
 /// An immutable snapshot of every setting the app uses, with defaults
@@ -17,6 +19,14 @@ class AppSettings {
     this.timePickerKeyboard = false,
     this.datePickerKeyboard = false,
     this.themeSeed,
+    this.weekStart = defaultWeekStart,
+    this.weekLabel = defaultWeekLabel,
+    this.cardPeriod = Period.month,
+    this.listGrouping = Period.week,
+    this.trendChartStyle = defaultTrendChartStyle,
+    this.trendCardPosition = defaultTrendCardPosition,
+    this.trendCardSize = defaultTrendCardSize,
+    this.trendCardHaptics = defaultTrendCardHaptics,
   });
 
   /// What the app uses before the settings are read from the database: the
@@ -35,6 +45,15 @@ class AppSettings {
   /// look goes back to (with the wallpaper colors for the theme).
   static const defaultTileShape = ItemShape.rounded;
   static const defaultButtonShape = ItemShape.circle;
+
+  /// Settings → Home's defaults, what its Restore defaults goes back to
+  /// (owner, 2026-10-06).
+  static const defaultTrendChartStyle = TrendChartStyle.lineFilled;
+  static const defaultTrendCardPosition = TrendCardPosition.locked;
+  static const defaultTrendCardSize = TrendCardSize.medium;
+  static const defaultTrendCardHaptics = CardHaptics.light;
+  static const defaultWeekStart = WeekStart.monday;
+  static const defaultWeekLabel = WeekLabel.month;
 
   final bool onboardingCompleted;
 
@@ -66,6 +85,27 @@ class AppSettings {
   /// wallpaper colors (Android 12+), falling back to `defaultSeedColor`.
   final int? themeSeed;
 
+  /// The first day of a week in Home's groups and card (A2; phase-5.md
+  /// P5-15: Monday unless changed, not from the locale).
+  final WeekStart weekStart;
+
+  /// How weeks are named: "Oct Week 3" (default) or "Week 41" (P5-10).
+  final WeekLabel weekLabel;
+
+  /// The trend card's period: week, month or year, set by swiping it
+  /// (P5-1, P5-2). Never [Period.day].
+  final Period cardPeriod;
+
+  /// How Home's list is grouped: day, week, month or year (P5-1, P5-2).
+  final Period listGrouping;
+
+  final TrendChartStyle trendChartStyle;
+  final TrendCardPosition trendCardPosition;
+  final TrendCardSize trendCardSize;
+
+  /// The tick of the card's reel at each face (owner, 2026-10-07).
+  final CardHaptics trendCardHaptics;
+
   /// A copy with the given values replaced. [locale] and [themeSeed] are
   /// set separately with [withLocale] and [withThemeSeed], because null is a
   /// meaningful value for them ("follow the device", "wallpaper colors")
@@ -79,9 +119,83 @@ class AppSettings {
     ItemShape? buttonShape,
     bool? timePickerKeyboard,
     bool? datePickerKeyboard,
+    WeekStart? weekStart,
+    WeekLabel? weekLabel,
+    Period? cardPeriod,
+    Period? listGrouping,
+    TrendChartStyle? trendChartStyle,
+    TrendCardPosition? trendCardPosition,
+    TrendCardSize? trendCardSize,
+    CardHaptics? trendCardHaptics,
+  }) => _copy(
+    onboardingCompleted: onboardingCompleted,
+    theme: theme,
+    defaultCurrency: defaultCurrency,
+    defaultPaymentMethodId: defaultPaymentMethodId,
+    tileShape: tileShape,
+    buttonShape: buttonShape,
+    timePickerKeyboard: timePickerKeyboard,
+    datePickerKeyboard: datePickerKeyboard,
+    weekStart: weekStart,
+    weekLabel: weekLabel,
+    cardPeriod: cardPeriod,
+    listGrouping: listGrouping,
+    trendChartStyle: trendChartStyle,
+    trendCardPosition: trendCardPosition,
+    trendCardSize: trendCardSize,
+    trendCardHaptics: trendCardHaptics,
+  );
+
+  /// A copy with the app language set to [locale] (null = follow the device).
+  AppSettings withLocale(Locale? locale) => _copy(locale: () => locale);
+
+  /// A copy with the default look: wallpaper colors, rounded tiles and
+  /// circle buttons. Home's settings (chart, card, weeks) aren't part of
+  /// the look and stay (phase-5.md P5-33).
+  AppSettings withDefaultLook() => withThemeSeed(null)
+      .copyWith(tileShape: defaultTileShape, buttonShape: defaultButtonShape);
+
+  /// A copy with Settings → Home's defaults: chart, card position, size
+  /// and vibration, week start and week names. The card's period and the
+  /// list's grouping are set on Home itself and stay.
+  AppSettings withDefaultHome() => copyWith(
+    trendChartStyle: defaultTrendChartStyle,
+    trendCardPosition: defaultTrendCardPosition,
+    trendCardSize: defaultTrendCardSize,
+    trendCardHaptics: defaultTrendCardHaptics,
+    weekStart: defaultWeekStart,
+    weekLabel: defaultWeekLabel,
+  );
+
+  /// A copy with the theme color set to [seed] (null = wallpaper colors).
+  AppSettings withThemeSeed(int? seed) => _copy(themeSeed: () => seed);
+
+  /// The one place that rebuilds the object field by field, so a new field
+  /// can't be forgotten in one of the copies and silently reset to its
+  /// default on a language or colour change (phase-5.md R14). [locale] and
+  /// [themeSeed] are functions because null is a value for them.
+  AppSettings _copy({
+    bool? onboardingCompleted,
+    Locale? Function()? locale,
+    AppThemeMode? theme,
+    String? defaultCurrency,
+    int? defaultPaymentMethodId,
+    ItemShape? tileShape,
+    ItemShape? buttonShape,
+    bool? timePickerKeyboard,
+    bool? datePickerKeyboard,
+    int? Function()? themeSeed,
+    WeekStart? weekStart,
+    WeekLabel? weekLabel,
+    Period? cardPeriod,
+    Period? listGrouping,
+    TrendChartStyle? trendChartStyle,
+    TrendCardPosition? trendCardPosition,
+    TrendCardSize? trendCardSize,
+    CardHaptics? trendCardHaptics,
   }) => AppSettings(
     onboardingCompleted: onboardingCompleted ?? this.onboardingCompleted,
-    locale: locale,
+    locale: locale == null ? this.locale : locale(),
     theme: theme ?? this.theme,
     defaultCurrency: defaultCurrency ?? this.defaultCurrency,
     defaultPaymentMethodId:
@@ -90,40 +204,15 @@ class AppSettings {
     buttonShape: buttonShape ?? this.buttonShape,
     timePickerKeyboard: timePickerKeyboard ?? this.timePickerKeyboard,
     datePickerKeyboard: datePickerKeyboard ?? this.datePickerKeyboard,
-    themeSeed: themeSeed,
-  );
-
-  /// A copy with the app language set to [locale] (null = follow the device).
-  AppSettings withLocale(Locale? locale) => AppSettings(
-    onboardingCompleted: onboardingCompleted,
-    locale: locale,
-    theme: theme,
-    defaultCurrency: defaultCurrency,
-    defaultPaymentMethodId: defaultPaymentMethodId,
-    tileShape: tileShape,
-    buttonShape: buttonShape,
-    timePickerKeyboard: timePickerKeyboard,
-    datePickerKeyboard: datePickerKeyboard,
-    themeSeed: themeSeed,
-  );
-
-  /// A copy with the default look: wallpaper colors, rounded tiles and
-  /// circle buttons.
-  AppSettings withDefaultLook() => withThemeSeed(null)
-      .copyWith(tileShape: defaultTileShape, buttonShape: defaultButtonShape);
-
-  /// A copy with the theme color set to [seed] (null = wallpaper colors).
-  AppSettings withThemeSeed(int? seed) => AppSettings(
-    onboardingCompleted: onboardingCompleted,
-    locale: locale,
-    theme: theme,
-    defaultCurrency: defaultCurrency,
-    defaultPaymentMethodId: defaultPaymentMethodId,
-    tileShape: tileShape,
-    buttonShape: buttonShape,
-    timePickerKeyboard: timePickerKeyboard,
-    datePickerKeyboard: datePickerKeyboard,
-    themeSeed: seed,
+    themeSeed: themeSeed == null ? this.themeSeed : themeSeed(),
+    weekStart: weekStart ?? this.weekStart,
+    weekLabel: weekLabel ?? this.weekLabel,
+    cardPeriod: cardPeriod ?? this.cardPeriod,
+    listGrouping: listGrouping ?? this.listGrouping,
+    trendChartStyle: trendChartStyle ?? this.trendChartStyle,
+    trendCardPosition: trendCardPosition ?? this.trendCardPosition,
+    trendCardSize: trendCardSize ?? this.trendCardSize,
+    trendCardHaptics: trendCardHaptics ?? this.trendCardHaptics,
   );
 
   @override
@@ -138,7 +227,15 @@ class AppSettings {
       other.buttonShape == buttonShape &&
       other.timePickerKeyboard == timePickerKeyboard &&
       other.datePickerKeyboard == datePickerKeyboard &&
-      other.themeSeed == themeSeed;
+      other.themeSeed == themeSeed &&
+      other.weekStart == weekStart &&
+      other.weekLabel == weekLabel &&
+      other.cardPeriod == cardPeriod &&
+      other.listGrouping == listGrouping &&
+      other.trendChartStyle == trendChartStyle &&
+      other.trendCardPosition == trendCardPosition &&
+      other.trendCardSize == trendCardSize &&
+      other.trendCardHaptics == trendCardHaptics;
 
   @override
   int get hashCode => Object.hash(
@@ -152,11 +249,25 @@ class AppSettings {
     timePickerKeyboard,
     datePickerKeyboard,
     themeSeed,
+    weekStart,
+    weekLabel,
+    cardPeriod,
+    listGrouping,
+    trendChartStyle,
+    trendCardPosition,
+    trendCardSize,
+    trendCardHaptics,
   );
 
   @override
   String toString() =>
       'AppSettings(onboardingCompleted: $onboardingCompleted, locale: $locale, theme: ${theme.name}, '
       'defaultCurrency: $defaultCurrency, defaultPaymentMethodId: $defaultPaymentMethodId, '
-      'tileShape: ${tileShape.name}, buttonShape: ${buttonShape.name}, themeSeed: $themeSeed)';
+      'tileShape: ${tileShape.name}, buttonShape: ${buttonShape.name}, '
+      'timePickerKeyboard: $timePickerKeyboard, datePickerKeyboard: $datePickerKeyboard, '
+      'themeSeed: $themeSeed, weekStart: ${weekStart.name}, weekLabel: ${weekLabel.name}, '
+      'cardPeriod: ${cardPeriod.name}, listGrouping: ${listGrouping.name}, '
+      'trendChartStyle: ${trendChartStyle.name}, trendCardPosition: ${trendCardPosition.name}, '
+      'trendCardSize: ${trendCardSize.name}, '
+      'trendCardHaptics: ${trendCardHaptics.name})';
 }

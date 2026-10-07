@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../../../l10n/app_localizations.dart';
+import 'show_message.dart';
 
 /// Runs [action] and returns true if it succeeded. If it throws, shows the
 /// "Couldn't save" snackbar and returns false.
@@ -19,7 +20,7 @@ Future<bool> saveOrShowError(
     return true;
   } catch (error, stackTrace) {
     debugPrint('Save failed: $error\n$stackTrace');
-    messenger.showSnackBar(SnackBar(content: Text(message)));
+    showMessage(messenger, message);
     return false;
   }
 }

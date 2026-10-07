@@ -1450,6 +1450,486 @@ abstract class AppLocalizations {
   /// **'This backup is damaged and can\'t be restored.'**
   String get backupDamaged;
 
+  /// No description provided for @periodDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Day'**
+  String get periodDay;
+
+  /// No description provided for @periodWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'Week'**
+  String get periodWeek;
+
+  /// No description provided for @periodMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get periodMonth;
+
+  /// No description provided for @periodYear.
+  ///
+  /// In en, this message translates to:
+  /// **'Year'**
+  String get periodYear;
+
+  /// A week named by its number in the year (Settings → Home → Week names).
+  ///
+  /// In en, this message translates to:
+  /// **'Week {number}'**
+  String weekNumber(int number);
+
+  /// A week of another year, by number. year is written by intl.
+  ///
+  /// In en, this message translates to:
+  /// **'Week {number}, {year}'**
+  String weekNumberWithYear(int number, String year);
+
+  /// A week named by its month: "Oct Week 3". month is intl's short month, with the year when it isn't this year ("Dec 2025").
+  ///
+  /// In en, this message translates to:
+  /// **'{month} Week {number}'**
+  String weekOfMonth(String month, int number);
+
+  /// A day header with the day's total: "Sat, 17 Oct – ₹5,000.00".
+  ///
+  /// In en, this message translates to:
+  /// **'{date} – {amount}'**
+  String dayWithSubtotal(String date, String amount);
+
+  /// What TalkBack reads for a day header: the full date, then the total.
+  ///
+  /// In en, this message translates to:
+  /// **'{date}, {amount}'**
+  String daySubtotalSemantics(String date, String amount);
+
+  /// No description provided for @trendEmptyWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'No expenses this week'**
+  String get trendEmptyWeek;
+
+  /// No description provided for @trendEmptyMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'No expenses this month'**
+  String get trendEmptyMonth;
+
+  /// No description provided for @trendEmptyYear.
+  ///
+  /// In en, this message translates to:
+  /// **'No expenses this year'**
+  String get trendEmptyYear;
+
+  /// No description provided for @trendNoMatchWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching expenses this week'**
+  String get trendNoMatchWeek;
+
+  /// No description provided for @trendNoMatchMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching expenses this month'**
+  String get trendNoMatchMonth;
+
+  /// No description provided for @trendNoMatchYear.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching expenses this year'**
+  String get trendNoMatchYear;
+
+  /// Next to the trend card's title while filters are active: its total covers the filtered expenses only.
+  ///
+  /// In en, this message translates to:
+  /// **'Filtered'**
+  String get trendFiltered;
+
+  /// The tapped day (or month) of the chart and its total.
+  ///
+  /// In en, this message translates to:
+  /// **'{date} · {amount}'**
+  String trendPointLabel(String date, String amount);
+
+  /// What TalkBack reads for the trend card.
+  ///
+  /// In en, this message translates to:
+  /// **'{period}, total {amount}'**
+  String trendCardSemantics(String period, String amount);
+
+  /// Same while filters are active.
+  ///
+  /// In en, this message translates to:
+  /// **'{period}, filtered, total {amount}'**
+  String trendCardSemanticsFiltered(String period, String amount);
+
+  /// No description provided for @totalsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load totals'**
+  String get totalsLoadFailed;
+
+  /// TalkBack action on the trend card: Week → Month → Year.
+  ///
+  /// In en, this message translates to:
+  /// **'Next period'**
+  String get nextPeriod;
+
+  /// No description provided for @previousPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous period'**
+  String get previousPeriod;
+
+  /// No description provided for @nextCurrency.
+  ///
+  /// In en, this message translates to:
+  /// **'Next currency'**
+  String get nextCurrency;
+
+  /// No description provided for @previousCurrency.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous currency'**
+  String get previousCurrency;
+
+  /// The trend card's currency as TalkBack reads it: "US dollar, $85.00".
+  ///
+  /// In en, this message translates to:
+  /// **'{currency}, {amount}'**
+  String chartCurrencyAnnounce(String currency, String amount);
+
+  /// Totals in several currencies on one line: "₹4,560.00 + $85.00".
+  ///
+  /// In en, this message translates to:
+  /// **'{first} + {rest}'**
+  String totalsJoin(String first, String rest);
+
+  /// The same, as TalkBack reads it.
+  ///
+  /// In en, this message translates to:
+  /// **'{first} and {rest}'**
+  String totalsJoinSpoken(String first, String rest);
+
+  /// Shown instead of a total too large to print.
+  ///
+  /// In en, this message translates to:
+  /// **'Too large'**
+  String get totalTooLarge;
+
+  /// A button shown instead of the subtotals when they don't fit on the line.
+  ///
+  /// In en, this message translates to:
+  /// **'Show subtotal'**
+  String get showSubtotal;
+
+  /// No description provided for @subtotalLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the subtotal'**
+  String get subtotalLoadFailed;
+
+  /// What TalkBack reads for a group's top: "Oct Week 2, subtotal ₹4,560.00".
+  ///
+  /// In en, this message translates to:
+  /// **'{name}, subtotal {amount}'**
+  String groupSubtotalSemantics(String name, String amount);
+
+  /// No description provided for @close.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
+
+  /// No description provided for @filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get filters;
+
+  /// No description provided for @filterSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search titles and descriptions'**
+  String get filterSearchHint;
+
+  /// No description provided for @filterCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Categories'**
+  String get filterCategories;
+
+  /// No description provided for @filterEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'Events'**
+  String get filterEvents;
+
+  /// No description provided for @filterArchived.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get filterArchived;
+
+  /// No description provided for @groupBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Group by'**
+  String get groupBy;
+
+  /// The filter bar's grouping chip.
+  ///
+  /// In en, this message translates to:
+  /// **'By day'**
+  String get groupedByDay;
+
+  /// No description provided for @groupedByWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'By week'**
+  String get groupedByWeek;
+
+  /// No description provided for @groupedByMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'By month'**
+  String get groupedByMonth;
+
+  /// No description provided for @groupedByYear.
+  ///
+  /// In en, this message translates to:
+  /// **'By year'**
+  String get groupedByYear;
+
+  /// No description provided for @clearFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filters'**
+  String get clearFilters;
+
+  /// No description provided for @showResults.
+  ///
+  /// In en, this message translates to:
+  /// **'Show results'**
+  String get showResults;
+
+  /// No description provided for @noFilterMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'No expenses match these filters'**
+  String get noFilterMatches;
+
+  /// A filter chip for several categories or events: the first one and how many more.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} +{count}'**
+  String filterMore(String name, int count);
+
+  /// The filter bar's chip for the search text.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{text}\"'**
+  String filterSearchChip(String text);
+
+  /// No description provided for @removeFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove filter'**
+  String get removeFilter;
+
+  /// No description provided for @settingsLook.
+  ///
+  /// In en, this message translates to:
+  /// **'Look'**
+  String get settingsLook;
+
+  /// The Settings tile for Home's chart, card and weeks.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get settingsHome;
+
+  /// No description provided for @settingsDefaults.
+  ///
+  /// In en, this message translates to:
+  /// **'Defaults'**
+  String get settingsDefaults;
+
+  /// No description provided for @settingWeekStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Week starts on'**
+  String get settingWeekStart;
+
+  /// No description provided for @settingWeekNames.
+  ///
+  /// In en, this message translates to:
+  /// **'Week names'**
+  String get settingWeekNames;
+
+  /// No description provided for @settingTrendChart.
+  ///
+  /// In en, this message translates to:
+  /// **'Trend chart'**
+  String get settingTrendChart;
+
+  /// No description provided for @chartLineFilled.
+  ///
+  /// In en, this message translates to:
+  /// **'Smooth line, filled'**
+  String get chartLineFilled;
+
+  /// No description provided for @chartLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Smooth line'**
+  String get chartLine;
+
+  /// No description provided for @chartBars.
+  ///
+  /// In en, this message translates to:
+  /// **'Bars'**
+  String get chartBars;
+
+  /// Trend chart style: a dot on a thin stem per day.
+  ///
+  /// In en, this message translates to:
+  /// **'Dots'**
+  String get chartDots;
+
+  /// Trend chart style: a line that climbs through the period to its total.
+  ///
+  /// In en, this message translates to:
+  /// **'Running total'**
+  String get chartRunningTotal;
+
+  /// No description provided for @settingTrendCardSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Card size'**
+  String get settingTrendCardSize;
+
+  /// No description provided for @cardSizeSmall.
+  ///
+  /// In en, this message translates to:
+  /// **'Small'**
+  String get cardSizeSmall;
+
+  /// No description provided for @cardSizeMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get cardSizeMedium;
+
+  /// No description provided for @cardSizeLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'Large'**
+  String get cardSizeLarge;
+
+  /// Settings → Home: the tick felt as the trend card's reel clicks into a week, month or year.
+  ///
+  /// In en, this message translates to:
+  /// **'Card vibration'**
+  String get settingCardHaptics;
+
+  /// No description provided for @hapticsOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get hapticsOff;
+
+  /// No description provided for @hapticsLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get hapticsLight;
+
+  /// No description provided for @hapticsMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get hapticsMedium;
+
+  /// No description provided for @hapticsStrong.
+  ///
+  /// In en, this message translates to:
+  /// **'Strong'**
+  String get hapticsStrong;
+
+  /// The tapped day of the running-total chart and the total up to it.
+  ///
+  /// In en, this message translates to:
+  /// **'Up to {date} · {amount}'**
+  String trendRunningTotalPoint(String date, String amount);
+
+  /// No description provided for @restoreHomeDefaults.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore defaults'**
+  String get restoreHomeDefaults;
+
+  /// No description provided for @restoreHomeDefaultsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chart, card and weeks as they were at first'**
+  String get restoreHomeDefaultsSubtitle;
+
+  /// No description provided for @restoreHomeDefaultsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore the Home defaults?'**
+  String get restoreHomeDefaultsTitle;
+
+  /// No description provided for @restoreHomeDefaultsMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The trend chart, trend card, card size, week start and week names go back to their defaults.'**
+  String get restoreHomeDefaultsMessage;
+
+  /// No description provided for @settingTrendCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Trend card'**
+  String get settingTrendCard;
+
+  /// No description provided for @trendCardLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Locked at the top'**
+  String get trendCardLocked;
+
+  /// No description provided for @trendCardScrolls.
+  ///
+  /// In en, this message translates to:
+  /// **'Scrolls with the list'**
+  String get trendCardScrolls;
+
+  /// The Home tile's summary: the trend card stays at the top.
+  ///
+  /// In en, this message translates to:
+  /// **'Locked'**
+  String get trendCardLockedShort;
+
+  /// No description provided for @trendCardScrollsShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Scrolls'**
+  String get trendCardScrollsShort;
+
+  /// No description provided for @binTileSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Kept for 30 days'**
+  String get binTileSummary;
+
+  /// Joins the parts of a Settings tile's summary line.
+  ///
+  /// In en, this message translates to:
+  /// **'{first} · {rest}'**
+  String settingsTileSummary(String first, String rest);
+
   /// No description provided for @categoryFood.
   ///
   /// In en, this message translates to:

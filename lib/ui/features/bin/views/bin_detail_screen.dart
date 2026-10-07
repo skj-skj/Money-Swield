@@ -1,13 +1,13 @@
-import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../domain/models/currency.dart';
 import '../../../../domain/models/expense.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../../core/builtin_names.dart';
+import '../../../core/date_texts.dart';
 import '../../../core/formatting_locale.dart';
+import '../../../core/item_labels.dart';
 import '../../../core/money_formatter.dart';
-import '../../../core/widgets/confirm_dialog.dart';
+import '../../../core/widgets/confirm_then_save.dart';
 import '../../../core/widgets/save_error.dart';
 import '../view_models/bin_cubit.dart';
 
@@ -34,14 +34,13 @@ class BinDetailScreen extends StatelessWidget {
 
   Future<void> _deletePermanently(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
-    final confirmed = await confirmAction(
+    final done = await confirmThenSave(
       context,
       title: l10n.deletePermanentlyTitle(expense.title),
       message: l10n.cannotBeUndone,
       confirmLabel: l10n.delete,
+      action: onDeletePermanently,
     );
-    if (!confirmed || !context.mounted) return;
-    final done = await saveOrShowError(context, onDeletePermanently);
     if (done && context.mounted) Navigator.pop(context);
   }
 
@@ -53,8 +52,7 @@ class BinDetailScreen extends StatelessWidget {
     final method = lookups.paymentMethods[expense.paymentMethodId];
     final events = [
       for (final id in expense.eventIds)
-        if (lookups.events[id] case final event?)
-          '${event.emoji} ${eventName(l10n, event)}',
+        if (lookups.events[id] case final event?) eventLabel(l10n, event),
     ];
     final description = expense.description;
     return Scaffold(
@@ -74,34 +72,28 @@ class BinDetailScreen extends StatelessWidget {
           ),
           _Row(
             label: l10n.fieldCategory,
-            value: category == null
-                ? '❓'
-                : '${category.emoji} ${categoryName(l10n, category)}',
+            value: category == null ? '❓' : categoryLabel(l10n, category),
           ),
           if (events.isNotEmpty)
             _Row(label: l10n.fieldEvents, value: events.join(', ')),
           _Row(
             label: l10n.fieldPaymentMethod,
-            value: method == null
-                ? '❓'
-                : '${method.emoji} ${paymentMethodName(l10n, method)}',
+            value: method == null ? '❓' : paymentMethodLabel(l10n, method),
           ),
           // The time as it was on the clock where it was recorded.
           _Row(
             label: l10n.fieldDate,
-            value: DateFormat.yMMMMEEEEd(locale).format(expense.wallClock),
+            value: longDateText(locale, expense.wallClock),
           ),
           _Row(
             label: l10n.fieldTime,
-            value: DateFormat.jm(locale).format(expense.wallClock),
+            value: timeText(locale, expense.wallClock),
           ),
           if (description != null)
             _Row(label: l10n.fieldNotes, value: description),
           _Row(
             label: l10n.fieldDeletedAt,
-            value: DateFormat.yMMMd(locale)
-                .add_jm()
-                .format(expense.deletedAt!.toLocal()),
+            value: dateTimeText(locale, expense.deletedAt!),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),

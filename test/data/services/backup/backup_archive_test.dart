@@ -7,6 +7,7 @@ import 'package:my_expense_tracker_app/data/services/backup/backup_manifest.dart
 import 'package:my_expense_tracker_app/domain/models/restore_candidate.dart';
 import 'package:path/path.dart' as p;
 
+import '../../../helpers/test_folders.dart';
 import 'zip_test_helpers.dart';
 
 void main() {
@@ -15,15 +16,13 @@ void main() {
   late String extractTo;
 
   setUp(() async {
-    folder = await Directory.systemTemp.createTemp('backup_archive_test');
+    folder = await testFolder('backup_archive_test');
     zipPath = p.join(folder.path, 'backup.zip');
     // Nested, so an entry named "../evil" would land inside [folder].
     final extractFolder = Directory(p.join(folder.path, 'out', 'restore'));
     await extractFolder.create(recursive: true);
     extractTo = p.join(extractFolder.path, 'candidate.db');
   });
-
-  tearDown(() => folder.delete(recursive: true));
 
   final databaseBytes = Uint8List.fromList([
     for (var i = 0; i < 5000; i++) i * 7 % 251,

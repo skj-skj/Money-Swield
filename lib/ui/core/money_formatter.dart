@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -7,8 +5,8 @@ import '../../domain/models/currency.dart';
 import '../../domain/models/money.dart';
 import 'formatting_locale.dart';
 
-/// The one place that turns [Money] into text (phase-2.md §4.4):
-/// `₹1,10,050.00`, `$85.00`, `¥500`.
+/// The one place that turns [Money] and totals into text (phase-2.md
+/// §4.4, phase-5.md §5.7): `₹1,10,050.00`, `$85.00`, `¥500`.
 ///
 /// One instance per locale, each caching one `NumberFormat` per currency:
 /// building them per row would make the expense list stutter.
@@ -27,19 +25,31 @@ class MoneyFormatter {
   static final _instances = <String, MoneyFormatter>{};
 
   final String localeName;
-  final _formats = <String, NumberFormat>{};
   final _wholeFormats = <String, NumberFormat>{};
 
+  /// Every digit exactly, for any amount (phase-5.md §5.7, R2): the major
+  /// part goes through intl's integer path, and the minor digits are put
+  /// after its last digit with the locale's decimal separator. No
+  /// `double`, so even a total beyond 2⁵³ keeps its last digits.
   String format(Money money) {
-    final digits = _minorDigits(money.currencyCode);
-    // The only double on the money path, and display-only: any decimal of
-    // at most 15 significant digits round-trips exactly through a double,
-    // and parseAmount's 12-digit cap keeps every amount within that.
-    // Nothing computed here is stored or summed.
-    // Any digit count works (ISO 4217 has 4-digit units, e.g. CLF), not
-    // only the 0, 2 and 3 the catalog uses today.
-    return numberFormat(money.currencyCode)
-        .format(money.amountMinor / math.pow(10, digits));
+    assert(money.amountMinor >= 0, 'amounts are never negative');
+    final scale = minorUnitsPerMajor(_minorDigits(money.currencyCode));
+    return _splice(
+      money.currencyCode,
+      money.amountMinor ~/ scale,
+      money.amountMinor % scale,
+    );
+  }
+
+  /// [format] for a total, which may be larger than an `int`. Null when
+  /// even its major part isn't one (above 2⁶³ − 1 major units), shown as
+  /// "Too large" (R3).
+  String? formatTotal(String currencyCode, BigInt amountMinor) {
+    assert(amountMinor >= BigInt.zero, 'totals are never negative');
+    final scale = BigInt.from(minorUnitsPerMajor(_minorDigits(currencyCode)));
+    final major = amountMinor ~/ scale;
+    if (!major.isValidInt) return null;
+    return _splice(currencyCode, major.toInt(), (amountMinor % scale).toInt());
   }
 
   /// Like [format], but a whole amount without its zero decimals: `₹50`,
@@ -49,15 +59,41 @@ class MoneyFormatter {
     final code = money.currencyCode;
     final scale = minorUnitsPerMajor(_minorDigits(code));
     if (money.amountMinor % scale != 0) return format(money);
-    return _wholeFormats
-        .putIfAbsent(code, () => _build(code, decimalDigits: 0))
-        .format(money.amountMinor ~/ scale);
+    return _whole(code).format(money.amountMinor ~/ scale);
   }
 
-  /// The cached `NumberFormat` for [currencyCode].
+  /// [major] through the cached whole-number format, then, for a currency
+  /// with decimals, the separator and [minor] zero-padded, right after the
+  /// last digit (`₹1,10,050` → `₹1,10,050.00`, `110.050 €` → `110.050,00 €`).
+  String _splice(String code, int major, int minor) {
+    final whole = _whole(code);
+    final text = whole.format(major);
+    final digits = _minorDigits(code);
+    if (digits == 0) return text;
+    final symbols = whole.symbols;
+    final zero = symbols.ZERO_DIGIT.codeUnitAt(0);
+    // In the locale's own digits, like the rest of the number.
+    final decimals = String.fromCharCodes([
+      for (final unit in minor.toString().padLeft(digits, '0').codeUnits)
+        zero + unit - 0x30,
+    ]);
+    final last = text.lastIndexOf(
+      RegExp(
+        '[${symbols.ZERO_DIGIT}-'
+        '${String.fromCharCode(zero + 9)}]',
+      ),
+    );
+    return '${text.substring(0, last + 1)}${symbols.DECIMAL_SEP}$decimals'
+        '${text.substring(last + 1)}';
+  }
+
+  NumberFormat _whole(String code) =>
+      _wholeFormats.putIfAbsent(code, () => _build(code, decimalDigits: 0));
+
+  /// The cached whole-number `NumberFormat` for [currencyCode], the one
+  /// every amount goes through.
   @visibleForTesting
-  NumberFormat numberFormat(String currencyCode) =>
-      _formats.putIfAbsent(currencyCode, () => _build(currencyCode));
+  NumberFormat numberFormat(String currencyCode) => _whole(currencyCode);
 
   NumberFormat _build(String code, {int? decimalDigits}) {
     // An unknown code (only from a newer app's data) shows as the code

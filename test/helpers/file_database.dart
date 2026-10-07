@@ -12,6 +12,7 @@ import 'package:path/path.dart' as p;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../data/services/database/migration/test_helpers.dart';
+import 'test_folders.dart';
 
 /// Real database files in a temporary folder laid out like the app's
 /// (`files/databases/`, `cache/`), deleted when the test ends.
@@ -29,8 +30,7 @@ class FileDatabases {
     bool androidLike = false,
     bool noIsolate = false,
   }) async {
-    final root = await Directory.systemTemp.createTemp('expense_tracker_test');
-    addTearDown(() => root.delete(recursive: true));
+    final root = await testFolder('expense_tracker_test');
     sqfliteFfiInit();
     final factory = noIsolate
         ? databaseFactoryFfiNoIsolate

@@ -12,6 +12,7 @@ import '../../../../data/services/database/app_database.dart';
 import '../../../../data/services/document_service.dart';
 import '../../../../domain/error_report.dart';
 import '../../../../domain/models/restore_candidate.dart';
+import '../../../core/emit_if_open.dart';
 import '../../migration/view_models/migration_cubit.dart';
 
 /// Where a restore is (phase-3.md §9). States don't override `==`, so every
@@ -88,7 +89,8 @@ final class RestoreFailed extends RestoreState {
 ///
 /// Calls that arrive while a step runs (a double tap) are ignored: there is
 /// one candidate and one pending dialog.
-class RestoreCubit extends CubitSignal<RestoreState> {
+class RestoreCubit extends CubitSignal<RestoreState>
+    with EmitIfOpen<RestoreState> {
   RestoreCubit({
     required this._tools,
     required this._closeLiveConnection,
@@ -140,19 +142,19 @@ class RestoreCubit extends CubitSignal<RestoreState> {
         maxBytes: BackupArchive.maxDatabaseBytes,
       );
     } on DocumentTooLarge {
-      return _emitIfOpen(const RestoreRefused(RestoreRejection.notABackup));
+      return emitIfOpen(const RestoreRefused(RestoreRejection.notABackup));
     } catch (error, stackTrace) {
       // The dialog or the copy failed (a provider that can't stream the
       // file, no activity, a dialog already open). Shown with a report:
       // otherwise the screen would spin forever.
-      return _emitIfOpen(
+      return emitIfOpen(
         RestoreFailed(
           errorReport('Opening the backup file', error, stackTrace),
           needsRestart: false,
         ),
       );
     }
-    if (picked == null) return _emitIfOpen(const RestoreCancelled());
+    if (picked == null) return emitIfOpen(const RestoreCancelled());
     await _validate(_repository.prepareFromZip);
   });
 
@@ -180,14 +182,14 @@ class RestoreCubit extends CubitSignal<RestoreState> {
         scheduleMicrotask(_afterMigration);
       }
     });
-    _emitIfOpen(RestoreMigrating(migration));
+    emitIfOpen(RestoreMigrating(migration));
     await _track(migration.run());
   }
 
   /// "Cancel" in the confirm dialog.
   Future<void> cancel() async {
     if (value is! RestoreConfirm || _confirmed) return;
-    _emitIfOpen(const RestoreCancelled());
+    emitIfOpen(const RestoreCancelled());
     await _track(_repository.deleteCandidate());
   }
 
@@ -216,15 +218,15 @@ class RestoreCubit extends CubitSignal<RestoreState> {
   }
 
   Future<void> _validate(Future<RestoreCandidate> Function() prepare) async {
-    _emitIfOpen(const RestoreValidating());
+    emitIfOpen(const RestoreValidating());
     try {
       final candidate = await prepare();
-      _emitIfOpen(RestoreConfirm(candidate, await _countCurrentQuietly()));
+      emitIfOpen(RestoreConfirm(candidate, await _countCurrentQuietly()));
     } on RestoreRejected catch (rejected) {
       debugPrint('$rejected');
-      _emitIfOpen(RestoreRefused(rejected.reason));
+      emitIfOpen(RestoreRefused(rejected.reason));
     } catch (error, stackTrace) {
-      _emitIfOpen(
+      emitIfOpen(
         RestoreFailed(
           errorReport('Checking the backup', error, stackTrace),
           needsRestart: false,
@@ -247,7 +249,7 @@ class RestoreCubit extends CubitSignal<RestoreState> {
     final candidate = _candidate;
     if (_finishing || candidate == null || isClosed) return;
     _finishing = true;
-    _emitIfOpen(const RestoreSwapping());
+    emitIfOpen(const RestoreSwapping());
     await _track(_finish(candidate));
   }
 
@@ -259,9 +261,9 @@ class RestoreCubit extends CubitSignal<RestoreState> {
       await _repository.checkOpensAsApp();
     } on RestoreRejected catch (rejected) {
       debugPrint('$rejected');
-      return _emitIfOpen(RestoreRefused(rejected.reason));
+      return emitIfOpen(RestoreRefused(rejected.reason));
     } catch (error, stackTrace) {
-      return _emitIfOpen(
+      return emitIfOpen(
         RestoreFailed(
           errorReport('Preparing the restored data', error, stackTrace),
           needsRestart: false,
@@ -273,9 +275,9 @@ class RestoreCubit extends CubitSignal<RestoreState> {
         await _repository.candidatePath(),
         closeConnection: _closeLiveConnection,
       );
-      _emitIfOpen(RestoreDone(settingsReset: settingsReset));
+      emitIfOpen(RestoreDone(settingsReset: settingsReset));
     } on SwapFailure catch (failure) {
-      _emitIfOpen(
+      emitIfOpen(
         RestoreFailed(failure.report, needsRestart: failure.needsRestart),
       );
     }
@@ -291,11 +293,5 @@ class RestoreCubit extends CubitSignal<RestoreState> {
     // Never completes with an error, so close() can always wait on it.
     _running = step.catchError((Object _) {});
     return step;
-  }
-
-  // Steps keep going across awaits, so the cubit may have been closed by the
-  // time a result arrives. Emitting after close() asserts in debug mode.
-  void _emitIfOpen(RestoreState state) {
-    if (!isClosed) emit(state);
   }
 }

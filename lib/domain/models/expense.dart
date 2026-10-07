@@ -1,8 +1,9 @@
 import 'money.dart';
 
 /// Where `ExpenseRepository.page` continues from: the last loaded row's
-/// `occurred_at` and id (keyset pagination, database.md §4).
-typedef ExpenseCursor = ({int occurredAtMs, int id});
+/// `occurred_on`, `occurred_at` and id (keyset pagination, database.md §4;
+/// phase-5.md §4.1).
+typedef ExpenseCursor = ({String occurredOn, int occurredAtMs, int id});
 
 /// A recorded expense (database.md §3.5).
 class Expense {
@@ -33,7 +34,7 @@ class Expense {
 
   final Money amount;
 
-  /// What was typed, e.g. `50+60`. Always null until Phase 4.
+  /// What was typed, e.g. `50+60`; null for a plain number.
   final String? amountExpression;
 
   /// The moment it happened, UTC.
@@ -68,8 +69,11 @@ class Expense {
   DateTime get wallClock => occurredAt.add(Duration(minutes: utcOffsetMinutes));
 
   /// The cursor that continues a page after this expense.
-  ExpenseCursor get cursor =>
-      (occurredAtMs: occurredAt.millisecondsSinceEpoch, id: id);
+  ExpenseCursor get cursor => (
+    occurredOn: occurredOn,
+    occurredAtMs: occurredAt.millisecondsSinceEpoch,
+    id: id,
+  );
 
   @override
   bool operator ==(Object other) =>

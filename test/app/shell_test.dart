@@ -40,7 +40,7 @@ void main() {
     expect(
       find.descendant(
         of: find.widgetWithText(ListTile, 'Events'),
-        matching: find.text('5'),
+        matching: find.text('7'),
       ),
       findsOne,
     );
@@ -59,7 +59,7 @@ void main() {
     await pumpApp(tester, dependencies: await onboarded());
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
-    expect(find.text('Default currency'), findsOneWidget);
+    expect(find.byKey(const ValueKey('settingsDefaults')), findsOneWidget);
 
     expect(
       await tester.binding.handlePopRoute(),

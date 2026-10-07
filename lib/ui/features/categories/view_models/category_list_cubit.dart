@@ -4,6 +4,7 @@ import '../../../../data/repositories/category_repository.dart';
 import '../../../../domain/models/category.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/builtin_names.dart';
+import '../../../core/emit_if_open.dart';
 
 /// What the categories screen shows. States don't override `==`, so every
 /// emitted state reaches the screen.
@@ -30,7 +31,8 @@ final class CategoryListFailed extends CategoryListState {
 
 /// Loads the categories for the list screen, sorted by display name in the
 /// current language. (Sorting by popularity comes with expenses, Phase 2.)
-class CategoryListCubit extends CubitSignal<CategoryListState> {
+class CategoryListCubit extends CubitSignal<CategoryListState>
+    with EmitIfOpen<CategoryListState> {
   CategoryListCubit({required this._repository, required this._l10n})
     : super(initialState: const CategoryListLoading());
 
@@ -55,9 +57,9 @@ class CategoryListCubit extends CubitSignal<CategoryListState> {
         );
         return byName != 0 ? byName : a.id.compareTo(b.id);
       });
-      if (!isClosed) emit(CategoryListLoaded(categories));
+      emitIfOpen(CategoryListLoaded(categories));
     } catch (error) {
-      if (!isClosed) emit(CategoryListFailed(error));
+      emitIfOpen(CategoryListFailed(error));
     }
   }
 }

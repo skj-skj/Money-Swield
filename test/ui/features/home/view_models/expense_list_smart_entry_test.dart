@@ -33,9 +33,10 @@ void main() {
       expenses: expenses ?? deps.expenses,
       categories: deps.categories,
       paymentMethods: deps.paymentMethods,
+      events: deps.events,
       drafts: using ?? drafts,
       dataVersion: deps.dataVersion,
-      chipCurrency: currency,
+      defaultCurrency: currency,
     );
     addTearDown(cubit.close);
     return cubit;
@@ -107,7 +108,7 @@ void main() {
       await add(250, currency: 'USD');
       final cubit = cubitFor();
       await cubit.load();
-      await cubit.setChipCurrency('USD');
+      await cubit.setDefaultCurrency('USD');
       expect(loaded(cubit).chips.map((m) => m.amountMinor), [
         100,
         250,
@@ -131,7 +132,7 @@ void main() {
         await pumpEventQueue();
         expect(gated.waiting, isTrue);
         gated.gate = null;
-        await cubit.setChipCurrency('USD');
+        await cubit.setDefaultCurrency('USD');
         gate.complete();
         await reloading;
         expect(loaded(cubit).chips.map((m) => m.currencyCode).toSet(), {'USD'});

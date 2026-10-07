@@ -5,6 +5,7 @@ import '../../../../data/repositories/category_repository.dart';
 import '../../../../data/repositories/event_repository.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/builtin_names.dart';
+import '../../../core/emit_if_open.dart';
 import '../../../core/picker_order.dart';
 
 /// The categories and events shown in the Customize tiles preview, by
@@ -17,7 +18,8 @@ typedef TilePreviewItems = ({
 
 /// Loads the user's own categories and unarchived events for the preview,
 /// so it looks like their Add expense screen.
-class TilePreviewCubit extends CubitSignal<TilePreviewItems?> {
+class TilePreviewCubit extends CubitSignal<TilePreviewItems?>
+    with EmitIfOpen<TilePreviewItems?> {
   TilePreviewCubit({
     required this._categories,
     required this._events,
@@ -39,7 +41,7 @@ class TilePreviewCubit extends CubitSignal<TilePreviewItems?> {
           if (!e.isArchived)
             PickerItem(id: e.id, emoji: e.emoji, name: eventName(_l10n, e)),
       ]..sort(_byName);
-      if (!isClosed) emit((categories: categories, events: events));
+      emitIfOpen((categories: categories, events: events));
     } catch (error) {
       // Only a preview: log and show it empty.
       debugPrint('Loading the tile preview failed: $error');

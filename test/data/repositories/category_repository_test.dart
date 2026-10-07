@@ -201,17 +201,6 @@ void main() {
     });
   });
 
-  group('usage', () {
-    test('counts active and binned expenses separately', () async {
-      await insertExpenseRow(db, categoryId: 1);
-      await insertExpenseRow(db, categoryId: 1);
-      await insertExpenseRow(db, categoryId: 1, deletedAt: 5);
-      await insertExpenseRow(db, categoryId: 2);
-      expect(await repository.usage(1), (active: 2, binned: 1));
-      expect(await repository.usage(3), (active: 0, binned: 0));
-    });
-  });
-
   group('moveExpensesAndDelete', () {
     Future<List<int>> categoriesOfExpenses() async => [
       for (final row in await db.query('expenses', orderBy: 'id'))
@@ -235,16 +224,6 @@ void main() {
         ),
         isTrue,
       );
-    });
-
-    test('refuses to move to the same category', () async {
-      await insertExpenseRow(db, categoryId: 1);
-      expect(
-        () => repository.moveExpensesAndDelete(1, toId: 1),
-        throwsArgumentError,
-      );
-      expect(await categoriesOfExpenses(), [1]);
-      expect(await repository.all(), hasLength(20));
     });
 
     test('changes nothing when the target was deleted meanwhile', () async {

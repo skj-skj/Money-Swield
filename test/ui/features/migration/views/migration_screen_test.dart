@@ -4,9 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:my_expense_tracker_app/data/services/database/migration/migration_runner.dart';
 
-import 'helpers/fake_app_database.dart';
-import 'helpers/pump_app.dart';
-import 'helpers/test_database.dart';
+import '../../../../helpers/fake_app_database.dart';
+import '../../../../helpers/pump_app.dart';
+import '../../../../helpers/test_database.dart';
 
 /// The migration screen inside the real app, before startup takes over.
 void main() {

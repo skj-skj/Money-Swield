@@ -18,8 +18,8 @@ class CreateExpenses extends Migration {
       t.text('title', nullable: false);
       t.text('description');
       t.integer('amount_minor', nullable: false);
-      // What was typed, e.g. `50+60`. Always NULL until Phase 4's keypad;
-      // created now so Phase 4 needs no migration for it.
+      // What was typed, e.g. `50+60`; NULL for a plain number (Phase 4's
+      // amount field).
       t.text('amount_expression');
       t.text('currency_code', nullable: false);
       t.integer('occurred_at', nullable: false);
@@ -42,8 +42,11 @@ class CreateExpenses extends Migration {
       t.integer('deleted_at');
       t.integer('created_at', nullable: false);
       t.integer('updated_at', nullable: false);
-      t.index(['occurred_at', 'id']);
-      t.index(['occurred_on']);
+      // Home lists expenses by local date, then moment (phase-5.md R1):
+      // ordering by the moment alone gives a traveller's day two headers.
+      // The same index serves every occurred_on range (totals, chips,
+      // usage).
+      t.index(['occurred_on', 'occurred_at', 'id']);
       t.index(['category_id', 'occurred_on']);
       // Only for the bin and the purge (`IS NOT NULL`, `<`). Active-row
       // queries write `+deleted_at IS NULL` so the planner never picks it

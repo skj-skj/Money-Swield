@@ -7,6 +7,7 @@ import 'package:my_expense_tracker_app/data/services/database/migration/migratio
 import 'package:path/path.dart' as p;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+import '../../../../helpers/test_folders.dart';
 import 'test_helpers.dart';
 
 final createExpenses = TestMigration(
@@ -115,11 +116,9 @@ void main() {
       );
 
   setUp(() async {
-    folder = await Directory.systemTemp.createTemp('migration_runner_test');
+    folder = await testFolder('migration_runner_test');
     databasePath = p.join(folder.path, 'app.db');
   });
-
-  tearDown(() => folder.delete(recursive: true));
 
   test(
     'says whether it installed, updated or left the database alone',

@@ -6,6 +6,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../../../data/services/database/app_database.dart';
 import '../../../../data/services/database/migration/migration_prompter.dart';
 import '../../../../data/services/database/migration/migration_runner.dart';
+import '../../../core/emit_if_open.dart';
 
 /// A question a migration is waiting on. [options] is null for free text.
 class MigrationQuestion {
@@ -72,6 +73,7 @@ final class MigrationDone extends MigrationState {
 /// Runs the database migrations on app start and exposes their progress,
 /// questions and failures to the migration screen.
 class MigrationCubit extends CubitSignal<MigrationState>
+    with EmitIfOpen<MigrationState>
     implements MigrationPrompter {
   MigrationCubit({required this._database, required this._locale})
     : super(initialState: const MigrationInProgress());
@@ -94,7 +96,7 @@ class MigrationCubit extends CubitSignal<MigrationState>
     // A failed run can leave a question unanswered if the migration threw
     // without waiting for it. Drop it so a retry can ask again.
     _answer = null;
-    _emitIfOpen(const MigrationInProgress());
+    emitIfOpen(const MigrationInProgress());
 
     try {
       final outcome = await _database.migrate(
@@ -102,17 +104,17 @@ class MigrationCubit extends CubitSignal<MigrationState>
         prompter: this,
         // Progress is only reported between migrations, never while one is
         // waiting for an answer, so this cannot hide a pending question.
-        onProgress: (progress) => _emitIfOpen(MigrationInProgress(progress)),
+        onProgress: (progress) => emitIfOpen(MigrationInProgress(progress)),
       );
-      _emitIfOpen(
+      emitIfOpen(
         outcome == MigrationOutcome.upToDate
             ? const MigrationDone()
             : MigrationSucceeded(outcome),
       );
     } on MigrationFailure catch (failure) {
-      _emitIfOpen(MigrationFailed(failure));
+      emitIfOpen(MigrationFailed(failure));
     } catch (error, stackTrace) {
-      _emitIfOpen(
+      emitIfOpen(
         MigrationFailed(
           MigrationFailure(
             step: 'Starting database',
@@ -131,13 +133,13 @@ class MigrationCubit extends CubitSignal<MigrationState>
   /// while a run is going on.
   Future<void> restart() async {
     if (_isRunning) return;
-    _emitIfOpen(const MigrationInProgress());
+    emitIfOpen(const MigrationInProgress());
     await run();
   }
 
   /// Continue on the success screen: opens the app.
   void acknowledge() {
-    if (value is MigrationSucceeded) _emitIfOpen(const MigrationDone());
+    if (value is MigrationSucceeded) emitIfOpen(const MigrationDone());
   }
 
   /// Called by the screen when the user answers the current question.
@@ -146,7 +148,7 @@ class MigrationCubit extends CubitSignal<MigrationState>
     final state = value;
     if (answer == null || state is! MigrationAsking) return;
     _answer = null;
-    _emitIfOpen(MigrationInProgress(state.progress));
+    emitIfOpen(MigrationInProgress(state.progress));
     answer.complete(text);
   }
 
@@ -175,13 +177,7 @@ class MigrationCubit extends CubitSignal<MigrationState>
     final progress = state is MigrationInProgress ? state.progress : null;
     final answer = Completer<String>();
     _answer = answer;
-    _emitIfOpen(MigrationAsking(question: question, progress: progress));
+    emitIfOpen(MigrationAsking(question: question, progress: progress));
     return answer.future;
-  }
-
-  // run() keeps going across awaits, so the cubit may have been closed by
-  // the time a result arrives. Emitting after close() asserts in debug mode.
-  void _emitIfOpen(MigrationState state) {
-    if (!isClosed) emit(state);
   }
 }

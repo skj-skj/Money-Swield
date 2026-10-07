@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 
 import '../../domain/models/event.dart';
+import '../services/database/sql_helpers.dart';
 import 'data_version.dart';
 
 /// Reads and writes the `events` table (database.md §3.4).
@@ -51,8 +52,8 @@ class EventRepository {
       description: description,
       emoji: emoji,
       archivedAt: null,
-      createdAt: _dateTime(now),
-      updatedAt: _dateTime(now),
+      createdAt: utcFromEpochMs(now),
+      updatedAt: utcFromEpochMs(now),
     );
   }
 
@@ -124,14 +125,10 @@ class EventRepository {
     description: row['description'] as String?,
     emoji: row['emoji']! as String,
     archivedAt: switch (row['archived_at']) {
-      final int millis => _dateTime(millis),
+      final int millis => utcFromEpochMs(millis),
       _ => null,
     },
-    createdAt: _dateTime(row['created_at']! as int),
-    updatedAt: _dateTime(row['updated_at']! as int),
+    createdAt: utcFromEpochMs(row['created_at']! as int),
+    updatedAt: utcFromEpochMs(row['updated_at']! as int),
   );
-
-  /// Timestamps are stored as epoch milliseconds, UTC (database.md §1).
-  static DateTime _dateTime(int millis) =>
-      DateTime.fromMillisecondsSinceEpoch(millis, isUtc: true);
 }

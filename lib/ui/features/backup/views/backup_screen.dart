@@ -1,12 +1,13 @@
 import 'package:bloc_signals_flutter/bloc_signals_flutter.dart';
-import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../app/app_dependencies.dart';
 import '../../../../data/services/backup/pre_restore_copy.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../core/date_texts.dart';
 import '../../../core/formatting_locale.dart';
 import '../../../core/widgets/error_report_view.dart';
+import '../../../core/widgets/show_message.dart';
 import '../view_models/backup_cubit.dart';
 import 'backup_texts.dart';
 import 'restore_screen.dart';
@@ -48,8 +49,7 @@ class _BackupScreenState extends State<BackupScreen> {
     final result = await _cubit.backUp();
     if (result != BackupResult.saved || !mounted) return;
     final l10n = AppLocalizations.of(context);
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(l10n.backupSaved)));
+    showMessage(ScaffoldMessenger.of(context), l10n.backupSaved);
   }
 
   Future<void> _restore({PreRestoreCopy? copy}) => RestoreScreen.open(
@@ -127,7 +127,7 @@ class _BackupList extends StatelessWidget {
           title: Text(lastBackupText(l10n, lastBackupAt, now)),
           subtitle: lastBackupAt == null
               ? null
-              : Text(DateFormat.yMMMd(locale).format(lastBackupAt.toLocal())),
+              : Text(shortDateText(locale, lastBackupAt.toLocal())),
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),

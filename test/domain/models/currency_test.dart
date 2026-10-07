@@ -32,13 +32,6 @@ void main() {
       }
     });
 
-    test('common symbols come from intl', () {
-      expect(findCurrency('INR')!.symbol, '₹');
-      expect(findCurrency('USD')!.symbol, r'$');
-      expect(findCurrency('EUR')!.symbol, '€');
-      expect(findCurrency('GBP')!.symbol, '£');
-    });
-
     test('withdrawn currencies are not offered', () {
       for (final code in ['HRK', 'BGN', 'SLL', 'ZWL', 'VEF']) {
         expect(findCurrency(code), isNull, reason: code);

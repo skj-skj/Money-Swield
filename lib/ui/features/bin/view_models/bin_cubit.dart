@@ -9,6 +9,7 @@ import '../../../../domain/models/category.dart';
 import '../../../../domain/models/event.dart';
 import '../../../../domain/models/expense.dart';
 import '../../../../domain/models/payment_method.dart';
+import '../../../core/emit_if_open.dart';
 
 /// Categories, events and payment methods by id, to show a binned
 /// expense's emoji and names.
@@ -75,7 +76,7 @@ BinAge binAge(DateTime deletedAt, DateTime now) {
 /// The bin: binned expenses with restore and permanent delete
 /// (phase-2.md §9.2). Every action reloads the list. Actions rethrow a
 /// failed write; the screen tells the user.
-class BinCubit extends CubitSignal<BinState> {
+class BinCubit extends CubitSignal<BinState> with EmitIfOpen<BinState> {
   BinCubit({
     required this._expenses,
     required this._categories,
@@ -96,10 +97,10 @@ class BinCubit extends CubitSignal<BinState> {
         events: {for (final e in await _events.all()) e.id: e},
         paymentMethods: {for (final m in await _paymentMethods.all()) m.id: m},
       );
-      _emitIfOpen(BinLoaded(expenses, lookups));
+      emitIfOpen(BinLoaded(expenses, lookups));
     } catch (error) {
       // A failed reload after an action keeps the old list on screen.
-      if (value is! BinLoaded) _emitIfOpen(BinFailed(error));
+      if (value is! BinLoaded) emitIfOpen(BinFailed(error));
     }
   }
 
@@ -115,11 +116,5 @@ class BinCubit extends CubitSignal<BinState> {
   Future<void> _then(Future<void> action) async {
     await action;
     await load();
-  }
-
-  // Every method keeps going across awaits, and the screen closes the
-  // cubit when it pops. Emitting after close() asserts in debug mode.
-  void _emitIfOpen(BinState state) {
-    if (!isClosed) emit(state);
   }
 }

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart' show Locale;
@@ -10,6 +9,7 @@ import 'package:path/path.dart' as p;
 
 import '../../../../data/services/database/migration/test_helpers.dart';
 import '../../../../helpers/fake_app_database.dart';
+import '../../../../helpers/test_folders.dart';
 
 void main() {
   const progress = MigrationProgress(
@@ -180,8 +180,7 @@ void main() {
       () async {
         // The real runner on a real file: a fresh install whose second
         // migration fails once (e.g. the database was locked), then Try again.
-        final folder = await Directory.systemTemp.createTemp('migration_cubit');
-        addTearDown(() => folder.delete(recursive: true));
+        final folder = await testFolder('migration_cubit');
         var failOnce = true;
         final database = AppDatabase(
           databaseFactory: testDatabaseFactory(),

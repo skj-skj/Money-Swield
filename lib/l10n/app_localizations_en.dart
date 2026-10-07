@@ -823,6 +823,280 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backupDamaged => 'This backup is damaged and can\'t be restored.';
 
   @override
+  String get periodDay => 'Day';
+
+  @override
+  String get periodWeek => 'Week';
+
+  @override
+  String get periodMonth => 'Month';
+
+  @override
+  String get periodYear => 'Year';
+
+  @override
+  String weekNumber(int number) {
+    return 'Week $number';
+  }
+
+  @override
+  String weekNumberWithYear(int number, String year) {
+    return 'Week $number, $year';
+  }
+
+  @override
+  String weekOfMonth(String month, int number) {
+    return '$month Week $number';
+  }
+
+  @override
+  String dayWithSubtotal(String date, String amount) {
+    return '$date – $amount';
+  }
+
+  @override
+  String daySubtotalSemantics(String date, String amount) {
+    return '$date, $amount';
+  }
+
+  @override
+  String get trendEmptyWeek => 'No expenses this week';
+
+  @override
+  String get trendEmptyMonth => 'No expenses this month';
+
+  @override
+  String get trendEmptyYear => 'No expenses this year';
+
+  @override
+  String get trendNoMatchWeek => 'No matching expenses this week';
+
+  @override
+  String get trendNoMatchMonth => 'No matching expenses this month';
+
+  @override
+  String get trendNoMatchYear => 'No matching expenses this year';
+
+  @override
+  String get trendFiltered => 'Filtered';
+
+  @override
+  String trendPointLabel(String date, String amount) {
+    return '$date · $amount';
+  }
+
+  @override
+  String trendCardSemantics(String period, String amount) {
+    return '$period, total $amount';
+  }
+
+  @override
+  String trendCardSemanticsFiltered(String period, String amount) {
+    return '$period, filtered, total $amount';
+  }
+
+  @override
+  String get totalsLoadFailed => 'Couldn\'t load totals';
+
+  @override
+  String get nextPeriod => 'Next period';
+
+  @override
+  String get previousPeriod => 'Previous period';
+
+  @override
+  String get nextCurrency => 'Next currency';
+
+  @override
+  String get previousCurrency => 'Previous currency';
+
+  @override
+  String chartCurrencyAnnounce(String currency, String amount) {
+    return '$currency, $amount';
+  }
+
+  @override
+  String totalsJoin(String first, String rest) {
+    return '$first + $rest';
+  }
+
+  @override
+  String totalsJoinSpoken(String first, String rest) {
+    return '$first and $rest';
+  }
+
+  @override
+  String get totalTooLarge => 'Too large';
+
+  @override
+  String get showSubtotal => 'Show subtotal';
+
+  @override
+  String get subtotalLoadFailed => 'Couldn\'t load the subtotal';
+
+  @override
+  String groupSubtotalSemantics(String name, String amount) {
+    return '$name, subtotal $amount';
+  }
+
+  @override
+  String get close => 'Close';
+
+  @override
+  String get filters => 'Filters';
+
+  @override
+  String get filterSearchHint => 'Search titles and descriptions';
+
+  @override
+  String get filterCategories => 'Categories';
+
+  @override
+  String get filterEvents => 'Events';
+
+  @override
+  String get filterArchived => 'Archived';
+
+  @override
+  String get groupBy => 'Group by';
+
+  @override
+  String get groupedByDay => 'By day';
+
+  @override
+  String get groupedByWeek => 'By week';
+
+  @override
+  String get groupedByMonth => 'By month';
+
+  @override
+  String get groupedByYear => 'By year';
+
+  @override
+  String get clearFilters => 'Clear filters';
+
+  @override
+  String get showResults => 'Show results';
+
+  @override
+  String get noFilterMatches => 'No expenses match these filters';
+
+  @override
+  String filterMore(String name, int count) {
+    return '$name +$count';
+  }
+
+  @override
+  String filterSearchChip(String text) {
+    return '\"$text\"';
+  }
+
+  @override
+  String get removeFilter => 'Remove filter';
+
+  @override
+  String get settingsLook => 'Look';
+
+  @override
+  String get settingsHome => 'Home';
+
+  @override
+  String get settingsDefaults => 'Defaults';
+
+  @override
+  String get settingWeekStart => 'Week starts on';
+
+  @override
+  String get settingWeekNames => 'Week names';
+
+  @override
+  String get settingTrendChart => 'Trend chart';
+
+  @override
+  String get chartLineFilled => 'Smooth line, filled';
+
+  @override
+  String get chartLine => 'Smooth line';
+
+  @override
+  String get chartBars => 'Bars';
+
+  @override
+  String get chartDots => 'Dots';
+
+  @override
+  String get chartRunningTotal => 'Running total';
+
+  @override
+  String get settingTrendCardSize => 'Card size';
+
+  @override
+  String get cardSizeSmall => 'Small';
+
+  @override
+  String get cardSizeMedium => 'Medium';
+
+  @override
+  String get cardSizeLarge => 'Large';
+
+  @override
+  String get settingCardHaptics => 'Card vibration';
+
+  @override
+  String get hapticsOff => 'Off';
+
+  @override
+  String get hapticsLight => 'Light';
+
+  @override
+  String get hapticsMedium => 'Medium';
+
+  @override
+  String get hapticsStrong => 'Strong';
+
+  @override
+  String trendRunningTotalPoint(String date, String amount) {
+    return 'Up to $date · $amount';
+  }
+
+  @override
+  String get restoreHomeDefaults => 'Restore defaults';
+
+  @override
+  String get restoreHomeDefaultsSubtitle =>
+      'Chart, card and weeks as they were at first';
+
+  @override
+  String get restoreHomeDefaultsTitle => 'Restore the Home defaults?';
+
+  @override
+  String get restoreHomeDefaultsMessage =>
+      'The trend chart, trend card, card size, week start and week names go back to their defaults.';
+
+  @override
+  String get settingTrendCard => 'Trend card';
+
+  @override
+  String get trendCardLocked => 'Locked at the top';
+
+  @override
+  String get trendCardScrolls => 'Scrolls with the list';
+
+  @override
+  String get trendCardLockedShort => 'Locked';
+
+  @override
+  String get trendCardScrollsShort => 'Scrolls';
+
+  @override
+  String get binTileSummary => 'Kept for 30 days';
+
+  @override
+  String settingsTileSummary(String first, String rest) {
+    return '$first · $rest';
+  }
+
+  @override
   String get categoryFood => 'Food';
 
   @override

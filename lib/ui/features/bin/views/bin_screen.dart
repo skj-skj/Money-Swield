@@ -4,9 +4,10 @@ import 'package:material_ui/material_ui.dart';
 import '../../../../app/app_dependencies.dart';
 import '../../../../domain/models/expense.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../../core/money_formatter.dart';
-import '../../../core/widgets/confirm_dialog.dart';
-import '../../../core/widgets/load_failed_view.dart';
+import '../../../core/widgets/async_body.dart';
+import '../../../core/widgets/confirm_then_save.dart';
+import '../../../core/widgets/empty_state_view.dart';
+import '../../../core/widgets/expense_tile.dart';
 import '../../../core/widgets/save_error.dart';
 import '../view_models/bin_cubit.dart';
 import 'bin_detail_screen.dart';
@@ -42,14 +43,13 @@ class _BinScreenState extends State<BinScreen> {
 
   Future<void> _emptyBin() async {
     final l10n = AppLocalizations.of(context);
-    final confirmed = await confirmAction(
+    await confirmThenSave(
       context,
       title: l10n.emptyBinTitle,
       message: l10n.cannotBeUndone,
       confirmLabel: l10n.emptyBin,
+      action: _cubit.emptyBin,
     );
-    if (!confirmed || !mounted) return;
-    await saveOrShowError(context, _cubit.emptyBin);
   }
 
   Future<void> _openDetail(Expense expense, BinLookups lookups) async {
@@ -91,48 +91,45 @@ class _BinScreenState extends State<BinScreen> {
               ],
             ],
           ),
-          body: switch (state) {
-            BinLoading() => const Center(child: CircularProgressIndicator()),
-            BinFailed() => LoadFailedView(onRetry: _cubit.load),
-            BinLoaded(:final expenses) when expenses.isEmpty => Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Text(l10n.binEmpty, textAlign: TextAlign.center),
-              ),
+          body: AsyncBody(
+            phase: switch (state) {
+              BinLoading() => LoadPhase.loading,
+              BinFailed() => LoadPhase.failed,
+              BinLoaded(:final expenses) when expenses.isEmpty =>
+                LoadPhase.empty,
+              BinLoaded() => LoadPhase.loaded,
+            },
+            onRetry: _cubit.load,
+            empty: EmptyStateView(
+              icon: Icons.delete_outline,
+              title: l10n.binEmpty,
             ),
-            BinLoaded(:final expenses, :final lookups) => ListView.builder(
-              itemCount: expenses.length,
-              itemBuilder: (context, index) {
-                final expense = expenses[index];
-                return ListTile(
-                  key: ValueKey(expense.id),
-                  leading: Text(
-                    lookups.categories[expense.categoryId]?.emoji ?? '❓',
-                    style: const TextStyle(fontSize: 28),
-                  ),
-                  title: Text(
-                    expense.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  subtitle: Text(
-                    binAgeText(
+            builder: (context) {
+              final BinLoaded(:expenses, :lookups) = state as BinLoaded;
+              return ListView.builder(
+                itemCount: expenses.length,
+                itemBuilder: (context, index) {
+                  final expense = expenses[index];
+                  return ExpenseTile(
+                    key: ValueKey(expense.id),
+                    emoji:
+                        lookups.categories[expense.categoryId]?.emoji ??
+                        ExpenseTile.missingEmoji,
+                    title: expense.title,
+                    subtitle: binAgeText(
                       l10n,
                       binAge(
                         expense.deletedAt!,
                         (widget.now ?? DateTime.now)(),
                       ),
                     ),
-                  ),
-                  trailing: Text(
-                    MoneyFormatter.of(context).format(expense.amount),
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  onTap: () => _openDetail(expense, lookups),
-                );
-              },
-            ),
-          },
+                    amount: expense.amount,
+                    onTap: () => _openDetail(expense, lookups),
+                  );
+                },
+              );
+            },
+          ),
         );
       },
     );

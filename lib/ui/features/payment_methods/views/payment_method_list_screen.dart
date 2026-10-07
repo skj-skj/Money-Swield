@@ -6,9 +6,8 @@ import '../../../../domain/models/app_settings.dart';
 import '../../../../domain/models/payment_method.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/builtin_names.dart';
-import '../../../core/widgets/item_card.dart';
-import '../../../core/widgets/load_failed_view.dart';
-import '../../../core/widgets/two_column_masonry.dart';
+import '../../../core/widgets/async_body.dart';
+import '../../manage/views/manage_list_scaffold.dart';
 import '../../settings/view_models/settings_cubit.dart';
 import '../view_models/payment_method_list_cubit.dart';
 import 'payment_method_form_screen.dart';
@@ -66,47 +65,43 @@ class _PaymentMethodListScreenState extends State<PaymentMethodListScreen> {
     final l10n = AppLocalizations.of(context);
     return BlocSignalBuilder<PaymentMethodListCubit, PaymentMethodListState>(
       bloc: _cubit!,
-      builder: (context, state) => Scaffold(
-        appBar: AppBar(title: Text(l10n.paymentMethodsTitle)),
-        floatingActionButton: state is PaymentMethodListLoaded
-            ? FloatingActionButton.extended(
-                onPressed: () => _openForm(all: state.paymentMethods),
-                icon: const Icon(Icons.add),
-                label: Text(l10n.addPaymentMethod),
-              )
-            : null,
-        body: switch (state) {
-          PaymentMethodListLoading() => const Center(
-            child: CircularProgressIndicator(),
-          ),
-          PaymentMethodListFailed() => LoadFailedView(
-            onRetry: () => _cubit?.load(),
-          ),
+      builder: (context, state) => ManageListScaffold(
+        title: l10n.paymentMethodsTitle,
+        addLabel: l10n.addPaymentMethod,
+        phase: switch (state) {
+          PaymentMethodListLoading() => LoadPhase.loading,
+          PaymentMethodListFailed() => LoadPhase.failed,
           PaymentMethodListLoaded(:final paymentMethods)
               when paymentMethods.isEmpty =>
-            Center(child: Text(l10n.listEmpty)),
-          PaymentMethodListLoaded(:final paymentMethods) =>
-            BlocSignalBuilder<SettingsCubit, AppSettings>(
-              builder: (context, settings) => SingleChildScrollView(
-                // Room for the floating button under the last row.
-                padding: const EdgeInsets.fromLTRB(12, 12, 12, 88),
-                child: TwoColumnMasonry(
-                  children: [
-                    for (final method in paymentMethods)
-                      ItemCard(
-                        emoji: method.emoji,
-                        title: paymentMethodName(l10n, method),
-                        badge: method.id == settings.defaultPaymentMethodId
-                            ? l10n.defaultBadge
-                            : null,
-                        onTap: () =>
-                            _openForm(method: method, all: paymentMethods),
-                      ),
-                  ],
-                ),
-              ),
-            ),
+            LoadPhase.empty,
+          PaymentMethodListLoaded() => LoadPhase.loaded,
         },
+        onRetry: () => _cubit?.load(),
+        onAdd: () =>
+            _openForm(all: (state as PaymentMethodListLoaded).paymentMethods),
+        emptyIcon: Icons.payments_outlined,
+        emptyText: l10n.listEmpty,
+        // The Default badge follows the setting at once.
+        builder: (context) => BlocSignalBuilder<SettingsCubit, AppSettings>(
+          builder: (context, settings) {
+            final methods = (state as PaymentMethodListLoaded).paymentMethods;
+            return ItemCardGrid(
+              items: [
+                for (final method in methods)
+                  (
+                    key: method.id,
+                    emoji: method.emoji,
+                    title: paymentMethodName(l10n, method),
+                    description: null,
+                    badge: method.id == settings.defaultPaymentMethodId
+                        ? l10n.defaultBadge
+                        : null,
+                    onTap: () => _openForm(method: method, all: methods),
+                  ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }

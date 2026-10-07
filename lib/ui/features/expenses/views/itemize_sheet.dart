@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../../domain/itemize.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../core/widgets/app_sheet.dart';
 
 /// Asks a label for each additive term of the amount (phase-4.md §5.2).
 /// Returns the labels, one per term (`''` = none), or null if closed
@@ -12,10 +13,8 @@ Future<List<String>?> showItemizeSheet(
   required List<String> terms,
   required List<String> labels,
   required String decimalSeparator,
-}) => showModalBottomSheet<List<String>>(
-  context: context,
-  isScrollControlled: true,
-  showDragHandle: true,
+}) => showAppSheet<List<String>>(
+  context,
   builder: (context) => _ItemizeSheet(
     terms: terms,
     labels: labels,

@@ -6,6 +6,8 @@ import 'package:my_expense_tracker_app/app/app_dependencies.dart';
 import 'package:my_expense_tracker_app/domain/models/expense.dart';
 import 'package:my_expense_tracker_app/domain/models/money.dart';
 
+import 'package:my_expense_tracker_app/ui/features/home/views/home_list_slivers.dart';
+
 import '../../helpers/pump_app.dart';
 import '../../helpers/test_database.dart';
 
@@ -339,7 +341,14 @@ void main() {
     await back(tester);
 
     expect(find.byKey(const ValueKey('unsavedMark')), findsOneWidget);
-    expect(find.text('₹110.50'), findsOneWidget, reason: 'stored value');
+    expect(
+      find.descendant(
+        of: find.byType(ExpenseRow),
+        matching: find.text('₹110.50'),
+      ),
+      findsOneWidget,
+      reason: 'stored value',
+    );
     // Read with the row: TalkBack says it after the amount.
     expect(find.bySemanticsLabel(RegExp('Unsaved changes')), findsOneWidget);
 

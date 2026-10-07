@@ -1,7 +1,9 @@
 import 'package:sqflite/sqflite.dart';
 
 import '../../domain/models/payment_method.dart';
+import '../services/database/sql_helpers.dart';
 import 'data_version.dart';
+import 'expense_owner.dart';
 import 'settings_repository.dart';
 
 /// Thrown by [PaymentMethodRepository.delete] for the default payment
@@ -63,8 +65,8 @@ class PaymentMethodRepository {
       builtinKey: null,
       name: name,
       emoji: emoji,
-      createdAt: _dateTime(now),
-      updatedAt: _dateTime(now),
+      createdAt: utcFromEpochMs(now),
+      updatedAt: utcFromEpochMs(now),
     );
   }
 
@@ -82,7 +84,7 @@ class PaymentMethodRepository {
       throw StateError('Payment method ${method.id} no longer exists');
     }
     _dataVersion.bump();
-    return method.copyWith(updatedAt: _dateTime(now));
+    return method.copyWith(updatedAt: utcFromEpochMs(now));
   }
 
   /// Deletes the method. Throws [CannotDeleteDefault] if it is the current
@@ -99,36 +101,27 @@ class PaymentMethodRepository {
 
   /// How many expenses use the method. Binned ones are counted on purpose:
   /// they block the delete too and must be moved (database.md §3.3).
-  Future<({int active, int binned})> usage(int id) async {
-    final row = (await _db.rawQuery(
-      'SELECT COALESCE(SUM(deleted_at IS NULL), 0) AS active, '
-      'COALESCE(SUM(deleted_at IS NOT NULL), 0) AS binned '
-      'FROM expenses WHERE payment_method_id = ?',
-      [id],
-    )).single;
-    return (active: row['active']! as int, binned: row['binned']! as int);
-  }
+  Future<({int active, int binned})> usage(int id) =>
+      ExpenseOwner.paymentMethod.usage(_db, id);
 
   /// Moves every expense of method [id], binned ones included, to [toId]
   /// and deletes [id], in one transaction (D7). Throws
   /// [CannotDeleteDefault] for the default, and fails on the foreign key if
   /// [toId] no longer exists; either way nothing changes.
   Future<void> moveExpensesAndDelete(int id, {required int toId}) async {
+    // ExpenseOwner checks this too, but only after the default check: here
+    // a move onto itself is an ArgumentError even for the default.
     if (toId == id) {
       throw ArgumentError.value(toId, 'toId', 'must differ from id');
     }
     await _db.transaction((txn) async {
       await _refuseDefault(txn, id);
-      await txn.update(
-        'expenses',
-        {
-          'payment_method_id': toId,
-          'updated_at': _now().millisecondsSinceEpoch,
-        },
-        where: 'payment_method_id = ?',
-        whereArgs: [id],
+      await ExpenseOwner.paymentMethod.moveExpensesAndDelete(
+        txn,
+        id,
+        toId: toId,
+        updatedAtMs: _now().millisecondsSinceEpoch,
       );
-      await txn.delete('payment_methods', where: 'id = ?', whereArgs: [id]);
     });
     _dataVersion.bump();
   }
@@ -144,11 +137,7 @@ class PaymentMethodRepository {
     builtinKey: row['builtin_key'] as String?,
     name: row['name'] as String?,
     emoji: row['emoji']! as String,
-    createdAt: _dateTime(row['created_at']! as int),
-    updatedAt: _dateTime(row['updated_at']! as int),
+    createdAt: utcFromEpochMs(row['created_at']! as int),
+    updatedAt: utcFromEpochMs(row['updated_at']! as int),
   );
-
-  /// Timestamps are stored as epoch milliseconds, UTC (database.md §1).
-  static DateTime _dateTime(int millis) =>
-      DateTime.fromMillisecondsSinceEpoch(millis, isUtc: true);
 }

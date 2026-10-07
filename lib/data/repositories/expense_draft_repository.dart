@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:sqflite/sqflite.dart';
 
 import '../../domain/models/expense_draft.dart';
+import '../services/database/sql_helpers.dart';
 
 /// Makes a timer; `Timer.new` in the app, a fake in tests.
 typedef TimerFactory = Timer Function(Duration duration, void Function() run);
@@ -206,7 +207,7 @@ class ExpenseDraftRepository {
     return ExpenseDraft.fromJson(
       json,
       editingExpenseId: editing as int?,
-      updatedAt: DateTime.fromMillisecondsSinceEpoch(updatedAt, isUtc: true),
+      updatedAt: utcFromEpochMs(updatedAt),
     );
   }
 }

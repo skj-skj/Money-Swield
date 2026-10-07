@@ -138,16 +138,6 @@ void main() {
     );
   });
 
-  group('usage', () {
-    test('counts active and binned expenses separately', () async {
-      await insertExpenseRow(db, paymentMethodId: 2);
-      await insertExpenseRow(db, paymentMethodId: 2, deletedAt: 5);
-      await insertExpenseRow(db, paymentMethodId: 2, deletedAt: 6);
-      expect(await repository.usage(2), (active: 1, binned: 2));
-      expect(await repository.usage(3), (active: 0, binned: 0));
-    });
-  });
-
   group('moveExpensesAndDelete', () {
     Future<List<int>> methodsOfExpenses() async => [
       for (final row in await db.query('expenses', orderBy: 'id'))
@@ -178,9 +168,11 @@ void main() {
       expect(await repository.all(), hasLength(4));
     });
 
-    test('refuses to move to the same method', () async {
-      expect(
-        () => repository.moveExpensesAndDelete(2, toId: 2),
+    test('the default onto itself is an ArgumentError, checked before the '
+        'default', () async {
+      final cash = await builtin('cash');
+      await expectLater(
+        repository.moveExpensesAndDelete(cash.id, toId: cash.id),
         throwsArgumentError,
       );
       expect(await repository.all(), hasLength(4));

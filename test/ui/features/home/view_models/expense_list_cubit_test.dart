@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_expense_tracker_app/app/app_dependencies.dart';
 import 'package:my_expense_tracker_app/data/repositories/expense_repository.dart';
+import 'package:my_expense_tracker_app/domain/expense_filter.dart';
 import 'package:my_expense_tracker_app/domain/models/expense.dart';
 import 'package:my_expense_tracker_app/domain/models/money.dart';
 import 'package:my_expense_tracker_app/ui/features/home/view_models/expense_list_cubit.dart';
@@ -16,12 +17,33 @@ class _GatedExpenses extends ExpenseRepository {
 
   final gates = <Completer<void>>[];
 
+  /// Whether each gated call continues after a cursor (a next page) or is
+  /// a load from the top, in call order.
+  final continues = <bool>[];
+
+  /// The gate of the first call matching [next] not yet released, once
+  /// it has been made (a load reads the lookups before its page).
+  Future<Completer<void>> gateOf({required bool next}) async {
+    for (var i = 0; i < 100; i++) {
+      for (final (index, gate) in gates.indexed) {
+        if (continues[index] == next && !gate.isCompleted) return gate;
+      }
+      await pumpEventQueue(times: 1);
+    }
+    throw StateError('no ${next ? 'next-page' : 'top'} call');
+  }
+
   @override
-  Future<List<Expense>> page({ExpenseCursor? after, int limit = 30}) async {
+  Future<List<Expense>> page({
+    ExpenseFilter filter = ExpenseFilter.none,
+    ExpenseCursor? after,
+    int limit = 30,
+  }) async {
     final gate = Completer<void>();
     gates.add(gate);
+    continues.add(after != null);
     await gate.future;
-    return super.page(after: after, limit: limit);
+    return super.page(filter: filter, after: after, limit: limit);
   }
 }
 
@@ -39,9 +61,10 @@ void main() {
       expenses: deps.expenses,
       categories: deps.categories,
       paymentMethods: deps.paymentMethods,
+      events: deps.events,
       drafts: deps.drafts,
       dataVersion: deps.dataVersion,
-      chipCurrency: 'INR',
+      defaultCurrency: 'INR',
       pageSize: pageSize,
     );
     addTearDown(cubit.close);
@@ -197,14 +220,15 @@ void main() {
         expenses: gated,
         categories: deps.categories,
         paymentMethods: deps.paymentMethods,
+        events: deps.events,
         drafts: deps.drafts,
         dataVersion: deps.dataVersion,
-        chipCurrency: 'INR',
+        defaultCurrency: 'INR',
         pageSize: 3,
       );
       addTearDown(cubit.close);
       final load = cubit.load();
-      gated.gates.single.complete();
+      (await gated.gateOf(next: false)).complete();
       await load;
       expect(titles(cubit), ['E6', 'E5', 'E4']);
 
@@ -214,10 +238,11 @@ void main() {
       await deps.expenses.moveToBin(e5.id);
       final reload = cubit.reload();
       final more = cubit.loadMore();
-      gated.gates[1].complete();
+      final staleNext = await gated.gateOf(next: true);
+      (await gated.gateOf(next: false)).complete();
       await reload;
       expect(titles(cubit), ['E6', 'E4', 'E3']);
-      gated.gates[2].complete();
+      staleNext.complete();
       await more;
 
       // The stale page (E3, E2, E1) must not be added after E3 again.

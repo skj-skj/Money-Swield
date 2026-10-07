@@ -4,6 +4,7 @@ import '../../../../data/repositories/payment_method_repository.dart';
 import '../../../../domain/models/payment_method.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/builtin_names.dart';
+import '../../../core/emit_if_open.dart';
 
 /// What the payment methods screen shows. States don't override `==`, so
 /// every emitted state reaches the screen.
@@ -30,7 +31,8 @@ final class PaymentMethodListFailed extends PaymentMethodListState {
 
 /// Loads the payment methods, sorted by display name in the current
 /// language. Used by the payment methods screen and the Settings screen.
-class PaymentMethodListCubit extends CubitSignal<PaymentMethodListState> {
+class PaymentMethodListCubit extends CubitSignal<PaymentMethodListState>
+    with EmitIfOpen<PaymentMethodListState> {
   PaymentMethodListCubit({required this._repository, required this._l10n})
     : super(initialState: const PaymentMethodListLoading());
 
@@ -52,9 +54,9 @@ class PaymentMethodListCubit extends CubitSignal<PaymentMethodListState> {
         );
         return byName != 0 ? byName : a.id.compareTo(b.id);
       });
-      if (!isClosed) emit(PaymentMethodListLoaded(methods));
+      emitIfOpen(PaymentMethodListLoaded(methods));
     } catch (error) {
-      if (!isClosed) emit(PaymentMethodListFailed(error));
+      emitIfOpen(PaymentMethodListFailed(error));
     }
   }
 }

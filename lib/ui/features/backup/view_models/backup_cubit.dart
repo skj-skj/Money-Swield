@@ -6,6 +6,7 @@ import '../../../../data/services/backup/pre_restore_copy.dart';
 import '../../../../data/services/database/app_database.dart';
 import '../../../../data/services/document_service.dart';
 import '../../../../domain/error_report.dart';
+import '../../../core/emit_if_open.dart';
 
 /// What the Backup & restore screen shows (phase-3.md §9).
 class BackupState {
@@ -45,7 +46,8 @@ class BackupState {
 enum BackupResult { saved, cancelled, failed, ignored }
 
 /// Backs up the data and says when the last backup was (§5.2).
-class BackupCubit extends CubitSignal<BackupState> {
+class BackupCubit extends CubitSignal<BackupState>
+    with EmitIfOpen<BackupState> {
   BackupCubit({
     required this._backups,
     required this._documents,
@@ -63,7 +65,7 @@ class BackupCubit extends CubitSignal<BackupState> {
     try {
       final lastBackupAt = await _backups.lastBackupAt();
       final copies = await _appDatabase.preRestoreCopies();
-      _emitIfOpen(
+      emitIfOpen(
         value.copyWith(
           lastBackupAt: lastBackupAt,
           newestCopy: copies.firstOrNull,
@@ -79,7 +81,7 @@ class BackupCubit extends CubitSignal<BackupState> {
   /// one pending dialog. The temp files are deleted in every case.
   Future<BackupResult> backUp() async {
     if (value.backingUp) return BackupResult.ignored;
-    _emitIfOpen(value.copyWith(backingUp: true, clearFailure: true));
+    emitIfOpen(value.copyWith(backingUp: true, clearFailure: true));
     try {
       final file = await _backups.createBackup(
         appVersion: await _documents.appVersion(),
@@ -90,13 +92,13 @@ class BackupCubit extends CubitSignal<BackupState> {
         mimeType: 'application/zip',
       );
       if (!saved) {
-        _emitIfOpen(value.copyWith(backingUp: false));
+        emitIfOpen(value.copyWith(backingUp: false));
         return BackupResult.cancelled;
       }
       // The moment the data was copied: the same as the manifest's
       // created_at, which a restore of this file stamps.
       final recorded = await _recordQuietly(file.createdAt);
-      _emitIfOpen(
+      emitIfOpen(
         value.copyWith(
           backingUp: false,
           lastBackupAt: recorded ? file.createdAt : null,
@@ -104,7 +106,7 @@ class BackupCubit extends CubitSignal<BackupState> {
       );
       return BackupResult.saved;
     } catch (error, stackTrace) {
-      _emitIfOpen(
+      emitIfOpen(
         value.copyWith(
           backingUp: false,
           failureReport: errorReport('Backing up', error, stackTrace),
@@ -136,11 +138,5 @@ class BackupCubit extends CubitSignal<BackupState> {
       // The next start deletes them.
       debugPrint('Deleting the backup files failed: $error');
     }
-  }
-
-  // backUp() keeps going across awaits, so the cubit may have been closed by
-  // the time a result arrives. Emitting after close() asserts in debug mode.
-  void _emitIfOpen(BackupState state) {
-    if (!isClosed) emit(state);
   }
 }

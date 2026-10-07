@@ -5,16 +5,23 @@ import 'package:flutter/foundation.dart' show debugPrint;
 
 import '../../../../data/repositories/category_repository.dart';
 import '../../../../data/repositories/data_version.dart';
+import '../../../../data/repositories/event_repository.dart';
 import '../../../../data/repositories/expense_draft_repository.dart';
 import '../../../../data/repositories/expense_repository.dart';
 import '../../../../data/repositories/payment_method_repository.dart';
 import '../../../../domain/amount_chips.dart';
+import '../../../../domain/expense_filter.dart';
+import '../../../../domain/home_list.dart';
 import '../../../../domain/models/category.dart';
 import '../../../../domain/models/currency.dart';
+import '../../../../domain/models/event.dart';
 import '../../../../domain/models/expense.dart';
 import '../../../../domain/models/expense_draft.dart';
 import '../../../../domain/models/money.dart';
 import '../../../../domain/models/payment_method.dart';
+import '../../../../domain/periods.dart';
+import '../../../../domain/totals.dart';
+import '../../../core/emit_if_open.dart';
 import '../../../core/recent_currencies.dart';
 
 /// What the Home list shows. States don't override `==`, so every emitted
@@ -27,27 +34,72 @@ final class ExpenseListLoading extends ExpenseListState {
   const ExpenseListLoading();
 }
 
+/// A group's or a day's subtotal key: its range (phase-5.md §7.1).
+typedef SubtotalKey = PeriodRange;
+
+/// A subtotal of a group or a day. A key with no entry hasn't been asked
+/// for (its header hasn't been on screen).
+sealed class SubtotalState {
+  const SubtotalState();
+}
+
+/// Asked for, being read: the header shows a spinner after 300 ms. Only
+/// headers that were on screen get here, so off-screen ones never spin.
+final class SubtotalLoading extends SubtotalState {
+  const SubtotalLoading();
+}
+
+final class SubtotalReady extends SubtotalState {
+  const SubtotalReady(this.totals);
+
+  /// Only currencies with rows; empty when the period has none under the
+  /// filters.
+  final CurrencyTotals totals;
+}
+
+final class SubtotalFailed extends SubtotalState {
+  const SubtotalFailed();
+}
+
 final class ExpenseListLoaded extends ExpenseListState {
   const ExpenseListLoaded({
     required this.expenses,
+    required this.groups,
     required this.categories,
     required this.paymentMethods,
+    required this.events,
     required this.hasMore,
+    required this.filter,
+    required this.grouping,
+    required this.weekStart,
     this.loadingMore = false,
     this.loadMoreFailed = false,
     this.chips = const [],
     this.draftExpenseId,
+    this.subtotals = const {},
   });
 
-  /// Newest first.
+  /// In list order: by local date, then moment (phase-5.md §4.1).
   final List<Expense> expenses;
 
-  /// By id, for the emoji on each row.
+  /// [expenses] as frames and days (`homeGroups`).
+  final List<ListGroup> groups;
+
+  /// By id, for the emoji on each row and the filter sheet.
   final Map<int, Category> categories;
   final Map<int, PaymentMethod> paymentMethods;
 
+  /// By id, archived ones included (the filter sheet offers them).
+  final Map<int, Event> events;
+
   /// Whether another page may follow.
   final bool hasMore;
+
+  /// What the list (and its subtotals) show. Not saved (P5-18).
+  final ExpenseFilter filter;
+
+  final Period grouping;
+  final WeekStart weekStart;
 
   /// A page is being loaded; further [ExpenseListCubit.loadMore] calls
   /// return at once.
@@ -63,25 +115,71 @@ final class ExpenseListLoaded extends ExpenseListState {
   /// shows a mark (phase-4.md §8.2).
   final int? draftExpenseId;
 
+  /// Read lazily, per group and per day, for exactly what [filter] lets
+  /// through (P5-26).
+  final Map<SubtotalKey, SubtotalState> subtotals;
+
+  /// Whether this state differs from [other] only in its subtotals, so the
+  /// list itself needn't be built again (each frame top and day header
+  /// watches its own subtotal).
+  bool sameListAs(ExpenseListLoaded other) =>
+      identical(expenses, other.expenses) &&
+      identical(groups, other.groups) &&
+      identical(categories, other.categories) &&
+      identical(paymentMethods, other.paymentMethods) &&
+      identical(events, other.events) &&
+      hasMore == other.hasMore &&
+      filter == other.filter &&
+      grouping == other.grouping &&
+      weekStart == other.weekStart &&
+      loadingMore == other.loadingMore &&
+      loadMoreFailed == other.loadMoreFailed &&
+      identical(chips, other.chips) &&
+      draftExpenseId == other.draftExpenseId;
+
+  /// A copy; [groups] are rebuilt when the rows, [hasMore], the grouping
+  /// or the week start change.
   ExpenseListLoaded copyWith({
     List<Expense>? expenses,
     bool? hasMore,
+    Period? grouping,
+    WeekStart? weekStart,
     bool? loadingMore,
     bool? loadMoreFailed,
     List<Money>? chips,
     int? Function()? draftExpenseId,
-  }) => ExpenseListLoaded(
-    expenses: expenses ?? this.expenses,
-    categories: categories,
-    paymentMethods: paymentMethods,
-    hasMore: hasMore ?? this.hasMore,
-    loadingMore: loadingMore ?? this.loadingMore,
-    loadMoreFailed: loadMoreFailed ?? this.loadMoreFailed,
-    chips: chips ?? this.chips,
-    draftExpenseId: draftExpenseId == null
-        ? this.draftExpenseId
-        : draftExpenseId(),
-  );
+    Map<SubtotalKey, SubtotalState>? subtotals,
+  }) {
+    final regroup =
+        expenses != null ||
+        hasMore != null ||
+        grouping != null ||
+        weekStart != null;
+    final rows = expenses ?? this.expenses;
+    final more = hasMore ?? this.hasMore;
+    final by = grouping ?? this.grouping;
+    final start = weekStart ?? this.weekStart;
+    return ExpenseListLoaded(
+      expenses: rows,
+      groups: regroup
+          ? homeGroups(rows, grouping: by, weekStart: start, hasMore: more)
+          : groups,
+      categories: categories,
+      paymentMethods: paymentMethods,
+      events: events,
+      hasMore: more,
+      filter: filter,
+      grouping: by,
+      weekStart: start,
+      loadingMore: loadingMore ?? this.loadingMore,
+      loadMoreFailed: loadMoreFailed ?? this.loadMoreFailed,
+      chips: chips ?? this.chips,
+      draftExpenseId: draftExpenseId == null
+          ? this.draftExpenseId
+          : draftExpenseId(),
+      subtotals: subtotals ?? this.subtotals,
+    );
+  }
 }
 
 final class ExpenseListFailed extends ExpenseListState {
@@ -90,44 +188,78 @@ final class ExpenseListFailed extends ExpenseListState {
   final Object error;
 }
 
-/// The Home tab's expense list: keyset pages of [pageSize], newest first
-/// (phase-2.md §7.2), with the amount chips and the unsaved mark
+/// The Home tab's expense list: keyset pages of [pageSize] in list order
+/// (phase-2.md §7.2, phase-5.md §4.1), grouped and filtered, with lazy
+/// subtotals (phase-5.md §7.1), the amount chips and the unsaved mark
 /// (phase-4.md §8).
-class ExpenseListCubit extends CubitSignal<ExpenseListState> {
-  /// Chips are for `chipCurrency`, the default currency; Home keeps it up
-  /// to date with [setChipCurrency].
+class ExpenseListCubit extends CubitSignal<ExpenseListState>
+    with EmitIfOpen<ExpenseListState> {
+  /// Chips are for `defaultCurrency`; Home keeps it, the grouping and the
+  /// week start up to date ([setDefaultCurrency], [setGrouping],
+  /// [setWeekStart]).
   ExpenseListCubit({
     required this._expenses,
     required this._categories,
     required this._paymentMethods,
+    required this._events,
     required this._drafts,
     required this._dataVersion,
-    required this._chipCurrency,
+    required String defaultCurrency,
+    this._grouping = Period.week,
+    this._weekStart = WeekStart.monday,
     this.pageSize = 30,
-  }) : super(initialState: const ExpenseListLoading());
+  }) : _chipCurrency = defaultCurrency,
+       super(initialState: const ExpenseListLoading());
 
   final ExpenseDraftRepository _drafts;
   String _chipCurrency;
   final ExpenseRepository _expenses;
   final CategoryRepository _categories;
   final PaymentMethodRepository _paymentMethods;
+  final EventRepository _events;
   final DataVersion _dataVersion;
   final int pageSize;
+
+  /// The filter of the rows on screen: every page and subtotal reads
+  /// with it.
+  ExpenseFilter _filter = ExpenseFilter.none;
+
+  /// The filter the next (re)load reads with: the last one asked for. It
+  /// becomes [_filter] once its rows are shown, and goes back to it when
+  /// they can't be read, so a later page never mixes two filters.
+  ExpenseFilter _requested = ExpenseFilter.none;
+  Period _grouping;
+  WeekStart _weekStart;
 
   /// `DataVersion.value` when the rows shown were loaded.
   int? _loadedVersion;
 
-  /// Bumped by every (re)load, so a page that was requested before it
-  /// can't be appended to the fresh rows (which would duplicate them).
-  /// [loadMore] also checks that the rows it continues are still the ones
-  /// shown, which covers a page requested while a reload was running.
+  /// Bumped by every (re)load and filter change, so a page that was
+  /// requested before it can't be appended to the fresh rows (which would
+  /// duplicate them). [loadMore] also checks that the rows it continues
+  /// are still the ones shown, which covers a page requested while a
+  /// reload was running.
   int _generation = 0;
 
-  /// Loads the first page and the categories / payment methods.
+  /// With a text filter: every matching entry, in list order, and how many
+  /// of them the loaded rows cover (phase-5.md §6.3). Null without one.
+  List<SearchEntry>? _matches;
+  int _matchesUsed = 0;
+
+  /// Bumped whenever the subtotals are dropped (filter, grouping, week
+  /// start, any reload), so a read in flight can't store an old value.
+  int _subtotalGeneration = 0;
+
+  /// Subtotals waiting to be read, one at a time, in request order.
+  final _subtotalQueue = <SubtotalKey>[];
+  bool _readingSubtotals = false;
+
+  /// Loads the lookups and the first page.
   Future<void> load() => _loadTop(pageSize);
 
   /// Reloads from the top as many rows as are loaded (at least a page), in
-  /// one query, so the loaded rows and the scroll position stay.
+  /// one query, so the loaded rows and the scroll position stay. The
+  /// subtotals are read again (data changed).
   Future<void> reload() {
     final loaded = switch (value) {
       ExpenseListLoaded(:final expenses) => expenses.length,
@@ -139,8 +271,47 @@ class ExpenseListCubit extends CubitSignal<ExpenseListState> {
   /// Called when the Home tab becomes visible again. Reloads only if
   /// something was written since the last load (P2-14): Manage may have
   /// renamed a category, Settings → Bin may have restored an expense.
-  Future<void> reloadIfChanged() async {
-    if (_dataVersion.value != _loadedVersion) await reload();
+  /// Returns whether it reloaded, so Home reloads the trend card too.
+  Future<bool> reloadIfChanged() async {
+    if (_dataVersion.value == _loadedVersion) return false;
+    await reload();
+    return true;
+  }
+
+  /// Shows what [filter] lets through, from the top (phase-5.md §7.1). A
+  /// page in flight is dropped. Returns false when the rows couldn't be
+  /// read: the list then keeps the old filter and its rows, and the screen
+  /// says so.
+  Future<bool> setFilter(ExpenseFilter filter) {
+    _requested = filter;
+    return _loadTop(pageSize);
+  }
+
+  /// Groups the loaded rows by [grouping]; subtotals are read again.
+  void setGrouping(Period grouping) {
+    if (grouping == _grouping) return;
+    _grouping = grouping;
+    _regroup((state) => state.copyWith(grouping: grouping));
+  }
+
+  /// Weeks start on [weekStart]; subtotals are read again.
+  void setWeekStart(WeekStart weekStart) {
+    if (weekStart == _weekStart) return;
+    _weekStart = weekStart;
+    _regroup((state) => state.copyWith(weekStart: weekStart));
+  }
+
+  /// Regroups the rows on screen. Loads in flight are left alone, on
+  /// purpose: a (re)load groups its rows with [_grouping] and [_weekStart]
+  /// as they are when it emits, and a page appended by [loadMore] is
+  /// regrouped by `copyWith` with the current ones. Cancelling them here
+  /// left a first load stuck on Loading and dropped a new filter's rows.
+  void _regroup(ExpenseListLoaded Function(ExpenseListLoaded) change) {
+    _dropSubtotals();
+    final state = value;
+    if (state is ExpenseListLoaded) {
+      emitIfOpen(change(state).copyWith(subtotals: const {}));
+    }
   }
 
   /// Loads the next page after the last loaded row. One request at a time.
@@ -151,25 +322,37 @@ class ExpenseListCubit extends CubitSignal<ExpenseListState> {
     }
     final generation = _generation;
     final rows = state.expenses;
+    final matches = _matches;
     // Whether the page still continues the rows on screen. A reload that
     // finished meanwhile replaced them (and may have shifted them, e.g.
     // after a delete), so the page would duplicate or skip rows; it is
     // dropped, and the list asks again from the new last row.
     bool stillCurrent(ExpenseListLoaded current) =>
         generation == _generation && identical(current.expenses, rows);
-    _emitIfOpen(state.copyWith(loadingMore: true, loadMoreFailed: false));
+    emitIfOpen(state.copyWith(loadingMore: true, loadMoreFailed: false));
     try {
-      // The cursor comes from the last loaded row, never from a counter.
-      final page = await _expenses.page(
-        after: rows.lastOrNull?.cursor,
-        limit: pageSize,
-      );
+      final List<Expense> page;
+      final bool hasMore;
+      var used = _matchesUsed;
+      if (matches != null) {
+        (page, used) = await _pageOfMatches(matches, used, pageSize);
+        hasMore = used < matches.length;
+      } else {
+        // The cursor comes from the last loaded row, never from a counter.
+        page = await _expenses.page(
+          filter: _filter,
+          after: rows.lastOrNull?.cursor,
+          limit: pageSize,
+        );
+        hasMore = page.length == pageSize;
+      }
       final current = value;
       if (current is! ExpenseListLoaded || !stillCurrent(current)) return;
-      _emitIfOpen(
+      _matchesUsed = used;
+      emitIfOpen(
         current.copyWith(
           expenses: [...current.expenses, ...page],
-          hasMore: page.length == pageSize,
+          hasMore: hasMore,
           loadingMore: false,
         ),
       );
@@ -177,9 +360,89 @@ class ExpenseListCubit extends CubitSignal<ExpenseListState> {
       debugPrint('Loading more expenses failed: $error\n$stackTrace');
       final current = value;
       if (current is! ExpenseListLoaded || !stillCurrent(current)) return;
-      _emitIfOpen(current.copyWith(loadingMore: false, loadMoreFailed: true));
+      emitIfOpen(current.copyWith(loadingMore: false, loadMoreFailed: true));
     }
   }
+
+  /// Reads the subtotal of [key] (a group's or a day's range) unless it is
+  /// read or being read (phase-5.md §7.1, P5-26). Called by a frame top or
+  /// day header when it shows. One read at a time, in request order.
+  void requestSubtotal(SubtotalKey key) {
+    final state = value;
+    if (state is! ExpenseListLoaded || state.subtotals.containsKey(key)) {
+      return;
+    }
+    // With a text filter the matching entries are in memory already.
+    if (_matches case final matches?) {
+      _setSubtotal(key, SubtotalReady(_sumMatches(matches, key)));
+      return;
+    }
+    _setSubtotal(key, const SubtotalLoading());
+    _subtotalQueue.add(key);
+    _readSubtotals();
+  }
+
+  /// Reads [key]'s subtotal again after it failed (the retry icon, P5-22).
+  void retrySubtotal(SubtotalKey key) {
+    final state = value;
+    if (state is! ExpenseListLoaded ||
+        state.subtotals[key] is! SubtotalFailed) {
+      return;
+    }
+    emitIfOpen(state.copyWith(subtotals: {...state.subtotals}..remove(key)));
+    requestSubtotal(key);
+  }
+
+  Future<void> _readSubtotals() async {
+    if (_readingSubtotals) return;
+    _readingSubtotals = true;
+    try {
+      while (_subtotalQueue.isNotEmpty && !isClosed) {
+        final key = _subtotalQueue.removeAt(0);
+        final generation = _subtotalGeneration;
+        final filter = _filter;
+        SubtotalState result;
+        try {
+          final rows = await _expenses.amountsIn(
+            from: key.from,
+            to: key.to,
+            filter: filter,
+          );
+          result = SubtotalReady(
+            sumByCurrency([for (final (_, code, minor) in rows) (code, minor)]),
+          );
+        } catch (error) {
+          debugPrint('Loading a subtotal failed: $error');
+          result = const SubtotalFailed();
+        }
+        // Dropped meanwhile (filter, grouping, a write): the new list asks
+        // again.
+        if (generation != _subtotalGeneration) continue;
+        _setSubtotal(key, result);
+      }
+    } finally {
+      _readingSubtotals = false;
+    }
+  }
+
+  void _setSubtotal(SubtotalKey key, SubtotalState subtotal) {
+    final state = value;
+    if (state is! ExpenseListLoaded) return;
+    emitIfOpen(state.copyWith(subtotals: {...state.subtotals, key: subtotal}));
+  }
+
+  void _dropSubtotals() {
+    _subtotalGeneration++;
+    _subtotalQueue.clear();
+  }
+
+  static CurrencyTotals _sumMatches(List<SearchEntry> matches, PeriodRange r) =>
+      sumByCurrency([
+        for (final entry in matches)
+          if (entry.day.compareTo(r.from) >= 0 &&
+              entry.day.compareTo(r.to) <= 0)
+            (entry.currencyCode, entry.amountMinor),
+      ]);
 
   /// Undo for "Moved to bin": takes [id] out of the bin and reloads. Does
   /// nothing if it is no longer there (the bin was emptied meanwhile).
@@ -190,14 +453,15 @@ class ExpenseListCubit extends CubitSignal<ExpenseListState> {
   }
 
   /// Shows the chips of [code] (the default currency changed). Settings
-  /// writes don't bump `DataVersion`, so Home calls this itself.
-  Future<void> setChipCurrency(String code) async {
+  /// writes don't bump `DataVersion`, so Home calls this itself. Subtotals
+  /// only change order, which the screen takes from the settings.
+  Future<void> setDefaultCurrency(String code) async {
     if (code == _chipCurrency) return;
     _chipCurrency = code;
     final chips = await _loadChips();
     final current = value;
     if (current is ExpenseListLoaded && code == _chipCurrency) {
-      _emitIfOpen(current.copyWith(chips: chips));
+      emitIfOpen(current.copyWith(chips: chips));
     }
   }
 
@@ -219,7 +483,7 @@ class ExpenseListCubit extends CubitSignal<ExpenseListState> {
     final id = (await pendingDraft())?.editingExpenseId;
     final current = value;
     if (current is ExpenseListLoaded && current.draftExpenseId != id) {
-      _emitIfOpen(current.copyWith(draftExpenseId: () => id));
+      emitIfOpen(current.copyWith(draftExpenseId: () => id));
     }
   }
 
@@ -228,36 +492,110 @@ class ExpenseListCubit extends CubitSignal<ExpenseListState> {
   /// works without them.
   Future<List<String>> recentCurrencies() => recentCurrenciesOrEmpty(_expenses);
 
-  Future<void> _loadTop(int limit) async {
+  /// Reads the lookups and the first [limit] rows of the requested filter.
+  /// Returns false only when that read failed; a load overtaken by a newer
+  /// one returns true (the newer one shows the same requested filter).
+  Future<bool> _loadTop(int limit) async {
     final generation = ++_generation;
     final version = _dataVersion.value;
     try {
-      final expenses = await _expenses.page(limit: limit);
       final categories = await _categories.all();
       final paymentMethods = await _paymentMethods.all();
+      final events = await _events.all();
+      // Categories or events deleted in Manage leave the filter, before
+      // the rows are read with it: "only a deleted category" must show
+      // everything, not nothing.
+      final filter = _withoutDeleted(_requested, categories, events);
+      final List<Expense> expenses;
+      final bool hasMore;
+      List<SearchEntry>? matches;
+      var used = 0;
+      if (filter.hasText) {
+        final words = searchWords(filter.text);
+        matches = [
+          for (final entry in await _expenses.searchEntries(
+            filter: filter.withoutText,
+          ))
+            if (matchesText(entry, words)) entry,
+        ];
+        (expenses, used) = await _pageOfMatches(matches, 0, limit);
+        hasMore = used < matches.length;
+      } else {
+        expenses = await _expenses.page(filter: filter, limit: limit);
+        hasMore = expenses.length == limit;
+      }
       final draft = await pendingDraft();
       // Last, with no await after it: the chips are for the chip currency
       // as it is when this emits, even if it changed while loading.
       final chips = await _loadChips();
-      if (generation != _generation) return;
+      if (generation != _generation) return true;
       _loadedVersion = version;
-      _emitIfOpen(
+      _filter = filter;
+      _requested = filter;
+      _matches = matches;
+      _matchesUsed = used;
+      _dropSubtotals();
+      emitIfOpen(
         ExpenseListLoaded(
           expenses: expenses,
+          groups: homeGroups(
+            expenses,
+            grouping: _grouping,
+            weekStart: _weekStart,
+            hasMore: hasMore,
+          ),
           categories: {for (final c in categories) c.id: c},
           paymentMethods: {for (final m in paymentMethods) m.id: m},
-          hasMore: expenses.length == limit,
+          events: {for (final e in events) e.id: e},
+          hasMore: hasMore,
+          filter: filter,
+          grouping: _grouping,
+          weekStart: _weekStart,
           chips: chips,
           draftExpenseId: draft?.editingExpenseId,
         ),
       );
+      return true;
     } catch (error) {
-      if (generation != _generation) return;
+      debugPrint('Loading expenses failed: $error');
+      if (generation != _generation) return true;
+      _requested = _filter;
       // A failed reload keeps the rows on screen; only a first load shows
       // the error view.
-      if (value is! ExpenseListLoaded) _emitIfOpen(ExpenseListFailed(error));
-      debugPrint('Loading expenses failed: $error');
+      if (value is! ExpenseListLoaded) emitIfOpen(ExpenseListFailed(error));
+      return false;
     }
+  }
+
+  /// Up to [count] rows of [matches] from [start], and where the next page
+  /// starts. Ids that `byIds` doesn't return (binned since) are skipped.
+  Future<(List<Expense>, int)> _pageOfMatches(
+    List<SearchEntry> matches,
+    int start,
+    int count,
+  ) async {
+    final end = math.min(start + count, matches.length);
+    final rows = await _expenses.byIds([
+      for (final entry in matches.sublist(start, end)) entry.id,
+    ]);
+    return (rows, end);
+  }
+
+  static ExpenseFilter _withoutDeleted(
+    ExpenseFilter filter,
+    List<Category> categories,
+    List<Event> events,
+  ) {
+    final categoryIds = {for (final c in categories) c.id};
+    final eventIds = {for (final e in events) e.id};
+    if (categoryIds.containsAll(filter.categoryIds) &&
+        eventIds.containsAll(filter.eventIds)) {
+      return filter;
+    }
+    return filter.copyWith(
+      categoryIds: filter.categoryIds.intersection(categoryIds),
+      eventIds: filter.eventIds.intersection(eventIds),
+    );
   }
 
   /// The chips of the chip currency. Their own try/catch: a failure hides
@@ -281,11 +619,5 @@ class ExpenseListCubit extends CubitSignal<ExpenseListState> {
       debugPrint('Loading the amount chips failed: $error');
       return const [];
     }
-  }
-
-  // Every method keeps going across awaits, and the screen closes the
-  // cubit when it goes away. Emitting after close() asserts in debug mode.
-  void _emitIfOpen(ExpenseListState state) {
-    if (!isClosed) emit(state);
   }
 }
