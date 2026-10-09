@@ -8,6 +8,7 @@ import '../../../core/date_texts.dart';
 import '../../../core/formatting_locale.dart';
 import '../../../core/period_names.dart';
 import '../../../core/widgets/expense_tile.dart';
+import '../../../core/widgets/list_frames.dart';
 import '../../../core/widgets/retry_row.dart';
 import '../view_models/expense_list_cubit.dart';
 import 'day_header.dart';
@@ -38,9 +39,15 @@ List<Widget> homeListSlivers({
             PinnedHeaderSliver(
               child: FrameTop(
                 name: names.of(group.range),
-                subtotalKey: group.range,
-                cubit: cubit,
-                defaultCurrency: defaultCurrency,
+                // Reads the name with the amount to TalkBack.
+                trailing: SubtotalView(
+                  cubit: cubit,
+                  subtotalKey: group.range,
+                  title: names.of(group.range),
+                  defaultCurrency: defaultCurrency,
+                  style: Theme.of(context).textTheme.titleSmall,
+                  semanticsName: names.of(group.range),
+                ),
               ),
             ),
             for (final day in group.days)
@@ -136,14 +143,16 @@ class ExpenseRow extends StatelessWidget {
       contentPadding: const EdgeInsets.symmetric(
         horizontal: frameMargin + frameInset,
       ),
-      mark: hasDraft
-          ? Icon(
-              Icons.edit_note,
-              key: const ValueKey('unsavedMark'),
-              color: theme.colorScheme.tertiary,
-              semanticLabel: AppLocalizations.of(context).unsavedChanges,
-            )
-          : null,
+      marks: [
+        ?photoMark(context, expense.photoCount),
+        if (hasDraft)
+          Icon(
+            Icons.edit_note,
+            key: const ValueKey('unsavedMark'),
+            color: theme.colorScheme.tertiary,
+            semanticLabel: AppLocalizations.of(context).unsavedChanges,
+          ),
+      ],
     );
   }
 }

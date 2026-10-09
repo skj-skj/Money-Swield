@@ -1,5 +1,6 @@
 import '../../../../domain/models/restore_candidate.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../core/byte_size_text.dart';
 import '../../../core/date_texts.dart';
 import '../../../core/days_ago.dart';
 
@@ -33,11 +34,35 @@ List<String> restoreSummary(
       RestoreSource.preRestoreCopy => l10n.restoreCopyFrom(date),
     },
     _countsLine(l10n, locale, candidate),
+    ...photoLines(l10n, locale, candidate),
     // Left out from onboarding: there's only the seed data there.
     if (currentExpenses != null) ...[
       l10n.restoreReplacesData(currentExpenses),
       l10n.restoreKeepsCopy,
     ],
+  ];
+}
+
+/// The photos of a zip restore (phase-6.md §8.8): how many and their size,
+/// and that they don't fit; or that the backup has none. Nothing for
+/// Undo's copy (its photos are on the phone).
+List<String> photoLines(
+  AppLocalizations l10n,
+  String locale,
+  RestoreCandidate candidate,
+) {
+  if (candidate.source != RestoreSource.zip) return const [];
+  if (!candidate.includesPhotos) return [l10n.restoreBackupWithoutPhotos];
+  if (candidate.photoCount == 0) return const [];
+  return [
+    l10n.restoreIncludesPhotos(
+      candidate.photoCount,
+      byteSizeText(l10n, locale, candidate.photoBytes),
+    ),
+    if (!candidate.photosFit)
+      l10n.restoreNoSpaceForPhotos(
+        byteSizeText(l10n, locale, candidate.photoBytesShort),
+      ),
   ];
 }
 

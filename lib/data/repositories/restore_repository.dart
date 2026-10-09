@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'dart:ui' show Locale;
 
+import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
 import '../../domain/models/restore_candidate.dart';
 import '../services/backup/backup_archive.dart';
+import '../services/backup/backup_manifest.dart';
 import '../services/backup/backup_paths.dart';
 import '../services/backup/file_operations.dart';
 import '../services/backup/pre_restore_copy.dart';
@@ -15,6 +17,7 @@ import '../services/database/migration/migration_prompter.dart';
 import '../services/database/migration/migration_runner.dart';
 import '../services/database/migration/migrator.dart';
 import '../services/database/migrations/1790942733_create_settings.dart';
+import '../services/photo_service.dart';
 import 'settings_repository.dart';
 
 /// Runs one small read per repository on an open candidate, the way the app
@@ -26,44 +29,131 @@ typedef CandidateProbe = Future<void> Function(Database db);
 /// here works on `databases/restore/candidate.db`; nothing touches the live
 /// database, which [AppDatabase.replaceWith] alone replaces.
 class RestoreRepository {
-  RestoreRepository({required this._appDatabase, required this._probe});
+  RestoreRepository({
+    required this._appDatabase,
+    required this._probe,
+    this._photoService,
+  });
 
   final AppDatabase _appDatabase;
   final CandidateProbe _probe;
+
+  /// Free space (phase-6.md §6.8); null in tests without photos.
+  final PhotoService? _photoService;
+
+  /// The photos of the zip being restored, from its manifest; none for a
+  /// database-only backup or Undo's copy.
+  List<ManifestPhoto> _photos = const [];
 
   DatabaseFactory get _factory => _appDatabase.databaseFactory;
 
   Future<String> candidatePath() async =>
       (await _appDatabase.paths()).candidate;
 
+  /// The largest backup file the open dialog may copy in: the free space
+  /// of the cache, less 50 MB (R2; a backup with photos can be far over
+  /// Phase 3's 100 MB). The database entry stays capped at 100 MB.
+  Future<int> maxBackupBytes() async {
+    final service = _photoService;
+    if (service == null) return BackupArchive.maxDatabaseBytes;
+    try {
+      final free = await service.freeBytes(
+        (await _appDatabase.paths()).cacheFolder,
+      );
+      return free - RestoreCandidate.spaceMargin;
+    } catch (error) {
+      // Unknown: Phase 3's limit, which always worked.
+      return BackupArchive.maxDatabaseBytes;
+    }
+  }
+
   /// Validates the zip the open dialog copied to `cache/restore/picked.zip`
   /// and extracts its database as the candidate. Throws [RestoreRejected].
+  ///
+  /// The picked zip stays (R3): its photos are written after the confirm.
+  /// [deletePickedZip] deletes it when the restore ends; the startup
+  /// cleanup deletes a leftover one.
   Future<RestoreCandidate> prepareFromZip() async {
     final paths = await _freshCandidateFolder();
+    _photos = const [];
     try {
       final manifest = await BackupArchive.read(
         paths.pickedZip,
         extractDatabaseTo: paths.candidate,
       );
-      return await _validate(
+      final candidate = await _validate(
         paths.candidate,
         source: RestoreSource.zip,
         createdAt: manifest.createdAt,
       );
+      if (!manifest.includesPhotos) return candidate;
+      _photos = manifest.photos;
+      return candidate.withPhotos(
+        count: _photos.length,
+        bytes: _photos.fold(0, (sum, photo) => sum + photo.byteSize),
+        bytesToWrite: await _bytesToWrite(_photos),
+        free: await _freePhotoSpace(),
+      );
     } catch (_) {
       await deleteCandidate();
+      await deletePickedZip();
       rethrow;
-    } finally {
-      // The picked zip isn't needed past this point.
-      await deleteFolderIfExists(paths.restoreWorkFolder);
     }
   }
+
+  /// The photos this phone doesn't have yet by name and size.
+  Future<int> _bytesToWrite(List<ManifestPhoto> photos) async {
+    final root = await _appDatabase.filesFolder();
+    var bytes = 0;
+    for (final photo in photos) {
+      final file = File(p.join(root, photo.relativePath));
+      if (!await file.exists() || await file.length() != photo.byteSize) {
+        bytes += photo.byteSize;
+      }
+    }
+    return bytes;
+  }
+
+  Future<int?> _freePhotoSpace() async {
+    try {
+      return await _photoService?.freeBytes(await _appDatabase.filesFolder());
+    } catch (error) {
+      return null;
+    }
+  }
+
+  /// §6.8 step 5, before the swap: the zip's photos written into the
+  /// app's photo folder (each checked by size, CRC and SHA-256; one already
+  /// there with the right hash is kept). Returns how many failed. A write
+  /// error (a full disk) throws: the restore stops before the swap, and the
+  /// files written so far are unreferenced, so the next start sweeps them.
+  Future<int> writePhotos({
+    void Function(int done, int total)? onProgress,
+  }) async {
+    final photos = _photos;
+    if (photos.isEmpty) return 0;
+    final paths = await _appDatabase.paths();
+    final result = await BackupArchive.writePhotos(
+      paths.pickedZip,
+      photos,
+      await _appDatabase.filesFolder(),
+      onProgress: (done) => onProgress?.call(done, photos.length),
+    );
+    return result.failed;
+  }
+
+  /// Deletes `cache/restore/` (the picked zip) when the restore ends.
+  Future<void> deletePickedZip() async =>
+      deleteFolderIfExists((await _appDatabase.paths()).restoreWorkFolder);
 
   /// Copies [copy] (with its journals: its `-wal` may hold data) to the
   /// candidate and validates it. Copied, not moved, so the copy survives a
   /// failed attempt.
   Future<RestoreCandidate> prepareFromCopy(PreRestoreCopy copy) async {
     final paths = await _freshCandidateFolder();
+    // Undo needs no photos: the copy's files are still here, kept by the
+    // sweep while the copy exists (§6.8).
+    _photos = const [];
     try {
       for (final suffix in ['', ...journalSuffixes]) {
         final source = File('${copy.path}$suffix');

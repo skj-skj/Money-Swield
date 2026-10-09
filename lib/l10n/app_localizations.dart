@@ -1930,6 +1930,528 @@ abstract class AppLocalizations {
   /// **'{first} · {rest}'**
   String settingsTileSummary(String first, String rest);
 
+  /// No description provided for @addPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Add photos'**
+  String get addPhotos;
+
+  /// TalkBack label of the form's photo button when it has photos.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 photo, open} other{{count} photos, open}}'**
+  String photosCountOpen(int count);
+
+  /// No description provided for @takePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Take photo'**
+  String get takePhoto;
+
+  /// No description provided for @chooseFromGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose from gallery'**
+  String get chooseFromGallery;
+
+  /// No description provided for @photosAddedOf.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} of {max} added'**
+  String photosAddedOf(int count, int max);
+
+  /// No description provided for @photos.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos'**
+  String get photos;
+
+  /// No description provided for @photosOfMax.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} of {max}'**
+  String photosOfMax(int count, int max);
+
+  /// No description provided for @photosMaxReached.
+  ///
+  /// In en, this message translates to:
+  /// **'{max} photos is the most for one expense'**
+  String photosMaxReached(int max);
+
+  /// No description provided for @photoAlreadyAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'That photo is already here'**
+  String get photoAlreadyAdded;
+
+  /// No description provided for @photoCouldNotBeAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{A photo couldn\'t be added} other{{count} photos couldn\'t be added}}'**
+  String photoCouldNotBeAdded(int count);
+
+  /// No description provided for @photosOverflow.
+  ///
+  /// In en, this message translates to:
+  /// **'Only {max} photos per expense: {added, plural, =0{none was added} =1{1 was added} other{{added} were added}}.'**
+  String photosOverflow(int max, int added);
+
+  /// No description provided for @noCameraApp.
+  ///
+  /// In en, this message translates to:
+  /// **'No camera app found'**
+  String get noCameraApp;
+
+  /// No description provided for @addingPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Adding photos…'**
+  String get addingPhotos;
+
+  /// No description provided for @addingPhotosProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Adding photos ({done} of {total})'**
+  String addingPhotosProgress(int done, int total);
+
+  /// No description provided for @draftPhotosMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 photo from the draft couldn\'t be found} other{{count} photos from the draft couldn\'t be found}}'**
+  String draftPhotosMissing(int count);
+
+  /// No description provided for @photosMax.
+  ///
+  /// In en, this message translates to:
+  /// **'At most {max} photos. Remove {extra, plural, =1{1 photo} other{{extra} photos}} to save.'**
+  String photosMax(int max, int extra);
+
+  /// No description provided for @photosNotKept.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 photo couldn\'t be kept: it was deleted meanwhile} other{{count} photos couldn\'t be kept: they were deleted meanwhile}}'**
+  String photosNotKept(int count);
+
+  /// No description provided for @imageMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Image missing'**
+  String get imageMissing;
+
+  /// No description provided for @photosSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save the photos. Nothing was saved.'**
+  String get photosSaveFailed;
+
+  /// No description provided for @photosCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 photo} other{{count} photos}}'**
+  String photosCount(int count);
+
+  /// TalkBack name of a photo in an expense's Photos sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo {index} of {total}'**
+  String photoNumber(int index, int total);
+
+  /// The viewer's title: which photo of how many.
+  ///
+  /// In en, this message translates to:
+  /// **'{index} / {total}'**
+  String photoCounter(int index, int total);
+
+  /// The selection bar's title.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String selectedCount(int count);
+
+  /// TalkBack reads this for the selection bar.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 photo selected} other{{count} photos selected}}'**
+  String photosSelectedCount(int count);
+
+  /// No description provided for @selectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all'**
+  String get selectAll;
+
+  /// No description provided for @endSelection.
+  ///
+  /// In en, this message translates to:
+  /// **'End selection'**
+  String get endSelection;
+
+  /// No description provided for @selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected'**
+  String get selected;
+
+  /// No description provided for @notSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Not selected'**
+  String get notSelected;
+
+  /// No description provided for @photosDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Delete this photo?} other{Delete {count} photos?}}'**
+  String photosDeleteTitle(int count);
+
+  /// Delete confirm on the Photos screen.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{It will be deleted permanently from its expense. Copies you saved to Pictures stay.} other{They will be deleted permanently from their expenses. Copies you saved to Pictures stay.}}'**
+  String photosDeleteWarningScreen(int count);
+
+  /// Delete confirm in a saved expense's Photos sheet or viewer.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{It will be deleted permanently from this expense when you tap Update. Copies you saved to Pictures stay.} other{They will be deleted permanently from this expense when you tap Update. Copies you saved to Pictures stay.}}'**
+  String photosDeleteWarningForm(int count);
+
+  /// Delete confirm in a new expense's Photos sheet or viewer.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{It will be deleted permanently from this expense when you save it. Copies you saved to Pictures stay.} other{They will be deleted permanently from this expense when you save it. Copies you saved to Pictures stay.}}'**
+  String photosDeleteWarningNew(int count);
+
+  /// No description provided for @photosDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 photo deleted} other{{count} photos deleted}}'**
+  String photosDeleted(int count);
+
+  /// Copies a photo to the phone's Pictures folder, where gallery apps show it.
+  ///
+  /// In en, this message translates to:
+  /// **'Save to Pictures'**
+  String get saveToPictures;
+
+  /// No description provided for @savedToPictures.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to {folder}'**
+  String savedToPictures(String folder);
+
+  /// No description provided for @photosSavedToPictures.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 photo saved to {folder}} other{{count} photos saved to {folder}}}'**
+  String photosSavedToPictures(int count, String folder);
+
+  /// No description provided for @photosSavedSomeFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'{saved} saved; {failed, plural, =1{1 couldn\'t be saved} other{{failed} couldn\'t be saved}}'**
+  String photosSavedSomeFailed(int saved, int failed);
+
+  /// No description provided for @photosMissingNotSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 photo is missing and wasn\'t saved} other{{count} photos are missing and weren\'t saved}}'**
+  String photosMissingNotSaved(int count);
+
+  /// No description provided for @noSpaceToSavePhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough space to save these photos'**
+  String get noSpaceToSavePhotos;
+
+  /// No description provided for @savingToPictures.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving {done} / {total}'**
+  String savingToPictures(int done, int total);
+
+  /// Name of a picture saved from an expense without a title.
+  ///
+  /// In en, this message translates to:
+  /// **'Expense'**
+  String get defaultPictureTitle;
+
+  /// Title of the screen shown right after taking a photo.
+  ///
+  /// In en, this message translates to:
+  /// **'Your photo'**
+  String get reviewPhoto;
+
+  /// No description provided for @rotateLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'Rotate left'**
+  String get rotateLeft;
+
+  /// No description provided for @rotateRight.
+  ///
+  /// In en, this message translates to:
+  /// **'Rotate right'**
+  String get rotateRight;
+
+  /// No description provided for @rotatedDegrees.
+  ///
+  /// In en, this message translates to:
+  /// **'Rotated {degrees} degrees'**
+  String rotatedDegrees(int degrees);
+
+  /// No description provided for @usePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Use photo'**
+  String get usePhoto;
+
+  /// No description provided for @discardPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get discardPhoto;
+
+  /// Shown when the app was closed while reviewing a camera photo, and the photo is offered again.
+  ///
+  /// In en, this message translates to:
+  /// **'The photo you took is back'**
+  String get photoFromCameraBack;
+
+  /// No description provided for @noPhotosMatchTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'No photos match the filters'**
+  String get noPhotosMatchTooltip;
+
+  /// No description provided for @photoOfExpense.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo of {title}, {date}'**
+  String photoOfExpense(String title, String date);
+
+  /// No description provided for @noPhotosMatchFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'No photos match the filters on Home.'**
+  String get noPhotosMatchFilters;
+
+  /// No description provided for @cameraPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera photos'**
+  String get cameraPhotos;
+
+  /// No description provided for @galleryPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Gallery photos'**
+  String get galleryPhotos;
+
+  /// No description provided for @photoSizeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Size'**
+  String get photoSizeLabel;
+
+  /// No description provided for @photoQualityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Quality'**
+  String get photoQualityLabel;
+
+  /// No description provided for @photoSizeOriginal.
+  ///
+  /// In en, this message translates to:
+  /// **'Original'**
+  String get photoSizeOriginal;
+
+  /// No description provided for @photoSizeNotRecommended.
+  ///
+  /// In en, this message translates to:
+  /// **'{size} (not recommended)'**
+  String photoSizeNotRecommended(String size);
+
+  /// No description provided for @settingDefaultValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{value} (default)'**
+  String settingDefaultValue(String value);
+
+  /// No description provided for @photoResizedAbove.
+  ///
+  /// In en, this message translates to:
+  /// **'Larger photos are resized to this size; smaller ones are kept as they are'**
+  String get photoResizedAbove;
+
+  /// No description provided for @originalWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Keeping originals is not recommended: a phone photo is 5–10 MB, so after about 1,000 photos they take several GB on the phone and in backups with photos. Originals also keep the photo\'s location.'**
+  String get originalWarning;
+
+  /// No description provided for @photosUse.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos use {size} ({count, plural, =1{1 photo}other{{count} photos}}).'**
+  String photosUse(String size, int count);
+
+  /// No description provided for @noPhotosYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No photos yet.'**
+  String get noPhotosYet;
+
+  /// No description provided for @photosKeptInApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos are kept inside the app and leave with it. To keep one for yourself, open it and use Save to Pictures.'**
+  String get photosKeptInApp;
+
+  /// No description provided for @photoChangesApplyToNew.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes apply to photos you add from now on.'**
+  String get photoChangesApplyToNew;
+
+  /// Part of the Photos tile's summary: the camera photos' size.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera {size}'**
+  String photosTileCamera(String size);
+
+  /// Part of the Photos tile's summary: the gallery photos' size.
+  ///
+  /// In en, this message translates to:
+  /// **'Gallery {size}'**
+  String photosTileGallery(String size);
+
+  /// No description provided for @restorePhotoDefaults.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore defaults'**
+  String get restorePhotoDefaults;
+
+  /// No description provided for @restorePhotoDefaultsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore the photo defaults?'**
+  String get restorePhotoDefaultsTitle;
+
+  /// No description provided for @restorePhotoDefaultsMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera and gallery photos go back to 1080p and quality 85.'**
+  String get restorePhotoDefaultsMessage;
+
+  /// No description provided for @includePhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Include photos'**
+  String get includePhotos;
+
+  /// No description provided for @photosNotInBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos won\'t be in this backup. Restored on another phone or after reinstalling, they show as missing.'**
+  String get photosNotInBackup;
+
+  /// No description provided for @backupPhotosProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Adding photos to the backup ({done} of {total})'**
+  String backupPhotosProgress(int done, int total);
+
+  /// No description provided for @savingBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving backup…'**
+  String get savingBackup;
+
+  /// No description provided for @backupNoSpace.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough space on this phone to make this backup'**
+  String get backupNoSpace;
+
+  /// No description provided for @backupSavedMissingPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup saved. {count, plural, =1{1 photo was missing and isn\'t in it} other{{count} photos were missing and aren\'t in it}}.'**
+  String backupSavedMissingPhotos(int count);
+
+  /// No description provided for @saveTargetNoSpace.
+  ///
+  /// In en, this message translates to:
+  /// **'There isn\'t enough space where you chose to save it'**
+  String get saveTargetNoSpace;
+
+  /// No description provided for @restoreIncludesPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Includes {count, plural, =1{1 photo} other{{count} photos}} ({size}).'**
+  String restoreIncludesPhotos(int count, String size);
+
+  /// No description provided for @restoreNoSpaceForPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'There isn\'t enough space for its photos (needs {size} more).'**
+  String restoreNoSpaceForPhotos(String size);
+
+  /// No description provided for @restoreWithoutPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore without photos'**
+  String get restoreWithoutPhotos;
+
+  /// No description provided for @restoreBackupWithoutPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'This backup has no photos. Photos this phone doesn\'t have will show as missing.'**
+  String get restoreBackupWithoutPhotos;
+
+  /// No description provided for @restoringPhotosProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Restoring photos ({done} of {total})'**
+  String restoringPhotosProgress(int done, int total);
+
+  /// No description provided for @backupRestoredFailedPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup restored. {count, plural, =1{1 photo couldn\'t be restored and shows as missing} other{{count} photos couldn\'t be restored and show as missing}}.'**
+  String backupRestoredFailedPhotos(int count);
+
+  /// No description provided for @openBackupNoSpace.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough space on this phone to open this backup'**
+  String get openBackupNoSpace;
+
+  /// A file size in bytes; size is already formatted.
+  ///
+  /// In en, this message translates to:
+  /// **'{size} B'**
+  String sizeBytes(String size);
+
+  /// No description provided for @sizeKilobytes.
+  ///
+  /// In en, this message translates to:
+  /// **'{size} KB'**
+  String sizeKilobytes(String size);
+
+  /// No description provided for @sizeMegabytes.
+  ///
+  /// In en, this message translates to:
+  /// **'{size} MB'**
+  String sizeMegabytes(String size);
+
+  /// No description provided for @sizeGigabytes.
+  ///
+  /// In en, this message translates to:
+  /// **'{size} GB'**
+  String sizeGigabytes(String size);
+
   /// No description provided for @categoryFood.
   ///
   /// In en, this message translates to:

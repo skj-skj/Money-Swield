@@ -94,4 +94,122 @@ void main() {
     final back = BackupManifest.decode(text);
     expect(back.createdAt, DateTime.utc(2026, 10, 3, 8, 35, 12));
   });
+
+  group('photos (phase-6.md §5.7)', () {
+    final a = 'a' * 64;
+    final b = 'b' * 64;
+    Map<String, Object?> entry(String sha, {String? path, Object? size = 10}) =>
+        {
+          'relative_path': path ?? 'photos/$sha.jpg',
+          'sha256': sha,
+          'byte_size': size,
+        };
+
+    test('round trip', () {
+      final manifest = BackupManifest(
+        format: 1,
+        appVersion: '1.0.0+1',
+        schemaVersion: 1,
+        createdAt: DateTime.utc(2026, 10, 7),
+        includesPhotos: true,
+        photos: [
+          (relativePath: 'photos/$a.jpg', sha256: a, byteSize: 10),
+          (
+            relativePath: 'photos/$b.png',
+            sha256: b,
+            byteSize: 64 * 1024 * 1024,
+          ),
+        ],
+      );
+      final back = BackupManifest.decode(manifest.encode());
+      expect(back.includesPhotos, isTrue);
+      expect(back.photos, manifest.photos);
+    });
+
+    test('a Phase 3 manifest (no includes_photos) is database-only', () {
+      final back = BackupManifest.decode(
+        manifestJson({'includes_photos': null}),
+      );
+      expect(back.includesPhotos, isFalse);
+      expect(back.photos, isEmpty);
+    });
+
+    test('includes_photos false with junk in photos is accepted, the list '
+        'ignored', () {
+      final back = BackupManifest.decode(
+        manifestJson({
+          'includes_photos': false,
+          'photos': [5, 'x', entry('nope')],
+        }),
+      );
+      expect(back.photos, isEmpty);
+    });
+
+    final rejections = <String, Map<String, Object?>>{
+      'includes_photos not a bool': {'includes_photos': 'yes'},
+      'photos not a list': {'includes_photos': true, 'photos': 'x'},
+      'photos missing': {'includes_photos': true, 'photos': null},
+      'an entry not an object': {
+        'includes_photos': true,
+        'photos': ['photos/$a.jpg'],
+      },
+      'a crafted path': {
+        'includes_photos': true,
+        'photos': [entry(a, path: '../databases/expense_tracker.db')],
+      },
+      'a path that names another hash': {
+        'includes_photos': true,
+        'photos': [entry(a, path: 'photos/$b.jpg')],
+      },
+      'an upper-case hash': {
+        'includes_photos': true,
+        'photos': [entry('A' * 64, path: 'photos/${'A' * 64}.jpg')],
+      },
+      'a size of 0': {
+        'includes_photos': true,
+        'photos': [entry(a, size: 0)],
+      },
+      'a size over 64 MB': {
+        'includes_photos': true,
+        'photos': [entry(a, size: 64 * 1024 * 1024 + 1)],
+      },
+      'a size as text': {
+        'includes_photos': true,
+        'photos': [entry(a, size: '10')],
+      },
+      'the same path twice': {
+        'includes_photos': true,
+        'photos': [entry(a), entry(a)],
+      },
+    };
+    for (final MapEntry(key: name, value: fields) in rejections.entries) {
+      test('refused: $name', () {
+        expect(
+          () => BackupManifest.decode(manifestJson(fields)),
+          throwsA(isA<FormatException>()),
+        );
+      });
+    }
+
+    test('1,000 entries stay far below 16 MB', () {
+      final manifest = BackupManifest(
+        format: 1,
+        appVersion: '1.0.0+1',
+        schemaVersion: 1,
+        createdAt: DateTime.utc(2026),
+        includesPhotos: true,
+        photos: [
+          for (var i = 0; i < 1000; i++)
+            (
+              relativePath:
+                  'photos/${i.toRadixString(16).padLeft(64, '0')}.jpg',
+              sha256: i.toRadixString(16).padLeft(64, '0'),
+              byteSize: 5 * 1024 * 1024,
+            ),
+        ],
+      );
+      expect(manifest.encode().length, lessThan(16 * 1024 * 1024));
+      expect(BackupManifest.decode(manifest.encode()).photos, hasLength(1000));
+    });
+  });
 }

@@ -7,6 +7,7 @@ import '../../domain/models/app_theme_mode.dart';
 import '../../domain/models/dashboard_options.dart';
 import '../../domain/models/item_shape.dart';
 import '../../domain/periods.dart';
+import '../../domain/photo_sizing.dart';
 import '../services/database/sql_helpers.dart';
 
 /// Language codes the app is translated into. A stored language outside
@@ -44,6 +45,10 @@ class SettingsRepository {
   static const _trendCardPositionKey = 'trend_card_position';
   static const _trendCardSizeKey = 'trend_card_size';
   static const _trendCardHapticsKey = 'trend_card_haptics';
+  static const _cameraSizeKey = 'photo_camera_size';
+  static const _cameraQualityKey = 'photo_camera_quality';
+  static const _gallerySizeKey = 'photo_gallery_size';
+  static const _galleryQualityKey = 'photo_gallery_quality';
 
   /// The stored values of `trend_chart_style` (database.md §3.1).
   static const _chartStyleNames = {
@@ -131,8 +136,27 @@ class SettingsRepository {
         values[_trendCardHapticsKey],
         AppSettings.defaultTrendCardHaptics,
       ),
+      cameraPhotos: _photoSizing(
+        values[_cameraSizeKey],
+        values[_cameraQualityKey],
+      ),
+      galleryPhotos: _photoSizing(
+        values[_gallerySizeKey],
+        values[_galleryQualityKey],
+      ),
     );
   }
+
+  /// A photo size and quality as stored (§4.2): each falls back to its
+  /// default on its own when missing or unknown, so a quality the app no
+  /// longer offers doesn't reset the size.
+  static PhotoSizing _photoSizing(String? size, String? quality) => (
+    size: _enumOr(PhotoSize.values, size, defaultPhotoSizing.size),
+    quality: switch (int.tryParse(quality ?? '')) {
+      final int q when photoQualities.contains(q) => q,
+      _ => defaultPhotoSizing.quality,
+    },
+  );
 
   /// The default payment method's id: the stored one if that row still
   /// exists, else the `cash` row, else the first payment method by id. Null
@@ -229,28 +253,62 @@ class SettingsRepository {
   Future<void> setTrendCardHaptics(CardHaptics haptics) =>
       _write(_trendCardHapticsKey, haptics.name);
 
+  /// How camera photos are kept, both values in one transaction.
+  Future<void> setCameraPhotos(PhotoSizing sizing) =>
+      _writeSizing(_cameraSizeKey, _cameraQualityKey, sizing);
+
+  /// How gallery photos are kept, both values in one transaction.
+  Future<void> setGalleryPhotos(PhotoSizing sizing) =>
+      _writeSizing(_gallerySizeKey, _galleryQualityKey, sizing);
+
+  Future<void> _writeSizing(
+    String sizeKey,
+    String qualityKey,
+    PhotoSizing sizing,
+  ) => _db.transaction((txn) async {
+    for (final (key, value) in [
+      (sizeKey, sizing.size.name),
+      (qualityKey, '${sizing.quality}'),
+    ]) {
+      await txn.insert('settings', {
+        'key': key,
+        'value': value,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+  });
+
+  /// Settings → Photos' Restore defaults: the four rows removed in one
+  /// transaction, as for [restoreDefaultLook].
+  Future<void> restorePhotoDefaults() => _deleteKeys([
+    _cameraSizeKey,
+    _cameraQualityKey,
+    _gallerySizeKey,
+    _galleryQualityKey,
+  ]);
+
   /// Settings → Home's Restore defaults, in one transaction: chart style,
   /// card position, size and vibration, week start and week names. Removing the rows
   /// is enough, as for [restoreDefaultLook]. The card's period and the
   /// list's grouping stay.
-  Future<void> restoreHomeDefaults() => _db.transaction((txn) async {
-    for (final key in [
-      _trendChartStyleKey,
-      _trendCardPositionKey,
-      _trendCardSizeKey,
-      _trendCardHapticsKey,
-      _weekStartKey,
-      _weekLabelKey,
-    ]) {
-      await txn.delete('settings', where: 'key = ?', whereArgs: [key]);
-    }
-  });
+  Future<void> restoreHomeDefaults() => _deleteKeys([
+    _trendChartStyleKey,
+    _trendCardPositionKey,
+    _trendCardSizeKey,
+    _trendCardHapticsKey,
+    _weekStartKey,
+    _weekLabelKey,
+  ]);
 
   /// Back to the default theme color and tile and button shapes, in one
   /// transaction. Removing the rows is enough: a missing row means "use the
   /// default", so the defaults live in one place only ([load]).
-  Future<void> restoreDefaultLook() => _db.transaction((txn) async {
-    for (final key in [_themeColorKey, _tileShapeKey, _buttonShapeKey]) {
+  Future<void> restoreDefaultLook() =>
+      _deleteKeys([_themeColorKey, _tileShapeKey, _buttonShapeKey]);
+
+  /// Removes the [keys]' rows in one transaction: each then reads as its
+  /// default ([load]). Every Restore defaults goes through here.
+  Future<void> _deleteKeys(List<String> keys) => _db.transaction((txn) async {
+    for (final key in keys) {
       await txn.delete('settings', where: 'key = ?', whereArgs: [key]);
     }
   });

@@ -97,4 +97,19 @@ void main() {
     final tooLarge = BigInt.parse('9223372036854775808') * BigInt.from(100);
     expect(totalsText(l10n, formatter, {'INR': tooLarge}, 'INR'), 'Too large');
   });
+
+  test('monthWithYear always has the year (phase-6.md §8.9)', () {
+    expect(names().monthWithYear('2026-10-05'), 'Oct 2026');
+    expect(names().monthWithYear('2025-09-01'), 'Sept 2025');
+    expect(names(locale: 'en_US').monthWithYear('2025-09-01'), 'Sep 2025');
+    expect(
+      names(language: 'es', locale: 'es_ES').monthWithYear('2026-10-05'),
+      startsWith('Oct'),
+      reason: 'sentence-cased: intl writes "oct 2026"',
+    );
+    expect(
+      names(language: 'hi', locale: 'hi').monthWithYear('2026-10-05'),
+      contains('2026'),
+    );
+  });
 }

@@ -9,9 +9,9 @@ import 'package:my_expense_tracker_app/domain/models/expense.dart';
 import 'package:my_expense_tracker_app/domain/models/money.dart';
 import 'package:my_expense_tracker_app/domain/periods.dart';
 import 'package:my_expense_tracker_app/ui/core/charts/charts.dart';
+import 'package:my_expense_tracker_app/ui/core/widgets/list_frames.dart';
 import 'package:my_expense_tracker_app/ui/features/home/views/amount_chips_row.dart';
 import 'package:my_expense_tracker_app/ui/features/home/views/day_header.dart';
-import 'package:my_expense_tracker_app/ui/features/home/views/group_frame.dart';
 
 import '../../helpers/pump_app.dart';
 import '../../helpers/test_database.dart';
@@ -791,7 +791,8 @@ void main() {
   });
 
   group('settings grid', () {
-    testWidgets('six tiles in three rows of two; Bin opens the bin', (
+    testWidgets('seven tiles in rows of two, Photos after Backup and Bin '
+        'alone at the left (phase-6.md §8.6); Bin opens the bin', (
       tester,
     ) async {
       useOppoSize(tester);
@@ -803,6 +804,7 @@ void main() {
         'settingsHome',
         'settingsDefaults',
         'settingsBackup',
+        'settingsPhotos',
         'settingsBin',
       ];
       final rects = [
@@ -816,9 +818,16 @@ void main() {
         expect(left.left, lessThan(right.left));
       }
       expect(rects[2].top, greaterThan(rects[0].bottom));
+      expect(rects[6].left, rects[0].left);
+      expect(rects[6].top, greaterThan(rects[4].bottom));
+      expect(find.text('Camera 1080p · Gallery 1080p'), findsOne);
       expect(find.text('Smooth line, filled · Locked · Monday'), findsOne);
       expect(find.text('INR · 💵 Cash'), findsOne);
 
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('settingsBin')),
+        100,
+      );
       await tester.tap(find.byKey(const ValueKey('settingsBin')));
       await tester.pumpAndSettle();
       expect(find.text('Deleted expenses stay here for 30 days.'), findsOne);

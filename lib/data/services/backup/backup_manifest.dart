@@ -1,6 +1,11 @@
 import 'dart:convert';
 
+import '../../../domain/photos.dart';
 import '../database/database_files.dart';
+
+/// A photo inside a backup (phase-6.md §5.7). Its zip entry is named by
+/// its `relativePath` itself.
+typedef ManifestPhoto = ({String relativePath, String sha256, int byteSize});
 
 /// `manifest.json` inside a backup zip (phase-3.md §5.1).
 ///
@@ -12,6 +17,8 @@ class BackupManifest {
     required this.appVersion,
     required this.schemaVersion,
     required this.createdAt,
+    this.includesPhotos = false,
+    this.photos = const [],
   });
 
   /// Marks the zip as one of ours, so restore can say "this isn't a backup"
@@ -32,8 +39,13 @@ class BackupManifest {
   /// or unreadable: that doesn't reject it (§5.1).
   final DateTime? createdAt;
 
-  /// Photos arrive in Phase 6; until then every backup is database-only.
-  bool get includesPhotos => false;
+  /// Whether the zip holds the photos ("Include photos", P6-16). A
+  /// database-only backup still lists none.
+  final bool includesPhotos;
+
+  /// The photos in the zip, each under its own path; empty unless
+  /// [includesPhotos].
+  final List<ManifestPhoto> photos;
 
   Map<String, Object?> toJson() => {
     'app': appId,
@@ -42,7 +54,14 @@ class BackupManifest {
     'schema_version': schemaVersion,
     'created_at': _isoSeconds(createdAt),
     'includes_photos': includesPhotos,
-    'photos': const <Object>[],
+    'photos': [
+      for (final photo in photos)
+        {
+          'relative_path': photo.relativePath,
+          'sha256': photo.sha256,
+          'byte_size': photo.byteSize,
+        },
+    ],
   };
 
   String encode() => const JsonEncoder.withIndent('  ').convert(toJson());
@@ -73,12 +92,49 @@ class BackupManifest {
     }
     final appVersion = json['app_version'];
     final schemaVersion = json['schema_version'];
+    // Missing (a Phase 3 backup) is false; anything but a bool isn't ours.
+    final includesPhotos = json['includes_photos'] ?? false;
+    if (includesPhotos is! bool) {
+      throw const FormatException('manifest.json has no valid includes_photos');
+    }
     return BackupManifest(
       format: format,
       appVersion: appVersion is String ? appVersion : '',
       schemaVersion: schemaVersion is int ? schemaVersion : null,
       createdAt: _parseUtc(json['created_at']),
+      includesPhotos: includesPhotos,
+      // A database-only backup's list is never read, whatever it holds.
+      photos: includesPhotos ? _decodePhotos(json['photos']) : const [],
     );
+  }
+
+  /// The photo list of a backup with photos (§5.7). Every entry must be a
+  /// valid path whose name is its SHA-256, with a size from 1 byte to
+  /// [maxPhotoBytes], and no path twice: **any** bad entry makes the whole
+  /// file "not a backup", so a crafted path never reaches a file.
+  static List<ManifestPhoto> _decodePhotos(Object? value) {
+    if (value is! List<Object?>) {
+      throw const FormatException('manifest.json has no valid photos list');
+    }
+    final paths = <String>{};
+    return [
+      for (final item in value)
+        switch (item) {
+          {
+            'relative_path': final String path,
+            'sha256': final String sha,
+            'byte_size': final int size,
+          }
+              when isValidPhotoPath(path) &&
+                  isValidSha256(sha) &&
+                  path.startsWith('$photosFolder/$sha.') &&
+                  size > 0 &&
+                  size <= maxPhotoBytes &&
+                  paths.add(path) =>
+            (relativePath: path, sha256: sha, byteSize: size),
+          _ => throw FormatException('manifest.json has a bad photo: $item'),
+        },
+    ];
   }
 
   /// `2026-10-03T08:35:12Z`: whole seconds, easier to read than

@@ -5,6 +5,7 @@ import 'package:my_expense_tracker_app/domain/models/app_settings.dart';
 import 'package:my_expense_tracker_app/domain/models/app_theme_mode.dart';
 import 'package:my_expense_tracker_app/domain/models/dashboard_options.dart';
 import 'package:my_expense_tracker_app/domain/periods.dart';
+import 'package:my_expense_tracker_app/domain/photo_sizing.dart';
 import 'package:my_expense_tracker_app/ui/features/settings/view_models/settings_cubit.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -198,6 +199,8 @@ void main() {
       await cubit.setTrendCardSize(TrendCardSize.small);
       await cubit.setTrendCardHaptics(CardHaptics.strong);
       await cubit.setTimePickerKeyboard(true);
+      await cubit.setCameraPhotos((size: PhotoSize.original, quality: 95));
+      await cubit.setGalleryPhotos((size: PhotoSize.p720, quality: 70));
       final home = cubit.value;
 
       await cubit.setLocale(const Locale('es'));
@@ -213,8 +216,25 @@ void main() {
         expect(settings.trendCardSize, TrendCardSize.small);
         expect(settings.trendCardHaptics, CardHaptics.strong);
         expect(settings.timePickerKeyboard, isTrue);
+        expect(settings.cameraPhotos, home.cameraPhotos);
+        expect(settings.galleryPhotos, home.galleryPhotos);
       }
+      // Restore defaults on Home doesn't touch them either.
+      await cubit.restoreHomeDefaults();
+      expect(cubit.value.cameraPhotos, home.cameraPhotos);
       expect(cubit.value.locale, const Locale('es'));
+    });
+
+    test('photo sizing writes, then emits; restorePhotoDefaults goes back '
+        'to 1080p / 85 for both (phase-6.md §6.3)', () async {
+      final cubit = await loadedCubit();
+      await cubit.setCameraPhotos((size: PhotoSize.p1440, quality: 90));
+      await cubit.setGalleryPhotos((size: PhotoSize.original, quality: 95));
+      expect(await repository.load(), cubit.value);
+      await cubit.restorePhotoDefaults();
+      expect(cubit.value.cameraPhotos, defaultPhotoSizing);
+      expect(cubit.value.galleryPhotos, defaultPhotoSizing);
+      expect(await repository.load(), cubit.value);
     });
 
     test('restoreHomeDefaults writes, then emits the defaults', () async {
@@ -238,6 +258,8 @@ void main() {
       for (final field in [
         'timePickerKeyboard',
         'datePickerKeyboard',
+        'cameraPhotos',
+        'galleryPhotos',
         'weekStart',
         'weekLabel',
         'cardPeriod',

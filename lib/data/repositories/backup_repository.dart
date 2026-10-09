@@ -1,7 +1,10 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
+
+import '../../domain/photos.dart';
 
 import '../services/backup/backup_archive.dart';
 import '../services/backup/backup_manifest.dart';
@@ -11,14 +14,39 @@ import '../services/database/app_database.dart';
 import '../services/database/database_checks.dart';
 import '../services/database/database_files.dart';
 import '../services/database/migration/migration_runner.dart';
+import '../services/photo_store.dart';
 import 'settings_repository.dart';
+
+/// Not enough free space to build the backup (phase-6.md §6.7 step 3).
+/// Nothing was written.
+class BackupNoSpace implements Exception {
+  const BackupNoSpace({required this.needed, required this.free});
+
+  final int needed;
+  final int free;
+
+  @override
+  String toString() => 'BackupNoSpace: needs $needed bytes, $free free';
+}
 
 /// A finished backup zip in `cache/backup/`, ready for the save dialog.
 class BackupFile {
-  const BackupFile({required this.path, required this.createdAt});
+  const BackupFile({
+    required this.path,
+    required this.createdAt,
+    this.photoCount = 0,
+    this.missingPhotos = 0,
+  });
 
   final String path;
   final DateTime createdAt;
+
+  /// Photos in the zip.
+  final int photoCount;
+
+  /// Photos the data names whose file was missing (or of another size):
+  /// left out and counted, so the user is told (§6.7).
+  final int missingPhotos;
 
   /// The name suggested in the save dialog.
   String get name => p.basename(path);
@@ -36,8 +64,10 @@ class BackupRepository {
     this._db, {
     required this._appDatabase,
     required this._settings,
+    PhotoStore? photos,
     DateTime Function()? now,
-  }) : _now = now ?? DateTime.now;
+  }) : _photos = photos ?? PhotoStore.none,
+       _now = now ?? DateTime.now;
 
   /// The app's open connection.
   final Database _db;
@@ -46,7 +76,13 @@ class BackupRepository {
   /// connection. Looked up only when a backup runs.
   final AppDatabase _appDatabase;
   final SettingsRepository _settings;
+
+  /// The photo files and free space (phase-6.md §6.7).
+  final PhotoStore _photos;
   final DateTime Function() _now;
+
+  /// Room kept free on top of twice the backup's size (§6.7 step 3).
+  static const spaceMargin = 50 * 1024 * 1024;
 
   static const _attachedName = 'backup';
 
@@ -64,7 +100,17 @@ class BackupRepository {
 
   /// Builds a checked backup zip in `cache/backup/`. Throws on any problem,
   /// and then leaves nothing in that folder.
-  Future<BackupFile> createBackup({required String appVersion}) async {
+  ///
+  /// With [includePhotos] (ticked by default, P6-16) the zip holds every
+  /// photo the copy lists whose file is here with its size (§6.7); others
+  /// are left out and counted. [BackupNoSpace] when the cache can't hold
+  /// the zip and its saved copy (twice its size) and 50 MB more.
+  /// [onProgress] gets the photos zipped so far and their number.
+  Future<BackupFile> createBackup({
+    required String appVersion,
+    bool includePhotos = false,
+    void Function(int done, int total)? onProgress,
+  }) async {
     final paths = await _appDatabase.paths();
     // A backup cut short leaves its copy here; its tables would make the
     // CREATE TABLEs below fail.
@@ -75,6 +121,10 @@ class BackupRepository {
       await _createEmptyCopy(paths.backupCopy, schema);
       await _fillCopy(paths.backupCopy, schema.tables);
       final schemaVersion = await _checkCopy(paths.backupCopy);
+      final (photos, missing) = includePhotos && _photos.isAvailable
+          ? await _photosOf(paths.backupCopy)
+          : (const <ManifestPhoto>[], 0);
+      await _checkSpace(paths, photos);
       final createdAt = _now();
       final zip = p.join(paths.backupWorkFolder, backupFileName(createdAt));
       await BackupArchive.write(
@@ -83,16 +133,94 @@ class BackupRepository {
           appVersion: appVersion,
           schemaVersion: schemaVersion,
           createdAt: createdAt,
+          includesPhotos: includePhotos,
+          photos: photos,
         ),
         paths.backupCopy,
         zip,
+        photos: [
+          for (final photo in photos)
+            (
+              name: photo.relativePath,
+              path: p.join(_photos.root, photo.relativePath),
+            ),
+        ],
+        onProgress: (done) => onProgress?.call(done, photos.length),
       );
-      await _checkZip(zip, paths);
-      return BackupFile(path: zip, createdAt: createdAt);
+      await _checkZip(zip, paths, photos);
+      return BackupFile(
+        path: zip,
+        createdAt: createdAt,
+        photoCount: photos.length,
+        missingPhotos: missing,
+      );
     } catch (_) {
       await deleteFolderIfExists(paths.backupWorkFolder);
       rethrow;
     }
+  }
+
+  /// The photos of the copy at [copyPath] (§6.7 step 2): its `photos`
+  /// rows, paths checked, each whose file is here with its size; the rest
+  /// are counted as missing. From the copy, not the live database, so the
+  /// list is exactly what the zip's database names.
+  Future<(List<ManifestPhoto>, int)> _photosOf(String copyPath) async {
+    final copy = await _appDatabase.databaseFactory.openDatabase(
+      copyPath,
+      options: OpenDatabaseOptions(readOnly: true, singleInstance: false),
+    );
+    final List<Map<String, Object?>> rows;
+    try {
+      rows = await copy.rawQuery(
+        'SELECT relative_path, sha256, byte_size FROM photos',
+      );
+    } finally {
+      await copy.close();
+    }
+    final photos = <ManifestPhoto>[];
+    var missing = 0;
+    for (final row in rows) {
+      final path = row['relative_path']! as String;
+      final sha = row['sha256']! as String;
+      final size = row['byte_size']! as int;
+      final file = File(p.join(_photos.root, path));
+      final usable =
+          isValidPhotoPath(path) &&
+          path.startsWith('$photosFolder/$sha.') &&
+          size > 0 &&
+          size <= maxPhotoBytes &&
+          await file.exists() &&
+          await file.length() == size;
+      if (usable) {
+        photos.add((relativePath: path, sha256: sha, byteSize: size));
+      } else {
+        missing++;
+      }
+    }
+    return (photos, missing);
+  }
+
+  /// §6.7 step 3: the zip, then the copy the save dialog makes, both
+  /// usually on the same storage, and 50 MB to spare.
+  Future<void> _checkSpace(
+    BackupPaths paths,
+    List<ManifestPhoto> photos,
+  ) async {
+    if (!_photos.isAvailable) return;
+    final size =
+        await File(paths.backupCopy).length() +
+        photos.fold<int>(0, (sum, photo) => sum + photo.byteSize);
+    final needed = 2 * size + spaceMargin;
+    final int free;
+    try {
+      free = await _photos.service.freeBytes(paths.cacheFolder);
+    } catch (error) {
+      // Unknown isn't full: the backup goes on, and a write that runs out
+      // of room still fails it cleanly.
+      debugPrint('Reading the free space failed: $error');
+      return;
+    }
+    if (free < needed) throw BackupNoSpace(needed: needed, free: free);
   }
 
   /// Deletes `cache/backup/`, at the end of every backup (§5.2 step 6).
@@ -261,12 +389,26 @@ class BackupRepository {
   /// Reads the new zip back the way a restore would and compares the
   /// database it holds with the copy, so a backup that couldn't be
   /// restored is never saved.
-  Future<void> _checkZip(String zip, BackupPaths paths) async {
+  ///
+  /// Reading also checks that every listed photo has its one entry; their
+  /// sizes are compared from the zip's directory, not re-read: the bytes
+  /// were streamed from the files just checked (§6.7).
+  Future<void> _checkZip(
+    String zip,
+    BackupPaths paths,
+    List<ManifestPhoto> photos,
+  ) async {
     final readBack = p.join(paths.backupWorkFolder, 'read-back.db');
     try {
-      await BackupArchive.read(zip, extractDatabaseTo: readBack);
+      final manifest = await BackupArchive.read(
+        zip,
+        extractDatabaseTo: readBack,
+      );
       if (!await filesEqual(readBack, paths.backupCopy)) {
         throw StateError('The backup zip does not hold the copied database');
+      }
+      if (manifest.photos.length != photos.length) {
+        throw StateError('The backup zip does not list every photo');
       }
     } finally {
       await deleteFileIfExists(readBack);

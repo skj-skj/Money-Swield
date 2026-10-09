@@ -23,12 +23,13 @@ APP_ID := com.skj.expense.tracker.my_expense_tracker_app
 APK := build/app/outputs/flutter-apk/app-$(MODE).apk
 
 .DEFAULT_GOAL := help
-.PHONY: help format analyze test build install uninstall reinstall migration
+.PHONY: help format analyze test test-android build install uninstall reinstall migration
 
 help:
 	@echo 'make format    [FILES=...]   dart format (whole project by default)'
 	@echo 'make analyze   [FILES=...]   flutter analyze'
 	@echo 'make test      [FILES=...]   flutter test (full run: two suites)'
+	@echo 'make test-android            JVM unit tests of the Kotlin code (gradle)'
 	@echo 'make build     [MODE=debug|release]  build the APK'
 	@echo 'make install   [MODE=debug|release]  install the built APK over adb'
 	@echo 'make uninstall               uninstall the app (deletes its data)'
@@ -49,6 +50,15 @@ ifeq ($(FILES),)
 else
 	flutter test $(FILES)
 endif
+
+# The JDK Flutter builds with (Android Studio's), read from flutter doctor
+# only when this target runs; pass ANDROID_JDK=... to use another. A
+# JAVA_HOME left pointing at an old JDK would otherwise fail gradle.
+ANDROID_JDK ?= $(shell flutter doctor -v 2>/dev/null | sed -n 's/.*Java binary at: \(.*\)[\/]bin[\/]java.*/\1/p')
+
+test-android:
+	@test -n '$(ANDROID_JDK)' || { echo 'No JDK found: pass ANDROID_JDK=<jdk folder>'; exit 1; }
+	cd android && JAVA_HOME='$(ANDROID_JDK)' ./gradlew :app:testDebugUnitTest
 
 build:
 	flutter build apk --$(MODE)

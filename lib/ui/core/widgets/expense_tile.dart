@@ -1,11 +1,12 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../../../domain/models/money.dart';
+import '../../../l10n/app_localizations.dart';
 import '../money_formatter.dart';
 
 /// One expense in a list (Home, the bin): its category's emoji, its title,
-/// a second line, and its amount, with an optional mark after the amount
-/// (Home's unsaved-changes mark; later the photo and recurring badges).
+/// a second line, and its amount, with marks after the amount (the photo
+/// icon, Home's unsaved-changes mark; later the recurring badge).
 ///
 /// The amount takes at most 45 % of the row and is scaled down, never cut:
 /// with a large font on a 360 dp phone a long amount would otherwise leave
@@ -18,7 +19,7 @@ class ExpenseTile extends StatelessWidget {
     required this.subtitle,
     required this.amount,
     required this.onTap,
-    this.mark,
+    this.marks = const [],
     this.contentPadding,
   });
 
@@ -29,8 +30,8 @@ class ExpenseTile extends StatelessWidget {
   final Money amount;
   final VoidCallback onTap;
 
-  /// Shown right after the amount.
-  final Widget? mark;
+  /// Shown right after the amount, in order (phase-6.md R7).
+  final List<Widget> marks;
 
   /// The tile's side padding; the list's default when null.
   final EdgeInsetsGeometry? contentPadding;
@@ -42,7 +43,6 @@ class ExpenseTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final mark = this.mark;
     return ListTile(
       onTap: onTap,
       contentPadding: contentPadding,
@@ -62,7 +62,7 @@ class ExpenseTile extends StatelessWidget {
                 MoneyFormatter.of(context).format(amount),
                 style: theme.textTheme.titleMedium,
               ),
-              if (mark != null)
+              for (final mark in marks)
                 Padding(
                   padding: const EdgeInsetsDirectional.only(start: 4),
                   child: mark,
@@ -73,4 +73,17 @@ class ExpenseTile extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The photo mark of a row with [count] photos (phase-6.md §8.5): a small
+/// muted icon, read as "3 photos". Null without photos.
+Widget? photoMark(BuildContext context, int count) {
+  if (count == 0) return null;
+  return Icon(
+    Icons.photo_outlined,
+    key: const ValueKey('photoMark'),
+    size: 16,
+    color: Theme.of(context).colorScheme.onSurfaceVariant,
+    semanticLabel: AppLocalizations.of(context).photosCount(count),
+  );
 }

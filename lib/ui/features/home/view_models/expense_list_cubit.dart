@@ -77,6 +77,7 @@ final class ExpenseListLoaded extends ExpenseListState {
     this.chips = const [],
     this.draftExpenseId,
     this.subtotals = const {},
+    this.photosIcon = PhotosIcon.hidden,
   });
 
   /// In list order: by local date, then moment (phase-5.md §4.1).
@@ -119,6 +120,9 @@ final class ExpenseListLoaded extends ExpenseListState {
   /// through (P5-26).
   final Map<SubtotalKey, SubtotalState> subtotals;
 
+  /// Read with every load and filter change.
+  final PhotosIcon photosIcon;
+
   /// Whether this state differs from [other] only in its subtotals, so the
   /// list itself needn't be built again (each frame top and day header
   /// watches its own subtotal).
@@ -135,7 +139,8 @@ final class ExpenseListLoaded extends ExpenseListState {
       loadingMore == other.loadingMore &&
       loadMoreFailed == other.loadMoreFailed &&
       identical(chips, other.chips) &&
-      draftExpenseId == other.draftExpenseId;
+      draftExpenseId == other.draftExpenseId &&
+      photosIcon == other.photosIcon;
 
   /// A copy; [groups] are rebuilt when the rows, [hasMore], the grouping
   /// or the week start change.
@@ -178,8 +183,21 @@ final class ExpenseListLoaded extends ExpenseListState {
           ? this.draftExpenseId
           : draftExpenseId(),
       subtotals: subtotals ?? this.subtotals,
+      photosIcon: photosIcon,
     );
   }
+}
+
+/// Home's photos icon (phase-6.md §8.9, P6-36, P6-45).
+enum PhotosIcon {
+  /// No active expense has a photo, or they couldn't be counted.
+  hidden,
+
+  /// The filters let at least one photo through.
+  enabled,
+
+  /// Photos exist, but the filters hide every one: greyed out.
+  disabled,
 }
 
 final class ExpenseListFailed extends ExpenseListState {
@@ -525,6 +543,7 @@ class ExpenseListCubit extends CubitSignal<ExpenseListState>
         hasMore = expenses.length == limit;
       }
       final draft = await pendingDraft();
+      final photosIcon = await _photosIcon(filter, matches);
       // Last, with no await after it: the chips are for the chip currency
       // as it is when this emits, even if it changed while loading.
       final chips = await _loadChips();
@@ -553,6 +572,7 @@ class ExpenseListCubit extends CubitSignal<ExpenseListState>
           weekStart: _weekStart,
           chips: chips,
           draftExpenseId: draft?.editingExpenseId,
+          photosIcon: photosIcon,
         ),
       );
       return true;
@@ -564,6 +584,29 @@ class ExpenseListCubit extends CubitSignal<ExpenseListState>
       // the error view.
       if (value is! ExpenseListLoaded) emitIfOpen(ExpenseListFailed(error));
       return false;
+    }
+  }
+
+  /// Whether Home's photos icon shows, and whether [filter] lets a photo
+  /// through (P6-45). With a text filter its [matches] are already read:
+  /// they are checked against the expenses with photos. Its own try/catch:
+  /// a failure hides the icon (logged), the list loads normally.
+  Future<PhotosIcon> _photosIcon(
+    ExpenseFilter filter,
+    List<SearchEntry>? matches,
+  ) async {
+    try {
+      if (!await _expenses.hasPhotos()) return PhotosIcon.hidden;
+      final bool any;
+      if (matches != null) {
+        any = (await _expenses.withPhotos(matches)).isNotEmpty;
+      } else {
+        any = await _expenses.hasMatchingPhotos(filter);
+      }
+      return any ? PhotosIcon.enabled : PhotosIcon.disabled;
+    } catch (error) {
+      debugPrint('Checking for photos failed: $error');
+      return PhotosIcon.hidden;
     }
   }
 

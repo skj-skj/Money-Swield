@@ -103,6 +103,10 @@ void main() {
         expect(candidate.latestExpenseOn, DateTime(2026, 10, 2));
         expect(candidate.stampsLastBackup, isTrue);
         expect(File(files.paths.candidate).existsSync(), isTrue);
+        // Kept until the restore ends: its photos are written after the
+        // confirm (R3).
+        expect(File(files.paths.pickedZip).existsSync(), isTrue);
+        await repo.deletePickedZip();
         expect(File(files.paths.pickedZip).existsSync(), isFalse);
       },
     );

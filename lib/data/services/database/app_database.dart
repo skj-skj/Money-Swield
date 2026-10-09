@@ -101,6 +101,11 @@ class AppDatabase {
     cacheFolder: await _cacheFolder(),
   );
 
+  /// The app's external files folder, which holds `databases/` and the
+  /// photo folders (phase-6.md §4.3, F10).
+  Future<String> filesFolder() async =>
+      p.dirname(p.dirname(await _databasePath()));
+
   /// Runs pending migrations and says whether that installed, updated or
   /// left alone the database. Throws [MigrationFailure] if one fails.
   Future<MigrationOutcome> migrate({

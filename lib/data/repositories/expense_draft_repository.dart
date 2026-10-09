@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:sqflite/sqflite.dart';
 
 import '../../domain/models/expense_draft.dart';
+import '../../domain/photos.dart';
 import '../services/database/sql_helpers.dart';
 
 /// Makes a timer; `Timer.new` in the app, a fake in tests.
@@ -92,6 +93,23 @@ class ExpenseDraftRepository {
     _debounceTimer = _timer(debounce, _queueWrite);
   }
 
+  /// Takes [photoIds] out of the slot's draft when it is an Edit draft of
+  /// [expenseId] (phase-6.md §6.4a): the Photos screen deleted them from
+  /// that expense, and without this the draft would bring them back on its
+  /// next Update. Through [update], so memory and row agree. An Add draft
+  /// or another expense's draft is left alone: its photos are its own
+  /// until saved.
+  Future<void> dropSavedPhotos(int expenseId, Set<int> photoIds) async {
+    final draft = await read();
+    if (draft == null || draft.editingExpenseId != expenseId) return;
+    final kept = [
+      for (final photo in draft.photos)
+        if (photo is! SavedPhoto || !photoIds.contains(photo.id)) photo,
+    ];
+    if (kept.length == draft.photos.length) return;
+    update(draft.withPhotos(kept));
+  }
+
   /// Writes the draft now if a write is due (or failed), and waits for
   /// every write and delete already queued. Called when the form closes
   /// and when the app goes to the background.
@@ -100,6 +118,10 @@ class ExpenseDraftRepository {
     if (_pending) _queueWrite();
     return _queueDone;
   }
+
+  /// Whether the slot holds changes the row doesn't have yet: after a
+  /// [flush], only when that write failed.
+  bool get writeDue => _pending;
 
   /// Waits for the writes already queued, and cancels the timer, without
   /// writing. The form calls it before a save that deletes the row in its
@@ -135,6 +157,22 @@ class ExpenseDraftRepository {
   static Future<void> probe(DatabaseExecutor db) async {
     final rows = await db.query(_table, where: 'id = ?', whereArgs: [_slotId]);
     if (rows.firstOrNull case final row?) _parse(row);
+  }
+
+  /// The draft in [db]'s slot, read-only, never deleted: for another
+  /// database (a pre-restore copy, phase-6.md §6.5). Null when there is
+  /// none, or no `expense_draft` table (a copy from before Phase 4), or it
+  /// can't be read as a draft. SQL errors throw.
+  static Future<ExpenseDraft?> readDraft(DatabaseExecutor db) async {
+    final table = await db.rawQuery(
+      "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = '$_table'",
+    );
+    if (table.isEmpty) return null;
+    final rows = await db.query(_table, where: 'id = ?', whereArgs: [_slotId]);
+    return switch (rows.firstOrNull) {
+      final row? => _parse(row),
+      null => null,
+    };
   }
 
   void _forgetMemory() {

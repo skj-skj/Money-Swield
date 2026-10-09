@@ -90,6 +90,10 @@ void main() {
       expect(lines, [
         'Backup from Oct 3, 2026 2:05 PM',
         '121 expenses, plus 3 in the bin. Latest on Oct 2, 2026',
+        // A database-only backup says so since Phase 6 (§8.8).
+        // ignore: no_adjacent_strings_in_list, one line of the dialog.
+        "This backup has no photos. Photos this phone doesn't have will show "
+            'as missing.',
         'All data on this phone (98 expenses) is replaced.',
         'A copy is kept, and you can undo the restore.',
       ]);
@@ -114,7 +118,8 @@ void main() {
 
     test('from onboarding, the "All data on this phone" paragraph is left '
         'out', () {
-      expect(summary(candidate(), current: null), hasLength(2));
+      // Date, counts and (Phase 6) the no-photos line.
+      expect(summary(candidate(), current: null), hasLength(3));
     });
 
     test('an unreadable date and an older schema show "—"', () {
@@ -138,7 +143,7 @@ void main() {
 
     test('this phone with no expenses', () {
       expect(
-        summary(candidate(), current: 0)[2],
+        summary(candidate(), current: 0)[3],
         'All data on this phone (no expenses) is replaced.',
       );
     });

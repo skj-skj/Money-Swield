@@ -60,11 +60,17 @@ Future<SettingsCubit> pumpAppWith(
 /// [timeout] is only a deadline (it returns as soon as [condition] holds),
 /// generous because each real I/O step costs a loop here, and test files
 /// run in parallel.
+///
+/// Each loop moves the fake clock by [step]. Keep it small when the app
+/// runs a timeout of its own on the fake clock meanwhile (a photo's 30 s,
+/// phase-6.md §7.1): at 50 ms per loop the fake clock outruns slow real
+/// work and the app's timeout fires.
 Future<void> pumpUntil(
   WidgetTester tester,
   bool Function() condition, {
   String? description,
   Duration timeout = const Duration(minutes: 2),
+  Duration step = const Duration(milliseconds: 50),
 }) async {
   final deadline = DateTime.now().add(timeout);
   while (!condition()) {
@@ -74,7 +80,7 @@ Future<void> pumpUntil(
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 10)),
     );
-    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pump(step);
   }
 }
 

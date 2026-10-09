@@ -8,6 +8,7 @@ import '../../../../domain/models/app_theme_mode.dart';
 import '../../../../domain/models/dashboard_options.dart';
 import '../../../../domain/models/item_shape.dart';
 import '../../../../domain/periods.dart';
+import '../../../../domain/photo_sizing.dart';
 import '../../../core/emit_if_open.dart';
 
 /// The app's settings, for the whole app's lifetime: `MaterialApp` reads
@@ -136,6 +137,24 @@ class SettingsCubit extends CubitSignal<AppSettings>
   Future<void> restoreHomeDefaults() async {
     await _settings.restoreHomeDefaults();
     emitIfOpen(value.withDefaultHome());
+  }
+
+  /// How camera photos are kept (Settings → Photos).
+  Future<void> setCameraPhotos(PhotoSizing sizing) async {
+    await _settings.setCameraPhotos(sizing);
+    emitIfOpen(value.copyWith(cameraPhotos: sizing));
+  }
+
+  /// How gallery photos are kept (Settings → Photos).
+  Future<void> setGalleryPhotos(PhotoSizing sizing) async {
+    await _settings.setGalleryPhotos(sizing);
+    emitIfOpen(value.copyWith(galleryPhotos: sizing));
+  }
+
+  /// Settings → Photos back to 1080p / 85 for both.
+  Future<void> restorePhotoDefaults() async {
+    await _settings.restorePhotoDefaults();
+    emitIfOpen(value.withDefaultPhotos());
   }
 
   Future<void> setOnboardingCompleted() async {

@@ -4,14 +4,15 @@ import 'package:material_ui/material_ui.dart';
 /// database file (phase-3.md §6.6). Every repository holds the closed
 /// connection and every screen holds repositories, so patching them one by
 /// one would miss something; rebuilding the tree can't.
-/// What Home says once after a restart that followed a restore.
-enum RestoreNotice {
-  /// "Backup restored".
-  restored,
+/// What Home says once after a restart that followed a restore: "Backup
+/// restored", that its settings were missing or unreadable (so it was
+/// restored with default settings), or that some photos couldn't be
+/// restored and show as missing (phase-6.md §6.8).
+class RestoreNotice {
+  const RestoreNotice({this.settingsReset = false, this.failedPhotos = 0});
 
-  /// The backup's settings were missing or unreadable, so it was restored
-  /// with default settings: Home says so, and that they can be changed.
-  restoredWithDefaultSettings,
+  final bool settingsReset;
+  final int failedPhotos;
 }
 
 class AppRestartController {

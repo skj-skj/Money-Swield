@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:my_expense_tracker_app/app/app_dependencies.dart';
 import 'package:my_expense_tracker_app/data/services/database/migrations/all_migrations.dart';
+import 'package:my_expense_tracker_app/data/services/photo_store.dart';
 import 'package:my_expense_tracker_app/l10n/app_localizations.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -38,15 +39,21 @@ Future<Database> openEmptyDatabase() async {
 }
 
 /// Repositories on a fresh migrated database.
+/// [photos] gives the app a photo folder (phase-6.md); without one,
+/// photos read as missing and nothing is swept.
 Future<AppDependencies> openTestDependencies({
   String deviceCurrency = 'INR',
   TestClock? clock,
   int? wallpaperSeed,
+  PhotoStore? photos,
 }) async => AppDependencies.forDatabase(
   await openMigratedDatabase(),
   deviceCurrency: deviceCurrency,
   wallpaperSeed: wallpaperSeed,
   now: clock?.call,
+  photos: photos,
+  // The sweeper has its own tests; its file I/O would hang a widget test.
+  sweepPhotos: false,
 );
 
 /// A clock the test moves by hand, for `created_at` / `updated_at`.

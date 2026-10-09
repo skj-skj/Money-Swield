@@ -56,7 +56,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String migrationUpdating(int current, int total) {
-    return 'Updating your data ($current of $total)';
+    final intl.NumberFormat currentNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String currentString = currentNumberFormat.format(current);
+    final intl.NumberFormat totalNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String totalString = totalNumberFormat.format(total);
+
+    return 'Updating your data ($currentString of $totalString)';
   }
 
   @override
@@ -92,7 +99,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String onboardingStep(int current, int total) {
-    return 'Step $current of $total';
+    final intl.NumberFormat currentNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String currentString = currentNumberFormat.format(current);
+    final intl.NumberFormat totalNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String totalString = totalNumberFormat.format(total);
+
+    return 'Step $currentString of $totalString';
   }
 
   @override
@@ -175,7 +189,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String archivedSection(int count) {
-    return 'Archived ($count)';
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return 'Archived ($countString)';
   }
 
   @override
@@ -195,7 +213,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String errorTooLong(int max) {
-    return 'Use at most $max characters';
+    final intl.NumberFormat maxNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String maxString = maxNumberFormat.format(max);
+
+    return 'Use at most $maxString characters';
   }
 
   @override
@@ -312,15 +335,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String amountErrorTooLarge(int max) {
-    return 'Use at most $max digits before the decimal point';
+    final intl.NumberFormat maxNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String maxString = maxNumberFormat.format(max);
+
+    return 'Use at most $maxString digits before the decimal point';
   }
 
   @override
   String amountErrorTooManyDecimals(int digits, String currency) {
+    final intl.NumberFormat digitsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String digitsString = digitsNumberFormat.format(digits);
+
     String _temp0 = intl.Intl.pluralLogic(
       digits,
       locale: localeName,
-      other: '$currency has only $digits decimals',
+      other: '$currency has only $digitsString decimals',
       one: '$currency has only 1 decimal',
       zero: '$currency has no decimals',
     );
@@ -482,10 +514,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String deletedDaysAgo(int days) {
+    final intl.NumberFormat daysNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String daysString = daysNumberFormat.format(days);
+
     String _temp0 = intl.Intl.pluralLogic(
       days,
       locale: localeName,
-      other: '$days days ago',
+      other: '$daysString days ago',
       one: '1 day ago',
     );
     return 'Deleted $_temp0';
@@ -493,10 +530,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String removedInDays(int days) {
+    final intl.NumberFormat daysNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String daysString = daysNumberFormat.format(days);
+
     String _temp0 = intl.Intl.pluralLogic(
       days,
       locale: localeName,
-      other: 'removed in $days days',
+      other: 'removed in $daysString days',
       one: 'removed in 1 day',
     );
     return '$_temp0';
@@ -530,10 +572,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String usedByExpenses(String name, int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count expenses',
+      other: '$countString expenses',
       one: '1 expense',
     );
     return '\"$name\" is used by $_temp0.';
@@ -541,13 +587,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String usedByExpensesWithBin(String name, int count, int binned) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+    final intl.NumberFormat binnedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String binnedString = binnedNumberFormat.format(binned);
+
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count expenses',
+      other: '$countString expenses',
       one: '1 expense',
     );
-    return '\"$name\" is used by $_temp0 ($binned in the bin).';
+    return '\"$name\" is used by $_temp0 ($binnedString in the bin).';
   }
 
   @override
@@ -562,10 +615,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String eventDeleteWithCount(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count expenses',
+      other: '$countString expenses',
       one: '1 expense',
     );
     return 'It will be removed from $_temp0. The expenses stay.';
@@ -674,10 +731,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String lastBackupDaysAgo(int days) {
+    final intl.NumberFormat daysNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String daysString = daysNumberFormat.format(days);
+
     String _temp0 = intl.Intl.pluralLogic(
       days,
       locale: localeName,
-      other: '$days days ago',
+      other: '$daysString days ago',
       one: '1 day ago',
     );
     return '$_temp0';
@@ -737,10 +799,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String restoreExpenseCount(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count expenses',
+      other: '$countString expenses',
       one: '1 expense',
       zero: 'No expenses',
     );
@@ -749,10 +815,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String restoreBinCount(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'plus $count in the bin',
+      other: 'plus $countString in the bin',
       one: 'plus 1 in the bin',
     );
     return '$_temp0';
@@ -765,10 +835,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String restoreReplacesData(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count expenses',
+      other: '$countString expenses',
       one: '1 expense',
       zero: 'no expenses',
     );
@@ -836,17 +910,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String weekNumber(int number) {
-    return 'Week $number';
+    final intl.NumberFormat numberNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String numberString = numberNumberFormat.format(number);
+
+    return 'Week $numberString';
   }
 
   @override
   String weekNumberWithYear(int number, String year) {
-    return 'Week $number, $year';
+    final intl.NumberFormat numberNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String numberString = numberNumberFormat.format(number);
+
+    return 'Week $numberString, $year';
   }
 
   @override
   String weekOfMonth(String month, int number) {
-    return '$month Week $number';
+    final intl.NumberFormat numberNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String numberString = numberNumberFormat.format(number);
+
+    return '$month Week $numberString';
   }
 
   @override
@@ -983,7 +1069,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String filterMore(String name, int count) {
-    return '$name +$count';
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return '$name +$countString';
   }
 
   @override
@@ -1094,6 +1184,638 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String settingsTileSummary(String first, String rest) {
     return '$first · $rest';
+  }
+
+  @override
+  String get addPhotos => 'Add photos';
+
+  @override
+  String photosCountOpen(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString photos, open',
+      one: '1 photo, open',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get takePhoto => 'Take photo';
+
+  @override
+  String get chooseFromGallery => 'Choose from gallery';
+
+  @override
+  String photosAddedOf(int count, int max) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+    final intl.NumberFormat maxNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String maxString = maxNumberFormat.format(max);
+
+    return '$countString of $maxString added';
+  }
+
+  @override
+  String get photos => 'Photos';
+
+  @override
+  String photosOfMax(int count, int max) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+    final intl.NumberFormat maxNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String maxString = maxNumberFormat.format(max);
+
+    return '$countString of $maxString';
+  }
+
+  @override
+  String photosMaxReached(int max) {
+    final intl.NumberFormat maxNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String maxString = maxNumberFormat.format(max);
+
+    return '$maxString photos is the most for one expense';
+  }
+
+  @override
+  String get photoAlreadyAdded => 'That photo is already here';
+
+  @override
+  String photoCouldNotBeAdded(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString photos couldn\'t be added',
+      one: 'A photo couldn\'t be added',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String photosOverflow(int max, int added) {
+    final intl.NumberFormat maxNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String maxString = maxNumberFormat.format(max);
+    final intl.NumberFormat addedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String addedString = addedNumberFormat.format(added);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      added,
+      locale: localeName,
+      other: '$addedString were added',
+      one: '1 was added',
+      zero: 'none was added',
+    );
+    return 'Only $maxString photos per expense: $_temp0.';
+  }
+
+  @override
+  String get noCameraApp => 'No camera app found';
+
+  @override
+  String get addingPhotos => 'Adding photos…';
+
+  @override
+  String addingPhotosProgress(int done, int total) {
+    final intl.NumberFormat doneNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String doneString = doneNumberFormat.format(done);
+    final intl.NumberFormat totalNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String totalString = totalNumberFormat.format(total);
+
+    return 'Adding photos ($doneString of $totalString)';
+  }
+
+  @override
+  String draftPhotosMissing(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString photos from the draft couldn\'t be found',
+      one: '1 photo from the draft couldn\'t be found',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String photosMax(int max, int extra) {
+    final intl.NumberFormat maxNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String maxString = maxNumberFormat.format(max);
+    final intl.NumberFormat extraNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String extraString = extraNumberFormat.format(extra);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      extra,
+      locale: localeName,
+      other: '$extraString photos',
+      one: '1 photo',
+    );
+    return 'At most $maxString photos. Remove $_temp0 to save.';
+  }
+
+  @override
+  String photosNotKept(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$countString photos couldn\'t be kept: they were deleted meanwhile',
+      one: '1 photo couldn\'t be kept: it was deleted meanwhile',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get imageMissing => 'Image missing';
+
+  @override
+  String get photosSaveFailed =>
+      'Couldn\'t save the photos. Nothing was saved.';
+
+  @override
+  String photosCount(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString photos',
+      one: '1 photo',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String photoNumber(int index, int total) {
+    final intl.NumberFormat indexNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String indexString = indexNumberFormat.format(index);
+    final intl.NumberFormat totalNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String totalString = totalNumberFormat.format(total);
+
+    return 'Photo $indexString of $totalString';
+  }
+
+  @override
+  String photoCounter(int index, int total) {
+    final intl.NumberFormat indexNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String indexString = indexNumberFormat.format(index);
+    final intl.NumberFormat totalNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String totalString = totalNumberFormat.format(total);
+
+    return '$indexString / $totalString';
+  }
+
+  @override
+  String selectedCount(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return '$countString selected';
+  }
+
+  @override
+  String photosSelectedCount(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString photos selected',
+      one: '1 photo selected',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get selectAll => 'Select all';
+
+  @override
+  String get endSelection => 'End selection';
+
+  @override
+  String get selected => 'Selected';
+
+  @override
+  String get notSelected => 'Not selected';
+
+  @override
+  String photosDeleteTitle(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Delete $countString photos?',
+      one: 'Delete this photo?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String photosDeleteWarningScreen(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'They will be deleted permanently from their expenses. Copies you saved to Pictures stay.',
+      one: 'It will be deleted permanently from its expense. Copies you saved to Pictures stay.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String photosDeleteWarningForm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'They will be deleted permanently from this expense when you tap Update. Copies you saved to Pictures stay.',
+      one: 'It will be deleted permanently from this expense when you tap Update. Copies you saved to Pictures stay.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String photosDeleteWarningNew(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'They will be deleted permanently from this expense when you save it. Copies you saved to Pictures stay.',
+      one: 'It will be deleted permanently from this expense when you save it. Copies you saved to Pictures stay.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String photosDeleted(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString photos deleted',
+      one: '1 photo deleted',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get saveToPictures => 'Save to Pictures';
+
+  @override
+  String savedToPictures(String folder) {
+    return 'Saved to $folder';
+  }
+
+  @override
+  String photosSavedToPictures(int count, String folder) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString photos saved to $folder',
+      one: '1 photo saved to $folder',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String photosSavedSomeFailed(int saved, int failed) {
+    final intl.NumberFormat savedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String savedString = savedNumberFormat.format(saved);
+    final intl.NumberFormat failedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String failedString = failedNumberFormat.format(failed);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      failed,
+      locale: localeName,
+      other: '$failedString couldn\'t be saved',
+      one: '1 couldn\'t be saved',
+    );
+    return '$savedString saved; $_temp0';
+  }
+
+  @override
+  String photosMissingNotSaved(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString photos are missing and weren\'t saved',
+      one: '1 photo is missing and wasn\'t saved',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get noSpaceToSavePhotos => 'Not enough space to save these photos';
+
+  @override
+  String savingToPictures(int done, int total) {
+    final intl.NumberFormat doneNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String doneString = doneNumberFormat.format(done);
+    final intl.NumberFormat totalNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String totalString = totalNumberFormat.format(total);
+
+    return 'Saving $doneString / $totalString';
+  }
+
+  @override
+  String get defaultPictureTitle => 'Expense';
+
+  @override
+  String get reviewPhoto => 'Your photo';
+
+  @override
+  String get rotateLeft => 'Rotate left';
+
+  @override
+  String get rotateRight => 'Rotate right';
+
+  @override
+  String rotatedDegrees(int degrees) {
+    final intl.NumberFormat degreesNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String degreesString = degreesNumberFormat.format(degrees);
+
+    return 'Rotated $degreesString degrees';
+  }
+
+  @override
+  String get usePhoto => 'Use photo';
+
+  @override
+  String get discardPhoto => 'Discard';
+
+  @override
+  String get photoFromCameraBack => 'The photo you took is back';
+
+  @override
+  String get noPhotosMatchTooltip => 'No photos match the filters';
+
+  @override
+  String photoOfExpense(String title, String date) {
+    return 'Photo of $title, $date';
+  }
+
+  @override
+  String get noPhotosMatchFilters => 'No photos match the filters on Home.';
+
+  @override
+  String get cameraPhotos => 'Camera photos';
+
+  @override
+  String get galleryPhotos => 'Gallery photos';
+
+  @override
+  String get photoSizeLabel => 'Size';
+
+  @override
+  String get photoQualityLabel => 'Quality';
+
+  @override
+  String get photoSizeOriginal => 'Original';
+
+  @override
+  String photoSizeNotRecommended(String size) {
+    return '$size (not recommended)';
+  }
+
+  @override
+  String settingDefaultValue(String value) {
+    return '$value (default)';
+  }
+
+  @override
+  String get photoResizedAbove =>
+      'Larger photos are resized to this size; smaller ones are kept as they are';
+
+  @override
+  String get originalWarning =>
+      'Keeping originals is not recommended: a phone photo is 5–10 MB, so after about 1,000 photos they take several GB on the phone and in backups with photos. Originals also keep the photo\'s location.';
+
+  @override
+  String photosUse(String size, int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString photos',
+      one: '1 photo',
+    );
+    return 'Photos use $size ($_temp0).';
+  }
+
+  @override
+  String get noPhotosYet => 'No photos yet.';
+
+  @override
+  String get photosKeptInApp =>
+      'Photos are kept inside the app and leave with it. To keep one for yourself, open it and use Save to Pictures.';
+
+  @override
+  String get photoChangesApplyToNew =>
+      'Changes apply to photos you add from now on.';
+
+  @override
+  String photosTileCamera(String size) {
+    return 'Camera $size';
+  }
+
+  @override
+  String photosTileGallery(String size) {
+    return 'Gallery $size';
+  }
+
+  @override
+  String get restorePhotoDefaults => 'Restore defaults';
+
+  @override
+  String get restorePhotoDefaultsTitle => 'Restore the photo defaults?';
+
+  @override
+  String get restorePhotoDefaultsMessage =>
+      'Camera and gallery photos go back to 1080p and quality 85.';
+
+  @override
+  String get includePhotos => 'Include photos';
+
+  @override
+  String get photosNotInBackup =>
+      'Photos won\'t be in this backup. Restored on another phone or after reinstalling, they show as missing.';
+
+  @override
+  String backupPhotosProgress(int done, int total) {
+    final intl.NumberFormat doneNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String doneString = doneNumberFormat.format(done);
+    final intl.NumberFormat totalNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String totalString = totalNumberFormat.format(total);
+
+    return 'Adding photos to the backup ($doneString of $totalString)';
+  }
+
+  @override
+  String get savingBackup => 'Saving backup…';
+
+  @override
+  String get backupNoSpace =>
+      'Not enough space on this phone to make this backup';
+
+  @override
+  String backupSavedMissingPhotos(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString photos were missing and aren\'t in it',
+      one: '1 photo was missing and isn\'t in it',
+    );
+    return 'Backup saved. $_temp0.';
+  }
+
+  @override
+  String get saveTargetNoSpace =>
+      'There isn\'t enough space where you chose to save it';
+
+  @override
+  String restoreIncludesPhotos(int count, String size) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString photos',
+      one: '1 photo',
+    );
+    return 'Includes $_temp0 ($size).';
+  }
+
+  @override
+  String restoreNoSpaceForPhotos(String size) {
+    return 'There isn\'t enough space for its photos (needs $size more).';
+  }
+
+  @override
+  String get restoreWithoutPhotos => 'Restore without photos';
+
+  @override
+  String get restoreBackupWithoutPhotos =>
+      'This backup has no photos. Photos this phone doesn\'t have will show as missing.';
+
+  @override
+  String restoringPhotosProgress(int done, int total) {
+    final intl.NumberFormat doneNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String doneString = doneNumberFormat.format(done);
+    final intl.NumberFormat totalNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String totalString = totalNumberFormat.format(total);
+
+    return 'Restoring photos ($doneString of $totalString)';
+  }
+
+  @override
+  String backupRestoredFailedPhotos(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString photos couldn\'t be restored and show as missing',
+      one: '1 photo couldn\'t be restored and shows as missing',
+    );
+    return 'Backup restored. $_temp0.';
+  }
+
+  @override
+  String get openBackupNoSpace =>
+      'Not enough space on this phone to open this backup';
+
+  @override
+  String sizeBytes(String size) {
+    return '$size B';
+  }
+
+  @override
+  String sizeKilobytes(String size) {
+    return '$size KB';
+  }
+
+  @override
+  String sizeMegabytes(String size) {
+    return '$size MB';
+  }
+
+  @override
+  String sizeGigabytes(String size) {
+    return '$size GB';
   }
 
   @override

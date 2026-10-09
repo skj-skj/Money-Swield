@@ -23,11 +23,8 @@ import java.util.concurrent.Executors
  * Access Framework) and the app version, for backup and restore
  * (phase-3.md §7). Own code instead of a file-picker plugin (P3-1).
  *
- * Created once, with the cached engine, so it outlives any one activity:
- * [MainActivity] attaches itself in `onCreate` and detaches in `onDestroy`,
- * and forwards `onActivityResult`. If Android recreates the activity while
- * a dialog is open, the new activity delivers the result to the same
- * pending call.
+ * Created once, with the cached engine, so it outlives any one activity;
+ * the one open dialog is a [PendingActivityCall] (phase-6.md R8).
  */
 class DocumentsChannel(messenger: BinaryMessenger, context: Context) :
     MethodChannel.MethodCallHandler {
@@ -37,73 +34,46 @@ class DocumentsChannel(messenger: BinaryMessenger, context: Context) :
     private val io = Executors.newSingleThreadExecutor()
     private val main = Handler(Looper.getMainLooper())
 
-    private var activity: Activity? = null
-
     /** The dialog that is open, if any. At most one at a time. */
-    private var pending: Pending? = null
-
-    private sealed class Pending(val result: MethodChannel.Result) {
-        class Save(result: MethodChannel.Result, val sourcePath: String) :
-            Pending(result)
-
-        class Open(
-            result: MethodChannel.Result,
-            val destinationPath: String,
-            val maxBytes: Long,
-        ) : Pending(result)
-    }
+    val dialog = PendingActivityCall(REQUEST_CODE)
 
     init {
         channel.setMethodCallHandler(this)
     }
 
-    fun attach(activity: Activity) {
-        this.activity = activity
-    }
-
-    /**
-     * When the activity goes away for good with a dialog still open, the
-     * call is answered as cancelled: otherwise every later call would fail
-     * with `busy` until the process dies. A configuration change keeps it.
-     */
-    fun detach(activity: Activity) {
-        if (this.activity !== activity) return
-        this.activity = null
-        if (activity.isFinishing && !activity.isChangingConfigurations) {
-            when (val call = pending) {
-                is Pending.Save -> call.result.success(false)
-                is Pending.Open -> call.result.success(null)
-                null -> {}
-            }
-            pending = null
-        }
-    }
-
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
             "appVersion" -> result.success(appVersion())
-            "saveDocument" -> startDialog(result) {
+            "saveDocument" -> {
                 val source = call.argument<String>("sourcePath")!!
-                Pending.Save(result, source) to
-                    Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
-                        addCategory(Intent.CATEGORY_OPENABLE)
-                        type = call.argument<String>("mimeType")!!
-                        putExtra(
-                            Intent.EXTRA_TITLE,
-                            call.argument<String>("suggestedName")!!,
-                        )
+                val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = call.argument<String>("mimeType")!!
+                    putExtra(
+                        Intent.EXTRA_TITLE,
+                        call.argument<String>("suggestedName")!!,
+                    )
+                }
+                startDialog(result, intent, cancelled = false) { uri ->
+                    runInBackground(result) {
+                        saveTo(uri, source)
+                        true
                     }
+                }
             }
-            "openDocument" -> startDialog(result) {
+            "openDocument" -> {
                 val mimeTypes = call.argument<List<String>>("mimeTypes")!!
-                Pending.Open(
-                    result,
-                    call.argument<String>("destinationPath")!!,
-                    call.argument<Number>("maxBytes")!!.toLong(),
-                ) to Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                val destination = call.argument<String>("destinationPath")!!
+                val maxBytes = call.argument<Number>("maxBytes")!!.toLong()
+                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                     addCategory(Intent.CATEGORY_OPENABLE)
                     type = "*/*"
                     putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes.toTypedArray())
+                }
+                startDialog(result, intent, cancelled = null) { uri ->
+                    runInBackground(result) {
+                        openFrom(uri, destination, maxBytes)
+                    }
                 }
             }
             else -> result.notImplemented()
@@ -111,54 +81,30 @@ class DocumentsChannel(messenger: BinaryMessenger, context: Context) :
     }
 
     /**
-     * Answers the open dialog's result. Returns whether it was ours, so
-     * [MainActivity] can still pass the others on.
+     * Opens a dialog; [onPicked] gets the chosen document. A cancelled or
+     * dropped dialog answers [cancelled] (`false` for save, `null` for
+     * open).
      */
-    fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
-        if (requestCode != REQUEST_CODE) return false
-        val call = pending ?: return true
-        pending = null
-        val uri = data?.data
-        if (resultCode != Activity.RESULT_OK || uri == null) {
-            when (call) {
-                is Pending.Save -> call.result.success(false)
-                is Pending.Open -> call.result.success(null)
-            }
-            return true
-        }
-        when (call) {
-            is Pending.Save -> runInBackground(call.result) {
-                saveTo(uri, call.sourcePath)
-                true
-            }
-            is Pending.Open -> runInBackground(call.result) {
-                openFrom(uri, call.destinationPath, call.maxBytes)
-            }
-        }
-        return true
-    }
-
     private fun startDialog(
         result: MethodChannel.Result,
-        build: () -> Pair<Pending, Intent>,
+        intent: Intent,
+        cancelled: Any?,
+        onPicked: (Uri) -> Unit,
     ) {
-        if (pending != null) {
-            result.error("busy", "A file dialog is already open", null)
-            return
-        }
-        val activity = activity
-        if (activity == null) {
-            result.error("noActivity", "The app is not in front", null)
-            return
-        }
-        val (call, intent) = build()
-        pending = call
-        try {
-            activity.startActivityForResult(intent, REQUEST_CODE)
-        } catch (e: Exception) {
-            pending = null
-            result.error("noDialog", e.toString(), null)
-        }
+        dialog.start(
+            result,
+            intent,
+            onResult = { resultCode, data ->
+                val uri = data?.data
+                if (resultCode != Activity.RESULT_OK || uri == null) {
+                    result.success(cancelled)
+                } else {
+                    onPicked(uri)
+                }
+            },
+            onDropped = { result.success(cancelled) },
+            onLaunchError = { e -> result.error("noDialog", e.toString(), null) },
+        )
     }
 
     /**

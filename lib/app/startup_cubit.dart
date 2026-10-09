@@ -44,8 +44,9 @@ final class StartupReady extends StartupState {
 }
 
 /// Opens the database, loads the settings, empties old expenses from the
-/// bin and deletes what a cut-short backup or restore left, once
-/// migrations are done (phase-1.md §5, phase-2.md §9.3, phase-3.md §6.6).
+/// bin, deletes what a cut-short backup or restore left and sweeps unused
+/// photos, once migrations are done (phase-1.md §5, phase-2.md §9.3,
+/// phase-3.md §6.6, phase-6.md §6.5).
 class StartupCubit extends CubitSignal<StartupState>
     with EmitIfOpen<StartupState> {
   StartupCubit({
@@ -77,6 +78,7 @@ class StartupCubit extends CubitSignal<StartupState>
       await _settingsCubit.load(dependencies.settings);
       await _purgeBin(dependencies);
       await _cleanUpLeftovers(dependencies);
+      await _sweepPhotos(dependencies);
       emitIfOpen(StartupReady(dependencies));
     } catch (error, stackTrace) {
       // Closed so that Retry starts afresh and Undo last restore can
@@ -103,7 +105,6 @@ class StartupCubit extends CubitSignal<StartupState>
   static Future<void> _purgeBin(AppDependencies dependencies) async {
     try {
       await dependencies.expenses.purgeBin();
-      // Phase 6 adds the orphan-photo cleanup here.
     } catch (error, stackTrace) {
       debugPrint(
         'Emptying old expenses from the bin failed: $error\n$stackTrace',
@@ -122,6 +123,27 @@ class StartupCubit extends CubitSignal<StartupState>
       debugPrint(
         'Deleting backup and restore leftovers failed: $error\n$stackTrace',
       );
+    }
+  }
+
+  /// Deletes photo rows and files nothing uses any more: from permanent
+  /// deletes, the purge above, Updates that removed a photo (phase-6.md
+  /// §6.5, P6-13). Awaited, after the purge, before any form can save.
+  /// Like the purge, a failure is logged and doesn't block the app; a file
+  /// is never deleted when anything that might need it can't be read.
+  static Future<void> _sweepPhotos(AppDependencies dependencies) async {
+    final sweeper = dependencies.photoSweeper;
+    if (sweeper == null) return;
+    try {
+      final watch = Stopwatch()..start();
+      final result = await sweeper.sweep();
+      debugPrint(
+        'Photo sweep: ${result.rows} rows, ${result.files} files '
+        '${result.filesSkipped ? '(files skipped) ' : ''}'
+        'in ${watch.elapsedMilliseconds} ms',
+      );
+    } catch (error, stackTrace) {
+      debugPrint('Sweeping unused photos failed: $error\n$stackTrace');
     }
   }
 

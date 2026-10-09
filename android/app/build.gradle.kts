@@ -19,8 +19,9 @@ android {
         applicationId = "com.skj.expense.tracker.my_expense_tracker_app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        // Android 10: photos go to Pictures/<AppName> through MediaStore
-        // without a storage permission (application-design.md §8).
+        // Android 10: pictures the user saves go to Pictures/<AppName>
+        // through MediaStore without a storage permission; the app's own
+        // photos stay in its own folder (phase-6.md P6-1, P6-46).
         minSdk = 29
         targetSdk = flutter.targetSdkVersion
         // Uses the version code from pubspec.yaml. When using split APKs, 1000 * ABI_VERSION
@@ -48,4 +49,9 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // JVM unit tests of the channels' plain Kotlin (`make test-android`).
+    testImplementation("junit:junit:4.13.2")
 }

@@ -35,6 +35,7 @@ class MainActivity : FlutterActivity() {
         // Registered before Dart starts, so main() can ask for it at once.
         registerDynamicColor(engine, appContext)
         documents = DocumentsChannel(engine.dartExecutor.binaryMessenger, appContext)
+        photos = PhotosChannel(engine.dartExecutor.binaryMessenger, appContext)
         engine.dartExecutor.executeDartEntrypoint(
             DartExecutor.DartEntrypoint.createDefault(),
         )
@@ -46,15 +47,17 @@ class MainActivity : FlutterActivity() {
     // here explicitly because the whole point is that it outlives it.
     override fun shouldDestroyEngineWithHost(): Boolean = false
 
-    // The documents channel lives with the engine; each activity lends
-    // itself to it for the save / open dialogs (DocumentsChannel).
+    // The documents and photos channels live with the engine; each
+    // activity lends itself to them for their dialogs (PendingActivityCall).
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState) // Calls provideFlutterEngine.
-        documents?.attach(this)
+        documents?.dialog?.attach(this)
+        photos?.dialog?.attach(this)
     }
 
     override fun onDestroy() {
-        documents?.detach(this)
+        documents?.dialog?.detach(this)
+        photos?.dialog?.detach(this)
         super.onDestroy()
     }
 
@@ -63,7 +66,8 @@ class MainActivity : FlutterActivity() {
     @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        documents?.onActivityResult(requestCode, resultCode, data)
+        if (documents?.dialog?.onActivityResult(requestCode, resultCode, data) == true) return
+        photos?.dialog?.onActivityResult(requestCode, resultCode, data)
     }
 
     /**
@@ -95,7 +99,8 @@ class MainActivity : FlutterActivity() {
         const val ENGINE_ID = "main"
         const val DYNAMIC_COLOR_CHANNEL = "expense_tracker/dynamic_color"
 
-        /** Created with the cached engine, so it lives as long as it. */
+        /** Created with the cached engine, so they live as long as it. */
         var documents: DocumentsChannel? = null
+        var photos: PhotosChannel? = null
     }
 }

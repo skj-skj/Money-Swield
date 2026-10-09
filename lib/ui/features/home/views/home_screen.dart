@@ -21,12 +21,13 @@ import '../../../core/widgets/empty_state_view.dart';
 import '../../../core/widgets/retry_row.dart';
 import '../../../core/widgets/save_error.dart';
 import '../../../core/widgets/show_message.dart';
+import '../../expenses/expense_form_opener.dart';
 import '../../expenses/view_models/expense_form_cubit.dart';
-import '../../expenses/views/expense_form_screen.dart';
 import '../../settings/view_models/settings_cubit.dart';
 import '../view_models/expense_list_cubit.dart';
 import '../view_models/trend_cubit.dart';
 import 'add_expense_fab.dart';
+import 'all_photos_screen.dart';
 import 'amount_chips_row.dart';
 import 'filter_bar.dart';
 import 'filter_sheet.dart';
@@ -84,10 +85,12 @@ class _HomeScreenState extends State<HomeScreen> {
     weekStart: _startSettings.weekStart,
   )..load();
 
-  /// A form is being opened: reading the draft slot first is async, and
-  /// taps on the FAB, a chip or a row in that gap would open a second form
-  /// (R12). Every open is ignored until the current one is pushed.
-  bool _opening = false;
+  /// Opens the form with Home's draft rules and double-tap guard, shared
+  /// with the Photos screen (phase-6.md R17).
+  late final _opener = ExpenseFormOpener(
+    dependencies: widget.dependencies,
+    pendingDraft: _cubit.pendingDraft,
+  );
 
   final _scroll = ScrollController();
   bool _fabExtended = true;
@@ -125,12 +128,17 @@ class _HomeScreenState extends State<HomeScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         final l10n = AppLocalizations.of(context);
-        switch (notice) {
-          case RestoreNotice.restored:
-            _showMessage(l10n.backupRestored);
-          // Longer: there's more to read, and it says where to go next.
-          case RestoreNotice.restoredWithDefaultSettings:
-            _showMessage(l10n.backupRestoredDefaultSettings, long: true);
+        // Longer when there's more to read: where to go next, or which
+        // photos are missing.
+        if (notice.settingsReset) {
+          _showMessage(l10n.backupRestoredDefaultSettings, long: true);
+        } else if (notice.failedPhotos > 0) {
+          _showMessage(
+            l10n.backupRestoredFailedPhotos(notice.failedPhotos),
+            long: true,
+          );
+        } else {
+          _showMessage(l10n.backupRestored);
         }
       });
     }
@@ -182,77 +190,57 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  /// Opens Add (no [expenseId]; [chipAmount] from a chip) or Edit. The
-  /// form starts from the draft slot when the slot holds a draft for it:
-  /// an Add draft for Add, this expense's Edit draft for Edit; otherwise
-  /// the slot is left alone until the form gets a change (phase-4.md §7.4).
+  /// Opens Add (no [expenseId]; [chipAmount] from a chip) or Edit
+  /// ([ExpenseFormOpener]), then reloads what the form changed and says
+  /// what happened, on Home's own messenger (phase-2.md §9.1, §12a).
   Future<void> _openForm({int? expenseId, Money? chipAmount}) async {
-    if (_opening) return;
-    _opening = true;
-    final Future<ExpenseFormResult?> closed;
-    try {
-      final slot = await _cubit.pendingDraft();
-      if (!mounted) return;
-      final draft = slot?.editingExpenseId == expenseId ? slot : null;
-      closed = Navigator.push<ExpenseFormResult>(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ExpenseFormScreen(
-            dependencies: widget.dependencies,
-            expenseId: expenseId,
-            draft: draft,
-            chipAmount: chipAmount,
-          ),
-        ),
-      );
-    } finally {
-      _opening = false;
-    }
-    final result = await closed;
-    // Snackbars are shown here, after the pop, not by the form before it,
-    // so they show on Home's own messenger only (phase-2.md §9.1, §12a).
-    if (!mounted) return;
+    final (:opened, :result) = await _opener.open(
+      context,
+      expenseId: expenseId,
+      chipAmount: chipAmount,
+    );
+    if (!opened || !mounted) return;
     switch (result) {
-      case ExpenseSaved():
+      case ExpenseSaved() || ExpenseBinned() || ExpenseGone():
         await _reload();
-      case ExpenseBinned(:final id):
-        await _reload();
-        if (mounted) _showMovedToBin(id);
-      case ExpenseGone(:final draftKept):
-        await _reload();
-        if (mounted) {
-          _showMessage(
-            draftKept ? _l10n.draftKeptExpenseGone : _l10n.expenseGone,
-            long: draftKept,
-          );
-        }
-      case ExpenseDraftKept():
-        await _reloadIfChanged();
-        await _cubit.refreshDraftMark();
-        if (mounted) _showMessage(_l10n.draftSaved);
-      case null:
-        // Back without changes: reload only if something changed data.
+      case ExpenseDraftKept() || null:
+        // Back: reload only if something changed data.
         await _reloadIfChanged();
         await _cubit.refreshDraftMark();
     }
-  }
-
-  AppLocalizations get _l10n => AppLocalizations.of(context);
-
-  void _showMovedToBin(int id) {
-    final l10n = AppLocalizations.of(context);
-    showMessage(
+    if (!mounted) return;
+    showExpenseFormResult(
       _messenger.currentState,
-      l10n.movedToBin,
-      action: SnackBarAction(
-        label: l10n.undo,
-        onPressed: () => saveOrShowError(_messengerContext, () async {
-          await _cubit.restore(id);
-          await _trend.load();
-        }),
-      ),
+      _l10n,
+      result,
+      onUndoBin: _undoBin,
     );
   }
+
+  /// The Photos screen, for Home's filters (phase-6.md §8.9). Photos can
+  /// be deleted and expenses edited there, so back here the list reloads
+  /// if anything changed (with the icon's state), and the unsaved mark is
+  /// read again.
+  Future<void> _openPhotos(ExpenseFilter filter) async {
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            AllPhotosScreen(dependencies: widget.dependencies, filter: filter),
+      ),
+    );
+    if (!mounted) return;
+    await _reloadIfChanged();
+    await _cubit.refreshDraftMark();
+  }
+
+  /// Undo of "Moved to bin".
+  void _undoBin(int id) => saveOrShowError(_messengerContext, () async {
+    await _cubit.restore(id);
+    await _trend.load();
+  });
+
+  AppLocalizations get _l10n => AppLocalizations.of(context);
 
   /// A message on Home's own messenger, so the FAB moves up for it.
   void _showMessage(String message, {bool long = false}) =>
@@ -471,6 +459,8 @@ class _HomeScreenState extends State<HomeScreen> {
       events: state.events,
       onOpen: () => _openFilters(state),
       onChange: _setFilter,
+      photosIcon: state.photosIcon,
+      onPhotos: () => _openPhotos(state.filter),
     );
     final locked = settings.trendCardPosition == TrendCardPosition.locked;
     final list = NotificationListener<UserScrollNotification>(

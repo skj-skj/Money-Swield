@@ -10,6 +10,8 @@ import '../data/repositories/payment_method_repository.dart';
 import '../data/repositories/settings_repository.dart';
 import '../data/services/database/app_database.dart';
 import '../data/services/document_service.dart';
+import '../data/services/photo_store.dart';
+import '../data/services/photo_sweeper.dart';
 import '../domain/periods.dart';
 import 'restore_tools.dart';
 
@@ -25,6 +27,8 @@ class AppDependencies {
     required this.paymentMethods,
     required this.expenses,
     required this.drafts,
+    required this.photos,
+    required this.photoSweeper,
     required this.backups,
     required this.restoreTools,
     required this.dataVersion,
@@ -35,12 +39,21 @@ class AppDependencies {
   /// Builds the repositories for an already open [database]. Tests use this
   /// with an in-memory database; [restoreTools] defaults to the real
   /// database file and dialogs, which such tests never reach.
+  ///
+  /// [photoRoot] is the app's external files folder (`databases/` and the
+  /// photo folders). Without it the app has no photo folder: photos read
+  /// as missing and nothing is swept, for tests that never touch photos.
+  /// [sweepPhotos] false leaves out the startup sweep: widget tests, where
+  /// its real file I/O never completes (phase-6.md F17).
   factory AppDependencies.forDatabase(
     Database database, {
     required String deviceCurrency,
     int? wallpaperSeed,
     DateTime Function()? now,
     RestoreTools? restoreTools,
+    String? photoRoot,
+    PhotoStore? photos,
+    bool sweepPhotos = true,
   }) {
     final settings = SettingsRepository(
       database,
@@ -54,6 +67,11 @@ class AppDependencies {
           deviceCurrency: deviceCurrency,
         );
     final dataVersion = DataVersion();
+    final drafts = ExpenseDraftRepository(database);
+    final photoStore =
+        photos ??
+        PhotoStore(root: photoRoot, service: tools.photoService, now: now);
+    final appDatabase = tools.appDatabase;
     return AppDependencies._(
       database: database,
       settings: settings,
@@ -70,11 +88,32 @@ class AppDependencies {
         now: now,
       ),
       expenses: ExpenseRepository(database, dataVersion: dataVersion, now: now),
-      drafts: ExpenseDraftRepository(database),
+      drafts: drafts,
+      photos: photoStore,
+      photoSweeper: photoStore.isAvailable && sweepPhotos
+          ? PhotoSweeper(
+              db: database,
+              drafts: drafts,
+              store: photoStore,
+              preRestoreCopies: () async => [
+                for (final copy in await appDatabase.preRestoreCopies())
+                  copy.path,
+              ],
+              openReadOnly: (path) => appDatabase.databaseFactory.openDatabase(
+                path,
+                options: OpenDatabaseOptions(
+                  readOnly: true,
+                  singleInstance: false,
+                ),
+              ),
+              now: now,
+            )
+          : null,
       backups: BackupRepository(
         database,
         appDatabase: tools.appDatabase,
         settings: settings,
+        photos: photoStore,
         now: now,
       ),
       restoreTools: tools,
@@ -93,6 +132,7 @@ class AppDependencies {
     deviceCurrency: tools.deviceCurrency,
     wallpaperSeed: wallpaperSeed,
     restoreTools: tools,
+    photoRoot: await tools.appDatabase.filesFolder(),
   );
 
   /// Runs one small query per repository on [db], the way the app does on
@@ -122,6 +162,9 @@ class AppDependencies {
       dataVersion: dataVersion,
     ).all();
     await ExpenseDraftRepository.probe(db);
+    // Both photo tables, as the form and Settings read them (R12).
+    await expenses.photosOf(0);
+    await expenses.photoStats();
   }
 
   /// Closes the database for a restore's swap (phase-3.md §6.4): first
@@ -146,6 +189,13 @@ class AppDependencies {
   /// The unsaved Add/Edit form (phase-4.md §6.4). Not part of
   /// [dataVersion]: a draft changes nothing Home counts.
   final ExpenseDraftRepository drafts;
+
+  /// The photo files (phase-6.md §6.2).
+  final PhotoStore photos;
+
+  /// Deletes unused photo rows and files once per start (§6.5); null
+  /// without a photo folder.
+  final PhotoSweeper? photoSweeper;
 
   final BackupRepository backups;
   final RestoreTools restoreTools;

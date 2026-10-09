@@ -6,7 +6,6 @@ import 'package:material_ui/material_ui.dart' show Locale;
 
 import '../../../../app/restore_tools.dart';
 import '../../../../data/repositories/restore_repository.dart';
-import '../../../../data/services/backup/backup_archive.dart';
 import '../../../../data/services/backup/pre_restore_copy.dart';
 import '../../../../data/services/database/app_database.dart';
 import '../../../../data/services/document_service.dart';
@@ -52,13 +51,25 @@ final class RestoreSwapping extends RestoreState {
   const RestoreSwapping();
 }
 
+/// The backup's photos are being written, before the swap (phase-6.md
+/// §6.8 step 5): [done] of [total].
+final class RestoreWritingPhotos extends RestoreState {
+  const RestoreWritingPhotos(this.done, this.total);
+
+  final int done;
+  final int total;
+}
+
 /// Swapped in: the app restarts. [settingsReset]: the backup's settings
 /// were missing or unreadable, so it was restored with default settings
 /// (RestoreRepository.repairSettings) and Home says so.
 final class RestoreDone extends RestoreState {
-  const RestoreDone({this.settingsReset = false});
+  const RestoreDone({this.settingsReset = false, this.failedPhotos = 0});
 
   final bool settingsReset;
+
+  /// Photos whose entry was damaged: they show as missing (§6.8).
+  final int failedPhotos;
 }
 
 /// Nothing picked, or the user said no.
@@ -71,6 +82,12 @@ final class RestoreRefused extends RestoreState {
   const RestoreRefused(this.reason);
 
   final RestoreRejection reason;
+}
+
+/// The picked file is larger than the phone's free space (R2): it can't
+/// even be copied in to be checked. Nothing was changed.
+final class RestoreFailedNoSpace extends RestoreState {
+  const RestoreFailedNoSpace();
 }
 
 /// Something went wrong. The live data is unchanged; [needsRestart] says
@@ -124,6 +141,7 @@ class RestoreCubit extends CubitSignal<RestoreState>
   bool _started = false;
   bool _confirmed = false;
   bool _finishing = false;
+  bool _withPhotos = false;
   RestoreCandidate? _candidate;
   MigrationCubit? _migration;
 
@@ -139,10 +157,11 @@ class RestoreCubit extends CubitSignal<RestoreState>
       picked = await _documents.openDocument(
         mimeTypes: zipMimeTypes,
         destinationPath: paths.pickedZip,
-        maxBytes: BackupArchive.maxDatabaseBytes,
+        maxBytes: await _repository.maxBackupBytes(),
       );
     } on DocumentTooLarge {
-      return emitIfOpen(const RestoreRefused(RestoreRejection.notABackup));
+      // Larger than the free space: it can't be opened here (R2).
+      return emitIfOpen(const RestoreFailedNoSpace());
     } catch (error, stackTrace) {
       // The dialog or the copy failed (a provider that can't stream the
       // file, no activity, a dialog already open). Shown with a report:
@@ -163,7 +182,10 @@ class RestoreCubit extends CubitSignal<RestoreState>
       _start(() => _validate(() => _repository.prepareFromCopy(copy)));
 
   /// "Restore" in the confirm dialog: migrates the candidate, then swaps.
-  Future<void> confirm() async {
+  /// [withPhotos] false is "Restore without photos" (P6-17): the
+  /// backup's photos aren't written; those this phone lacks show as
+  /// missing.
+  Future<void> confirm({bool withPhotos = true}) async {
     final candidate = switch (value) {
       RestoreConfirm(:final candidate) => candidate,
       _ => null,
@@ -173,6 +195,7 @@ class RestoreCubit extends CubitSignal<RestoreState>
     if (candidate == null || isClosed || _confirmed) return;
     _confirmed = true;
     _candidate = candidate;
+    _withPhotos = withPhotos && candidate.includesPhotos;
     final migration = _newMigrationCubit(await _repository.candidatePath());
     _migration = migration;
     // Continues once the migration screen is done: at once when nothing is
@@ -203,8 +226,9 @@ class RestoreCubit extends CubitSignal<RestoreState>
     if (running != null) await running;
     try {
       await _repository.deleteCandidate();
+      await _repository.deletePickedZip();
     } catch (error) {
-      // The next start deletes it.
+      // The next start deletes them.
       debugPrint('Deleting the restore candidate failed: $error');
     }
     await _migration?.close();
@@ -255,10 +279,18 @@ class RestoreCubit extends CubitSignal<RestoreState>
 
   Future<void> _finish(RestoreCandidate candidate) async {
     final bool settingsReset;
+    var failedPhotos = 0;
     try {
       settingsReset = await _repository.repairSettings();
       await _repository.stamp(candidate);
       await _repository.checkOpensAsApp();
+      if (_withPhotos) {
+        emitIfOpen(RestoreWritingPhotos(0, candidate.photoCount));
+        failedPhotos = await _repository.writePhotos(
+          onProgress: (done, total) =>
+              emitIfOpen(RestoreWritingPhotos(done, total)),
+        );
+      }
     } on RestoreRejected catch (rejected) {
       debugPrint('$rejected');
       return emitIfOpen(RestoreRefused(rejected.reason));
@@ -275,7 +307,9 @@ class RestoreCubit extends CubitSignal<RestoreState>
         await _repository.candidatePath(),
         closeConnection: _closeLiveConnection,
       );
-      emitIfOpen(RestoreDone(settingsReset: settingsReset));
+      emitIfOpen(
+        RestoreDone(settingsReset: settingsReset, failedPhotos: failedPhotos),
+      );
     } on SwapFailure catch (failure) {
       emitIfOpen(
         RestoreFailed(failure.report, needsRestart: failure.needsRestart),

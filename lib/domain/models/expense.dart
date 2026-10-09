@@ -22,6 +22,7 @@ class Expense {
     required this.createdAt,
     required this.updatedAt,
     required this.deletedAt,
+    this.photoCount = 0,
   });
 
   final int id;
@@ -60,6 +61,10 @@ class Expense {
   /// When it was moved to the bin, or null while it is active.
   final DateTime? deletedAt;
 
+  /// How many photos it has (phase-6.md §6.4): rows show an icon for them.
+  /// The photos themselves are read with `ExpenseRepository.photosOf`.
+  final int photoCount;
+
   bool get isInBin => deletedAt != null;
 
   /// The time as it was on the clock where it was recorded, as a UTC
@@ -92,7 +97,8 @@ class Expense {
       other.eventIds.containsAll(eventIds) &&
       other.createdAt == createdAt &&
       other.updatedAt == updatedAt &&
-      other.deletedAt == deletedAt;
+      other.deletedAt == deletedAt &&
+      other.photoCount == photoCount;
 
   @override
   int get hashCode => Object.hash(
@@ -110,6 +116,7 @@ class Expense {
     createdAt,
     updatedAt,
     deletedAt,
+    photoCount,
   );
 
   @override
@@ -130,6 +137,7 @@ class ExpenseInput {
     required this.categoryId,
     required this.paymentMethodId,
     required this.eventIds,
+    this.photos = const [],
   });
 
   /// Already trimmed by the form.
@@ -147,4 +155,33 @@ class ExpenseInput {
   final int categoryId;
   final int paymentMethodId;
   final Set<int> eventIds;
+
+  /// The photos, in order (phase-6.md §6.4). Saving replaces the
+  /// expense's links with exactly these.
+  final List<PhotoLinkInput> photos;
+}
+
+/// One photo an [ExpenseInput] links (phase-6.md §6.4).
+sealed class PhotoLinkInput {
+  const PhotoLinkInput();
+}
+
+/// A photo already in the `photos` table.
+final class LinkSavedPhoto extends PhotoLinkInput {
+  const LinkSavedPhoto(this.photoId);
+
+  final int photoId;
+}
+
+/// A photo just promoted to `photos/`: its row is made if it isn't there.
+final class LinkNewPhoto extends PhotoLinkInput {
+  const LinkNewPhoto({
+    required this.relativePath,
+    required this.sha256,
+    required this.byteSize,
+  });
+
+  final String relativePath;
+  final String sha256;
+  final int byteSize;
 }

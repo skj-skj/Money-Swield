@@ -3,12 +3,15 @@ import 'dart:async';
 import 'package:bloc_signals/bloc_signals.dart';
 import 'package:characters/characters.dart';
 import 'package:flutter/foundation.dart' show debugPrint, listEquals, setEquals;
+import 'package:path/path.dart' as p;
 
 import '../../../../data/repositories/category_repository.dart';
 import '../../../../data/repositories/event_repository.dart';
 import '../../../../data/repositories/expense_draft_repository.dart';
 import '../../../../data/repositories/expense_repository.dart';
 import '../../../../data/repositories/payment_method_repository.dart';
+import '../../../../data/services/photo_service.dart';
+import '../../../../data/services/photo_store.dart';
 import '../../../../domain/amount_expression.dart';
 import '../../../../domain/amount_input.dart';
 import '../../../../domain/itemize.dart';
@@ -19,7 +22,11 @@ import '../../../../domain/models/expense.dart';
 import '../../../../domain/models/expense_draft.dart';
 import '../../../../domain/models/money.dart';
 import '../../../../domain/models/payment_method.dart';
+import '../../../../domain/periods.dart';
+import '../../../../domain/photo_sizing.dart';
+import '../../../../domain/photos.dart';
 import '../../../../domain/popularity.dart';
+import '../../../../domain/selection.dart';
 import '../../../../domain/title_suggestions.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/builtin_names.dart';
@@ -38,9 +45,13 @@ sealed class ExpenseFormResult {
 }
 
 final class ExpenseSaved extends ExpenseFormResult {
-  const ExpenseSaved(this.expense);
+  const ExpenseSaved(this.expense, {this.photosNotKept = 0});
 
   final Expense expense;
+
+  /// Photos the save couldn't link: their row went meanwhile (phase-6.md
+  /// §7.1). Home says so.
+  final int photosNotKept;
 }
 
 final class ExpenseBinned extends ExpenseFormResult {
@@ -106,6 +117,85 @@ class ItemizeMemory {
   final List<String> terms;
 }
 
+/// What the form is doing with photos (phase-6.md §7.1). While picking,
+/// processing or reviewing, Save is off and Back waits (P6-15); saving to
+/// Pictures blocks neither.
+sealed class PhotoWork {
+  const PhotoWork();
+
+  /// Save / Update and new photo actions wait for it.
+  bool get blocksSave => false;
+}
+
+final class PhotoIdle extends PhotoWork {
+  const PhotoIdle();
+}
+
+/// The camera or the picker is open.
+final class PhotoPicking extends PhotoWork {
+  const PhotoPicking();
+
+  @override
+  bool get blocksSave => true;
+}
+
+/// [done] of [total] picked pictures are processed.
+final class PhotoProcessing extends PhotoWork {
+  const PhotoProcessing(this.done, this.total);
+
+  final int done;
+  final int total;
+
+  @override
+  bool get blocksSave => true;
+}
+
+/// A camera shot waits for Use photo or Discard (§8.2a). [previewPath] is
+/// its small copy; [recovered]: the app was killed while it waited, and it
+/// is offered again ("The photo you took is back").
+final class PhotoReviewing extends PhotoWork {
+  const PhotoReviewing({
+    required this.captureName,
+    required this.previewPath,
+    this.recovered = false,
+  });
+
+  final String captureName;
+  final String previewPath;
+  final bool recovered;
+
+  @override
+  bool get blocksSave => true;
+}
+
+/// Copies to Pictures are being written: [done] of [total].
+final class PhotoSavingToPictures extends PhotoWork {
+  const PhotoSavingToPictures(this.done, this.total);
+
+  final int done;
+  final int total;
+}
+
+/// What adding photos did, for the screen's message (§7.1).
+typedef PhotoAddReport = ({
+  int added,
+  int duplicates,
+  int overflow,
+  int failed,
+  PhotoError? error,
+});
+
+/// Save could not copy the photos into place: nothing was saved, the draft
+/// and its staged files are untouched (§6.4 step 2).
+class PhotoSaveFailed implements Exception {
+  const PhotoSaveFailed(this.cause);
+
+  final Object cause;
+
+  @override
+  String toString() => 'PhotoSaveFailed: $cause';
+}
+
 /// The form's fields as typed, plus the lists the pickers show.
 final class ExpenseFormReady extends ExpenseFormState {
   const ExpenseFormReady({
@@ -120,6 +210,9 @@ final class ExpenseFormReady extends ExpenseFormState {
     this.restoredAt,
     this.showErrors = false,
     this.saving = false,
+    this.photoWork = const PhotoIdle(),
+    this.selection,
+    this.droppedDraftPhotos = 0,
   });
 
   final ExpenseFields fields;
@@ -159,6 +252,16 @@ final class ExpenseFormReady extends ExpenseFormState {
   /// A save or delete is in progress; the buttons are disabled.
   final bool saving;
 
+  final PhotoWork photoWork;
+
+  /// The photos selected in the Photos sheet, by index; null when not
+  /// selecting (§8.10).
+  final Set<int>? selection;
+
+  /// Photos of the resumed draft that couldn't be found (P6-22), said once
+  /// when the form opens; 0 after.
+  final int droppedDraftPhotos;
+
   ExpenseFormReady copyWith({
     ExpenseFields? fields,
     List<Category>? categories,
@@ -170,6 +273,8 @@ final class ExpenseFormReady extends ExpenseFormState {
     bool clearRestored = false,
     bool? showErrors,
     bool? saving,
+    PhotoWork? photoWork,
+    Set<int>? Function()? selection,
   }) => ExpenseFormReady(
     fields: fields ?? this.fields,
     categories: categories ?? this.categories,
@@ -182,6 +287,8 @@ final class ExpenseFormReady extends ExpenseFormState {
     restoredAt: clearRestored ? null : restoredAt,
     showErrors: showErrors ?? this.showErrors,
     saving: saving ?? this.saving,
+    photoWork: photoWork ?? this.photoWork,
+    selection: selection == null ? this.selection : selection(),
   );
 }
 
@@ -197,6 +304,7 @@ class ExpenseFields {
     required this.paymentMethodId,
     required this.currencyCode,
     required this.wallClock,
+    this.photos = const [],
   });
 
   final String title;
@@ -215,6 +323,9 @@ class ExpenseFields {
   /// wall-clock time (like `Expense.wallClock`).
   final DateTime wallClock;
 
+  /// In the order added (phase-6.md §5.2).
+  final List<FormPhoto> photos;
+
   /// [expression] in canonical form, as stored and compared.
   String get canonicalExpression => fieldToCanonical(expression);
 
@@ -227,6 +338,7 @@ class ExpenseFields {
     int? paymentMethodId,
     String? currencyCode,
     DateTime? wallClock,
+    List<FormPhoto>? photos,
   }) => ExpenseFields(
     title: title ?? this.title,
     expression: expression ?? this.expression,
@@ -236,6 +348,7 @@ class ExpenseFields {
     paymentMethodId: paymentMethodId ?? this.paymentMethodId,
     currencyCode: currencyCode ?? this.currencyCode,
     wallClock: wallClock ?? this.wallClock,
+    photos: photos ?? this.photos,
   );
 
   /// The canonical expression is compared, so `1,5` and `1.5` typed for the
@@ -250,7 +363,8 @@ class ExpenseFields {
       setEquals(other.eventIds, eventIds) &&
       other.paymentMethodId == paymentMethodId &&
       other.currencyCode == currencyCode &&
-      other.wallClock == wallClock;
+      other.wallClock == wallClock &&
+      samePhotos(other.photos, photos);
 
   @override
   int get hashCode => Object.hash(
@@ -262,6 +376,7 @@ class ExpenseFields {
     paymentMethodId,
     currencyCode,
     wallClock,
+    Object.hashAll([for (final p in photos) p.sha256]),
   );
 }
 
@@ -307,12 +422,16 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     required this._l10n,
     required this._defaultCurrency,
     required this._defaultPaymentMethodId,
+    PhotoStore? photos,
+    this._cameraSizing = defaultPhotoSizing,
+    this._gallerySizing = defaultPhotoSizing,
     this.decimalSeparator = '.',
     this.expenseId,
     this._openingDraft,
     this._chipAmount,
     DateTime Function()? now,
   }) : _now = now ?? DateTime.now,
+       _photos = photos ?? PhotoStore.none,
        super(initialState: const ExpenseFormLoading());
 
   final ExpenseRepository _expenses;
@@ -320,6 +439,12 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
   final EventRepository _events;
   final PaymentMethodRepository _paymentMethods;
   final ExpenseDraftRepository _drafts;
+  final PhotoStore _photos;
+
+  /// Settings → Photos, as they were when the form opened.
+  final PhotoSizing _cameraSizing;
+  final PhotoSizing _gallerySizing;
+
   final AppLocalizations _l10n;
   final String _defaultCurrency;
   final int? _defaultPaymentMethodId;
@@ -333,6 +458,20 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
 
   /// The expense being edited, once loaded.
   Expense? _original;
+
+  /// Its photos as stored: the Edit baseline's (and Discard draft's).
+  List<SavedPhoto> _originalPhotos = const [];
+
+  /// The resumed draft's photos still there, and how many weren't.
+  List<FormPhoto> _draftPhotos = const [];
+  int _droppedDraftPhotos = 0;
+
+  /// A Save to Pictures in flight: a Save waits for it before deleting
+  /// staged files it may still be copying.
+  Future<void>? _picturesSave;
+
+  /// Photos of the form the store can show and save.
+  PhotoStore get photoStore => _photos;
 
   /// What dirtiness is measured against: a new form (Add) or the stored
   /// expense (Edit), never the draft (phase-4.md §7.3).
@@ -403,6 +542,10 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
       final paymentMethods = await _paymentMethods.all();
       _categoryUsage = await _expenses.categoryUsage();
       _eventUsage = await _expenses.eventUsage();
+      _originalPhotos = original == null
+          ? const []
+          : await _expenses.photosOf(original.id);
+      await _checkDraftPhotos();
       _original = original;
       _allEvents = events;
       emitIfOpen(_opened(categories, paymentMethods));
@@ -410,7 +553,65 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
       emitIfOpen(ExpenseFormLoadFailed(error));
       return;
     }
+    await _offerPendingCapture();
     await _loadTitleHistory();
+  }
+
+  /// Keeps the resumed draft's photos that still exist (P6-22): a saved
+  /// photo whose row is gone, or a staged one whose file is gone, is
+  /// dropped, and the form says how many.
+  Future<void> _checkDraftPhotos() async {
+    final photos = _openingDraft?.photos ?? const <FormPhoto>[];
+    if (photos.isEmpty) return;
+    final rows = await _expenses.existingPhotoIds([
+      for (final p in photos)
+        if (p is SavedPhoto) p.id,
+    ]);
+    final missingFiles = await _photos.missingStaged(photos.whereType());
+    _draftPhotos = [
+      for (final photo in photos)
+        if (switch (photo) {
+          SavedPhoto(:final id) => rows.contains(id),
+          StagedPhoto(:final stagingName) => !missingFiles.contains(
+            stagingName,
+          ),
+        })
+          photo,
+    ];
+    _droppedDraftPhotos = photos.length - _draftPhotos.length;
+  }
+
+  /// A camera shot left waiting for this form (the app was killed while
+  /// the camera or the review was open) comes back into the review, so it
+  /// can still be turned (§7.1). A shot for another form waits for that
+  /// one.
+  Future<void> _offerPendingCapture() async {
+    try {
+      final capture = await _photos.pendingCapture();
+      if (capture == null || capture.editingExpenseId != expenseId) return;
+      if (!await _photos.captureExists(capture.name)) {
+        await _photos.clearPendingCapture();
+        return;
+      }
+      final preview = await _photos.preview(capture.name);
+      final ready = _ready;
+      if (ready == null || ready.photoWork is! PhotoIdle) {
+        await _photos.deleteStaged([p.basename(preview)]);
+        return;
+      }
+      emitIfOpen(
+        ready.copyWith(
+          photoWork: PhotoReviewing(
+            captureName: capture.name,
+            previewPath: preview,
+            recovered: true,
+          ),
+        ),
+      );
+    } catch (error) {
+      // The form works without it; the sweep keeps the file 30 days.
+      debugPrint('Offering the pending camera shot failed: $error');
+    }
   }
 
   /// The first ready state: the baseline, then the draft and the chip on
@@ -464,6 +665,7 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
       itemize: itemize,
       textRevision: 1,
       restoredAt: draft?.updatedAt,
+      droppedDraftPhotos: _droppedDraftPhotos,
     );
   }
 
@@ -495,6 +697,7 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     paymentMethodId: expense.paymentMethodId,
     currencyCode: expense.amount.currencyCode,
     wallClock: expense.wallClock,
+    photos: _originalPhotos,
   );
 
   /// [expense]'s amount for the field: its expression if it is valid and
@@ -554,6 +757,7 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
           ? baseline.currencyCode
           : draft.currencyCode,
       wallClock: picked == null ? baseline.wallClock : _wallClockOf(picked),
+      photos: _draftPhotos,
     );
   }
 
@@ -624,11 +828,23 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
   /// first prefill; after it, only while every field but the title still
   /// has the value that prefill left (changed and changed back counts as
   /// unchanged), or once the form is cleared back to its baseline.
+  ///
+  /// Photos don't count here: a suggestion never fills or removes them
+  /// (P6-27), so adding one doesn't stop the picks. They still count for
+  /// the draft ([_needsDraft]).
   bool _maySuggest(ExpenseFields fields) {
-    if (_sameButTitle(fields, _baseline)) return true;
+    final withoutPhotos = fields.copyWith(photos: const []);
+    if (_sameButTitle(withoutPhotos, _baseline?.copyWith(photos: const []))) {
+      return true;
+    }
     if (_suggestionsBlocked) return false;
     final prefill = _prefill;
-    return prefill == null || _sameAsPrefill(fields, prefill);
+    return prefill == null ||
+        _sameAsPrefill(
+          withoutPhotos,
+          prefill,
+          filled: prefill.filled.copyWith(photos: const []),
+        );
   }
 
   /// Whether [fields] hold something only a draft can give back (owner,
@@ -649,8 +865,12 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
 
   /// Whether [fields] are what [prefill] left: the title too once the user
   /// made it their own ([_titleChanged]); spaces around it don't count.
-  bool _sameAsPrefill(ExpenseFields fields, _Prefill prefill) =>
-      _sameButTitle(fields, prefill.filled) &&
+  bool _sameAsPrefill(
+    ExpenseFields fields,
+    _Prefill prefill, {
+    ExpenseFields? filled,
+  }) =>
+      _sameButTitle(fields, filled ?? prefill.filled) &&
       (!_titleChanged || fields.title.trim() == prefill.filled.title.trim());
 
   /// The title field lost the focus, or the form is closing: a title
@@ -688,7 +908,26 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
   /// what's missing), only with changes on an existing expense.
   bool get canSave {
     final ready = _ready;
-    return ready != null && !ready.saving && (!isEditing || isDirty);
+    return ready != null &&
+        !ready.saving &&
+        !ready.photoWork.blocksSave &&
+        (!isEditing || isDirty);
+  }
+
+  /// Back waits while photos are being added or a picture is being saved
+  /// to Pictures (§7.1).
+  bool get photosBusy {
+    final work = _ready?.photoWork;
+    return work != null && work is! PhotoIdle;
+  }
+
+  /// More photos than an expense may have (a damaged draft): Save says
+  /// how many to remove (§5.2). Shown after the first save attempt.
+  int? get photosOverLimit {
+    final ready = _ready;
+    if (ready == null || !ready.showErrors) return null;
+    final extra = ready.fields.photos.length - maxPhotosPerExpense;
+    return extra > 0 ? extra : null;
   }
 
   // Validation. The errors are computed from the fields every time, so
@@ -997,9 +1236,19 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     // was before it, so this one replaces everything that one filled,
     // an amount it filled into an emptied field too (P4-3).
     final last = _prefill;
-    final again = last != null && _sameButTitle(ready.fields, last.filled);
+    // Photos added since don't make it a new start, and are kept: the
+    // form before the last prefill knew nothing of them (§12a).
+    final again =
+        last != null &&
+        _sameButTitle(
+          ready.fields.copyWith(photos: const []),
+          last.filled.copyWith(photos: const []),
+        );
     final start = again
-        ? last.before.copyWith(title: ready.fields.title)
+        ? last.before.copyWith(
+            title: ready.fields.title,
+            photos: ready.fields.photos,
+          )
         : ready.fields;
     final touched = again ? {...last.touched, DraftField.title} : ready.touched;
     final startItemize = again ? last.itemize : ready.itemize;
@@ -1228,6 +1477,7 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
       itemizeTerms: ready.itemize.terms,
       updatedAt: _now().toUtc(),
       suggestionsBlocked: !_maySuggest(fields),
+      photos: fields.photos,
     );
   }
 
@@ -1268,35 +1518,40 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     final fields = ready.fields;
     final amount = _evaluate(fields);
     final paymentMethodId = fields.paymentMethodId;
+    if (ready.photoWork.blocksSave) return null;
     if (_titleError(fields) != null ||
         amount is! ExpressionValue ||
         _descriptionTooLong(fields) != null ||
         _categoryMissing(fields) != null ||
-        paymentMethodId == null) {
+        paymentMethodId == null ||
+        fields.photos.length > maxPhotosPerExpense) {
       emitIfOpen(ready.copyWith(showErrors: true));
       return null;
     }
 
     final (occurredAt, offset) = _moment();
-    final input = ExpenseInput(
-      title: fields.title.trim(),
-      description: switch (fields.description.trim()) {
-        '' => null,
-        final text => text,
-      },
-      amount: Money(amount.amountMinor, fields.currencyCode),
-      amountExpression: amount.stored,
-      occurredAt: occurredAt,
-      utcOffsetMinutes: offset,
-      categoryId: fields.categoryId!,
-      paymentMethodId: paymentMethodId,
-      eventIds: fields.eventIds,
-    );
 
     emitIfOpen(ready.copyWith(saving: true));
     var saved = false;
     try {
       final owns = await _settleDraft();
+      // Staged photos are copied into place first (§6.4 step 2).
+      final links = await _photoLinks(fields.photos);
+      final input = ExpenseInput(
+        title: fields.title.trim(),
+        description: switch (fields.description.trim()) {
+          '' => null,
+          final text => text,
+        },
+        amount: Money(amount.amountMinor, fields.currencyCode),
+        amountExpression: amount.stored,
+        occurredAt: occurredAt,
+        utcOffsetMinutes: offset,
+        categoryId: fields.categoryId!,
+        paymentMethodId: paymentMethodId,
+        eventIds: fields.eventIds,
+        photos: links,
+      );
       final id = expenseId;
       final expense = id == null
           ? await _expenses.add(input, clearDraft: owns)
@@ -1304,6 +1559,8 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
       saved = true;
       _afterDraftDeleted(owns);
       _baseline = fields;
+      _lastPhotosNotKept = links.length - expense.photoCount;
+      await _deleteSavedStaged(fields.photos);
       return expense;
     } on ExpenseNotFound {
       // `update` refuses a binned or deleted expense: the edits become an
@@ -1344,6 +1601,407 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     } finally {
       final current = _ready;
       if (current != null) emitIfOpen(current.copyWith(saving: false));
+    }
+  }
+
+  /// How many photos the last save couldn't link (a row gone meanwhile).
+  int get lastPhotosNotKept => _lastPhotosNotKept;
+  int _lastPhotosNotKept = 0;
+
+  /// §6.4 step 2: each staged photo copied into `photos/` (its name is its
+  /// hash), each saved one by id. A copy that fails (no space, I/O) stops
+  /// the save before anything is written: [PhotoSaveFailed].
+  Future<List<PhotoLinkInput>> _photoLinks(List<FormPhoto> photos) async {
+    final links = <PhotoLinkInput>[];
+    for (final photo in photos) {
+      switch (photo) {
+        case SavedPhoto(:final id):
+          links.add(LinkSavedPhoto(id));
+        case StagedPhoto():
+          final String path;
+          try {
+            path = await _photos.promote(photo);
+          } catch (error) {
+            throw PhotoSaveFailed(error);
+          }
+          links.add(
+            LinkNewPhoto(
+              relativePath: path,
+              sha256: photo.sha256,
+              byteSize: photo.byteSize,
+            ),
+          );
+      }
+    }
+    return links;
+  }
+
+  /// After the commit: the staged files of the photos just saved are no
+  /// longer needed (their copies are in `photos/`). A Save to Pictures
+  /// still copying one is waited for. Best effort: the sweep deletes what
+  /// is left.
+  Future<void> _deleteSavedStaged(List<FormPhoto> photos) async {
+    try {
+      await _picturesSave;
+      await _photos.deleteStaged([
+        for (final photo in photos.whereType<StagedPhoto>()) photo.stagingName,
+      ]);
+    } catch (error) {
+      debugPrint('Deleting staged photos after a save failed: $error');
+    }
+  }
+
+  // Photos (phase-6.md §7.1).
+
+  int get remainingPhotoSlotsNow =>
+      remainingPhotoSlots(_ready?.fields.photos ?? const []);
+
+  /// Whether a new photo may be added now: the form is ready, idle, not
+  /// saving, and has room.
+  bool get canAddPhotos {
+    final ready = _ready;
+    return ready != null &&
+        _photos.isAvailable &&
+        !ready.saving &&
+        ready.photoWork is PhotoIdle &&
+        remainingPhotoSlots(ready.fields.photos) > 0;
+  }
+
+  /// Opens the camera (§7.1). The marker is written and the draft flushed
+  /// first, so a shot survives the app being killed while the camera is
+  /// open; it is not the draft slot, so another expense's draft stays.
+  /// Returns an error to show, or null. A taken picture goes to the review
+  /// ([PhotoReviewing]); the screen then calls [useCapture] or
+  /// [discardCapture].
+  Future<PhotoError?> addFromCamera() async {
+    if (!canAddPhotos) return null;
+    final name = _photos.newCaptureName();
+    _setWork(const PhotoPicking());
+    try {
+      await _photos.markPendingCapture(name, expenseId);
+      await _drafts.flush();
+      final taken = await _photos.service.capture(_photos.stagingFile(name));
+      if (!taken) {
+        await _forgetCapture(name);
+        _setWork(const PhotoIdle());
+        return null;
+      }
+      final preview = await _photos.preview(name);
+      _setWork(PhotoReviewing(captureName: name, previewPath: preview));
+      return null;
+    } on PhotoServiceException catch (e) {
+      await _forgetCapture(name);
+      _setWork(const PhotoIdle());
+      return e.error;
+    } catch (error) {
+      debugPrint('Taking a photo failed: $error');
+      await _forgetCapture(name);
+      _setWork(const PhotoIdle());
+      return PhotoError.ioError;
+    }
+  }
+
+  /// Use photo (or Back) on the review: the camera's file, turned by
+  /// [quarterTurns], is processed with the camera's sizing and added.
+  ///
+  /// The marker and the camera's file go only once the draft **row** names
+  /// the staged copy: the draft is written with a debounce, so it is
+  /// flushed first. Killed before that, the next open offers the shot
+  /// again (the staged copy, unnamed, is swept); never neither.
+  ///
+  /// On a full form (a shot that came back to a form that has 10 photos
+  /// since) nothing is added and the shot is kept: it is offered again
+  /// once a photo is removed, or the next time this form opens.
+  Future<PhotoAddReport?> useCapture(int quarterTurns) async {
+    final ready = _ready;
+    final work = ready?.photoWork;
+    if (ready == null || work is! PhotoReviewing) return null;
+    if (remainingPhotoSlots(ready.fields.photos) == 0) {
+      _heldCapture = true;
+      await _photos.deleteStaged([p.basename(work.previewPath)]);
+      _setWork(const PhotoIdle());
+      return (added: 0, duplicates: 0, overflow: 1, failed: 0, error: null);
+    }
+    _setWork(const PhotoProcessing(0, 1));
+    try {
+      final staged = await _photos.stageCapture(
+        work.captureName,
+        _cameraSizing,
+        quarterTurns,
+      );
+      final report = _addStaged([staged], failed: 0, overflow: 0);
+      await _drafts.flush();
+      if (_drafts.writeDue) {
+        // The row couldn't be written: the marker keeps the shot. At worst
+        // it is offered again, never lost.
+        debugPrint('The draft isn\'t written; the camera shot is kept');
+      } else {
+        await _forgetCapture(work.captureName, preview: work.previewPath);
+      }
+      return report;
+    } on PhotoServiceException catch (e) {
+      // Not a picture at all: nothing to come back to. Otherwise (no
+      // space, I/O) the shot and its marker stay, to be offered again.
+      if (e.error == PhotoError.notAnImage) {
+        await _forgetCapture(work.captureName, preview: work.previewPath);
+      }
+      _setWork(const PhotoIdle());
+      return (added: 0, duplicates: 0, overflow: 0, failed: 1, error: e.error);
+    } catch (error) {
+      debugPrint('Adding the camera photo failed: $error');
+      _setWork(const PhotoIdle());
+      return (
+        added: 0,
+        duplicates: 0,
+        overflow: 0,
+        failed: 1,
+        error: PhotoError.ioError,
+      );
+    }
+  }
+
+  /// A camera shot kept because the form was full ([useCapture]): offered
+  /// again when a photo is removed.
+  bool _heldCapture = false;
+
+  /// A photo was removed: a shot held for lack of room comes back.
+  void _offerHeldCapture() {
+    if (!_heldCapture) return;
+    _heldCapture = false;
+    unawaited(_offerPendingCapture());
+  }
+
+  /// Discard on the review: the shot, its preview and its marker go.
+  Future<void> discardCapture() async {
+    final work = _ready?.photoWork;
+    if (work is! PhotoReviewing) return;
+    await _forgetCapture(work.captureName, preview: work.previewPath);
+    _setWork(const PhotoIdle());
+  }
+
+  Future<void> _forgetCapture(String name, {String? preview}) async {
+    try {
+      await _photos.deleteStaged([
+        name,
+        if (preview != null) p.basename(preview),
+      ]);
+      await _photos.clearPendingCapture();
+    } catch (error) {
+      debugPrint('Forgetting a camera shot failed: $error');
+    }
+  }
+
+  /// Opens the photo picker for the free slots, then processes what was
+  /// picked with the gallery's sizing, one at a time with progress, and
+  /// adds them in one change (§7.1). The document picker may return more
+  /// than asked: only the first ones that fit are processed. A photo that
+  /// fails is counted; the rest go in.
+  Future<PhotoAddReport?> addFromGallery() async {
+    if (!canAddPhotos) return null;
+    final slots = remainingPhotoSlotsNow;
+    _setWork(const PhotoPicking());
+    final List<String> picked;
+    try {
+      picked = await _photos.service.pick(slots);
+    } on PhotoServiceException catch (e) {
+      _setWork(const PhotoIdle());
+      return (added: 0, duplicates: 0, overflow: 0, failed: 0, error: e.error);
+    }
+    if (picked.isEmpty) {
+      _setWork(const PhotoIdle());
+      return null;
+    }
+    final taken = picked.take(slots).toList();
+    final staged = <StagedPhoto>[];
+    var failed = 0;
+    for (final (i, uri) in taken.indexed) {
+      _setWork(PhotoProcessing(i, taken.length));
+      try {
+        staged.add(
+          await _photos
+              .stageFromGallery(uri, _gallerySizing)
+              .timeout(photoTimeout),
+        );
+      } catch (error) {
+        debugPrint('Adding a picked photo failed: $error');
+        failed++;
+      }
+    }
+    return _addStaged(
+      staged,
+      failed: failed,
+      overflow: picked.length - taken.length,
+    );
+  }
+
+  /// One picture may take this long to process before it counts as failed.
+  static const photoTimeout = Duration(seconds: 30);
+
+  /// Adds [staged] to the form in one change; a duplicate's staged file is
+  /// deleted at once (nothing names it).
+  PhotoAddReport _addStaged(
+    List<StagedPhoto> staged, {
+    required int failed,
+    required int overflow,
+  }) {
+    final ready = _ready;
+    if (ready == null) {
+      return (
+        added: 0,
+        duplicates: 0,
+        overflow: 0,
+        failed: failed,
+        error: null,
+      );
+    }
+    final out = addPhotos(ready.fields.photos, staged);
+    final kept = {for (final p in out.photos) p};
+    final unused = [
+      for (final p in staged)
+        if (!kept.contains(p)) p.stagingName,
+    ];
+    if (unused.isNotEmpty) unawaited(_photos.deleteStaged(unused));
+    _setPhotos(out.photos, ready: ready.copyWith(photoWork: const PhotoIdle()));
+    return (
+      added: out.photos.length - ready.fields.photos.length,
+      duplicates: out.duplicates,
+      overflow: overflow + out.overflow,
+      failed: failed,
+      error: null,
+    );
+  }
+
+  void _setWork(PhotoWork work) {
+    final ready = _ready;
+    if (ready != null) emitIfOpen(ready.copyWith(photoWork: work));
+  }
+
+  /// The photos changed: a change like any other field (owner note 3),
+  /// so the draft and Update follow.
+  void _setPhotos(
+    List<FormPhoto> photos, {
+    ExpenseFormReady? ready,
+    Set<int>? Function()? selection,
+  }) {
+    final current = ready ?? _ready;
+    if (current == null) return;
+    _apply(
+      current.copyWith(
+        fields: current.fields.copyWith(photos: photos),
+        clearRestored: true,
+        selection: selection,
+      ),
+    );
+  }
+
+  // Selection (§8.10).
+
+  /// A long press: selection starts with photo [index].
+  void startSelection(int index) {
+    final ready = _ready;
+    if (ready == null || index >= ready.fields.photos.length) return;
+    emitIfOpen(ready.copyWith(selection: () => {index}));
+  }
+
+  /// A tap while selecting; unselecting the last one ends selection.
+  void toggleSelected(int index) {
+    final ready = _ready;
+    final selection = ready?.selection;
+    if (ready == null || selection == null) return;
+    emitIfOpen(
+      ready.copyWith(selection: () => toggledSelection(selection, index)),
+    );
+  }
+
+  void selectAll() {
+    final ready = _ready;
+    if (ready == null || ready.selection == null) return;
+    emitIfOpen(
+      ready.copyWith(
+        selection: () => {
+          for (var i = 0; i < ready.fields.photos.length; i++) i,
+        },
+      ),
+    );
+  }
+
+  void clearSelection() {
+    final ready = _ready;
+    if (ready == null || ready.selection == null) return;
+    emitIfOpen(ready.copyWith(selection: () => null));
+  }
+
+  /// Delete in the selection bar, after the screen's confirm: the photos
+  /// leave the form (on a saved expense they go on Update), selection
+  /// ends. Returns how many.
+  int removeSelected() {
+    final ready = _ready;
+    final selection = ready?.selection;
+    if (ready == null || selection == null) return 0;
+    _setPhotos(
+      removePhotos(ready.fields.photos, selection),
+      ready: ready,
+      selection: () => null,
+    );
+    _offerHeldCapture();
+    return selection.length;
+  }
+
+  /// Delete in the viewer, after its confirm.
+  void removePhotoAt(int index) {
+    final ready = _ready;
+    if (ready == null || index >= ready.fields.photos.length) return;
+    _setPhotos(
+      removePhotos(ready.fields.photos, {index}),
+      ready: ready,
+      selection: () => null,
+    );
+    _offerHeldCapture();
+  }
+
+  /// Save in the selection bar: copies to Pictures, no confirm (P6-49);
+  /// selection stays. Not an edit: nothing in the form or the draft
+  /// changes (P6-47).
+  Future<SaveToPicturesResult?> saveSelectedToPictures() {
+    final selection = _ready?.selection;
+    if (selection == null) return Future.value();
+    return _saveToPictures(selection.toList()..sort());
+  }
+
+  /// Save to Pictures in the viewer.
+  Future<SaveToPicturesResult?> savePhotoToPictures(int index) =>
+      _saveToPictures([index]);
+
+  Future<SaveToPicturesResult?> _saveToPictures(List<int> indexes) async {
+    final ready = _ready;
+    if (ready == null || ready.photoWork is! PhotoIdle) return null;
+    final photos = ready.fields.photos;
+    if (indexes.any((i) => i >= photos.length)) return null;
+    final fields = ready.fields;
+    final (moment, offset) = _moment();
+    final items = [
+      for (final i in indexes)
+        (
+          photo: photos[i],
+          title: fields.title.trim(),
+          day: isoDay(fields.wallClock),
+          wallClock: fields.wallClock,
+          utcOffsetMinutes: offset,
+          moment: moment,
+        ),
+    ];
+    _setWork(PhotoSavingToPictures(0, items.length));
+    final done = Completer<void>();
+    _picturesSave = done.future;
+    try {
+      return await _photos.saveToPictures(
+        items,
+        fallbackTitle: _l10n.defaultPictureTitle,
+        onProgress: (n, total) => _setWork(PhotoSavingToPictures(n, total)),
+      );
+    } finally {
+      done.complete();
+      _setWork(const PhotoIdle());
     }
   }
 

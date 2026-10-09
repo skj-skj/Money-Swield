@@ -5,6 +5,7 @@ import '../../../../app/app_dependencies.dart';
 import '../../../../domain/models/app_settings.dart';
 import '../../../../domain/models/dashboard_options.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../core/byte_size_text.dart';
 import '../../../core/formatting_locale.dart';
 import '../../../core/item_labels.dart';
 import '../../../core/languages.dart';
@@ -15,9 +16,11 @@ import '../../backup/views/backup_texts.dart';
 import '../../bin/views/bin_screen.dart';
 import '../../payment_methods/view_models/payment_method_list_cubit.dart';
 import '../view_models/settings_cubit.dart';
+import '../view_models/settings_summary_cubit.dart';
 import 'defaults_settings_screen.dart';
 import 'home_settings_screen.dart';
 import 'look_settings_screen.dart';
+import 'photo_settings_screen.dart';
 import 'theme_color_dialog.dart';
 
 /// The Settings tab (phase-5.md §8.5, P5-16): a two-column grid of tiles,
@@ -46,26 +49,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   PaymentMethodListCubit? _paymentMethodList;
   AppLocalizations? _l10n;
 
-  /// For the Backup & restore tile. Not part of the settings cubit (a
-  /// backup mustn't rebuild the app), so read here: on start, when the tab
-  /// comes back, and when the user returns from Backup & restore.
-  DateTime? _lastBackupAt;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadLastBackup();
-  }
-
-  Future<void> _loadLastBackup() async {
-    try {
-      final at = await widget.dependencies.backups.lastBackupAt();
-      if (mounted) setState(() => _lastBackupAt = at);
-    } catch (error) {
-      // The tile then says "Never backed up" until the next load.
-      debugPrint('Reading the last backup time failed: $error');
-    }
-  }
+  /// The Backup & restore and Photos tiles' summaries. Not part of the
+  /// settings cubit (a backup mustn't rebuild the app), so read by their own
+  /// cubit (phase-6.md R15): on start, when the tab comes back, and when a
+  /// sub-screen closes.
+  late final _summary = SettingsSummaryCubit(
+    backups: widget.dependencies.backups,
+    expenses: widget.dependencies.expenses,
+  )..load();
 
   @override
   void didChangeDependencies() {
@@ -87,13 +78,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.didUpdateWidget(oldWidget);
     if (widget.isVisible && !oldWidget.isVisible) {
       _paymentMethodList?.load();
-      _loadLastBackup();
+      _summary.load();
     }
   }
 
   @override
   void dispose() {
     _paymentMethodList?.close();
+    _summary.close();
     super.dispose();
   }
 
@@ -125,7 +117,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
     if (!mounted) return;
     await _paymentMethodList?.load();
-    await _loadLastBackup();
+    await _summary.load();
   }
 
   @override
@@ -136,100 +128,142 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: AppBar(title: Text(l10n.settingsTitle)),
       body: BlocSignalBuilder<SettingsCubit, AppSettings>(
         builder: (context, settings) =>
-            BlocSignalBuilder<PaymentMethodListCubit, PaymentMethodListState>(
-              bloc: _paymentMethodList!,
-              builder: (context, methods) {
-                final tiles = [
-                  _SettingsTile(
-                    key: const ValueKey('settingsLanguage'),
-                    icon: Icons.language,
-                    title: l10n.settingLanguage,
-                    summary:
-                        languageNames[settings.locale?.languageCode] ??
-                        l10n.languageSystem,
-                    onTap: () => _pickLanguage(settings),
-                  ),
-                  _SettingsTile(
-                    key: const ValueKey('settingsLook'),
-                    icon: Icons.palette_outlined,
-                    title: l10n.settingsLook,
-                    summary: l10n.settingsTileSummary(
-                      themeModeName(l10n, settings.theme),
-                      themeColorName(
-                        l10n,
-                        seed: settings.themeSeed,
-                        wallpaperSeed: dependencies.wallpaperSeed,
-                      ),
-                    ),
-                    onTap: () =>
-                        _open(LookSettingsScreen(dependencies: dependencies)),
-                  ),
-                  _SettingsTile(
-                    key: const ValueKey('settingsHome'),
-                    icon: Icons.insights,
-                    title: l10n.settingsHome,
-                    summary: _homeSummary(l10n, settings),
-                    onTap: () =>
-                        _open(HomeSettingsScreen(dependencies: dependencies)),
-                  ),
-                  _SettingsTile(
-                    key: const ValueKey('settingsDefaults'),
-                    icon: Icons.tune,
-                    title: l10n.settingsDefaults,
-                    summary: _defaultsSummary(l10n, settings, methods),
-                    onTap: () => _open(
-                      DefaultsSettingsScreen(dependencies: dependencies),
-                    ),
-                  ),
-                  _SettingsTile(
-                    key: const ValueKey('settingsBackup'),
-                    icon: Icons.backup_outlined,
-                    title: l10n.backupAndRestore,
-                    summary: lastBackupText(
-                      l10n,
-                      _lastBackupAt,
-                      dependencies.now(),
-                    ),
-                    onTap: () =>
-                        _open(BackupScreen(dependencies: dependencies)),
-                  ),
-                  _SettingsTile(
-                    key: const ValueKey('settingsBin'),
-                    icon: Icons.delete_outline,
-                    title: l10n.bin,
-                    summary: l10n.binTileSummary,
-                    onTap: () => _open(BinScreen(dependencies: dependencies)),
-                  ),
-                ];
-                return ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    for (var i = 0; i < tiles.length; i += 2)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        // Both tiles of a row as tall as the taller one; an
-                        // odd count leaves the last tile at the left.
-                        child: IntrinsicHeight(
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Expanded(child: tiles[i]),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: i + 1 < tiles.length
-                                    ? tiles[i + 1]
-                                    : const SizedBox.shrink(),
-                              ),
-                            ],
+            BlocSignalBuilder<SettingsSummaryCubit, SettingsSummary>(
+              bloc: _summary,
+              builder: (context, summary) =>
+                  BlocSignalBuilder<
+                    PaymentMethodListCubit,
+                    PaymentMethodListState
+                  >(
+                    bloc: _paymentMethodList!,
+                    builder: (context, methods) {
+                      final tiles = [
+                        _SettingsTile(
+                          key: const ValueKey('settingsLanguage'),
+                          icon: Icons.language,
+                          title: l10n.settingLanguage,
+                          summary:
+                              languageNames[settings.locale?.languageCode] ??
+                              l10n.languageSystem,
+                          onTap: () => _pickLanguage(settings),
+                        ),
+                        _SettingsTile(
+                          key: const ValueKey('settingsLook'),
+                          icon: Icons.palette_outlined,
+                          title: l10n.settingsLook,
+                          summary: l10n.settingsTileSummary(
+                            themeModeName(l10n, settings.theme),
+                            themeColorName(
+                              l10n,
+                              seed: settings.themeSeed,
+                              wallpaperSeed: dependencies.wallpaperSeed,
+                            ),
+                          ),
+                          onTap: () => _open(
+                            LookSettingsScreen(dependencies: dependencies),
                           ),
                         ),
-                      ),
-                  ],
-                );
-              },
+                        _SettingsTile(
+                          key: const ValueKey('settingsHome'),
+                          icon: Icons.insights,
+                          title: l10n.settingsHome,
+                          summary: _homeSummary(l10n, settings),
+                          onTap: () => _open(
+                            HomeSettingsScreen(dependencies: dependencies),
+                          ),
+                        ),
+                        _SettingsTile(
+                          key: const ValueKey('settingsDefaults'),
+                          icon: Icons.tune,
+                          title: l10n.settingsDefaults,
+                          summary: _defaultsSummary(l10n, settings, methods),
+                          onTap: () => _open(
+                            DefaultsSettingsScreen(dependencies: dependencies),
+                          ),
+                        ),
+                        _SettingsTile(
+                          key: const ValueKey('settingsBackup'),
+                          icon: Icons.backup_outlined,
+                          title: l10n.backupAndRestore,
+                          summary: lastBackupText(
+                            l10n,
+                            summary.lastBackupAt,
+                            dependencies.now(),
+                          ),
+                          onTap: () =>
+                              _open(BackupScreen(dependencies: dependencies)),
+                        ),
+                        _SettingsTile(
+                          key: const ValueKey('settingsPhotos'),
+                          icon: Icons.photo_library_outlined,
+                          title: l10n.photos,
+                          summary: _photosSummary(l10n, settings, summary),
+                          onTap: () =>
+                              _open(PhotoSettingsScreen(summary: _summary)),
+                        ),
+                        _SettingsTile(
+                          key: const ValueKey('settingsBin'),
+                          icon: Icons.delete_outline,
+                          title: l10n.bin,
+                          summary: l10n.binTileSummary,
+                          onTap: () =>
+                              _open(BinScreen(dependencies: dependencies)),
+                        ),
+                      ];
+                      return ListView(
+                        padding: const EdgeInsets.all(16),
+                        children: [
+                          for (var i = 0; i < tiles.length; i += 2)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              // Both tiles of a row as tall as the taller one; an
+                              // odd count leaves the last tile at the left.
+                              child: IntrinsicHeight(
+                                child: Row(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    Expanded(child: tiles[i]),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: i + 1 < tiles.length
+                                          ? tiles[i + 1]
+                                          : const SizedBox.shrink(),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
             ),
       ),
     );
+  }
+
+  /// "Camera 1080p · Gallery 1080p · 1.2 GB" (phase-6.md §8.6).
+  String _photosSummary(
+    AppLocalizations l10n,
+    AppSettings settings,
+    SettingsSummary summary,
+  ) {
+    final sizes = l10n.settingsTileSummary(
+      l10n.photosTileCamera(
+        photoSizeShortName(l10n, settings.cameraPhotos.size),
+      ),
+      l10n.photosTileGallery(
+        photoSizeShortName(l10n, settings.galleryPhotos.size),
+      ),
+    );
+    final bytes = summary.photoBytes;
+    return bytes == null || summary.photoCount == 0
+        ? sizes
+        : l10n.settingsTileSummary(
+            sizes,
+            byteSizeText(l10n, formattingLocaleOf(context), bytes),
+          );
   }
 
   /// "Smooth line, filled · Locked · Monday".

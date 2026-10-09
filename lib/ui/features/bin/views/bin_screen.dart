@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_signals_flutter/bloc_signals_flutter.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -10,6 +12,7 @@ import '../../../core/widgets/empty_state_view.dart';
 import '../../../core/widgets/expense_tile.dart';
 import '../../../core/widgets/save_error.dart';
 import '../view_models/bin_cubit.dart';
+import '../view_models/expense_photos_cubit.dart';
 import 'bin_detail_screen.dart';
 
 /// Settings → Bin: deleted expenses, most recently deleted first, kept for
@@ -53,17 +56,26 @@ class _BinScreenState extends State<BinScreen> {
   }
 
   Future<void> _openDetail(Expense expense, BinLookups lookups) async {
+    final photos = ExpensePhotosCubit(
+      expenses: widget.dependencies.expenses,
+      store: widget.dependencies.photos,
+      expense: expense,
+      fallbackTitle: AppLocalizations.of(context).defaultPictureTitle,
+    );
+    unawaited(photos.load());
     await Navigator.push<void>(
       context,
       MaterialPageRoute(
         builder: (_) => BinDetailScreen(
           expense: expense,
           lookups: lookups,
+          photos: photos,
           onRestore: () => _cubit.restore(expense.id),
           onDeletePermanently: () => _cubit.deletePermanently(expense.id),
         ),
       ),
     );
+    await photos.close();
   }
 
   @override
@@ -124,6 +136,7 @@ class _BinScreenState extends State<BinScreen> {
                       ),
                     ),
                     amount: expense.amount,
+                    marks: [?photoMark(context, expense.photoCount)],
                     onTap: () => _openDetail(expense, lookups),
                   );
                 },

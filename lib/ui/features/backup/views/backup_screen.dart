@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../../../app/app_dependencies.dart';
 import '../../../../data/services/backup/pre_restore_copy.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../core/byte_size_text.dart';
 import '../../../core/date_texts.dart';
 import '../../../core/formatting_locale.dart';
 import '../../../core/widgets/error_report_view.dart';
@@ -36,6 +37,7 @@ class _BackupScreenState extends State<BackupScreen> {
       backups: _deps.backups,
       documents: _deps.restoreTools.documents,
       appDatabase: _deps.restoreTools.appDatabase,
+      photoStats: _deps.expenses.photoStats,
     )..load();
   }
 
@@ -47,9 +49,27 @@ class _BackupScreenState extends State<BackupScreen> {
 
   Future<void> _backUp() async {
     final result = await _cubit.backUp();
-    if (result != BackupResult.saved || !mounted) return;
+    if (!mounted) return;
     final l10n = AppLocalizations.of(context);
-    showMessage(ScaffoldMessenger.of(context), l10n.backupSaved);
+    final missing = _cubit.value.missingPhotos;
+    final message = switch (result) {
+      BackupResult.saved when missing > 0 => l10n.backupSavedMissingPhotos(
+        missing,
+      ),
+      BackupResult.saved => l10n.backupSaved,
+      BackupResult.noSpace => l10n.backupNoSpace,
+      BackupResult.saveTargetFull => l10n.saveTargetNoSpace,
+      BackupResult.cancelled ||
+      BackupResult.failed ||
+      BackupResult.ignored => null,
+    };
+    if (message != null) {
+      showMessage(
+        ScaffoldMessenger.of(context),
+        message,
+        long: result != BackupResult.saved || missing > 0,
+      );
+    }
   }
 
   Future<void> _restore({PreRestoreCopy? copy}) => RestoreScreen.open(
@@ -87,6 +107,7 @@ class _BackupScreenState extends State<BackupScreen> {
               state: state,
               now: _deps.now(),
               onBackUp: _backUp,
+              onIncludePhotos: _cubit.setIncludePhotos,
               onRestore: _restore,
               onUndo: (copy) => _restore(copy: copy),
             ),
@@ -98,10 +119,39 @@ class _BackupScreenState extends State<BackupScreen> {
 }
 
 class _BackupList extends StatelessWidget {
+  /// "Include photos" (ticked each time, P6-16) with what they are; when
+  /// unticked, what that means after a reinstall (§8.7).
+  Widget _includePhotos(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final count = state.photoCount;
+    final bytes = state.photoBytes;
+    final summary = count == null || bytes == null || count == 0
+        ? null
+        : l10n.settingsTileSummary(
+            l10n.photosCount(count),
+            byteSizeText(l10n, formattingLocaleOf(context), bytes),
+          );
+    return CheckboxListTile(
+      key: const ValueKey('includePhotos'),
+      value: state.includePhotos,
+      onChanged: state.backingUp
+          ? null
+          : (include) => onIncludePhotos(include ?? true),
+      title: Text(l10n.includePhotos),
+      subtitle: state.includePhotos
+          ? (summary == null ? null : Text(summary))
+          : Text(
+              l10n.photosNotInBackup,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+    );
+  }
+
   const _BackupList({
     required this.state,
     required this.now,
     required this.onBackUp,
+    required this.onIncludePhotos,
     required this.onRestore,
     required this.onUndo,
   });
@@ -109,6 +159,7 @@ class _BackupList extends StatelessWidget {
   final BackupState state;
   final DateTime now;
   final VoidCallback onBackUp;
+  final ValueChanged<bool> onIncludePhotos;
   final VoidCallback onRestore;
   final ValueChanged<PreRestoreCopy> onUndo;
 
@@ -129,6 +180,7 @@ class _BackupList extends StatelessWidget {
               ? null
               : Text(shortDateText(locale, lastBackupAt.toLocal())),
         ),
+        _includePhotos(context),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
           child: FilledButton.icon(
@@ -139,9 +191,17 @@ class _BackupList extends StatelessWidget {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Icon(Icons.backup_outlined),
-            label: Text(
-              state.backingUp ? l10n.preparingBackup : l10n.backUpNow,
-            ),
+            label: Text(switch (state) {
+              BackupState(
+                backingUp: true,
+                photosDone: final done?,
+                photosTotal: final total?,
+              )
+                  when total > 0 =>
+                l10n.backupPhotosProgress(done, total),
+              BackupState(backingUp: true) => l10n.preparingBackup,
+              _ => l10n.backUpNow,
+            }),
           ),
         ),
         const Divider(),

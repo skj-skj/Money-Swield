@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../app/app_dependencies.dart';
+import '../../../../data/services/photo_service.dart';
 import '../../../../domain/amount_expression.dart';
 import '../../../../domain/amount_field_input.dart';
 import '../../../../domain/amount_input.dart';
@@ -14,6 +15,7 @@ import '../../../../domain/models/event.dart';
 import '../../../../domain/models/expense.dart';
 import '../../../../domain/models/expense_draft.dart';
 import '../../../../domain/models/money.dart';
+import '../../../../domain/photos.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/currency_labels.dart';
 import '../../../core/date_texts.dart';
@@ -22,6 +24,12 @@ import '../../../core/item_labels.dart';
 import '../../../core/money_formatter.dart';
 import '../../../core/widgets/currency_picker_sheet.dart';
 import '../../../core/widgets/load_failed_view.dart';
+import '../../../core/widgets/photos/add_photo_sheet.dart';
+import '../../../core/widgets/photos/photo_review_screen.dart';
+import '../../../core/widgets/photos/photo_selection_bar.dart';
+import '../../../core/widgets/photos/photo_stack_button.dart';
+import '../../../core/widgets/photos/photo_viewer.dart';
+import '../../../core/widgets/photos/saved_to_pictures_message.dart';
 import '../../../core/widgets/save_error.dart';
 import '../../../core/widgets/section_heading.dart';
 import '../../../core/widgets/show_message.dart';
@@ -33,6 +41,7 @@ import '../view_models/expense_form_cubit.dart';
 import 'draft_banner.dart';
 import 'itemize_sheet.dart';
 import 'operator_row.dart';
+import 'photos_sheet.dart';
 import 'title_suggestions_field.dart';
 
 /// Which picker is in search mode. View state, not in the cubit: it
@@ -132,6 +141,9 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
       l10n: AppLocalizations.of(context),
       defaultCurrency: settings.defaultCurrency,
       defaultPaymentMethodId: settings.defaultPaymentMethodId,
+      photos: deps.photos,
+      cameraSizing: settings.cameraPhotos,
+      gallerySizing: settings.galleryPhotos,
       decimalSeparator: _decimalSeparator,
       expenseId: widget.expenseId,
       openingDraft: widget.draft,
@@ -186,13 +198,56 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
             if (mounted) _titleFocus.requestFocus();
           });
         }
+        if (first && state.droppedDraftPhotos > 0) {
+          _showMessage(
+            AppLocalizations.of(context)
+                .draftPhotosMissing(state.droppedDraftPhotos),
+          );
+        }
+        _maybeReview(state);
       case ExpenseFormGone(:final draftKept):
         Navigator.pop(context, ExpenseGone(draftKept: draftKept));
-      case ExpenseFormReady() ||
-          ExpenseFormLoading() ||
-          ExpenseFormLoadFailed():
+      case final ExpenseFormReady ready:
+        _maybeReview(ready);
+      case ExpenseFormLoading() || ExpenseFormLoadFailed():
         break;
     }
+  }
+
+  /// The camera shot under review, so its screen is pushed once.
+  String? _reviewing;
+
+  /// A camera shot waits for its review (§8.2a): pushed once per shot,
+  /// also when it came back after the app was killed.
+  void _maybeReview(ExpenseFormReady state) {
+    final work = state.photoWork;
+    if (work is! PhotoReviewing || work.captureName == _reviewing) return;
+    _reviewing = work.captureName;
+    final l10n = AppLocalizations.of(context);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      _dropFocus();
+      final decision = await Navigator.push<ReviewDecision>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PhotoReviewScreen(
+            image: _form.photoStore.imageAt(work.previewPath, 1080),
+            notice: work.recovered ? l10n.photoFromCameraBack : null,
+          ),
+        ),
+      );
+      if (!mounted) return;
+      _reviewing = null;
+      switch (decision) {
+        case DiscardReviewedPhoto():
+          await _form.discardCapture();
+        case UseReviewedPhoto(:final quarterTurns):
+          _showAddReport(await _form.useCapture(quarterTurns));
+        case null:
+          // Popped without a decision (the route was removed): as Back.
+          _showAddReport(await _form.useCapture(0));
+      }
+    });
   }
 
   int _appliedRevision = 0;
@@ -212,18 +267,149 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
     final saved = await _saveOrNull();
     if (!mounted) return;
     if (saved != null) {
-      Navigator.pop(context, ExpenseSaved(saved));
+      Navigator.pop(
+        context,
+        ExpenseSaved(saved, photosNotKept: _form.lastPhotosNotKept),
+      );
     } else if (_form.value is! ExpenseFormGone) {
       _showFirstError();
+      if (_form.photosOverLimit case final extra?) {
+        _showMessage(
+          AppLocalizations.of(context).photosMax(maxPhotosPerExpense, extra),
+        );
+      }
     }
   }
 
   Future<Expense?> _saveOrNull() async {
     Expense? saved;
     await saveOrShowError(_messengerContext, () async {
-      saved = await _form.save();
+      try {
+        saved = await _form.save();
+      } on PhotoSaveFailed catch (error) {
+        // Nothing was saved and the draft is as it was; said apart from
+        // "Couldn't save", which suggests trying again at once.
+        debugPrint('$error');
+        if (mounted) {
+          _showMessage(AppLocalizations.of(context).photosSaveFailed);
+        }
+      }
     });
     return saved;
+  }
+
+  void _showMessage(String message) =>
+      showMessage(_messenger.currentState, message);
+
+  // Photos (phase-6.md §8.1–§8.4).
+
+  /// The photo button: the chooser while there are none, else the sheet.
+  Future<void> _onPhotoButton() async {
+    _dropFocus();
+    final ready = _readyState;
+    if (ready == null) return;
+    if (ready.fields.photos.isEmpty) {
+      final message = await _addPhoto();
+      if (message != null) _showMessage(message);
+    } else {
+      await _openPhotosSheet();
+    }
+  }
+
+  /// Take photo or Choose from gallery, then the native camera or picker.
+  /// Returns the message to show, or null.
+  Future<String?> _addPhoto() async {
+    if (!_form.canAddPhotos) return null;
+    final count = _readyState?.fields.photos.length ?? 0;
+    final source = await showAddPhotoSheet(context, count: count);
+    if (!mounted || source == null) return null;
+    final l10n = AppLocalizations.of(context);
+    switch (source) {
+      case PhotoSource.camera:
+        final error = await _form.addFromCamera();
+        return error == null ? null : _photoErrorText(l10n, error);
+      case PhotoSource.gallery:
+        return _addReportText(l10n, await _form.addFromGallery());
+    }
+  }
+
+  void _showAddReport(PhotoAddReport? report) {
+    if (!mounted) return;
+    final text = _addReportText(AppLocalizations.of(context), report);
+    if (text != null) _showMessage(text);
+  }
+
+  /// What adding photos did, when there is something to say (§7.1).
+  static String? _addReportText(AppLocalizations l10n, PhotoAddReport? r) {
+    if (r == null) return null;
+    if (r.error case final error?) return _photoErrorText(l10n, error);
+    if (r.overflow > 0) {
+      return l10n.photosOverflow(maxPhotosPerExpense, r.added);
+    }
+    if (r.failed > 0) return l10n.photoCouldNotBeAdded(r.failed);
+    if (r.duplicates > 0) return l10n.photoAlreadyAdded;
+    return null;
+  }
+
+  static String? _photoErrorText(AppLocalizations l10n, PhotoError error) =>
+      switch (error) {
+        PhotoError.noCamera => l10n.noCameraApp,
+        // A double tap, or the app went to the background: nothing to say.
+        PhotoError.busy || PhotoError.noActivity => null,
+        PhotoError.notAnImage ||
+        PhotoError.tooLarge ||
+        PhotoError.noSpace ||
+        PhotoError.ioError => l10n.photoCouldNotBeAdded(1),
+      };
+
+  Future<void> _openPhotosSheet() => showPhotosSheet(
+    context,
+    cubit: _form,
+    onAdd: _addPhoto,
+    onOpen: _openViewer,
+    onSaveSelected: () => saveToPicturesMessage(
+      AppLocalizations.of(context),
+      _form.saveSelectedToPictures,
+    ),
+    onDeleteSelected: () async {
+      final count = _readyState?.selection?.length ?? 0;
+      if (count == 0 || !await _confirmPhotoDelete(count)) return null;
+      final removed = _form.removeSelected();
+      if (!mounted) return null;
+      return AppLocalizations.of(context).photosDeleted(removed);
+    },
+  );
+
+  Future<bool> _confirmPhotoDelete(int count) => confirmPhotoDelete(
+    context,
+    count: count,
+    place: _form.isEditing
+        ? PhotoDeletePlace.savedExpense
+        : PhotoDeletePlace.newExpense,
+  );
+
+  /// The viewer over the form's photos: Save to Pictures and Delete (which
+  /// applies on Update, like every photo change).
+  Future<void> _openViewer(int index) {
+    final photos = _readyState?.fields.photos ?? const <FormPhoto>[];
+    return PhotoViewer.open(
+      context,
+      count: photos.length,
+      initial: index,
+      imageOf: (i, maxPx) {
+        final current = _readyState?.fields.photos ?? photos;
+        return _form.photoStore.image(current[i], maxPx);
+      },
+      onSave: (i) => saveToPicturesMessage(
+        AppLocalizations.of(context),
+        () => _form.savePhotoToPictures(i),
+      ),
+      onDelete: (i) async {
+        if (!await _confirmPhotoDelete(1)) return false;
+        _form.removePhotoAt(i);
+        return true;
+      },
+    );
   }
 
   /// Below the form's own messenger, so errors show on the form.
@@ -268,6 +454,12 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
     }
     if (_searching != _Searching.none) {
       _setSearching(_Searching.none);
+      return;
+    }
+    // Photos being added or saved to Pictures: wait (§7.1); each photo has
+    // a time limit, so this never lasts.
+    if (_form.photosBusy) {
+      _showMessage(AppLocalizations.of(context).addingPhotos);
       return;
     }
     // Back while the title has focus leaves it too.
@@ -550,20 +742,36 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
         _amountRow(fields),
         _resultLine(fields),
         const SizedBox(height: 16),
-        TextField(
-          key: _descriptionKey,
-          controller: _description,
-          onChanged: _form.descriptionChanged,
-          minLines: 2,
-          maxLines: 5,
-          textCapitalization: TextCapitalization.sentences,
-          decoration: InputDecoration(
-            labelText: l10n.fieldDescription,
-            errorText: _form.descriptionTooLong
-                ? l10n.errorTooLong(maxExpenseDescriptionLength)
-                : null,
-            border: const OutlineInputBorder(),
-          ),
+        // The photo button left of the description, centred on it (owner,
+        // after the Oppo run; §8.1 had the tops aligned).
+        Row(
+          children: [
+            PhotoStackButton(
+              count: fields.photos.length,
+              imageOf: (i, maxPx) =>
+                  _form.photoStore.image(fields.photos[i], maxPx),
+              busy: state.photoWork.blocksSave,
+              onTap: _onPhotoButton,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextField(
+                key: _descriptionKey,
+                controller: _description,
+                onChanged: _form.descriptionChanged,
+                minLines: 2,
+                maxLines: 5,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: InputDecoration(
+                  labelText: l10n.fieldDescription,
+                  errorText: _form.descriptionTooLong
+                      ? l10n.errorTooLong(maxExpenseDescriptionLength)
+                      : null,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 16),
         _whenAndHowRow(state, locale),

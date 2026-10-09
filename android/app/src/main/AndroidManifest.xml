@@ -25,6 +25,21 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- The camera app writes a photo into photos_staging/ through this
+             (phase-6.md §6.1); res/xml/photo_paths.xml shares nothing else.
+             No CAMERA permission on purpose: declared but not granted, it
+             makes the camera intent throw (F8). No storage permission
+             either: the app's photos are in its own folder, and saving a
+             copy to Pictures/ through MediaStore needs none (F3, P6-30). -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.photos"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/photo_paths" />
+        </provider>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

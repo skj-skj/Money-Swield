@@ -6,6 +6,7 @@ import 'package:my_expense_tracker_app/domain/models/app_theme_mode.dart';
 import 'package:my_expense_tracker_app/domain/models/dashboard_options.dart';
 import 'package:my_expense_tracker_app/domain/models/item_shape.dart';
 import 'package:my_expense_tracker_app/domain/periods.dart';
+import 'package:my_expense_tracker_app/domain/photo_sizing.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../../helpers/test_database.dart';
@@ -529,5 +530,69 @@ void main() {
         expect(await repository.load(), before);
       },
     );
+  });
+
+  group('photo sizing (phase-6.md §4.2)', () {
+    test('defaults: 1080p / 85 for camera and gallery', () async {
+      final settings = await repository.load();
+      expect(settings.cameraPhotos, (size: PhotoSize.p1080, quality: 85));
+      expect(settings.galleryPhotos, (size: PhotoSize.p1080, quality: 85));
+    });
+
+    test('round trip with the stored values of §4.2', () async {
+      await repository.setCameraPhotos((size: PhotoSize.original, quality: 95));
+      await repository.setGalleryPhotos((size: PhotoSize.p720, quality: 70));
+      final settings = await repository.load();
+      expect(settings.cameraPhotos, (size: PhotoSize.original, quality: 95));
+      expect(settings.galleryPhotos, (size: PhotoSize.p720, quality: 70));
+      final rows = {
+        for (final row in await db.query('settings')) row['key']: row['value'],
+      };
+      expect(rows['photo_camera_size'], 'original');
+      expect(rows['photo_camera_quality'], '95');
+      expect(rows['photo_gallery_size'], 'p720');
+      expect(rows['photo_gallery_quality'], '70');
+    });
+
+    test('every size round-trips', () async {
+      for (final size in PhotoSize.values) {
+        await repository.setGalleryPhotos((size: size, quality: 80));
+        expect((await repository.load()).galleryPhotos.size, size);
+      }
+    });
+
+    test('unknown values fall back on their own: a quality the app does '
+        'not offer keeps the size', () async {
+      await store('photo_camera_size', 'p1440');
+      await store('photo_camera_quality', '99');
+      await store('photo_gallery_size', 'P720');
+      await store('photo_gallery_quality', '');
+      final settings = await repository.load();
+      expect(settings.cameraPhotos, (size: PhotoSize.p1440, quality: 85));
+      expect(settings.galleryPhotos, (size: PhotoSize.p1080, quality: 85));
+    });
+
+    test('restorePhotoDefaults resets the four photo keys and nothing '
+        'else', () async {
+      await repository.setCameraPhotos((size: PhotoSize.p720, quality: 70));
+      await repository.setGalleryPhotos((size: PhotoSize.p2160, quality: 95));
+      await repository.setTrendCardSize(TrendCardSize.small);
+      await repository.setTileShape(ItemShape.square);
+      await repository.restorePhotoDefaults();
+      final settings = await repository.load();
+      expect(settings.cameraPhotos, defaultPhotoSizing);
+      expect(settings.galleryPhotos, defaultPhotoSizing);
+      expect(settings.trendCardSize, TrendCardSize.small);
+      expect(settings.tileShape, ItemShape.square);
+    });
+
+    test('restoreHomeDefaults and restoreDefaultLook leave the photo '
+        'settings alone', () async {
+      const sizing = (size: PhotoSize.p2160, quality: 90);
+      await repository.setCameraPhotos(sizing);
+      await repository.restoreHomeDefaults();
+      await repository.restoreDefaultLook();
+      expect((await repository.load()).cameraPhotos, sizing);
+    });
   });
 }

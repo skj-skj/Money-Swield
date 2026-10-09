@@ -340,7 +340,7 @@ void main() {
               title: 'Lunch with the whole team',
               subtitle: '💵  1:05 PM',
               amount: const Money(99999999999, 'INR'),
-              mark: const Icon(Icons.edit_note, key: ValueKey('mark')),
+              marks: const [Icon(Icons.edit_note, key: ValueKey('mark'))],
               onTap: () {},
             ),
           ],

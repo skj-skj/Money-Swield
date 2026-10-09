@@ -7,6 +7,7 @@ import '../../../../domain/periods.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/builtin_names.dart';
 import '../../../core/item_labels.dart';
+import '../view_models/expense_list_cubit.dart';
 
 /// The bar above Home's list (phase-5.md §8.4): one chip per active filter,
 /// each with ✕, then the grouping; on the right the filter icon, with a
@@ -21,6 +22,8 @@ class FilterBar extends StatelessWidget {
     required this.events,
     required this.onOpen,
     required this.onChange,
+    this.photosIcon = PhotosIcon.hidden,
+    this.onPhotos,
   });
 
   final ExpenseFilter filter;
@@ -33,6 +36,14 @@ class FilterBar extends StatelessWidget {
 
   /// A chip's ✕ removed part of the filter.
   final ValueChanged<ExpenseFilter> onChange;
+
+  /// The photos icon left of the filter icon (phase-6.md §8.9, P6-36):
+  /// hidden without photos, greyed out when the filters hide every one
+  /// (P6-45).
+  final PhotosIcon photosIcon;
+
+  /// Opens the Photos screen.
+  final VoidCallback? onPhotos;
 
   @override
   Widget build(BuildContext context) {
@@ -95,6 +106,21 @@ class FilterBar extends StatelessWidget {
                 ),
               ),
             ),
+            if (photosIcon != PhotosIcon.hidden)
+              IconButton(
+                key: const ValueKey('photosButton'),
+                tooltip: photosIcon == PhotosIcon.enabled
+                    ? l10n.photos
+                    : l10n.noPhotosMatchTooltip,
+                onPressed: photosIcon == PhotosIcon.enabled ? onPhotos : null,
+                // The filter icon's dot too: the Photos screen shows only
+                // the filtered expenses' photos (owner, after the Oppo run).
+                icon: Badge(
+                  isLabelVisible: !filter.isEmpty,
+                  smallSize: 8,
+                  child: const Icon(Icons.photo_library_outlined),
+                ),
+              ),
             IconButton(
               key: const ValueKey('filterButton'),
               tooltip: l10n.filters,

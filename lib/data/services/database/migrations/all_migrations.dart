@@ -8,6 +8,7 @@ import '1790942747_create_events.dart';
 import '1790960250_create_expenses.dart';
 import '1790960267_create_expense_events.dart';
 import '1791097834_create_expense_draft.dart';
+import '1791374244_create_photos.dart';
 
 /// Every migration, oldest first.
 const List<Migration> allMigrations = [
@@ -18,4 +19,5 @@ const List<Migration> allMigrations = [
   CreateExpenses(),
   CreateExpenseEvents(),
   CreateExpenseDraft(),
+  CreatePhotos(),
 ];

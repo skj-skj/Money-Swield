@@ -4,6 +4,8 @@ import '../../domain/expense_filter.dart';
 import '../../domain/models/expense.dart';
 import '../../domain/models/money.dart';
 import '../../domain/periods.dart';
+import '../../domain/photo_groups.dart';
+import '../../domain/photos.dart';
 import '../../domain/popularity.dart';
 import '../../domain/title_suggestions.dart';
 import '../../domain/totals.dart';
@@ -89,6 +91,7 @@ class ExpenseRepository {
         'updated_at': now,
       });
       await _insertEvents(txn, id, input.eventIds);
+      await _linkPhotos(txn, id, input.photos, now);
       if (clearDraft) await _deleteDraft(txn);
       return (await _read(txn, where: 'id = ?', whereArgs: [id])).single;
     });
@@ -120,6 +123,14 @@ class ExpenseRepository {
         whereArgs: [id],
       );
       await _insertEvents(txn, id, input.eventIds);
+      // Replaced like the events: the rows of photos no longer linked stay
+      // until the startup sweep (P6-13).
+      await txn.delete(
+        'expense_photos',
+        where: 'expense_id = ?',
+        whereArgs: [id],
+      );
+      await _linkPhotos(txn, id, input.photos, now);
       if (clearDraft) await _deleteDraft(txn);
       return (await _read(txn, where: 'id = ?', whereArgs: [id])).single;
     });
@@ -278,33 +289,228 @@ class ExpenseRepository {
   Future<List<Expense>> binned() =>
       _read(_db, where: _binned, orderBy: 'deleted_at DESC, id DESC');
 
-  /// Deletes the binned expense [id] for good; its event links cascade.
-  /// Only matches binned rows, so an active expense can never be
-  /// hard-deleted by mistake.
+  /// Deletes the binned expense [id] for good; its event and photo links
+  /// cascade. Only matches binned rows, so an active expense can never be
+  /// hard-deleted by mistake. Its photo rows and files stay until the
+  /// startup sweep, which deletes only what nothing references (P6-13).
   Future<void> deletePermanently(int id) async {
-    // Phase 6 adds the orphan-photo cleanup here.
     await _db.delete('expenses', where: 'id = ? AND $_binned', whereArgs: [id]);
     _dataVersion.bump();
   }
 
-  /// Deletes everything in the bin for good.
+  /// Deletes everything in the bin for good. Photos as for
+  /// [deletePermanently].
   Future<void> emptyBin() async {
-    // Phase 6 adds the orphan-photo cleanup here.
     await _db.delete('expenses', where: _binned);
     _dataVersion.bump();
   }
 
   /// Deletes, in one transaction, the expenses binned more than
-  /// [binRetention] ago. Returns how many. Runs at startup.
+  /// [binRetention] ago. Returns how many. Runs at startup, before the
+  /// photo sweep, which then frees their photos (P6-13).
   Future<int> purgeBin() async {
     final cutoff = _now().subtract(binRetention).millisecondsSinceEpoch;
     final count = await _db.transaction(
-      // Phase 6 adds the orphan-photo cleanup here.
       (txn) =>
           txn.delete('expenses', where: 'deleted_at < ?', whereArgs: [cutoff]),
     );
     _dataVersion.bump();
     return count;
+  }
+
+  // Photos (phase-6.md §6.4).
+
+  /// The photos of expense [id] (active or binned), in order.
+  Future<List<SavedPhoto>> photosOf(int id) async =>
+      (await _photosOfMany(_db, [id]))[id] ?? const [];
+
+  /// Which of [photoIds] still have a row: a draft's saved photos are
+  /// checked with it when the form opens (P6-22).
+  Future<Set<int>> existingPhotoIds(Iterable<int> photoIds) async {
+    final rows = await inChunks(
+      photoIds.toSet().toList(),
+      (chunk) => _db.query(
+        'photos',
+        columns: ['id'],
+        where: 'id IN (${sqlPlaceholders(chunk.length)})',
+        whereArgs: chunk,
+      ),
+    );
+    return {for (final row in rows) row['id']! as int};
+  }
+
+  /// How many photos the expenses have, active and binned, and their bytes
+  /// (Settings → Photos, the backup screen). Rows no expense links any more
+  /// are left out: the next start's sweep deletes them. The bytes are
+  /// added in Dart from the rows (no SQL `SUM`).
+  Future<({int count, int bytes})> photoStats() async {
+    final rows = await _db.rawQuery(
+      'SELECT byte_size FROM photos '
+      'WHERE id IN (SELECT photo_id FROM expense_photos)',
+    );
+    return (
+      count: rows.length,
+      bytes: rows.fold(0, (sum, row) => sum + (row['byte_size']! as int)),
+    );
+  }
+
+  /// Whether any active expense has a photo: Home's photos icon shows only
+  /// then (P6-36).
+  Future<bool> hasPhotos() async => (await _db.rawQuery(
+    'SELECT 1 FROM expenses WHERE $_active '
+    'AND id IN (SELECT expense_id FROM expense_photos) LIMIT 1',
+  )).isNotEmpty;
+
+  /// Whether [filter] lets through any active expense with a photo: the
+  /// icon is greyed out when it doesn't (P6-45). The category and event
+  /// part is SQL; a text part is matched in Dart, like Home's list.
+  Future<bool> hasMatchingPhotos(ExpenseFilter filter) async {
+    if (!filter.hasText) {
+      return (await _db.rawQuery(
+        'SELECT 1 FROM expenses WHERE '
+        '${[_active, ..._filterWhere(filter), _withPhotos].join(' AND ')} '
+        'LIMIT 1',
+      )).isNotEmpty;
+    }
+    return (await textMatchesWithPhotos(filter)).isNotEmpty;
+  }
+
+  /// The ids of [filter]'s text matches (among its category and event
+  /// part) that have photos, in list order: the Photos screen's text path
+  /// (§6.4) and [hasMatchingPhotos]'.
+  Future<List<int>> textMatchesWithPhotos(ExpenseFilter filter) async {
+    final words = searchWords(filter.text);
+    return withPhotos([
+      for (final entry in await searchEntries(filter: filter.withoutText))
+        if (matchesText(entry, words)) entry,
+    ]);
+  }
+
+  /// The ids of [entries] that have photos, in their order. Home passes
+  /// the text matches it already read, for its photos icon.
+  Future<List<int>> withPhotos(Iterable<SearchEntry> entries) async {
+    final ids = await expenseIdsWithPhotos();
+    return [
+      for (final entry in entries)
+        if (ids.contains(entry.id)) entry.id,
+    ];
+  }
+
+  /// Every expense id that has a photo, binned ones too: text matches are
+  /// intersected with it ([withPhotos]).
+  Future<Set<int>> expenseIdsWithPhotos() async => {
+    for (final row in await _db.rawQuery(
+      'SELECT DISTINCT expense_id FROM expense_photos',
+    ))
+      row['expense_id']! as int,
+  };
+
+  /// A page of the Photos screen (§6.4): active expenses **with photos**
+  /// that pass [filter]'s category and event part, in Home's order,
+  /// after [after], each with its photos in order. Keyset by expense, so
+  /// an expense's photos are never split across pages.
+  Future<List<PhotoExpense>> photoExpensesPage({
+    ExpenseFilter filter = ExpenseFilter.none,
+    ExpenseCursor? after,
+    int limit = 30,
+  }) async {
+    final expenses = await _read(
+      _db,
+      where: [
+        _active,
+        ..._filterWhere(filter),
+        _withPhotos,
+        if (after != null) '(occurred_on, occurred_at, id) < (?, ?, ?)',
+      ].join(' AND '),
+      whereArgs: after == null
+          ? null
+          : [after.occurredOn, after.occurredAtMs, after.id],
+      orderBy: _listOrder,
+      limit: limit,
+    );
+    return _withTheirPhotos(expenses);
+  }
+
+  /// The active expenses among [ids] that have photos, each with its
+  /// photos, in Home's order: the Photos screen's text path, 30 ids at a
+  /// time.
+  Future<List<PhotoExpense>> photoExpensesByIds(List<int> ids) async =>
+      _withTheirPhotos([
+        for (final e in await byIds(ids))
+          if (e.photoCount > 0) e,
+      ]);
+
+  Future<List<PhotoExpense>> _withTheirPhotos(List<Expense> expenses) async {
+    final photos = await _photosOfMany(_db, [for (final e in expenses) e.id]);
+    return [
+      for (final e in expenses) (expense: e, photos: photos[e.id] ?? const []),
+    ];
+  }
+
+  /// Deletes the [links] (expense, photo) from their expenses at once, in
+  /// one transaction: the Photos screen's Delete (owner rev 6, §6.4a).
+  /// Only **active** expenses are changed (one binned or deleted since the
+  /// screen loaded is skipped); each changed expense's remaining photos are
+  /// numbered 0.. again in their order, and its `updated_at` moves. Returns
+  /// how many links went and the expenses that lost some: only their Edit
+  /// drafts may drop the photos (a skipped expense keeps them). The rows
+  /// and files stay for the sweep.
+  Future<({int count, Set<int> expenseIds})> removePhotoLinks(
+    List<({int expenseId, int photoId})> links,
+  ) async {
+    final byExpense = <int, Set<int>>{};
+    for (final link in links) {
+      byExpense.putIfAbsent(link.expenseId, () => {}).add(link.photoId);
+    }
+    if (byExpense.isEmpty) return (count: 0, expenseIds: <int>{});
+    final now = _now().millisecondsSinceEpoch;
+    final changed = <int>{};
+    final removed = await _db.transaction((txn) async {
+      var removed = 0;
+      for (final MapEntry(key: expenseId, value: photoIds)
+          in byExpense.entries) {
+        final active = await txn.query(
+          'expenses',
+          columns: ['id'],
+          where: 'id = ? AND $_active',
+          whereArgs: [expenseId],
+        );
+        if (active.isEmpty) continue;
+        // Ints from the app's own rows, as literals (like the filter's).
+        final count = await txn.delete(
+          'expense_photos',
+          where: 'expense_id = ? AND photo_id IN (${_idList(photoIds)})',
+          whereArgs: [expenseId],
+        );
+        if (count == 0) continue;
+        removed += count;
+        changed.add(expenseId);
+        final rest = await txn.query(
+          'expense_photos',
+          columns: ['photo_id'],
+          where: 'expense_id = ?',
+          whereArgs: [expenseId],
+          orderBy: 'sort_order, photo_id',
+        );
+        for (final (i, row) in rest.indexed) {
+          await txn.update(
+            'expense_photos',
+            {'sort_order': i},
+            where: 'expense_id = ? AND photo_id = ?',
+            whereArgs: [expenseId, row['photo_id']],
+          );
+        }
+        await txn.update(
+          'expenses',
+          {'updated_at': now},
+          where: 'id = ?',
+          whereArgs: [expenseId],
+        );
+      }
+      return removed;
+    });
+    if (removed > 0) _dataVersion.bump();
+    return (count: removed, expenseIds: changed);
   }
 
   /// Per category id: active uses in the last 90 days and the most recent
@@ -455,6 +661,101 @@ class ExpenseRepository {
     }
   }
 
+  /// Links [photos] to the expense [expenseId] in order (§6.4), inside the
+  /// save's own transaction. A new photo's row is made if its path isn't
+  /// there yet (`INSERT OR IGNORE`), then its id read back: the insert's
+  /// return value is never used, since an ignored insert returns 0 in
+  /// tests and -1 on a phone (R16). A saved photo is linked only if its
+  /// row still exists, checked in this same transaction: a row the sweep
+  /// took meanwhile links nothing, and the form says so (F13). A photo
+  /// already linked in this save is skipped, so a duplicate can't fail
+  /// the save.
+  static Future<void> _linkPhotos(
+    Transaction txn,
+    int expenseId,
+    List<PhotoLinkInput> photos,
+    int now,
+  ) async {
+    final linked = <int>{};
+    for (final photo in photos) {
+      final photoId = await _photoIdFor(txn, photo, now);
+      if (photoId == null || !linked.add(photoId)) continue;
+      await txn.insert('expense_photos', {
+        'expense_id': expenseId,
+        'photo_id': photoId,
+        'sort_order': linked.length - 1,
+      });
+    }
+  }
+
+  /// [photo]'s row id: a new photo's row is made first if its path isn't
+  /// there; a saved photo's is null when its row is gone.
+  static Future<int?> _photoIdFor(
+    Transaction txn,
+    PhotoLinkInput photo,
+    int now,
+  ) async {
+    switch (photo) {
+      case LinkNewPhoto(:final relativePath, :final sha256, :final byteSize):
+        if (!isValidPhotoPath(relativePath)) {
+          throw ArgumentError.value(relativePath, 'photo', 'not a photo path');
+        }
+        await txn.rawInsert(
+          'INSERT OR IGNORE INTO photos '
+          '(relative_path, sha256, byte_size, created_at, updated_at) '
+          'VALUES (?, ?, ?, ?, ?)',
+          [relativePath, sha256, byteSize, now, now],
+        );
+        final rows = await txn.query(
+          'photos',
+          columns: ['id'],
+          where: 'relative_path = ?',
+          whereArgs: [relativePath],
+        );
+        return rows.single['id']! as int;
+      case LinkSavedPhoto(:final photoId):
+        final rows = await txn.query(
+          'photos',
+          columns: ['id'],
+          where: 'id = ?',
+          whereArgs: [photoId],
+        );
+        return rows.isEmpty ? null : photoId;
+    }
+  }
+
+  /// The photos of [ids], in order, by expense id. In chunks for SQLite
+  /// 3.22's 999 variables.
+  static Future<Map<int, List<SavedPhoto>>> _photosOfMany(
+    DatabaseExecutor db,
+    List<int> ids,
+  ) async {
+    final rows = await inChunks(
+      ids,
+      (chunk) => db.rawQuery(
+        'SELECT ep.expense_id, p.id, p.relative_path, p.sha256, p.byte_size '
+        'FROM expense_photos ep JOIN photos p ON p.id = ep.photo_id '
+        'WHERE ep.expense_id IN (${sqlPlaceholders(chunk.length)}) '
+        'ORDER BY ep.expense_id, ep.sort_order, p.id',
+        chunk,
+      ),
+    );
+    final photos = <int, List<SavedPhoto>>{};
+    for (final row in rows) {
+      photos
+          .putIfAbsent(row['expense_id']! as int, () => [])
+          .add(
+            SavedPhoto(
+              id: row['id']! as int,
+              relativePath: row['relative_path']! as String,
+              sha256: row['sha256']! as String,
+              byteSize: row['byte_size']! as int,
+            ),
+          );
+    }
+    return photos;
+  }
+
   /// Reads expenses with their events. Every method that returns expenses
   /// goes through here, so events are always loaded in full.
   static Future<List<Expense>> _read(
@@ -487,34 +788,52 @@ class ExpenseRepository {
           .putIfAbsent(link['expense_id']! as int, () => {})
           .add(link['event_id']! as int);
     }
+    final photoCounts = {
+      for (final row in await inChunks(
+        ids,
+        (chunk) => db.rawQuery(
+          'SELECT expense_id, count(*) AS n FROM expense_photos '
+          'WHERE expense_id IN (${sqlPlaceholders(chunk.length)}) '
+          'GROUP BY expense_id',
+          chunk,
+        ),
+      ))
+        row['expense_id']! as int: row['n']! as int,
+    };
     return [
-      for (final row in rows) _fromRow(row, events[row['id']! as int] ?? {}),
+      for (final row in rows)
+        _fromRow(
+          row,
+          events[row['id']! as int] ?? {},
+          photoCounts[row['id']! as int] ?? 0,
+        ),
     ];
   }
 
-  static Expense _fromRow(Map<String, Object?> row, Set<int> eventIds) =>
-      Expense(
-        id: row['id']! as int,
-        title: row['title']! as String,
-        description: row['description'] as String?,
-        amount: Money(
-          row['amount_minor']! as int,
-          row['currency_code']! as String,
-        ),
-        amountExpression: row['amount_expression'] as String?,
-        occurredAt: utcFromEpochMs(row['occurred_at']! as int),
-        utcOffsetMinutes: row['utc_offset_minutes']! as int,
-        occurredOn: row['occurred_on']! as String,
-        categoryId: row['category_id']! as int,
-        paymentMethodId: row['payment_method_id']! as int,
-        eventIds: eventIds,
-        createdAt: utcFromEpochMs(row['created_at']! as int),
-        updatedAt: utcFromEpochMs(row['updated_at']! as int),
-        deletedAt: switch (row['deleted_at']) {
-          final int millis => utcFromEpochMs(millis),
-          _ => null,
-        },
-      );
+  static Expense _fromRow(
+    Map<String, Object?> row,
+    Set<int> eventIds,
+    int photoCount,
+  ) => Expense(
+    id: row['id']! as int,
+    title: row['title']! as String,
+    description: row['description'] as String?,
+    amount: Money(row['amount_minor']! as int, row['currency_code']! as String),
+    amountExpression: row['amount_expression'] as String?,
+    occurredAt: utcFromEpochMs(row['occurred_at']! as int),
+    utcOffsetMinutes: row['utc_offset_minutes']! as int,
+    occurredOn: row['occurred_on']! as String,
+    categoryId: row['category_id']! as int,
+    paymentMethodId: row['payment_method_id']! as int,
+    eventIds: eventIds,
+    createdAt: utcFromEpochMs(row['created_at']! as int),
+    updatedAt: utcFromEpochMs(row['updated_at']! as int),
+    deletedAt: switch (row['deleted_at']) {
+      final int millis => utcFromEpochMs(millis),
+      _ => null,
+    },
+    photoCount: photoCount,
+  );
 
   /// Today's `occurred_on` on the device and the one [days] before it.
   (String from, String today) _window(int days) {
@@ -533,6 +852,9 @@ class ExpenseRepository {
       'category_id IN (${_idList(filter.categoryIds)})',
     if (filter.eventIds.isNotEmpty) _withAnyEvent(filter.eventIds),
   ];
+
+  /// Has at least one photo.
+  static const _withPhotos = 'id IN (SELECT expense_id FROM expense_photos)';
 
   /// Any one of [eventIds]: an expense with two of them is still one row.
   static String _withAnyEvent(Set<int> eventIds) =>

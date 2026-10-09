@@ -45,15 +45,26 @@ class IoFileOperations implements FileOperations {
 }
 
 /// Deletes [path] if it is there.
+///
+/// Gone meanwhile counts as deleted: two deleters can meet (after a
+/// restore, the restarted app's cleanup and the closing restore screen
+/// both delete its folder; seen on the Oppo, phase-6.md §12a).
 Future<void> deleteFileIfExists(String path) async {
-  final file = File(path);
-  if (await file.exists()) await file.delete();
+  try {
+    await File(path).delete();
+  } on PathNotFoundException {
+    // Not there: nothing to do.
+  }
 }
 
-/// Deletes [path] and everything in it, if it is there.
+/// Deletes [path] and everything in it, if it is there (gone meanwhile
+/// counts as deleted, as in [deleteFileIfExists]).
 Future<void> deleteFolderIfExists(String path) async {
-  final folder = Directory(path);
-  if (await folder.exists()) await folder.delete(recursive: true);
+  try {
+    await Directory(path).delete(recursive: true);
+  } on PathNotFoundException {
+    // Not there: nothing to do.
+  }
 }
 
 /// Whether the files at [a] and [b] hold the same bytes. Reads in chunks,

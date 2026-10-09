@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import '../photos.dart';
+
 /// A field of the Add/Edit form, for the touched set: prefill fills only
 /// fields the user hasn't touched (D13, phase-4.md §7.1).
 enum DraftField {
@@ -32,6 +34,7 @@ class ExpenseDraft {
     required this.itemizeTerms,
     required this.updatedAt,
     this.suggestionsBlocked = false,
+    this.photos = const [],
   });
 
   /// The expense being edited; null for an Add draft.
@@ -71,10 +74,36 @@ class ExpenseDraft {
   /// suggestions until Clear, also after a resume (phase-4.md §12a).
   final bool suggestionsBlocked;
 
+  /// The form's photos, in order (phase-6.md §5.5): saved ones by id and
+  /// path, staged ones by their staging file. A camera shot not yet used
+  /// isn't here: it has its own marker, so opening the camera never takes
+  /// the slot (§7.1).
+  final List<FormPhoto> photos;
+
   /// The newest `form_json` version this app reads.
   static const version = 1;
 
   bool get isAdd => editingExpenseId == null;
+
+  /// This draft with [photos] instead of its own.
+  ExpenseDraft withPhotos(List<FormPhoto> photos) => ExpenseDraft(
+    editingExpenseId: editingExpenseId,
+    title: title,
+    amountExpression: amountExpression,
+    description: description,
+    categoryId: categoryId,
+    eventIds: eventIds,
+    paymentMethodId: paymentMethodId,
+    currencyCode: currencyCode,
+    pickedWallClock: pickedWallClock,
+    touched: touched,
+    itemizeLine: itemizeLine,
+    itemizeLabels: itemizeLabels,
+    itemizeTerms: itemizeTerms,
+    updatedAt: updatedAt,
+    suggestionsBlocked: suggestionsBlocked,
+    photos: photos,
+  );
 
   /// `form_json`: every field but [editingExpenseId] and [updatedAt], which
   /// are columns.
@@ -95,6 +124,7 @@ class ExpenseDraft {
     'itemize_labels': itemizeLabels,
     'itemize_terms': itemizeTerms,
     'suggestions_blocked': suggestionsBlocked,
+    'photos': [for (final photo in photos) _photoToJson(photo)],
   });
 
   /// Reads `form_json` forgivingly (database.md §3.9): unknown keys are
@@ -149,7 +179,53 @@ class ExpenseDraft {
       itemizeTerms: list<String>('itemize_terms'),
       updatedAt: updatedAt,
       suggestionsBlocked: json['suggestions_blocked'] == true,
+      photos: _readPhotos(json['photos']),
     );
+  }
+
+  static Map<String, Object?> _photoToJson(FormPhoto photo) => switch (photo) {
+    SavedPhoto(:final id, :final relativePath) => {
+      'photo_id': id,
+      'path': relativePath,
+      'sha256': photo.sha256,
+      'bytes': photo.byteSize,
+    },
+    StagedPhoto(:final stagingName) => {
+      'staged': stagingName,
+      'sha256': photo.sha256,
+      'bytes': photo.byteSize,
+    },
+  };
+
+  /// The draft's photos, read forgivingly (§5.5): a missing or wrong-typed
+  /// `photos` is none; an item that isn't an object, misses a field, has a
+  /// wrong type, a bad SHA-256, a size that isn't positive, or a path or
+  /// staging name that fails its check is skipped, the rest kept. The
+  /// checks are what keep a crafted draft from naming any other file (§9).
+  static List<FormPhoto> _readPhotos(Object? value) {
+    if (value is! List<Object?>) return const [];
+    return [
+      for (final item in value)
+        if (item is Map<String, Object?>) ?_readPhoto(item),
+    ];
+  }
+
+  static FormPhoto? _readPhoto(Map<String, Object?> item) {
+    final sha = item['sha256'];
+    final bytes = item['bytes'];
+    if (sha is! String || !isValidSha256(sha) || bytes is! int || bytes <= 0) {
+      return null;
+    }
+    return switch (item) {
+      // The path names the file by its hash; one that names another is
+      // damaged.
+      {'photo_id': final int id, 'path': final String path}
+          when isValidPhotoPath(path) && path.startsWith('photos/$sha.') =>
+        SavedPhoto(id: id, relativePath: path, sha256: sha, byteSize: bytes),
+      {'staged': final String name} when isValidStagingName(name) =>
+        StagedPhoto(stagingName: name, sha256: sha, byteSize: bytes),
+      _ => null,
+    };
   }
 
   /// [value]'s wall-clock fields with no zone, so the JSON holds
@@ -203,7 +279,8 @@ class ExpenseDraft {
       _sameList(other.itemizeLabels, itemizeLabels) &&
       _sameList(other.itemizeTerms, itemizeTerms) &&
       other.updatedAt == updatedAt &&
-      other.suggestionsBlocked == suggestionsBlocked;
+      other.suggestionsBlocked == suggestionsBlocked &&
+      _sameList(other.photos, photos);
 
   @override
   int get hashCode => Object.hash(

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- What the photos FileProvider may share (phase-6.md §6.1): only the
+     staging folder, so the camera app can write nowhere else. -->
+<paths>
+    <external-files-path name="photos_staging" path="photos_staging/" />
+</paths>

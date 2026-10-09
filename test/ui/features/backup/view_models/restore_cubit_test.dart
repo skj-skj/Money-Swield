@@ -271,15 +271,16 @@ void main() {
   });
 
   group('refused', () {
-    test('a file over the size limit is "not a backup"', () async {
-      documents.pickedTooLarge = true;
-      final cubit = cubitFor(tools);
-      await cubit.startFromZip();
-      expect(
-        (cubit.value as RestoreRefused).reason,
-        RestoreRejection.notABackup,
-      );
-    });
+    test(
+      'a file larger than the free space can\'t be opened: "not enough '
+      'space" (R2; was "not a backup" under Phase 3\'s 100 MB cap)',
+      () async {
+        documents.pickedTooLarge = true;
+        final cubit = cubitFor(tools);
+        await cubit.startFromZip();
+        expect(cubit.value, isA<RestoreFailedNoSpace>());
+      },
+    );
 
     test(
       'a file that isn\'t a zip is "not a backup", and leaves nothing',
@@ -302,6 +303,8 @@ void main() {
       'a backup that can\'t start the app is refused before the swap',
       () async {
         await live.execute('DROP TABLE expense_events');
+        // Phase 6's links point at expenses too.
+        await live.execute('DROP TABLE expense_photos');
         await live.execute('DROP TABLE expenses');
         await backUpLive();
         final before = await liveBytesAfterClose();

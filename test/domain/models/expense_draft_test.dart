@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_expense_tracker_app/domain/models/expense_draft.dart';
+import 'package:my_expense_tracker_app/domain/photos.dart';
 
 final _at = DateTime.utc(2026, 10, 4, 8);
 
@@ -183,5 +184,98 @@ void main() {
       'JSON', () {
     final json = jsonDecode(draft().toJson()) as Map<String, Object?>;
     expect(json['event_ids'], [1, 2]);
+  });
+
+  group('photos (phase-6.md §5.5)', () {
+    final a = 'a' * 64;
+    final b = 'b' * 64;
+    const uuid = '0f8fad5b-d9cb-469f-a165-70867728950e';
+    final saved = SavedPhoto(
+      id: 12,
+      relativePath: 'photos/$a.jpg',
+      sha256: a,
+      byteSize: 412345,
+    );
+    final staged = StagedPhoto(
+      stagingName: '$uuid.jpg',
+      sha256: b,
+      byteSize: 522871,
+    );
+
+    ExpenseDraft withPhotos(List<FormPhoto> photos) => ExpenseDraft(
+      editingExpenseId: 7,
+      title: 'Lunch',
+      amountExpression: '50',
+      description: '',
+      categoryId: 1,
+      eventIds: const {},
+      paymentMethodId: 1,
+      currencyCode: 'INR',
+      pickedWallClock: null,
+      touched: const {},
+      itemizeLine: null,
+      itemizeLabels: const [],
+      itemizeTerms: const [],
+      updatedAt: _at,
+      photos: photos,
+    );
+
+    test('round trip keeps saved and staged photos in order', () {
+      final original = withPhotos([staged, saved]);
+      final back = read(original.toJson(), editing: 7)!;
+      expect(back, original);
+      expect(back.photos, [staged, saved]);
+      final json = jsonDecode(original.toJson()) as Map<String, Object?>;
+      expect(json['photos'], [
+        {'staged': '$uuid.jpg', 'sha256': b, 'bytes': 522871},
+        {'photo_id': 12, 'path': 'photos/$a.jpg', 'sha256': a, 'bytes': 412345},
+      ]);
+      expect(json['v'], 1, reason: 'v stays 1 (R10)');
+    });
+
+    test('a Phase 4 draft (no photos key) and a wrong type read as none', () {
+      expect(read('{"title": "Tea"}')!.photos, isEmpty);
+      expect(read('{"photos": "x"}')!.photos, isEmpty);
+      expect(read('{"photos": {"a": 1}}')!.photos, isEmpty);
+      expect(read('{"photos": null}')!.photos, isEmpty);
+    });
+
+    test('a bad item is skipped, the rest kept', () {
+      Map<String, Object?> good() => {
+        'staged': '$uuid.jpg',
+        'sha256': b,
+        'bytes': 5,
+      };
+      final bad = <Object?>[
+        5,
+        'photos/$a.jpg',
+        null,
+        {'staged': '$uuid.jpg', 'sha256': b}, // no bytes
+        {'staged': '$uuid.jpg', 'sha256': b, 'bytes': '5'},
+        {'staged': '$uuid.jpg', 'sha256': b, 'bytes': 0},
+        {'staged': '$uuid.jpg', 'sha256': 'B' * 64, 'bytes': 5},
+        {'staged': '$uuid.jpg', 'sha256': 'b' * 63, 'bytes': 5},
+        {'staged': '../$uuid.jpg', 'sha256': b, 'bytes': 5},
+        {'staged': 7, 'sha256': b, 'bytes': 5},
+        {'photo_id': '12', 'path': 'photos/$a.jpg', 'sha256': a, 'bytes': 5},
+        {
+          'photo_id': 12,
+          'path': '../databases/expense_tracker.db',
+          'sha256': a,
+          'bytes': 5,
+        },
+        {'photo_id': 12, 'path': 'photos/$b.jpg', 'sha256': a, 'bytes': 5},
+        {'photo_id': 12, 'sha256': a, 'bytes': 5},
+      ];
+      final json = jsonEncode({
+        'photos': [good(), ...bad, good()],
+      });
+      expect(read(json)!.photos, hasLength(2));
+    });
+
+    test("the photos are part of the draft's equality", () {
+      expect(withPhotos([saved]), isNot(withPhotos([])));
+      expect(withPhotos([saved, staged]), isNot(withPhotos([staged, saved])));
+    });
   });
 }

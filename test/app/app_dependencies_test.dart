@@ -44,6 +44,27 @@ void main() {
     );
   });
 
+  test('probe refuses a database without either photo table (R12)', () async {
+    for (final table in ['expense_photos', 'photos']) {
+      final db = await openMigratedDatabase();
+      await db.execute('DROP TABLE expense_photos');
+      if (table == 'photos') {
+        // Back without photos: only `photos` is missing now.
+        await db.execute(
+          'CREATE TABLE expense_photos (expense_id INTEGER, '
+          'photo_id INTEGER, sort_order INTEGER)',
+        );
+        await db.execute('PRAGMA foreign_keys = OFF');
+        await db.execute('DROP TABLE photos');
+      }
+      await expectLater(
+        AppDependencies.probe(db, deviceCurrency: 'INR'),
+        throwsA(isA<DatabaseException>()),
+        reason: table,
+      );
+    }
+  });
+
   // That close() writes what is due first is in
   // expense_draft_repository_test ("close writes what is due").
   test('closeForRestore closes the drafts, then the database; a change '

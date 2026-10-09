@@ -1,6 +1,7 @@
 import 'dart:ui' show Locale;
 
 import '../periods.dart';
+import '../photo_sizing.dart';
 import 'app_theme_mode.dart';
 import 'dashboard_options.dart';
 import 'item_shape.dart';
@@ -27,6 +28,8 @@ class AppSettings {
     this.trendCardPosition = defaultTrendCardPosition,
     this.trendCardSize = defaultTrendCardSize,
     this.trendCardHaptics = defaultTrendCardHaptics,
+    this.cameraPhotos = defaultPhotoSizing,
+    this.galleryPhotos = defaultPhotoSizing,
   });
 
   /// What the app uses before the settings are read from the database: the
@@ -106,6 +109,13 @@ class AppSettings {
   /// The tick of the card's reel at each face (owner, 2026-10-07).
   final CardHaptics trendCardHaptics;
 
+  /// How photos taken with the camera are kept (phase-6.md §4.2): larger
+  /// than the size, resized to it at the quality; 1080p / 85 by default.
+  final PhotoSizing cameraPhotos;
+
+  /// The same for photos picked from the gallery (owner rev 7: also 1080p).
+  final PhotoSizing galleryPhotos;
+
   /// A copy with the given values replaced. [locale] and [themeSeed] are
   /// set separately with [withLocale] and [withThemeSeed], because null is a
   /// meaningful value for them ("follow the device", "wallpaper colors")
@@ -127,6 +137,8 @@ class AppSettings {
     TrendCardPosition? trendCardPosition,
     TrendCardSize? trendCardSize,
     CardHaptics? trendCardHaptics,
+    PhotoSizing? cameraPhotos,
+    PhotoSizing? galleryPhotos,
   }) => _copy(
     onboardingCompleted: onboardingCompleted,
     theme: theme,
@@ -144,6 +156,8 @@ class AppSettings {
     trendCardPosition: trendCardPosition,
     trendCardSize: trendCardSize,
     trendCardHaptics: trendCardHaptics,
+    cameraPhotos: cameraPhotos,
+    galleryPhotos: galleryPhotos,
   );
 
   /// A copy with the app language set to [locale] (null = follow the device).
@@ -165,6 +179,13 @@ class AppSettings {
     trendCardHaptics: defaultTrendCardHaptics,
     weekStart: defaultWeekStart,
     weekLabel: defaultWeekLabel,
+  );
+
+  /// A copy with Settings → Photos' defaults (phase-6.md §8.6). Not part
+  /// of the default look or Home's defaults.
+  AppSettings withDefaultPhotos() => copyWith(
+    cameraPhotos: defaultPhotoSizing,
+    galleryPhotos: defaultPhotoSizing,
   );
 
   /// A copy with the theme color set to [seed] (null = wallpaper colors).
@@ -193,6 +214,8 @@ class AppSettings {
     TrendCardPosition? trendCardPosition,
     TrendCardSize? trendCardSize,
     CardHaptics? trendCardHaptics,
+    PhotoSizing? cameraPhotos,
+    PhotoSizing? galleryPhotos,
   }) => AppSettings(
     onboardingCompleted: onboardingCompleted ?? this.onboardingCompleted,
     locale: locale == null ? this.locale : locale(),
@@ -213,6 +236,8 @@ class AppSettings {
     trendCardPosition: trendCardPosition ?? this.trendCardPosition,
     trendCardSize: trendCardSize ?? this.trendCardSize,
     trendCardHaptics: trendCardHaptics ?? this.trendCardHaptics,
+    cameraPhotos: cameraPhotos ?? this.cameraPhotos,
+    galleryPhotos: galleryPhotos ?? this.galleryPhotos,
   );
 
   @override
@@ -235,7 +260,9 @@ class AppSettings {
       other.trendChartStyle == trendChartStyle &&
       other.trendCardPosition == trendCardPosition &&
       other.trendCardSize == trendCardSize &&
-      other.trendCardHaptics == trendCardHaptics;
+      other.trendCardHaptics == trendCardHaptics &&
+      other.cameraPhotos == cameraPhotos &&
+      other.galleryPhotos == galleryPhotos;
 
   @override
   int get hashCode => Object.hash(
@@ -257,6 +284,8 @@ class AppSettings {
     trendCardPosition,
     trendCardSize,
     trendCardHaptics,
+    cameraPhotos,
+    galleryPhotos,
   );
 
   @override
@@ -269,5 +298,7 @@ class AppSettings {
       'cardPeriod: ${cardPeriod.name}, listGrouping: ${listGrouping.name}, '
       'trendChartStyle: ${trendChartStyle.name}, trendCardPosition: ${trendCardPosition.name}, '
       'trendCardSize: ${trendCardSize.name}, '
-      'trendCardHaptics: ${trendCardHaptics.name})';
+      'trendCardHaptics: ${trendCardHaptics.name}, '
+      'cameraPhotos: ${cameraPhotos.size.name}/${cameraPhotos.quality}, '
+      'galleryPhotos: ${galleryPhotos.size.name}/${galleryPhotos.quality})';
 }

@@ -41,6 +41,11 @@ class RestoreCandidate {
     required this.activeExpenses,
     required this.binnedExpenses,
     required this.latestExpenseOn,
+    this.includesPhotos = false,
+    this.photoCount = 0,
+    this.photoBytes = 0,
+    this.photoBytesToWrite = 0,
+    this.freeBytes,
   });
 
   final RestoreSource source;
@@ -60,6 +65,54 @@ class RestoreCandidate {
   /// The local date of the newest active expense, or null when there is
   /// none (or no `expenses` table).
   final DateTime? latestExpenseOn;
+
+  /// Whether the backup holds its photos (phase-6.md §8.8). A
+  /// database-only backup, or Undo's copy, has none to write.
+  final bool includesPhotos;
+
+  /// The photos in the backup and their size.
+  final int photoCount;
+  final int photoBytes;
+
+  /// The bytes of the photos this phone doesn't have yet (no file of that
+  /// name and size): what restoring them writes.
+  final int photoBytesToWrite;
+
+  /// Free space where photos go, when known.
+  final int? freeBytes;
+
+  /// Room kept free besides what a restore writes.
+  static const spaceMargin = 50 * 1024 * 1024;
+
+  /// Whether the photos fit (P6-17): if not, the confirm offers "Restore
+  /// without photos" instead.
+  bool get photosFit {
+    final free = freeBytes;
+    return free == null || photoBytesToWrite <= free - spaceMargin;
+  }
+
+  /// How much more room the photos need, when they don't fit.
+  int get photoBytesShort =>
+      photosFit ? 0 : photoBytesToWrite - (freeBytes! - spaceMargin);
+
+  /// A copy with the photo summary (§6.8 step 3).
+  RestoreCandidate withPhotos({
+    required int count,
+    required int bytes,
+    required int bytesToWrite,
+    required int? free,
+  }) => RestoreCandidate(
+    source: source,
+    createdAt: createdAt,
+    activeExpenses: activeExpenses,
+    binnedExpenses: binnedExpenses,
+    latestExpenseOn: latestExpenseOn,
+    includesPhotos: true,
+    photoCount: count,
+    photoBytes: bytes,
+    photoBytesToWrite: bytesToWrite,
+    freeBytes: free,
+  );
 
   /// A zip restore writes the backup's own time into `last_backup_at`
   /// (P3-9); Undo keeps the copy's value.

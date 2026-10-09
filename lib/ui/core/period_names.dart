@@ -86,6 +86,11 @@ class PeriodNames {
     return _sentence(_monthName(date, withYear: date.year != _thisYear));
   }
 
+  /// `Oct 2026`: a month with its year even in this year, for the Photos
+  /// screen's frames (phase-6.md §8.9), which mix years more than Home.
+  String monthWithYear(String day) =>
+      _sentence(_monthName(parseDay(day), withYear: true));
+
   String _monthName(DateTime date, {required bool withYear}) =>
       (withYear
               ? cachedDateFormat('yMMM', locale)

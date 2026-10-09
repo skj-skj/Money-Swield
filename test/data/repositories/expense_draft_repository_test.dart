@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_expense_tracker_app/data/repositories/expense_draft_repository.dart';
 import 'package:my_expense_tracker_app/domain/models/expense_draft.dart';
+import 'package:my_expense_tracker_app/domain/photos.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../../helpers/fake_timers.dart';
@@ -247,5 +248,67 @@ void main() {
     await repo.flush();
     await repo.clear();
     expect(deps.dataVersion.value, start);
+  });
+
+  group('photos (phase-6.md §6.4a, §6.5)', () {
+    SavedPhoto saved(int id) {
+      final sha = id.toRadixString(16).padLeft(64, '0');
+      return SavedPhoto(
+        id: id,
+        relativePath: 'photos/$sha.jpg',
+        sha256: sha,
+        byteSize: 1,
+      );
+    }
+
+    final staged = StagedPhoto(
+      stagingName: '0f8fad5b-d9cb-469f-a165-70867728950e.jpg',
+      sha256: 'f' * 64,
+      byteSize: 1,
+    );
+
+    test('dropSavedPhotos takes the photos out of that expense\'s Edit '
+        'draft; memory and row agree', () async {
+      drafts.update(
+        draft('Taxi', editing: 7).withPhotos([saved(1), staged, saved(2)]),
+      );
+      await drafts.dropSavedPhotos(7, {1});
+      expect((await drafts.read())!.photos, [staged, saved(2)]);
+      await drafts.flush();
+      timers.elapse();
+      await drafts.flush();
+      final row = ExpenseDraft.fromJson(
+        (await rows()).single['form_json']! as String,
+        editingExpenseId: 7,
+        updatedAt: DateTime.utc(2000),
+      )!;
+      expect(row.photos, [staged, saved(2)]);
+    });
+
+    test('another expense\'s draft, an Add draft and an empty slot are '
+        'left alone', () async {
+      await drafts.dropSavedPhotos(7, {1});
+      expect(await drafts.read(), isNull);
+      final add = draft('Add').withPhotos([saved(1)]);
+      drafts.update(add);
+      await drafts.dropSavedPhotos(7, {1});
+      expect(await drafts.read(), add);
+      final other = draft('Other', editing: 8).withPhotos([saved(1)]);
+      drafts.update(other);
+      await drafts.dropSavedPhotos(7, {1});
+      expect(await drafts.read(), other);
+    });
+
+    test('readDraft reads another database\'s slot, never deletes; none '
+        'without the table', () async {
+      drafts.update(draft('Lunch').withPhotos([staged]));
+      await drafts.flush();
+      expect((await ExpenseDraftRepository.readDraft(db))!.photos, [staged]);
+      await db.update('expense_draft', {'form_json': '{bad'});
+      expect(await ExpenseDraftRepository.readDraft(db), isNull);
+      expect(await rows(), hasLength(1), reason: 'not deleted');
+      await db.execute('DROP TABLE expense_draft');
+      expect(await ExpenseDraftRepository.readDraft(db), isNull);
+    });
   });
 }

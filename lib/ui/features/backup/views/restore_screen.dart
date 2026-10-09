@@ -71,7 +71,9 @@ class RestoreScreen extends StatefulWidget {
   @visibleForTesting
   static bool canLeave(RestoreState state) => switch (state) {
     RestoreMigrating(:final migration) => migration.value is MigrationFailed,
-    RestoreSwapping() || RestoreDone() => false,
+    // Writing the photos leads straight into the swap: leaving then would
+    // still swap after the screen closed.
+    RestoreWritingPhotos() || RestoreSwapping() || RestoreDone() => false,
     RestoreFailed(:final needsRestart) => !needsRestart,
     _ => true,
   };
@@ -107,11 +109,12 @@ class _RestoreScreenState extends State<RestoreScreen> {
     switch (state) {
       case RestoreConfirm():
         _confirm(state);
-      case RestoreDone(:final settingsReset):
+      case RestoreDone(:final settingsReset, :final failedPhotos):
         AppRestart.of(context).restart(
-          notice: settingsReset
-              ? RestoreNotice.restoredWithDefaultSettings
-              : RestoreNotice.restored,
+          notice: RestoreNotice(
+            settingsReset: settingsReset,
+            failedPhotos: failedPhotos,
+          ),
         );
       case RestoreCancelled():
         Navigator.pop(context);
@@ -127,6 +130,10 @@ class _RestoreScreenState extends State<RestoreScreen> {
       candidate: state.candidate,
       currentExpenses: state.currentExpenses,
     );
+    final candidate = state.candidate;
+    // Photos that don't fit: "Restore without photos" instead of Restore
+    // (P6-17); nothing else would be written.
+    final withoutPhotos = candidate.includesPhotos && !candidate.photosFit;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -149,8 +156,13 @@ class _RestoreScreenState extends State<RestoreScreen> {
             child: Text(l10n.cancel),
           ),
           TextButton(
+            key: const ValueKey('restoreConfirm'),
             onPressed: () => Navigator.pop(context, true),
-            child: Text(l10n.restoreBackupButton),
+            child: Text(
+              withoutPhotos
+                  ? l10n.restoreWithoutPhotos
+                  : l10n.restoreBackupButton,
+            ),
           ),
         ],
       ),
@@ -158,7 +170,7 @@ class _RestoreScreenState extends State<RestoreScreen> {
     if (!mounted) return;
     // Back or a tap outside the dialog is a cancel too.
     if (confirmed ?? false) {
-      await _cubit.confirm();
+      await _cubit.confirm(withPhotos: !withoutPhotos);
     } else {
       await _cubit.cancel();
     }
@@ -195,6 +207,10 @@ class _RestoreScreenState extends State<RestoreScreen> {
       RestoreSwapping() ||
       RestoreDone() ||
       RestoreMigrating() => _Waiting(text: l10n.restoringData),
+      RestoreWritingPhotos(:final done, :final total) => _Waiting(
+        text: l10n.restoringPhotosProgress(done, total),
+      ),
+      RestoreFailedNoSpace() => _NoSpace(text: l10n.openBackupNoSpace),
       RestoreRefused(:final reason) => _Refused(reason: reason),
       RestoreFailed(:final report, :final needsRestart) => Scaffold(
         body: SafeArea(
@@ -315,4 +331,32 @@ class _Refused extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The picked backup is larger than the free space (R2): said plainly,
+/// with OK back to Backup & restore.
+class _NoSpace extends StatelessWidget {
+  const _NoSpace({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    body: SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(text, textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(AppLocalizations.of(context).ok),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }
