@@ -1909,4 +1909,813 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get eventDiningOut => 'बाहर खाना';
+
+  @override
+  String scheduleDaily(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'हर $countString दिन',
+      one: 'हर दिन',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scheduleWeekly(int count, String weekday) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'हर $countString हफ़्ते $weekday को',
+      one: 'हर हफ़्ते $weekday को',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scheduleMonthly(int count, int day) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+    final intl.NumberFormat dayNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String dayString = dayNumberFormat.format(day);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'हर $countString महीने, $dayString तारीख़ को',
+      one: 'हर महीने की $dayString तारीख़ को',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scheduleMonthlyClamped(int count, int day) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+    final intl.NumberFormat dayNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String dayString = dayNumberFormat.format(day);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'हर $countString महीने, $dayString तारीख़ को (या महीने के आख़िरी दिन)',
+      one: 'हर महीने की $dayString तारीख़ को (या महीने के आख़िरी दिन)',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scheduleYearly(int count, String date) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'हर $countString साल $date को',
+      one: 'हर साल $date को',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scheduleYearlyLeap(int count, String date, String fallback) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'हर $countString साल $date को (बाक़ी सालों में $fallback को)',
+      one: 'हर साल $date को (बाक़ी सालों में $fallback को)',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String repeatShortDaily(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'हर $countString दिन',
+      one: 'रोज़',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String repeatShortWeekly(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'हर $countString हफ़्ते',
+      one: 'हर हफ़्ते',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String repeatShortMonthly(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'हर $countString महीने',
+      one: 'हर महीने',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String repeatShortYearly(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'हर $countString साल',
+      one: 'हर साल',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get endsNever => 'कभी ख़त्म नहीं होता';
+
+  @override
+  String endsOn(String date) {
+    return '$date को ख़त्म';
+  }
+
+  @override
+  String nextOn(String date) {
+    return 'अगला: $date';
+  }
+
+  @override
+  String get noMorePayments => 'आगे कोई भुगतान नहीं';
+
+  @override
+  String archivedStopped(String date) {
+    return '$date को रोका गया';
+  }
+
+  @override
+  String archivedExpired(String date) {
+    return '$date को ख़त्म हुआ';
+  }
+
+  @override
+  String get repeats => 'दोहराएँ';
+
+  @override
+  String get repeatEvery => 'हर';
+
+  @override
+  String repeatUnitDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'दिन',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String repeatUnitWeeks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'हफ़्ते',
+      one: 'हफ़्ता',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String repeatUnitMonths(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'महीने',
+      one: 'महीना',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String repeatUnitYears(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'साल',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repeatEnds => 'ख़त्म';
+
+  @override
+  String get repeatEndsNever => 'कभी नहीं';
+
+  @override
+  String get repeatEndsOn => 'इस दिन';
+
+  @override
+  String get repeatEndDate => 'ख़त्म होने की तारीख़';
+
+  @override
+  String repeatIntervalError(int max) {
+    final intl.NumberFormat maxNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String maxString = maxNumberFormat.format(max);
+
+    return '1 से $maxString तक';
+  }
+
+  @override
+  String get repeatEndMissing => 'ख़त्म होने की तारीख़ चुनें';
+
+  @override
+  String repeatEndBeforeStart(String date) {
+    return 'पहले भुगतान ($date) से पहले ख़त्म होता है';
+  }
+
+  @override
+  String repeatEndTooLate(String date) {
+    return '$date तक की तारीख़ चुनें';
+  }
+
+  @override
+  String repeatTooManyPast(int count, int max) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+    final intl.NumberFormat maxNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String maxString = maxNumberFormat.format(max);
+
+    return 'यह $countString पिछले भुगतान हैं; ज़्यादा से ज़्यादा $maxString। बाद की तारीख़ या लंबा अंतराल चुनें।';
+  }
+
+  @override
+  String repeatAlsoAdds(int count, String dates) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString पिछले भुगतान भी जोड़ेगा: $dates',
+      one: '1 पिछला भुगतान भी जोड़ेगा: $dates',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String repeatAndMore(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'और $countString',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repeatThisPaymentOnly =>
+      'यहाँ के बदलाव सिर्फ़ इस भुगतान के लिए हैं।';
+
+  @override
+  String repeatLinkSemantics(String title, String schedule) {
+    return 'दोहराने वाला खर्च $title, $schedule। इसका पेज खोलता है।';
+  }
+
+  @override
+  String get repeatsMark => 'दोहराता है';
+
+  @override
+  String savedRepeats(String schedule) {
+    return 'सेव हो गया। दोहराएगा: $schedule';
+  }
+
+  @override
+  String savedWithEarlier(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString पिछले भुगतानों के साथ सेव हो गया।',
+      one: '1 पिछले भुगतान के साथ सेव हो गया।',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String addedRecurring(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString दोहराने वाले खर्च जोड़े गए',
+      one: '1 दोहराने वाला खर्च जोड़ा गया',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String heldOne(String title, int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString भुगतान',
+      one: '1 भुगतान',
+    );
+    return '$title के $_temp0 बाक़ी हैं';
+  }
+
+  @override
+  String heldMany(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString दोहराने वाले खर्चों के भुगतान बाक़ी हैं',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get review => 'देखें';
+
+  @override
+  String usedByTemplatesOnly(String name, int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString दोहराने वाले खर्चों',
+      one: '1 दोहराने वाले खर्च',
+    );
+    return '\"$name\" $_temp0 में इस्तेमाल होता है।';
+  }
+
+  @override
+  String alsoUsedByTemplates(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'यह $countString दोहराने वाले खर्चों में भी है: उनके आगे के भुगतान आपका चुना हुआ इस्तेमाल करेंगे।',
+      one: 'यह 1 दोहराने वाले खर्च में भी है: उसके आगे के भुगतान आपका चुना हुआ इस्तेमाल करेंगे।',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String templatesMoveToo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'उनके आगे के भुगतान आपका चुना हुआ इस्तेमाल करेंगे।',
+      one: 'उसके आगे के भुगतान आपका चुना हुआ इस्तेमाल करेंगे।',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String eventDeleteTemplates(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'इसे $countString दोहराने वाले खर्चों से हटा दिया जाएगा: उनके आगे के भुगतान इसके बिना आएँगे।',
+      one: 'इसे 1 दोहराने वाले खर्च से हटा दिया जाएगा: उसके आगे के भुगतान इसके बिना आएँगे।',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get recurringTitle => 'दोहराने वाले खर्च';
+
+  @override
+  String recurringRunning(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString चालू',
+      one: '1 चालू',
+      zero: 'कोई चालू नहीं',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get recurringEmpty =>
+      'अभी कुछ नहीं दोहराता। खर्च जोड़ते समय \"दोहराएँ\" चालू करें।';
+
+  @override
+  String get recurringWaiting => 'बाक़ी';
+
+  @override
+  String get recurringActive => 'चालू';
+
+  @override
+  String recurringPaymentsWaiting(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString भुगतान बाक़ी',
+      one: '1 भुगतान बाक़ी',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String recurringRowNext(String schedule, String date) {
+    return '$schedule · अगला $date';
+  }
+
+  @override
+  String recurringRowEnds(String date) {
+    return 'आगे कोई भुगतान नहीं · $date को ख़त्म';
+  }
+
+  @override
+  String get recurringBroken =>
+      'यह दोहराने वाला खर्च पढ़ा नहीं जा सकता, इसलिए यह कोई भुगतान नहीं जोड़ता।';
+
+  @override
+  String get recurringPrice => 'क़ीमत';
+
+  @override
+  String get recurringScheduled => 'तय';
+
+  @override
+  String priceFromDate(String date) {
+    return '$date से';
+  }
+
+  @override
+  String get removeScheduledPrice => 'तय क़ीमत हटाएँ';
+
+  @override
+  String recurringPayments(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return 'भुगतान ($countString)';
+  }
+
+  @override
+  String get recurringNoPayments => 'कोई भुगतान नहीं (हटाए गए नहीं दिखते)।';
+
+  @override
+  String get showAll => 'सब दिखाएँ';
+
+  @override
+  String get changePrice => 'क़ीमत बदलें';
+
+  @override
+  String get newPrice => 'नई क़ीमत';
+
+  @override
+  String get priceFrom => 'कब से';
+
+  @override
+  String get priceKeepsPast => 'पहले से जुड़े भुगतानों की क़ीमत वही रहेगी।';
+
+  @override
+  String priceReplaces(String amount, String date) {
+    return '$date से $amount की जगह लेगा';
+  }
+
+  @override
+  String get priceInForce => 'उस तारीख़ से एक क़ीमत पहले से लागू है';
+
+  @override
+  String priceBeforeStart(String date) {
+    return '$date या उसके बाद की तारीख़ चुनें';
+  }
+
+  @override
+  String get priceChanged => 'क़ीमत बदल गई';
+
+  @override
+  String get stop => 'रोकें';
+
+  @override
+  String recurringStopped(String title) {
+    return '$title रोका गया और संग्रह में रखा गया।';
+  }
+
+  @override
+  String get archiveTitle => 'संग्रह';
+
+  @override
+  String get archivedBadge => 'संग्रहित';
+
+  @override
+  String restoreRecurringTitle(String title) {
+    return '$title वापस लाएँ?';
+  }
+
+  @override
+  String restoreRecurringText(String date) {
+    return 'यह $date से फिर भुगतान जोड़ेगा।';
+  }
+
+  @override
+  String get restoreRecurringNoMore =>
+      'इसके ख़त्म होने से पहले कोई भुगतान बाक़ी नहीं है।';
+
+  @override
+  String restoreEndPassed(String date) {
+    return 'इसका अंत, $date, बीत चुका है: यह बिना अंत के वापस आएगा। अंत तय करने के लिए इसे बदलें।';
+  }
+
+  @override
+  String recurringRestored(String title, String date) {
+    return '$title वापस आ गया। अगला: $date';
+  }
+
+  @override
+  String recurringRestoredNoNext(String title) {
+    return '$title वापस आ गया।';
+  }
+
+  @override
+  String get deleteForGood => 'हमेशा के लिए हटाएँ';
+
+  @override
+  String deleteForGoodTitle(String title) {
+    return '$title हमेशा के लिए हटाएँ?';
+  }
+
+  @override
+  String deleteForGoodText(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'इसके $countString भुगतान रहेंगे, दोहराने के निशान के बिना। यह वापस नहीं होगा।',
+      one: 'इसका भुगतान रहेगा, दोहराने के निशान के बिना। यह वापस नहीं होगा।',
+      zero: 'इसका कोई भुगतान नहीं है। यह वापस नहीं होगा।',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String recurringDeleted(String title, int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$title हटाया गया। इसके $countString भुगतान रहेंगे।',
+      one: '$title हटाया गया। इसका भुगतान रहेगा।',
+      zero: '$title हटाया गया।',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get recurringGone => 'यह दोहराने वाला खर्च अब मौजूद नहीं है।';
+
+  @override
+  String get editRecurring => 'दोहराने वाला खर्च बदलें';
+
+  @override
+  String get recurringChangesApplyLater =>
+      'बदलाव अब से जुड़ने वाले भुगतानों पर लागू होंगे।';
+
+  @override
+  String recurringEndNotBefore(String date) {
+    return '$date या उसके बाद चुनें: तब तक का भुगतान पहले से जुड़ा है';
+  }
+
+  @override
+  String get discardChangesTitle => 'बदलाव छोड़ दें?';
+
+  @override
+  String get keepEditing => 'बदलते रहें';
+
+  @override
+  String get discard => 'छोड़ दें';
+
+  @override
+  String recurringHoldText(int count, String range) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString भुगतान बाक़ी हैं, $range।',
+      one: '1 भुगतान बाक़ी है, $range।',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String recurringHoldMany(int max, String range) {
+    final intl.NumberFormat maxNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String maxString = maxNumberFormat.format(max);
+
+    return '$maxString से ज़्यादा भुगतान बाक़ी हैं, $range।';
+  }
+
+  @override
+  String addAllN(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'सभी $countString जोड़ें',
+      one: 'इसे जोड़ें',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String addFirstN(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return 'पहले $countString जोड़ें';
+  }
+
+  @override
+  String get skipThem => 'छोड़ दें';
+
+  @override
+  String addedPayments(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString भुगतान जोड़े गए',
+      one: '1 भुगतान जोड़ा गया',
+      zero: 'कोई भुगतान नहीं जुड़ा',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String skippedPayments(int count, String date) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString छोड़े गए। अगला: $date',
+      one: '1 छोड़ा गया। अगला: $date',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String skippedPaymentsNoNext(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString छोड़े गए। आगे कोई भुगतान नहीं।',
+      one: '1 छोड़ा गया। आगे कोई भुगतान नहीं।',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get recurringGenerateFailed =>
+      'इसके भुगतान नहीं जुड़ सके। फिर से कोशिश होगी।';
+
+  @override
+  String binPaymentOf(String title, String schedule) {
+    return '$title का भुगतान ($schedule)';
+  }
+
+  @override
+  String restoreRecurringCount(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString दोहराने वाले खर्च',
+      one: '1 दोहराने वाला खर्च',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get changesSaved => 'बदलाव सेव हो गए';
+
+  @override
+  String get newRecurring => 'नया दोहराने वाला खर्च';
+
+  @override
+  String get recurringNoneWaiting => 'कुछ भी फ़ैसले के लिए बाक़ी नहीं है।';
+
+  @override
+  String get recurringNoneActive =>
+      'कुछ भी चालू नहीं है। खर्च जोड़ते समय \"दोहराएँ\" चालू करें।';
+
+  @override
+  String get recurringNoneArchived =>
+      'संग्रह में कुछ नहीं है। रोके गए और ख़त्म हुए खर्च यहाँ आते हैं।';
 }

@@ -101,8 +101,7 @@ class PaymentMethodRepository {
 
   /// How many expenses use the method. Binned ones are counted on purpose:
   /// they block the delete too and must be moved (database.md §3.3).
-  Future<({int active, int binned})> usage(int id) =>
-      ExpenseOwner.paymentMethod.usage(_db, id);
+  Future<OwnerUsage> usage(int id) => ExpenseOwner.paymentMethod.usage(_db, id);
 
   /// Moves every expense of method [id], binned ones included, to [toId]
   /// and deletes [id], in one transaction (D7). Throws

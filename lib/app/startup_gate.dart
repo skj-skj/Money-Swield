@@ -92,12 +92,12 @@ class _StartupGateState extends State<StartupGate> {
               ? null
               : () => _undoRestore(tools, undoCopy),
         ),
-        StartupReady(:final dependencies) =>
+        StartupReady(:final dependencies, :final recurring) =>
           BlocSignalBuilder<SettingsCubit, AppSettings>(
             buildWhen: (previous, current) =>
                 previous.onboardingCompleted != current.onboardingCompleted,
             builder: (context, settings) => settings.onboardingCompleted
-                ? Shell(dependencies: dependencies)
+                ? Shell(dependencies: dependencies, recurringReport: recurring)
                 : OnboardingScreen(
                     paymentMethods: dependencies.paymentMethods,
                     onRestoreFromBackup: () =>

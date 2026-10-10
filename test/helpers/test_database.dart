@@ -76,6 +76,58 @@ const en = Locale('en');
 const es = Locale('es');
 const hi = Locale('hi');
 
+/// Inserts a recurring item row directly (phase-7a.md §4.1), for tests that
+/// only need "an item uses this". [archivedAt] set archives it; [eventIds]
+/// are its events.
+Future<int> insertRecurringRow(
+  DatabaseExecutor db, {
+  String title = 'Netflix',
+  int categoryId = 1,
+  int paymentMethodId = 1,
+  String frequency = 'monthly',
+  int interval = 1,
+  String startOn = '2026-01-31',
+  String? endOn,
+  String? nextDueOn = '2026-02-28',
+  int? archivedAt,
+  Set<int> eventIds = const {},
+  int? amountMinor = 64900,
+  String currencyCode = 'INR',
+  int updatedAt = 0,
+}) async {
+  final id = await db.insert('recurring_expenses', {
+    'title': title,
+    'currency_code': currencyCode,
+    'category_id': categoryId,
+    'payment_method_id': paymentMethodId,
+    'frequency': frequency,
+    'interval_count': interval,
+    'start_on': startOn,
+    'end_on': endOn,
+    'time_of_day_minutes': 600,
+    'next_due_on': nextDueOn,
+    'archived_at': archivedAt,
+    'created_at': 0,
+    'updated_at': updatedAt,
+  });
+  if (amountMinor != null) {
+    await db.insert('recurring_amounts', {
+      'recurring_expense_id': id,
+      'amount_minor': amountMinor,
+      'effective_from': startOn,
+      'created_at': 0,
+      'updated_at': 0,
+    });
+  }
+  for (final eventId in eventIds) {
+    await db.insert('recurring_expense_events', {
+      'recurring_expense_id': id,
+      'event_id': eventId,
+    });
+  }
+  return id;
+}
+
 /// Inserts an expense row directly, for tests of other tables that only
 /// need "something uses this". [deletedAt] set puts it in the bin.
 Future<int> insertExpenseRow(

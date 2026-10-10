@@ -1,5 +1,7 @@
+import 'package:bloc_signals_flutter/bloc_signals_flutter.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:my_expense_tracker_app/domain/models/app_settings.dart';
 import 'package:my_expense_tracker_app/domain/models/category.dart';
 import 'package:my_expense_tracker_app/domain/models/event.dart';
 import 'package:my_expense_tracker_app/domain/models/money.dart';
@@ -7,8 +9,10 @@ import 'package:my_expense_tracker_app/domain/models/payment_method.dart';
 import 'package:my_expense_tracker_app/l10n/app_localizations.dart';
 import 'package:my_expense_tracker_app/ui/core/builtin_names.dart';
 import 'package:my_expense_tracker_app/ui/core/item_labels.dart';
+import 'package:my_expense_tracker_app/ui/core/pickers.dart';
 import 'package:my_expense_tracker_app/ui/core/widgets/app_sheet.dart';
 import 'package:my_expense_tracker_app/ui/core/widgets/async_body.dart';
+import 'package:my_expense_tracker_app/ui/core/widgets/back_guard.dart';
 import 'package:my_expense_tracker_app/ui/core/widgets/choice_setting_tile.dart';
 import 'package:my_expense_tracker_app/ui/core/widgets/confirm_then_save.dart';
 import 'package:my_expense_tracker_app/ui/core/widgets/delayed_spinner.dart';
@@ -17,6 +21,8 @@ import 'package:my_expense_tracker_app/ui/core/widgets/expense_tile.dart';
 import 'package:my_expense_tracker_app/ui/core/widgets/load_failed_view.dart';
 import 'package:my_expense_tracker_app/ui/core/widgets/retry_row.dart';
 import 'package:my_expense_tracker_app/ui/core/widgets/section_heading.dart';
+import 'package:my_expense_tracker_app/ui/core/widgets/section_tile.dart';
+import 'package:my_expense_tracker_app/ui/features/settings/view_models/settings_cubit.dart';
 
 import '../../../helpers/test_database.dart';
 
@@ -400,6 +406,179 @@ void main() {
       expect(find.text('content'), findsNothing);
       await phase(tester, LoadPhase.loaded);
       expect(find.text('content'), findsOneWidget);
+    });
+  });
+
+  group('BackGuard (12)', () {
+    Future<List<String>> back(
+      WidgetTester tester, {
+      required bool intercept,
+    }) async {
+      final calls = <String>[];
+      await pump(
+        tester,
+        Builder(
+          builder: (context) => TextButton(
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => BackGuard(
+                  intercept: intercept,
+                  onBack: () => calls.add('onBack'),
+                  child: const Text('guarded'),
+                ),
+              ),
+            ),
+            child: const Text('open'),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      return calls;
+    }
+
+    testWidgets('intercepting: Back runs onBack and stays', (tester) async {
+      expect(await back(tester, intercept: true), ['onBack']);
+      expect(find.text('guarded'), findsOneWidget);
+    });
+
+    testWidgets('not intercepting: Back leaves, onBack not run', (
+      tester,
+    ) async {
+      expect(await back(tester, intercept: false), isEmpty);
+      expect(find.text('guarded'), findsNothing);
+    });
+  });
+
+  testWidgets('SectionTile: count grouped, one TalkBack label, selected; '
+      'three fit 360 dp at font 2.0 (13)', (tester) async {
+    tester.view.physicalSize = const Size(360 * 3, 800 * 3);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    var taps = 0;
+    await pump(
+      tester,
+      Row(
+        children: [
+          for (final (label, count) in [
+            ('Pendientes', 1234),
+            ('Activos', 5),
+            ('Archivo', 0),
+          ])
+            Expanded(
+              child: SectionTile(
+                key: ValueKey(label),
+                icon: Icons.repeat,
+                label: label,
+                count: count,
+                selected: label == 'Activos',
+                onTap: () => taps++,
+              ),
+            ),
+        ],
+      ),
+    );
+    expect(tester.takeException(), isNull);
+    final first = tester.getSemantics(find.byKey(const ValueKey('Pendientes')));
+    expect(first.label, 'Pendientes, 1,234');
+    expect(first.flagsCollection.isSelected.toBoolOrNull(), isFalse);
+    expect(
+      tester
+          .getSemantics(find.byKey(const ValueKey('Activos')))
+          .flagsCollection
+          .isSelected
+          .toBoolOrNull(),
+      isTrue,
+    );
+    await tester.tap(find.byKey(const ValueKey('Archivo')));
+    expect(taps, 1);
+  });
+
+  group('pickers (14)', () {
+    /// A button that opens [open], with the settings the pickers read.
+    Future<SettingsCubit> pumpPicker(
+      WidgetTester tester,
+      Future<void> Function(BuildContext context) open, {
+      bool keyboard = false,
+    }) async {
+      final settings = SettingsCubit(
+        initial: AppSettings.beforeLoad.copyWith(
+          datePickerKeyboard: keyboard,
+          timePickerKeyboard: keyboard,
+        ),
+      );
+      addTearDown(settings.close);
+      await pump(
+        tester,
+        BlocSignalProvider<SettingsCubit>.value(
+          value: settings,
+          child: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => open(context),
+              child: const Text('pick'),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('pick'));
+      await tester.pumpAndSettle();
+      return settings;
+    }
+
+    testWidgets('pickDay opens on the initial day moved into the range, and '
+        'returns the day picked as YYYY-MM-DD', (tester) async {
+      String? picked;
+      await pumpPicker(tester, (context) async {
+        picked = await pickDay(
+          context,
+          initial: '2026-01-01',
+          first: '2026-10-09',
+          last: '2200-12-31',
+          helpText: 'End date',
+        );
+      });
+      expect(find.text('End date'), findsOneWidget);
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+      expect(picked, '2026-10-09');
+    });
+
+    testWidgets('pickDay and pickTimeOfDay open the way the user last left '
+        'them (typing)', (tester) async {
+      await pumpPicker(
+        tester,
+        (context) => pickDay(
+          context,
+          initial: '2026-10-09',
+          first: '1900-01-01',
+          last: '2200-01-01',
+        ),
+        keyboard: true,
+      );
+      expect(find.byType(TextField), findsOneWidget);
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('pick'));
+      await tester.pumpAndSettle();
+      expect(find.byType(TextField), findsOneWidget);
+    });
+
+    testWidgets('pickTimeOfDay returns the time on OK; a dial by default', (
+      tester,
+    ) async {
+      TimeOfDay? picked;
+      await pumpPicker(tester, (context) async {
+        picked = await pickTimeOfDay(context, hour: 7, minute: 30);
+      });
+      expect(find.byType(TextField), findsNothing);
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+      expect(picked, const TimeOfDay(hour: 7, minute: 30));
     });
   });
 }

@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../../../domain/photos.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/widgets/app_sheet.dart';
+import '../../../core/widgets/back_guard.dart';
 import '../../../core/widgets/photos/photo_grid.dart';
 import '../../../core/widgets/photos/photo_selection_bar.dart';
 import '../../../core/widgets/sheet_messenger.dart';
@@ -80,11 +81,9 @@ class _PhotosSheetState extends State<_PhotosSheet> {
           final selection = state.selection;
           final work = state.photoWork;
           final full = photos.length >= maxPhotosPerExpense;
-          return PopScope(
-            canPop: selection == null,
-            onPopInvokedWithResult: (didPop, _) {
-              if (!didPop) cubit.clearSelection();
-            },
+          return BackGuard(
+            intercept: selection != null,
+            onBack: cubit.clearSelection,
             // The title row, or the selection bar in its place, stays pinned
             // at the top while the photos scroll under it (owner, 2026-10-09):
             // with 10 photos the grid is taller than the screen, and Save,

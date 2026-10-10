@@ -60,20 +60,25 @@ class _EventFormScreenState extends State<EventFormScreen> {
     if (done && mounted) Navigator.pop(context);
   }
 
-  /// Delete: the confirmation says how many expenses lose the event; the
-  /// expenses themselves stay (phase-2.md §10.2).
+  /// Delete: the confirmation says how many expenses and recurring items
+  /// lose the event; they themselves stay (phase-2.md §10.2, phase-7a.md
+  /// R3).
   Future<void> _delete(String name) async {
     final l10n = AppLocalizations.of(context);
-    var count = 0;
+    var usage = (expenses: 0, templates: 0);
     final read = await saveOrShowError(
       context,
-      () async => count = await _cubit!.usage(),
+      () async => usage = await _cubit!.usage(),
     );
     if (!read || !mounted) return;
+    final message = [
+      if (usage.expenses > 0) l10n.eventDeleteWithCount(usage.expenses),
+      if (usage.templates > 0) l10n.eventDeleteTemplates(usage.templates),
+    ].join(' ');
     final confirmed = await confirmDelete(
       context,
       name,
-      message: count == 0 ? null : l10n.eventDeleteWithCount(count),
+      message: message.isEmpty ? null : message,
     );
     if (!confirmed || !mounted) return;
     final deleted = await saveOrShowError(context, () => _cubit!.delete());

@@ -41,6 +41,7 @@ class RestoreCandidate {
     required this.activeExpenses,
     required this.binnedExpenses,
     required this.latestExpenseOn,
+    this.recurringItems,
     this.includesPhotos = false,
     this.photoCount = 0,
     this.photoBytes = 0,
@@ -65,6 +66,10 @@ class RestoreCandidate {
   /// The local date of the newest active expense, or null when there is
   /// none (or no `expenses` table).
   final DateTime? latestExpenseOn;
+
+  /// Running recurring items (phase-7a.md R14, P7a-20); null when the
+  /// backup has no `recurring_expenses` table (from before Phase 7).
+  final int? recurringItems;
 
   /// Whether the backup holds its photos (phase-6.md §8.8). A
   /// database-only backup, or Undo's copy, has none to write.
@@ -107,6 +112,7 @@ class RestoreCandidate {
     activeExpenses: activeExpenses,
     binnedExpenses: binnedExpenses,
     latestExpenseOn: latestExpenseOn,
+    recurringItems: recurringItems,
     includesPhotos: true,
     photoCount: count,
     photoBytes: bytes,

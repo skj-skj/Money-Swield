@@ -2637,6 +2637,648 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Dining out'**
   String get eventDiningOut;
+
+  /// No description provided for @scheduleDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Every day} other{Every {count} days}}'**
+  String scheduleDaily(int count);
+
+  /// weekday: the start's weekday, e.g. Monday.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Every week on {weekday}} other{Every {count} weeks on {weekday}}}'**
+  String scheduleWeekly(int count, String weekday);
+
+  /// 'Day 9', not 'the 9th': ordinals don't translate (P7a-21).
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Every month on day {day}} other{Every {count} months on day {day}}}'**
+  String scheduleMonthly(int count, int day);
+
+  /// For a start on the 29th to 31st, which shorter months don't have.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Every month on day {day} (or the month\'s last day)} other{Every {count} months on day {day} (or the month\'s last day)}}'**
+  String scheduleMonthlyClamped(int count, int day);
+
+  /// date: day and month, e.g. 9 Oct.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Every year on {date}} other{Every {count} years on {date}}}'**
+  String scheduleYearly(int count, String date);
+
+  /// A start on 29 Feb; fallback is 28 Feb.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Every year on {date} ({fallback} in other years)} other{Every {count} years on {date} ({fallback} in other years)}}'**
+  String scheduleYearlyLeap(int count, String date, String fallback);
+
+  /// No description provided for @repeatShortDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Daily} other{Every {count} days}}'**
+  String repeatShortDaily(int count);
+
+  /// No description provided for @repeatShortWeekly.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Weekly} other{Every {count} weeks}}'**
+  String repeatShortWeekly(int count);
+
+  /// No description provided for @repeatShortMonthly.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Monthly} other{Every {count} months}}'**
+  String repeatShortMonthly(int count);
+
+  /// No description provided for @repeatShortYearly.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Yearly} other{Every {count} years}}'**
+  String repeatShortYearly(int count);
+
+  /// No description provided for @endsNever.
+  ///
+  /// In en, this message translates to:
+  /// **'Never ends'**
+  String get endsNever;
+
+  /// No description provided for @endsOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Ends {date}'**
+  String endsOn(String date);
+
+  /// No description provided for @nextOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Next: {date}'**
+  String nextOn(String date);
+
+  /// No description provided for @noMorePayments.
+  ///
+  /// In en, this message translates to:
+  /// **'No more payments'**
+  String get noMorePayments;
+
+  /// After the schedule in an Archive row: 'Monthly · stopped 9 Oct'.
+  ///
+  /// In en, this message translates to:
+  /// **'stopped {date}'**
+  String archivedStopped(String date);
+
+  /// After the schedule in an Archive row: 'Monthly · expired 15 Oct' (its end date).
+  ///
+  /// In en, this message translates to:
+  /// **'expired {date}'**
+  String archivedExpired(String date);
+
+  /// No description provided for @repeats.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeats'**
+  String get repeats;
+
+  /// No description provided for @repeatEvery.
+  ///
+  /// In en, this message translates to:
+  /// **'Every'**
+  String get repeatEvery;
+
+  /// No description provided for @repeatUnitDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{day} other{days}}'**
+  String repeatUnitDays(int count);
+
+  /// No description provided for @repeatUnitWeeks.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{week} other{weeks}}'**
+  String repeatUnitWeeks(int count);
+
+  /// No description provided for @repeatUnitMonths.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{month} other{months}}'**
+  String repeatUnitMonths(int count);
+
+  /// No description provided for @repeatUnitYears.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{year} other{years}}'**
+  String repeatUnitYears(int count);
+
+  /// No description provided for @repeatEnds.
+  ///
+  /// In en, this message translates to:
+  /// **'Ends'**
+  String get repeatEnds;
+
+  /// No description provided for @repeatEndsNever.
+  ///
+  /// In en, this message translates to:
+  /// **'Never'**
+  String get repeatEndsNever;
+
+  /// No description provided for @repeatEndsOn.
+  ///
+  /// In en, this message translates to:
+  /// **'On'**
+  String get repeatEndsOn;
+
+  /// No description provided for @repeatEndDate.
+  ///
+  /// In en, this message translates to:
+  /// **'End date'**
+  String get repeatEndDate;
+
+  /// No description provided for @repeatIntervalError.
+  ///
+  /// In en, this message translates to:
+  /// **'1 to {max}'**
+  String repeatIntervalError(int max);
+
+  /// No description provided for @repeatEndMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick an end date'**
+  String get repeatEndMissing;
+
+  /// No description provided for @repeatEndBeforeStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Ends before the first payment ({date})'**
+  String repeatEndBeforeStart(String date);
+
+  /// No description provided for @repeatEndTooLate.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a date up to {date}'**
+  String repeatEndTooLate(String date);
+
+  /// No description provided for @repeatTooManyPast.
+  ///
+  /// In en, this message translates to:
+  /// **'That\'s {count} earlier payments; at most {max}. Pick a later date or a longer interval.'**
+  String repeatTooManyPast(int count, int max);
+
+  /// dates: the first three, e.g. '31 Aug, 30 Sep', then 'and 4 more'.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Also adds 1 earlier payment: {dates}} other{Also adds {count} earlier payments: {dates}}}'**
+  String repeatAlsoAdds(int count, String dates);
+
+  /// No description provided for @repeatAndMore.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{and 1 more} other{and {count} more}}'**
+  String repeatAndMore(int count);
+
+  /// No description provided for @repeatThisPaymentOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes here are for this payment only.'**
+  String get repeatThisPaymentOnly;
+
+  /// No description provided for @repeatLinkSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Recurring item {title}, {schedule}. Opens its page.'**
+  String repeatLinkSemantics(String title, String schedule);
+
+  /// No description provided for @repeatsMark.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeats'**
+  String get repeatsMark;
+
+  /// No description provided for @savedRepeats.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved. Repeats: {schedule}'**
+  String savedRepeats(String schedule);
+
+  /// No description provided for @savedWithEarlier.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Saved with 1 earlier payment.} other{Saved with {count} earlier payments.}}'**
+  String savedWithEarlier(int count);
+
+  /// No description provided for @addedRecurring.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Added 1 recurring expense} other{Added {count} recurring expenses}}'**
+  String addedRecurring(int count);
+
+  /// No description provided for @heldOne.
+  ///
+  /// In en, this message translates to:
+  /// **'{title} has {count, plural, =1{1 payment} other{{count} payments}} waiting'**
+  String heldOne(String title, int count);
+
+  /// No description provided for @heldMany.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, other{{count} recurring items have payments waiting}}'**
+  String heldMany(int count);
+
+  /// No description provided for @review.
+  ///
+  /// In en, this message translates to:
+  /// **'Review'**
+  String get review;
+
+  /// No description provided for @usedByTemplatesOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{name}\" is used by {count, plural, =1{1 recurring item} other{{count} recurring items}}.'**
+  String usedByTemplatesOnly(String name, int count);
+
+  /// After usedByExpenses in the move dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{It is also used by 1 recurring item: its later payments use the one you pick.} other{It is also used by {count} recurring items: their later payments use the one you pick.}}'**
+  String alsoUsedByTemplates(int count);
+
+  /// After usedByTemplatesOnly in the move dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Its later payments use the one you pick.} other{Their later payments use the one you pick.}}'**
+  String templatesMoveToo(int count);
+
+  /// No description provided for @eventDeleteTemplates.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{It will be removed from 1 recurring item: its later payments come without it.} other{It will be removed from {count} recurring items: their later payments come without it.}}'**
+  String eventDeleteTemplates(int count);
+
+  /// No description provided for @recurringTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recurring'**
+  String get recurringTitle;
+
+  /// No description provided for @recurringRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{None running} =1{1 running} other{{count} running}}'**
+  String recurringRunning(int count);
+
+  /// No description provided for @recurringEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing repeats yet. Turn on Repeats when you add an expense.'**
+  String get recurringEmpty;
+
+  /// No description provided for @recurringWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting'**
+  String get recurringWaiting;
+
+  /// No description provided for @recurringActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get recurringActive;
+
+  /// No description provided for @recurringPaymentsWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 payment waiting} other{{count} payments waiting}}'**
+  String recurringPaymentsWaiting(int count);
+
+  /// No description provided for @recurringRowNext.
+  ///
+  /// In en, this message translates to:
+  /// **'{schedule} · next {date}'**
+  String recurringRowNext(String schedule, String date);
+
+  /// No description provided for @recurringRowEnds.
+  ///
+  /// In en, this message translates to:
+  /// **'No more payments · ends {date}'**
+  String recurringRowEnds(String date);
+
+  /// No description provided for @recurringBroken.
+  ///
+  /// In en, this message translates to:
+  /// **'This recurring item can\'t be read, so it adds no payments.'**
+  String get recurringBroken;
+
+  /// No description provided for @recurringPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Price'**
+  String get recurringPrice;
+
+  /// No description provided for @recurringScheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'scheduled'**
+  String get recurringScheduled;
+
+  /// No description provided for @priceFromDate.
+  ///
+  /// In en, this message translates to:
+  /// **'from {date}'**
+  String priceFromDate(String date);
+
+  /// No description provided for @removeScheduledPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove scheduled price'**
+  String get removeScheduledPrice;
+
+  /// No description provided for @recurringPayments.
+  ///
+  /// In en, this message translates to:
+  /// **'Payments ({count})'**
+  String recurringPayments(int count);
+
+  /// No description provided for @recurringNoPayments.
+  ///
+  /// In en, this message translates to:
+  /// **'No payments (deleted ones aren\'t listed).'**
+  String get recurringNoPayments;
+
+  /// No description provided for @showAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Show all'**
+  String get showAll;
+
+  /// No description provided for @changePrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Change price'**
+  String get changePrice;
+
+  /// No description provided for @newPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'New price'**
+  String get newPrice;
+
+  /// No description provided for @priceFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get priceFrom;
+
+  /// No description provided for @priceKeepsPast.
+  ///
+  /// In en, this message translates to:
+  /// **'Payments already added keep their price.'**
+  String get priceKeepsPast;
+
+  /// No description provided for @priceReplaces.
+  ///
+  /// In en, this message translates to:
+  /// **'Replaces {amount} from {date}'**
+  String priceReplaces(String amount, String date);
+
+  /// No description provided for @priceInForce.
+  ///
+  /// In en, this message translates to:
+  /// **'A price from that date is already in force'**
+  String get priceInForce;
+
+  /// No description provided for @priceBeforeStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick {date} or later'**
+  String priceBeforeStart(String date);
+
+  /// No description provided for @priceChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Price changed'**
+  String get priceChanged;
+
+  /// No description provided for @stop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get stop;
+
+  /// No description provided for @recurringStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'{title} stopped and archived.'**
+  String recurringStopped(String title);
+
+  /// No description provided for @archiveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get archiveTitle;
+
+  /// No description provided for @archivedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get archivedBadge;
+
+  /// No description provided for @restoreRecurringTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore {title}?'**
+  String restoreRecurringTitle(String title);
+
+  /// No description provided for @restoreRecurringText.
+  ///
+  /// In en, this message translates to:
+  /// **'It adds payments again from {date}.'**
+  String restoreRecurringText(String date);
+
+  /// No description provided for @restoreRecurringNoMore.
+  ///
+  /// In en, this message translates to:
+  /// **'It has no payment left before its end.'**
+  String get restoreRecurringNoMore;
+
+  /// No description provided for @restoreEndPassed.
+  ///
+  /// In en, this message translates to:
+  /// **'Its end, {date}, has passed: it restores with no end. Edit it to set one.'**
+  String restoreEndPassed(String date);
+
+  /// No description provided for @recurringRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'{title} restored. Next: {date}'**
+  String recurringRestored(String title, String date);
+
+  /// No description provided for @recurringRestoredNoNext.
+  ///
+  /// In en, this message translates to:
+  /// **'{title} restored.'**
+  String recurringRestoredNoNext(String title);
+
+  /// No description provided for @deleteForGood.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete for good'**
+  String get deleteForGood;
+
+  /// No description provided for @deleteForGoodTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {title} for good?'**
+  String deleteForGoodTitle(String title);
+
+  /// No description provided for @deleteForGoodText.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{It has no payments. This can\'t be undone.} =1{Its payment stays, without the repeat mark. This can\'t be undone.} other{Its {count} payments stay, without the repeat mark. This can\'t be undone.}}'**
+  String deleteForGoodText(int count);
+
+  /// No description provided for @recurringDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{{title} deleted.} =1{{title} deleted. Its payment stays.} other{{title} deleted. Its {count} payments stay.}}'**
+  String recurringDeleted(String title, int count);
+
+  /// No description provided for @recurringGone.
+  ///
+  /// In en, this message translates to:
+  /// **'This recurring item no longer exists.'**
+  String get recurringGone;
+
+  /// No description provided for @editRecurring.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit recurring item'**
+  String get editRecurring;
+
+  /// No description provided for @recurringChangesApplyLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes apply to payments added from now on.'**
+  String get recurringChangesApplyLater;
+
+  /// No description provided for @recurringEndNotBefore.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick {date} or later: a payment until then is already added'**
+  String recurringEndNotBefore(String date);
+
+  /// No description provided for @discardChangesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard changes?'**
+  String get discardChangesTitle;
+
+  /// No description provided for @keepEditing.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep editing'**
+  String get keepEditing;
+
+  /// No description provided for @discard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get discard;
+
+  /// range: '3 Aug – 5 Oct 2026', or one date.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 payment is due, {range}.} other{{count} payments are due, {range}.}}'**
+  String recurringHoldText(int count, String range);
+
+  /// No description provided for @recurringHoldMany.
+  ///
+  /// In en, this message translates to:
+  /// **'More than {max} payments are due, {range}.'**
+  String recurringHoldMany(int max, String range);
+
+  /// No description provided for @addAllN.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Add it} other{Add all {count}}}'**
+  String addAllN(int count);
+
+  /// No description provided for @addFirstN.
+  ///
+  /// In en, this message translates to:
+  /// **'Add the first {count}'**
+  String addFirstN(int count);
+
+  /// No description provided for @skipThem.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip them'**
+  String get skipThem;
+
+  /// No description provided for @addedPayments.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No payment added} =1{Added 1 payment} other{Added {count} payments}}'**
+  String addedPayments(int count);
+
+  /// No description provided for @skippedPayments.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Skipped 1. Next: {date}} other{Skipped {count}. Next: {date}}}'**
+  String skippedPayments(int count, String date);
+
+  /// No description provided for @skippedPaymentsNoNext.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Skipped 1. No more payments.} other{Skipped {count}. No more payments.}}'**
+  String skippedPaymentsNoNext(int count);
+
+  /// No description provided for @recurringGenerateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t add its payments. They will be tried again.'**
+  String get recurringGenerateFailed;
+
+  /// No description provided for @binPaymentOf.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment of {title} ({schedule})'**
+  String binPaymentOf(String title, String schedule);
+
+  /// No description provided for @restoreRecurringCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 recurring item} other{{count} recurring items}}'**
+  String restoreRecurringCount(int count);
+
+  /// No description provided for @changesSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes saved'**
+  String get changesSaved;
+
+  /// No description provided for @newRecurring.
+  ///
+  /// In en, this message translates to:
+  /// **'New recurring expense'**
+  String get newRecurring;
+
+  /// No description provided for @recurringNoneWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is waiting for a decision.'**
+  String get recurringNoneWaiting;
+
+  /// No description provided for @recurringNoneActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is running. Turn on Repeats when you add an expense.'**
+  String get recurringNoneActive;
+
+  /// No description provided for @recurringNoneArchived.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is archived. Stopped and ended items go here.'**
+  String get recurringNoneArchived;
 }
 
 class _AppLocalizationsDelegate

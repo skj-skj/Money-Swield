@@ -72,6 +72,12 @@ String todayOn(DateTime now) {
   return isoDay(DateTime.utc(local.year, local.month, local.day));
 }
 
+/// The local date `YYYY-MM-DD` of the moment [utc] on a clock
+/// [utcOffsetMinutes] from UTC: how `occurred_on` is derived (database.md
+/// §1), and how a recurring payment's moment is checked (phase-7a.md §5.6).
+String localDayOf(DateTime utc, int utcOffsetMinutes) =>
+    isoDay(utc.toUtc().add(Duration(minutes: utcOffsetMinutes)));
+
 /// Every date of [range], in order.
 List<String> daysIn(PeriodRange range) {
   final from = parseDay(range.from);

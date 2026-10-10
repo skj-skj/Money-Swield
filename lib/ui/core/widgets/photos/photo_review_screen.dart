@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../../domain/photo_sizing.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../back_guard.dart';
 
 /// What the review after the camera decided (phase-6.md §8.2a).
 sealed class ReviewDecision {
@@ -55,11 +56,8 @@ class _PhotoReviewScreenState extends State<PhotoReviewScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final odd = _turns.isOdd;
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _use();
-      },
+    return BackGuard(
+      onBack: _use,
       child: Theme(
         data: ThemeData(
           brightness: Brightness.dark,

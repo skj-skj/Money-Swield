@@ -11,6 +11,11 @@ String currencyLabel(String code) => switch (findCurrency(code)) {
   null => code,
 };
 
+/// e.g. `₹`: a recurring item's Change price field, where the currency is
+/// fixed and the code would only crowd the amount (owner, 2026-10-09). The
+/// code when intl has no symbol for it.
+String currencySymbol(String code) => findCurrency(code)?.symbol ?? code;
+
 /// e.g. `₹ INR`, for Home's currency chip and the form's currency box;
 /// just the code when intl has no symbol for it.
 String currencyShortLabel(String code) => switch (findCurrency(code)) {

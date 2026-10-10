@@ -4,10 +4,17 @@ import 'package:flutter/foundation.dart' show debugPrint;
 import '../../../../data/repositories/category_repository.dart';
 import '../../../../data/repositories/event_repository.dart';
 import '../../../../data/repositories/payment_method_repository.dart';
+import '../../../../data/repositories/recurring_repository.dart';
 import '../../../core/emit_if_open.dart';
 
-/// How many rows each list on the Manage tab has.
-typedef ManageCounts = ({int categories, int events, int paymentMethods});
+/// How many rows each list on the Manage tab has; for Recurring, the
+/// running items (phase-7a.md §7.5).
+typedef ManageCounts = ({
+  int categories,
+  int events,
+  int paymentMethods,
+  int recurring,
+});
 
 /// The counts shown on the Manage tab. Null until loaded, or if loading
 /// failed (the tab then shows no counts; the lists still open).
@@ -17,11 +24,13 @@ class ManageCubit extends CubitSignal<ManageCounts?>
     required this._categories,
     required this._events,
     required this._paymentMethods,
+    required this._recurring,
   }) : super(initialState: null);
 
   final CategoryRepository _categories;
   final EventRepository _events;
   final PaymentMethodRepository _paymentMethods;
+  final RecurringRepository _recurring;
 
   /// Loads (or reloads, after a list was edited) the counts.
   Future<void> load() async {
@@ -30,6 +39,7 @@ class ManageCubit extends CubitSignal<ManageCounts?>
         categories: (await _categories.all()).length,
         events: (await _events.all()).length,
         paymentMethods: (await _paymentMethods.all()).length,
+        recurring: (await _recurring.counts()).running,
       );
       emitIfOpen(counts);
     } catch (error, stackTrace) {

@@ -1,6 +1,8 @@
 import 'package:material_ui/material_ui.dart';
 
+import '../domain/models/recurring_item.dart';
 import '../l10n/app_localizations.dart';
+import '../ui/core/widgets/back_guard.dart';
 import '../ui/features/home/views/home_screen.dart';
 import '../ui/features/manage/views/manage_screen.dart';
 import '../ui/features/settings/views/settings_screen.dart';
@@ -12,9 +14,16 @@ import 'app_restart.dart';
 /// Tabs keep their state when switching (IndexedStack). Back on another tab
 /// goes to Home; back on Home leaves the app.
 class Shell extends StatefulWidget {
-  const Shell({super.key, required this.dependencies});
+  const Shell({
+    super.key,
+    required this.dependencies,
+    this.recurringReport = GenerateReport.none,
+  });
 
   final AppDependencies dependencies;
+
+  /// What the recurring generator did at startup; Home says it.
+  final GenerateReport recurringReport;
 
   @override
   State<Shell> createState() => _ShellState();
@@ -35,11 +44,9 @@ class _ShellState extends State<Shell> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final deps = widget.dependencies;
-    return PopScope(
-      canPop: _index == _home,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) setState(() => _index = _home);
-      },
+    return BackGuard(
+      intercept: _index != _home,
+      onBack: () => setState(() => _index = _home),
       child: Scaffold(
         body: IndexedStack(
           index: _index,
@@ -48,8 +55,9 @@ class _ShellState extends State<Shell> {
               dependencies: deps,
               isVisible: _index == _home,
               restoreNotice: _restoreNotice,
+              recurringReport: widget.recurringReport,
             ),
-            ManageScreen(dependencies: deps),
+            ManageScreen(dependencies: deps, isVisible: _index == 1),
             SettingsScreen(dependencies: deps, isVisible: _index == _settings),
           ],
         ),

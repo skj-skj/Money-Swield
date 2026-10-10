@@ -1,4 +1,6 @@
+import 'package:bloc_signals_flutter/bloc_signals_flutter.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:my_expense_tracker_app/app/app.dart';
 import 'package:my_expense_tracker_app/app/app_dependencies.dart';
 import 'package:my_expense_tracker_app/domain/models/app_settings.dart';
@@ -49,6 +51,32 @@ Future<SettingsCubit> pumpAppWith(
   // progress bar would keep pumpAndSettle from ever settling.
   if (migrationCubit != null) return settingsCubit;
   await migrations.run();
+  await tester.pumpAndSettle();
+  return settingsCubit;
+}
+
+/// Pumps [screen] alone, as the app shows it (its themes, language and
+/// [dependencies]' settings: [appMaterialApp]), without the startup, Home
+/// and the tabs: layout tests of a few screens, much faster than [pumpApp].
+/// Returns the settings cubit.
+Future<SettingsCubit> pumpScreen(
+  WidgetTester tester, {
+  required AppDependencies dependencies,
+  required Widget screen,
+}) async {
+  final settingsCubit = SettingsCubit(initial: AppSettings.beforeLoad);
+  addTearDown(settingsCubit.close);
+  await settingsCubit.load(dependencies.settings);
+  await tester.pumpWidget(
+    BlocSignalProvider<SettingsCubit>.value(
+      value: settingsCubit,
+      child: appMaterialApp(
+        settings: settingsCubit.value,
+        wallpaperSeed: dependencies.wallpaperSeed,
+        home: screen,
+      ),
+    ),
+  );
   await tester.pumpAndSettle();
   return settingsCubit;
 }

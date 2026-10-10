@@ -36,6 +36,7 @@ class _BinScreenState extends State<BinScreen> {
     categories: widget.dependencies.categories,
     events: widget.dependencies.events,
     paymentMethods: widget.dependencies.paymentMethods,
+    recurring: widget.dependencies.recurring,
   )..load();
 
   @override
@@ -136,7 +137,10 @@ class _BinScreenState extends State<BinScreen> {
                       ),
                     ),
                     amount: expense.amount,
-                    marks: [?photoMark(context, expense.photoCount)],
+                    marks: [
+                      ?repeatMark(context, expense.isRecurring),
+                      ?photoMark(context, expense.photoCount),
+                    ],
                     onTap: () => _openDetail(expense, lookups),
                   );
                 },

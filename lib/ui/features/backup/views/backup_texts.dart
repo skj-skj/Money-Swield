@@ -66,8 +66,10 @@ List<String> photoLines(
   ];
 }
 
-/// "121 expenses, plus 3 in the bin. Latest on 2 Oct 2026". The bin part
-/// is left out when it's empty, "Latest on" when there are no expenses.
+/// "121 expenses, plus 3 in the bin, 4 recurring items. Latest on 2 Oct
+/// 2026". The bin part and the recurring part (running items, phase-7a.md
+/// R14) are left out when they're 0, "Latest on" when there are no
+/// expenses.
 String _countsLine(
   AppLocalizations l10n,
   String locale,
@@ -77,9 +79,11 @@ String _countsLine(
   if (active == null) return unknownValue;
   final binned = candidate.binnedExpenses ?? 0;
   final latest = candidate.latestExpenseOn;
+  final recurring = candidate.recurringItems ?? 0;
   final counts = [
     l10n.restoreExpenseCount(active),
     if (binned > 0) l10n.restoreBinCount(binned),
+    if (recurring > 0) l10n.restoreRecurringCount(recurring),
   ].join(', ');
   if (latest == null || active == 0) return counts;
   return '$counts. ${l10n.restoreLatestOn(shortDateText(locale, latest))}';

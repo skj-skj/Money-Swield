@@ -144,6 +144,7 @@ class ExpenseRow extends StatelessWidget {
         horizontal: frameMargin + frameInset,
       ),
       marks: [
+        ?repeatMark(context, expense.isRecurring),
         ?photoMark(context, expense.photoCount),
         if (hasDraft)
           Icon(

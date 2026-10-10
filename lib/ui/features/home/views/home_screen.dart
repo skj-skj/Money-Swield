@@ -10,6 +10,7 @@ import '../../../../domain/expense_filter.dart';
 import '../../../../domain/models/app_settings.dart';
 import '../../../../domain/models/dashboard_options.dart';
 import '../../../../domain/models/money.dart';
+import '../../../../domain/models/recurring_item.dart';
 import '../../../../domain/periods.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/currency_labels.dart';
@@ -23,6 +24,8 @@ import '../../../core/widgets/save_error.dart';
 import '../../../core/widgets/show_message.dart';
 import '../../expenses/expense_form_opener.dart';
 import '../../expenses/view_models/expense_form_cubit.dart';
+import '../../recurring/views/recurring_list_screen.dart';
+import '../../recurring/views/recurring_navigation.dart';
 import '../../settings/view_models/settings_cubit.dart';
 import '../view_models/expense_list_cubit.dart';
 import '../view_models/trend_cubit.dart';
@@ -44,9 +47,14 @@ class HomeScreen extends StatefulWidget {
     required this.dependencies,
     required this.isVisible,
     this.restoreNotice,
+    this.recurringReport = GenerateReport.none,
   });
 
   final AppDependencies dependencies;
+
+  /// What the recurring generator did at startup (phase-7a.md §8.6, §8.9):
+  /// said once, after the restore message.
+  final GenerateReport recurringReport;
 
   /// Said once, right after the app restarted on restored data
   /// (phase-3.md §6.6): "Backup restored", or that its settings were
@@ -75,6 +83,8 @@ class _HomeScreenState extends State<HomeScreen> {
     defaultCurrency: _startSettings.defaultCurrency,
     grouping: _startSettings.listGrouping,
     weekStart: _startSettings.weekStart,
+    recurring: widget.dependencies.recurring,
+    now: widget.dependencies.now,
   )..load();
 
   late final TrendCubit _trend = TrendCubit(
@@ -90,6 +100,8 @@ class _HomeScreenState extends State<HomeScreen> {
   late final _opener = ExpenseFormOpener(
     dependencies: widget.dependencies,
     pendingDraft: _cubit.pendingDraft,
+    onOpenRecurring: (context, id) =>
+        openRecurringFromForm(context, widget.dependencies, id),
   );
 
   final _scroll = ScrollController();
@@ -123,26 +135,87 @@ class _HomeScreenState extends State<HomeScreen> {
     _lifecycle = AppLifecycleListener(onResume: _rebuildForNewDay);
     _scheduleMidnight();
     // On Home's own messenger, like its other snackbars, so the FAB moves
-    // up for it instead of being covered.
-    if (widget.restoreNotice case final notice?) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        final l10n = AppLocalizations.of(context);
-        // Longer when there's more to read: where to go next, or which
-        // photos are missing.
-        if (notice.settingsReset) {
-          _showMessage(l10n.backupRestoredDefaultSettings, long: true);
-        } else if (notice.failedPhotos > 0) {
-          _showMessage(
-            l10n.backupRestoredFailedPhotos(notice.failedPhotos),
-            long: true,
-          );
-        } else {
-          _showMessage(l10n.backupRestored);
-        }
-      });
+    // up for it instead of being covered. The restore message first, then
+    // what the recurring generator did, queued behind it (§7.5).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (widget.restoreNotice case final notice?) _showRestoreNotice(notice);
+      _showRecurringReport(widget.recurringReport);
+    });
+  }
+
+  void _showRestoreNotice(RestoreNotice notice) {
+    final l10n = AppLocalizations.of(context);
+    // Longer when there's more to read: where to go next, or which
+    // photos are missing.
+    if (notice.settingsReset) {
+      _showMessage(l10n.backupRestoredDefaultSettings, long: true);
+    } else if (notice.failedPhotos > 0) {
+      _showMessage(
+        l10n.backupRestoredFailedPhotos(notice.failedPhotos),
+        long: true,
+      );
+    } else {
+      _showMessage(l10n.backupRestored);
     }
   }
+
+  /// "Added 2 recurring expenses" (no Undo: delete them one by one, P7a-8),
+  /// and the backlogs waiting: "Gym has 10 payments waiting" (Review) for
+  /// one (its page), "2 recurring items have payments waiting" (Review)
+  /// for several (the list). Queued behind what is showing.
+  void _showRecurringReport(GenerateReport report) {
+    final l10n = AppLocalizations.of(context);
+    final messenger = _messenger.currentState;
+    if (report.added > 0) {
+      queueMessage(messenger, l10n.addedRecurring(report.added));
+    }
+    final held = report.held;
+    if (held.isEmpty) return;
+    final one = held.length == 1 ? held.single : null;
+    queueMessage(
+      messenger,
+      one == null
+          ? l10n.heldMany(held.length)
+          : l10n.heldOne(one.title, one.count),
+      long: true,
+      action: SnackBarAction(
+        label: l10n.review,
+        onPressed: () => one == null ? _openRecurringList() : _review(one.id),
+      ),
+    );
+  }
+
+  /// Review on a held message: the item's page; back here, the list
+  /// reloads if Add all or Skip them changed it.
+  Future<void> _review(int id) async {
+    final result = await openRecurringPage(context, widget.dependencies, id);
+    if (!mounted) return;
+    await _reload();
+    _showPageResult(result);
+  }
+
+  Future<void> _openRecurringList() async {
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RecurringListScreen(dependencies: widget.dependencies),
+      ),
+    );
+    if (mounted) await _reloadIfChanged();
+  }
+
+  void _showPageResult(RecurringPageResult? result) => showRecurringPageResult(
+    _messenger.currentState,
+    _l10n,
+    dateLocaleOf(context),
+    result,
+    today: todayOn(widget.dependencies.now()),
+    onUndoStop: (undo) => saveOrShowError(_messengerContext, () async {
+      await widget.dependencies.recurring.undoArchive(undo);
+      await _reload();
+    }),
+  );
 
   void _scheduleMidnight() {
     _midnight?.cancel();
@@ -152,12 +225,21 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   /// Names are computed in build from the clock; the card reloads, so it
-  /// shows the new current period (R5).
+  /// shows the new current period (R5). On a new day the recurring
+  /// payments that came due are added too (phase-7a.md R12).
   void _rebuildForNewDay() {
     if (!mounted) return;
     setState(() {});
     _trend.load();
     _scheduleMidnight();
+    _catchUpRecurring();
+  }
+
+  Future<void> _catchUpRecurring() async {
+    final report = await _cubit.catchUpRecurring();
+    if (!mounted) return;
+    if (report.added > 0) await _trend.load();
+    if (mounted) _showRecurringReport(report);
   }
 
   @override

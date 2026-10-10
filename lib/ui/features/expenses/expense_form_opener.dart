@@ -4,6 +4,8 @@ import '../../../app/app_dependencies.dart';
 import '../../../domain/models/expense_draft.dart';
 import '../../../domain/models/money.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../core/formatting_locale.dart';
+import '../../core/recurrence_text.dart';
 import '../../core/widgets/show_message.dart';
 import 'view_models/expense_form_cubit.dart';
 import 'views/expense_form_screen.dart';
@@ -21,20 +23,29 @@ import 'views/expense_form_screen.dart';
 /// The slot is read through [pendingDraft], the screen's cubit: a widget
 /// doesn't read a repository.
 class ExpenseFormOpener {
-  ExpenseFormOpener({required this.dependencies, required this.pendingDraft});
+  ExpenseFormOpener({
+    required this.dependencies,
+    required this.pendingDraft,
+    this.onOpenRecurring,
+  });
 
   final AppDependencies dependencies;
   final Future<ExpenseDraft?> Function() pendingDraft;
 
+  /// Opens a recurring item's page from a payment's Edit (phase-7a.md
+  /// §8.1 E).
+  final void Function(BuildContext context, int itemId)? onOpenRecurring;
+
   bool _opening = false;
 
-  /// Opens Add (no [expenseId]; [chipAmount] from a chip) or Edit, and
-  /// waits for the form to close. `opened` is false when the tap was
-  /// ignored (another form is being opened).
+  /// Opens Add (no [expenseId]; [chipAmount] from a chip; Repeats on with
+  /// [startRepeating]) or Edit, and waits for the form to close. `opened`
+  /// is false when the tap was ignored (another form is being opened).
   Future<({bool opened, ExpenseFormResult? result})> open(
     BuildContext context, {
     int? expenseId,
     Money? chipAmount,
+    bool startRepeating = false,
   }) async {
     if (_opening) return (opened: false, result: null);
     _opening = true;
@@ -51,6 +62,8 @@ class ExpenseFormOpener {
             expenseId: expenseId,
             draft: draft,
             chipAmount: chipAmount,
+            startRepeating: startRepeating,
+            onOpenRecurring: onOpenRecurring,
           ),
         ),
       );
@@ -63,8 +76,9 @@ class ExpenseFormOpener {
 
 /// What a closed form says, on the screen that opened it (after the pop,
 /// on that screen's own messenger: phase-2.md §9.1): "Moved to bin" with
-/// [onUndoBin], "This expense no longer exists", "Draft saved", or that a
-/// save couldn't keep a photo. Nothing for a plain save or back.
+/// [onUndoBin], "This expense no longer exists", "Draft saved", that a
+/// save couldn't keep a photo, or what a Save with Repeats did
+/// (phase-7a.md §8.9). Nothing for a plain save or back.
 void showExpenseFormResult(
   ScaffoldMessengerState? messenger,
   AppLocalizations l10n,
@@ -74,6 +88,15 @@ void showExpenseFormResult(
   switch (result) {
     case ExpenseSaved(:final photosNotKept) when photosNotKept > 0:
       showMessage(messenger, l10n.photosNotKept(photosNotKept), long: true);
+    case ExpenseSaved(:final pastAdded) when pastAdded > 0:
+      showMessage(messenger, l10n.savedWithEarlier(pastAdded));
+    case ExpenseSaved(repeating: true, :final schedule?) when messenger != null:
+      showMessage(
+        messenger,
+        l10n.savedRepeats(
+          scheduleText(l10n, dateLocaleOf(messenger.context), schedule),
+        ),
+      );
     case ExpenseBinned(:final id):
       showMessage(
         messenger,

@@ -8,20 +8,25 @@ import '../../../../app/app_dependencies.dart';
 import '../../../../data/services/photo_service.dart';
 import '../../../../domain/amount_expression.dart';
 import '../../../../domain/amount_field_input.dart';
-import '../../../../domain/amount_input.dart';
 import '../../../../domain/models/category.dart';
-import '../../../../domain/models/currency.dart';
 import '../../../../domain/models/event.dart';
 import '../../../../domain/models/expense.dart';
 import '../../../../domain/models/expense_draft.dart';
 import '../../../../domain/models/money.dart';
+import '../../../../domain/models/recurring_item.dart';
+import '../../../../domain/periods.dart';
 import '../../../../domain/photos.dart';
+import '../../../../domain/repeat_input.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../core/amount_texts.dart';
 import '../../../core/currency_labels.dart';
 import '../../../core/date_texts.dart';
 import '../../../core/formatting_locale.dart';
 import '../../../core/item_labels.dart';
 import '../../../core/money_formatter.dart';
+import '../../../core/pickers.dart';
+import '../../../core/recurrence_text.dart';
+import '../../../core/widgets/back_guard.dart';
 import '../../../core/widgets/currency_picker_sheet.dart';
 import '../../../core/widgets/load_failed_view.dart';
 import '../../../core/widgets/photos/add_photo_sheet.dart';
@@ -42,6 +47,7 @@ import 'draft_banner.dart';
 import 'itemize_sheet.dart';
 import 'operator_row.dart';
 import 'photos_sheet.dart';
+import 'repeat_section.dart';
 import 'title_suggestions_field.dart';
 
 /// Which picker is in search mode. View state, not in the cubit: it
@@ -59,10 +65,19 @@ class ExpenseFormScreen extends StatefulWidget {
     this.expenseId,
     this.draft,
     this.chipAmount,
+    this.startRepeating = false,
+    this.onOpenRecurring,
   });
 
   final AppDependencies dependencies;
   final int? expenseId;
+
+  /// Recurring → New (phase-7a.md §8.3): the Add form with Repeats on.
+  final bool startRepeating;
+
+  /// Opens a recurring item's page, from the link row of a payment's Edit
+  /// (§8.1 E). Null: the row doesn't open anything.
+  final void Function(BuildContext context, int itemId)? onOpenRecurring;
 
   /// The slot's draft, when Home opens the form from it (phase-4.md §7.4).
   final ExpenseDraft? draft;
@@ -88,6 +103,9 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   final _amount = TextEditingController();
   final _description = TextEditingController();
 
+  /// The Repeats section's Every field (phase-7a.md §8.2).
+  final _interval = TextEditingController(text: '1');
+
   /// Focused once when the Add form opens. Not `autofocus`: the form is a
   /// lazy list, so the title field is disposed when scrolled away and built
   /// again later, and `autofocus` then fires again, pulling the focus (and
@@ -103,10 +121,14 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   final _amountKey = GlobalKey();
   final _descriptionKey = GlobalKey();
   final _categoryKey = GlobalKey();
+  final _repeatKey = GlobalKey();
 
   /// The form's own messenger: "Cleared" and its Undo go away with the
   /// form instead of showing on Home.
   final _messenger = GlobalKey<ScaffoldMessengerState>();
+
+  /// The form's Scaffold, below [_messenger].
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
 
   var _searching = _Searching.none;
 
@@ -138,6 +160,8 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
       events: deps.events,
       paymentMethods: deps.paymentMethods,
       drafts: deps.drafts,
+      recurring: deps.recurring,
+      startRepeating: widget.startRepeating,
       l10n: AppLocalizations.of(context),
       defaultCurrency: settings.defaultCurrency,
       defaultPaymentMethodId: settings.defaultPaymentMethodId,
@@ -162,6 +186,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
     _title.dispose();
     _amount.dispose();
     _description.dispose();
+    _interval.dispose();
     _titleFocus.dispose();
     _amountFocus.dispose();
     super.dispose();
@@ -193,6 +218,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
         _setText(_title, fields.title);
         _setText(_amount, fields.expression);
         _setText(_description, fields.description);
+        _syncInterval(fields);
         if (first && !_form.isEditing) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) _titleFocus.requestFocus();
@@ -208,6 +234,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
       case ExpenseFormGone(:final draftKept):
         Navigator.pop(context, ExpenseGone(draftKept: draftKept));
       case final ExpenseFormReady ready:
+        _syncInterval(ready.fields);
         _maybeReview(ready);
       case ExpenseFormLoading() || ExpenseFormLoadFailed():
         break;
@@ -252,6 +279,14 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
 
   int _appliedRevision = 0;
 
+  /// The Every field follows the cubit when Repeats is switched on (the
+  /// last settings come back) or reset; typing sends the same text the
+  /// field has, so the cursor never moves.
+  void _syncInterval(ExpenseFields fields) {
+    final text = fields.repeat?.intervalText;
+    if (text != null) _setText(_interval, text);
+  }
+
   /// Sets [text] with the cursor at the end; leaves an equal text (and
   /// its cursor) alone.
   static void _setText(TextEditingController controller, String text) {
@@ -269,7 +304,13 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
     if (saved != null) {
       Navigator.pop(
         context,
-        ExpenseSaved(saved, photosNotKept: _form.lastPhotosNotKept),
+        ExpenseSaved(
+          saved,
+          photosNotKept: _form.lastPhotosNotKept,
+          repeating: _form.lastSaveRepeating,
+          pastAdded: _form.lastPastAdded,
+          schedule: _form.lastSavedSchedule,
+        ),
       );
     } else if (_form.value is! ExpenseFormGone) {
       _showFirstError();
@@ -422,6 +463,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
       if (_form.amountError != null) _amountKey,
       if (_form.descriptionTooLong) _descriptionKey,
       if (_form.categoryMissing) _categoryKey,
+      if (_form.repeatError != null || _tooManyPast) _repeatKey,
     ].firstOrNull;
     final target = firstInvalid?.currentContext;
     if (target == null) return;
@@ -541,51 +583,126 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   }
 
   Future<void> _pickDate(DateTime wallClock) async {
-    _dropFocus();
-    final settings = context.read<SettingsCubit>();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime(wallClock.year, wallClock.month, wallClock.day),
+    final picked = await pickDay(
+      context,
+      initial: isoDay(wallClock),
       // Future dates are allowed (P2-4); no real limit either way.
-      firstDate: DateTime(1900),
-      lastDate: DateTime(2200),
-      // The app language with the phone's country, like the rest of the
-      // dates (and money).
-      locale: formattingLocaleValueOf(context),
-      // Opens the way the user last left it (calendar or typing).
-      initialEntryMode: settings.value.datePickerKeyboard
-          ? DatePickerEntryMode.input
-          : DatePickerEntryMode.calendar,
-      onDatePickerModeChange: (mode) => _rememberMode(
-        () => settings.setDatePickerKeyboard(mode == DatePickerEntryMode.input),
-      ),
+      first: '1900-01-01',
+      last: '2200-01-01',
     );
-    if (picked != null) _form.dateChanged(picked);
+    if (picked != null) _form.dateChanged(parseDay(picked));
   }
 
   Future<void> _pickTime(DateTime wallClock) async {
-    _dropFocus();
-    final settings = context.read<SettingsCubit>();
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay(hour: wallClock.hour, minute: wallClock.minute),
-      // Opens the way the user last left it (clock dial or keyboard).
-      initialEntryMode: settings.value.timePickerKeyboard
-          ? TimePickerEntryMode.input
-          : TimePickerEntryMode.dial,
-      onEntryModeChanged: (mode) => _rememberMode(
-        () => settings.setTimePickerKeyboard(mode == TimePickerEntryMode.input),
-      ),
+    final picked = await pickTimeOfDay(
+      context,
+      hour: wallClock.hour,
+      minute: wallClock.minute,
     );
     if (picked != null) _form.timeChanged(picked.hour, picked.minute);
   }
 
-  /// Remembering the picker mode is a convenience: a failed write is only
-  /// logged, it mustn't disturb picking the date or time.
-  static void _rememberMode(Future<void> Function() save) {
-    save().catchError((Object error) {
-      debugPrint('Remembering the picker mode failed: $error');
-    });
+  /// The end date of Repeats: from the first payment (the form's date) to
+  /// [lastEndOn], opening on the date set (§8.2).
+  Future<void> _pickEndDate() async {
+    final startOn = _form.repeatStartOn;
+    final repeat = _readyState?.fields.repeat;
+    if (startOn == null || repeat == null) return;
+    final picked = await pickDay(
+      context,
+      initial: repeat.endOn ?? _form.defaultEndOn,
+      first: startOn,
+      last: lastEndOn,
+      helpText: AppLocalizations.of(context).repeatEndDate,
+    );
+    if (picked != null) _form.repeatEndDateChanged(parseDay(picked));
+  }
+
+  bool get _tooManyPast =>
+      (_form.repeatSummary?.pastCount ?? 0) > maxPastPayments;
+
+  /// Repeats at the end of the Add form; on a payment's Edit, the link to
+  /// its recurring item instead (§8.1 E, P7a-5); nothing on a plain
+  /// expense's Edit.
+  List<Widget> _repeatPart(ExpenseFormReady state) {
+    if (_form.isEditing) {
+      final item = _form.linkedItem;
+      if (item == null) return const [];
+      return [const SizedBox(height: 16), _linkRow(item)];
+    }
+    final startOn = _form.repeatStartOn;
+    if (startOn == null) return const [];
+    return [
+      const SizedBox(height: 16),
+      RepeatSection(
+        key: _repeatKey,
+        repeat: state.fields.repeat,
+        summary: _form.repeatSummary,
+        error: _form.repeatError,
+        startOn: startOn,
+        today: _form.today,
+        defaultEndOn: _form.defaultEndOn,
+        intervalController: _interval,
+        onToggled: (on) {
+          _dropFocus();
+          _form.repeatToggled(on);
+        },
+        onFrequency: _form.repeatFrequencyChanged,
+        onInterval: _form.repeatIntervalChanged,
+        onEnd: _form.repeatEndChanged,
+        onPickEndDate: _pickEndDate,
+      ),
+    ];
+  }
+
+  /// "🔁 Netflix · Every month on day 9 ›", then "Changes here are for this
+  /// payment only."
+  Widget _linkRow(RecurringItem item) {
+    final l10n = AppLocalizations.of(context);
+    final schedule = item.schedule;
+    final scheduleLine = schedule == null
+        ? ''
+        : scheduleText(l10n, dateLocaleOf(context), schedule);
+    final open = widget.onOpenRecurring;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Divider(height: 1),
+        Semantics(
+          // Its own node: merged, TalkBack read it together with the line
+          // under it (phase-7a.md §12a).
+          container: true,
+          label: l10n.repeatLinkSemantics(item.title, scheduleLine),
+          button: open != null,
+          excludeSemantics: true,
+          child: ListTile(
+            key: const ValueKey('recurringLink'),
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.repeat),
+            title: Text(
+              item.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Text(scheduleLine),
+            trailing: open == null ? null : const Icon(Icons.chevron_right),
+            onTap: open == null
+                ? null
+                : () {
+                    _dropFocus();
+                    // Under the form's own messenger, so what the page
+                    // did (Stop's Undo) is said on the form.
+                    open(_scaffoldKey.currentContext ?? context, item.id);
+                  },
+          ),
+        ),
+        Text(
+          l10n.repeatThisPaymentOnly,
+          style: Theme.of(context).textTheme.bodySmall
+              ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+        ),
+      ],
+    );
   }
 
   Future<bool> _newCategory(String name, List<Category> existing) async {
@@ -631,15 +748,13 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
       listener: _onState,
       child: BlocSignalBuilder<ExpenseFormCubit, ExpenseFormState>(
         bloc: _form,
-        builder: (context, state) => PopScope(
+        builder: (context, state) => BackGuard(
           // Every back goes through _onBack, so it can carry a result.
-          canPop: false,
-          onPopInvokedWithResult: (didPop, _) {
-            if (!didPop) _onBack();
-          },
+          onBack: _onBack,
           child: ScaffoldMessenger(
             key: _messenger,
             child: Scaffold(
+              key: _scaffoldKey,
               appBar: _appBar(state),
               body: switch (state) {
                 ExpenseFormReady() => _body(state),
@@ -816,6 +931,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
           newLabel: l10n.newEvent,
           onNew: _newEvent,
         ),
+        ..._repeatPart(state),
       ],
     );
   }
@@ -1082,18 +1198,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
     AppLocalizations l10n,
     ExpressionError? error,
     ExpenseFields fields,
-  ) => switch (error) {
-    null => null,
-    ExpressionError.empty => l10n.amountErrorEmpty,
-    ExpressionError.invalid => l10n.amountErrorInvalid,
-    ExpressionError.tooLarge => l10n.amountErrorTooLarge(maxIntegerDigits),
-    ExpressionError.tooManyDecimals => l10n.amountErrorTooManyDecimals(
-      findCurrency(fields.currencyCode)?.minorDigits ?? 2,
-      fields.currencyCode,
-    ),
-    ExpressionError.divideByZero => l10n.amountErrorDivideByZero,
-    ExpressionError.notPositive => l10n.amountErrorNotPositive,
-  };
+  ) => amountErrorText(l10n, error, fields.currencyCode);
 }
 
 /// A tappable, outlined box with a floating label, like the text fields

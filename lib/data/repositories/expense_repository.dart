@@ -7,10 +7,13 @@ import '../../domain/periods.dart';
 import '../../domain/photo_groups.dart';
 import '../../domain/photos.dart';
 import '../../domain/popularity.dart';
+import '../../domain/recurring_moment.dart';
+import '../../domain/repeat_input.dart';
 import '../../domain/title_suggestions.dart';
 import '../../domain/totals.dart';
 import '../services/database/sql_helpers.dart';
 import 'data_version.dart';
+import 'recurring_repository.dart';
 
 /// Thrown by [ExpenseRepository.update] and [ExpenseRepository.moveToBin]
 /// when the expense was deleted or moved to the bin meanwhile. An exception rather than a `StateError`, so
@@ -22,6 +25,18 @@ class ExpenseNotFound implements Exception {
 
   @override
   String toString() => 'ExpenseNotFound: expense $id is binned or gone';
+}
+
+/// Thrown by [ExpenseRepository.addRepeating] when the Repeats settings
+/// don't hold any more (checked again inside the save): nothing was
+/// written.
+class RepeatRefused implements Exception {
+  const RepeatRefused(this.error);
+
+  final RepeatError error;
+
+  @override
+  String toString() => 'RepeatRefused: ${error.name}';
 }
 
 /// Reads and writes the `expenses` and `expense_events` tables
@@ -36,11 +51,18 @@ class ExpenseRepository {
     this._db, {
     required this._dataVersion,
     DateTime Function()? now,
-  }) : _now = now ?? DateTime.now;
+    ZonedMoment Function(int year, int month, int day, int hour, int minute)?
+    localMoment,
+  }) : _now = now ?? DateTime.now,
+       _localMoment = localMoment ?? deviceMoment;
 
   final Database _db;
   final DataVersion _dataVersion;
   final DateTime Function() _now;
+
+  /// The device's zone, for the moments of earlier payments a Save with
+  /// Repeats adds (phase-7a.md §5.6); a fake one in tests.
+  final ZonedMoment Function(int, int, int, int, int) _localMoment;
 
   /// How long an expense stays in the bin before the startup purge deletes
   /// it for good.
@@ -97,6 +119,89 @@ class ExpenseRepository {
     });
     _dataVersion.bump();
     return expense;
+  }
+
+  /// **Save with Repeats** (phase-7a.md §6.2): [input] is saved as the
+  /// first payment of a new recurring item that repeats as [choice], in one
+  /// transaction with the item, its first price and events, and the
+  /// earlier payments up to today. The schedule starts on the saved row's
+  /// `occurred_on`, so the form and the stored rule can't disagree.
+  ///
+  /// [choice] is checked again against today: a [RepeatRefused] means
+  /// nothing was written (a Save across midnight can tip "1,000 earlier
+  /// payments" over the cap). Killed before the commit, nothing is saved
+  /// and the draft stays; after it, everything is, and there's no draft to
+  /// save it twice ([clearDraft] as for [add]). The form's photos go to
+  /// this expense only (P7a-4). Returns the expense and how many earlier
+  /// payments were added.
+  Future<({Expense expense, int pastAdded})> addRepeating(
+    ExpenseInput input,
+    RepeatChoice choice, {
+    bool clearDraft = false,
+  }) async {
+    final now = _now();
+    final nowMs = now.millisecondsSinceEpoch;
+    final today = todayOn(now);
+    final startOn = occurredOnFor(input.occurredAt, input.utcOffsetMinutes);
+    final error = validateRepeat(choice, startOn: startOn, today: today);
+    if (error != null) throw RepeatRefused(error);
+    final schedule = scheduleFor(choice, startOn);
+    final (:past, :next) = repeatPreview(
+      choice,
+      startOn: startOn,
+      today: today,
+    );
+    final wallClock = input.occurredAt.toUtc().add(
+      Duration(minutes: input.utcOffsetMinutes),
+    );
+    final timeOfDay = wallClock.hour * 60 + wallClock.minute;
+    final expense = await _db.transaction((txn) async {
+      final itemId = await RecurringRepository.insertTemplate(
+        txn,
+        NewRecurringItem(
+          title: input.title,
+          description: input.description,
+          amount: input.amount,
+          categoryId: input.categoryId,
+          paymentMethodId: input.paymentMethodId,
+          eventIds: input.eventIds,
+          schedule: schedule,
+          timeOfDayMinutes: timeOfDay,
+          nextDueOn: next,
+        ),
+        nowMs,
+      );
+      final id = await txn.insert('expenses', {
+        ..._columns(input),
+        'recurring_expense_id': itemId,
+        'recurring_due_on': startOn,
+        'created_at': nowMs,
+        'updated_at': nowMs,
+      });
+      await _insertEvents(txn, id, input.eventIds);
+      await _linkPhotos(txn, id, input.photos, nowMs);
+      await insertPayments(txn, itemId, [
+        for (final day in past)
+          if (paymentMoment(day, timeOfDay, localMoment: _localMoment)
+              case final moment)
+            PaymentInput(
+              recurringExpenseId: itemId,
+              dueOn: day,
+              title: input.title,
+              description: input.description,
+              // One price so far: the first, from the start.
+              amount: input.amount,
+              occurredAt: moment.occurredAt,
+              utcOffsetMinutes: moment.offsetMinutes,
+              categoryId: input.categoryId,
+              paymentMethodId: input.paymentMethodId,
+            ),
+      ], nowMs: nowMs);
+      if (clearDraft) await _deleteDraft(txn);
+      return (await _read(txn, where: 'id = ?', whereArgs: [id])).single;
+    });
+    _dataVersion.bump();
+    return (expense: expense, pastAdded: past.length);
   }
 
   /// Saves [input] over the active expense [id] and replaces its events, in
@@ -625,11 +730,92 @@ class ExpenseRepository {
   }
 
   /// The local date `YYYY-MM-DD` of an expense at [occurredAt] (UTC) with
-  /// [utcOffsetMinutes]. The only place `occurred_on` is computed.
+  /// [utcOffsetMinutes]. The only place `occurred_on` is computed; the rule
+  /// itself is [localDayOf], which recurring payments check against.
   static String occurredOnFor(DateTime occurredAt, int utcOffsetMinutes) =>
-      isoDay(occurredAt.toUtc().add(Duration(minutes: utcOffsetMinutes)));
+      localDayOf(occurredAt, utcOffsetMinutes);
 
-  Map<String, Object?> _columns(ExpenseInput input) => {
+  /// Inserts [payments] of recurring item [itemId] and copies the item's
+  /// events onto each (F5), inside the caller's transaction ([txn]): the
+  /// generator's and Save with Repeats'. Their `occurred_on` is derived
+  /// like any expense's (database.md §1). A payment of a due date that has
+  /// a row already fails on the unique index (F2) and rolls the caller
+  /// back: callers leave those out.
+  ///
+  /// In one batch, then one event copy per 500 due dates (found through
+  /// the unique index): one statement and channel call per payment made
+  /// "Add the first 1,000" take seconds on the Oppo (phase-7a.md §12a).
+  static Future<void> insertPayments(
+    Transaction txn,
+    int itemId,
+    List<PaymentInput> payments, {
+    required int nowMs,
+  }) async {
+    if (payments.isEmpty) return;
+    final batch = txn.batch();
+    for (final p in payments) {
+      if (p.recurringExpenseId != itemId) {
+        throw ArgumentError.value(
+          p.recurringExpenseId,
+          'payment',
+          'other item',
+        );
+      }
+      batch.insert('expenses', {
+        ..._columns(
+          ExpenseInput(
+            title: p.title,
+            description: p.description,
+            amount: p.amount,
+            occurredAt: p.occurredAt,
+            utcOffsetMinutes: p.utcOffsetMinutes,
+            categoryId: p.categoryId,
+            paymentMethodId: p.paymentMethodId,
+            eventIds: const {},
+          ),
+        ),
+        'recurring_expense_id': itemId,
+        'recurring_due_on': p.dueOn,
+        'created_at': nowMs,
+        'updated_at': nowMs,
+      });
+    }
+    await batch.commit(noResult: true);
+    await inChunks([for (final p in payments) p.dueOn], (days) async {
+      await txn.rawInsert(
+        'INSERT INTO expense_events (expense_id, event_id) '
+        'SELECT e.id, r.event_id FROM expenses e '
+        'JOIN recurring_expense_events r '
+        'ON r.recurring_expense_id = e.recurring_expense_id '
+        'WHERE e.recurring_expense_id = ? '
+        'AND e.recurring_due_on IN (${sqlPlaceholders(days.length)})',
+        [itemId, ...days],
+      );
+      return const <void>[];
+    });
+  }
+
+  /// Recurring item [itemId]'s active payments, newest due date first,
+  /// [limit] at a time, continuing before the due date [before] (§4.3:
+  /// the unique index serves it).
+  static Future<List<Expense>> paymentsOf(
+    DatabaseExecutor db,
+    int itemId, {
+    String? before,
+    int limit = 30,
+  }) => _read(
+    db,
+    where: [
+      'recurring_expense_id = ?',
+      _active,
+      if (before != null) 'recurring_due_on < ?',
+    ].join(' AND '),
+    whereArgs: [itemId, ?before],
+    orderBy: 'recurring_due_on DESC',
+    limit: limit,
+  );
+
+  static Map<String, Object?> _columns(ExpenseInput input) => {
     'title': input.title,
     'description': input.description,
     'amount_minor': input.amount.amountMinor,
@@ -833,6 +1019,8 @@ class ExpenseRepository {
       _ => null,
     },
     photoCount: photoCount,
+    recurringExpenseId: row['recurring_expense_id'] as int?,
+    recurringDueOn: row['recurring_due_on'] as String?,
   );
 
   /// Today's `occurred_on` on the device and the one [days] before it.

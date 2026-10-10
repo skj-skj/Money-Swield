@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart' show debugPrint;
 
 import '../data/services/backup/pre_restore_copy.dart';
 import '../domain/error_report.dart';
+import '../domain/models/recurring_item.dart';
 import '../ui/core/emit_if_open.dart';
 import '../ui/features/settings/view_models/settings_cubit.dart';
 import 'app_dependencies.dart';
@@ -38,14 +39,19 @@ final class StartupFailed extends StartupState {
 }
 
 final class StartupReady extends StartupState {
-  const StartupReady(this.dependencies);
+  const StartupReady(this.dependencies, {this.recurring = GenerateReport.none});
 
   final AppDependencies dependencies;
+
+  /// What the recurring generator did at this start (phase-7a.md §6.3):
+  /// Home says "Added 2 recurring expenses" or asks about a backlog.
+  final GenerateReport recurring;
 }
 
-/// Opens the database, loads the settings, empties old expenses from the
-/// bin, deletes what a cut-short backup or restore left and sweeps unused
-/// photos, once migrations are done (phase-1.md §5, phase-2.md §9.3,
+/// Opens the database, loads the settings, adds the recurring payments
+/// that came due, empties old expenses from the bin, deletes what a
+/// cut-short backup or restore left and sweeps unused photos, once
+/// migrations are done (phase-1.md §5, phase-7a.md §6.3, phase-2.md §9.3,
 /// phase-3.md §6.6, phase-6.md §6.5).
 class StartupCubit extends CubitSignal<StartupState>
     with EmitIfOpen<StartupState> {
@@ -76,10 +82,11 @@ class StartupCubit extends CubitSignal<StartupState>
       dependencies = await _openDependencies();
       step = 'Loading settings';
       await _settingsCubit.load(dependencies.settings);
+      final recurring = await _generateRecurring(dependencies);
       await _purgeBin(dependencies);
       await _cleanUpLeftovers(dependencies);
       await _sweepPhotos(dependencies);
-      emitIfOpen(StartupReady(dependencies));
+      emitIfOpen(StartupReady(dependencies, recurring: recurring));
     } catch (error, stackTrace) {
       // Closed so that Retry starts afresh and Undo last restore can
       // replace the file.
@@ -96,6 +103,25 @@ class StartupCubit extends CubitSignal<StartupState>
       );
     } finally {
       _isRunning = false;
+    }
+  }
+
+  /// Adds the recurring payments that came due (phase-7a.md §6.3, R13),
+  /// before the bin purge (application-design.md §3). A backlog older than
+  /// 31 days is held, not added. Like the purge, a failure is logged and
+  /// never blocks the app: every payment is added again the next run, and
+  /// no payment is lost.
+  static Future<GenerateReport> _generateRecurring(
+    AppDependencies dependencies,
+  ) async {
+    try {
+      final watch = Stopwatch()..start();
+      final report = await dependencies.recurring.generateDue();
+      debugPrint('Recurring: $report in ${watch.elapsedMilliseconds} ms');
+      return report;
+    } catch (error, stackTrace) {
+      debugPrint('Adding recurring payments failed: $error\n$stackTrace');
+      return GenerateReport.none;
     }
   }
 

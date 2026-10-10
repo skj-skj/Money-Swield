@@ -1,28 +1,36 @@
 import 'package:bloc_signals/bloc_signals.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 
 import '../../../../data/repositories/category_repository.dart';
 import '../../../../data/repositories/event_repository.dart';
 import '../../../../data/repositories/expense_repository.dart';
 import '../../../../data/repositories/payment_method_repository.dart';
+import '../../../../data/repositories/recurring_repository.dart';
 import '../../../../domain/calendar_days.dart';
 import '../../../../domain/models/category.dart';
 import '../../../../domain/models/event.dart';
 import '../../../../domain/models/expense.dart';
 import '../../../../domain/models/payment_method.dart';
+import '../../../../domain/models/recurring_item.dart';
 import '../../../core/emit_if_open.dart';
 
-/// Categories, events and payment methods by id, to show a binned
-/// expense's emoji and names.
+/// Categories, events, payment methods and recurring items by id, to show
+/// a binned expense's emoji and names.
 class BinLookups {
   const BinLookups({
     required this.categories,
     required this.events,
     required this.paymentMethods,
+    this.recurring = const {},
   });
 
   final Map<int, Category> categories;
   final Map<int, Event> events;
   final Map<int, PaymentMethod> paymentMethods;
+
+  /// The items the binned payments belong to, for "Payment of Netflix
+  /// (Monthly)" (phase-7a.md §8.7).
+  final Map<int, RecurringItem> recurring;
 }
 
 /// What the bin screen shows. States don't override `==`, so every emitted
@@ -82,12 +90,16 @@ class BinCubit extends CubitSignal<BinState> with EmitIfOpen<BinState> {
     required this._categories,
     required this._events,
     required this._paymentMethods,
+    this._recurring,
   }) : super(initialState: const BinLoading());
 
   final ExpenseRepository _expenses;
   final CategoryRepository _categories;
   final EventRepository _events;
   final PaymentMethodRepository _paymentMethods;
+
+  /// Null in tests that don't need the items.
+  final RecurringRepository? _recurring;
 
   Future<void> load() async {
     try {
@@ -96,11 +108,27 @@ class BinCubit extends CubitSignal<BinState> with EmitIfOpen<BinState> {
         categories: {for (final c in await _categories.all()) c.id: c},
         events: {for (final e in await _events.all()) e.id: e},
         paymentMethods: {for (final m in await _paymentMethods.all()) m.id: m},
+        recurring: await _itemsOf(expenses),
       );
       emitIfOpen(BinLoaded(expenses, lookups));
     } catch (error) {
       // A failed reload after an action keeps the old list on screen.
       if (value is! BinLoaded) emitIfOpen(BinFailed(error));
+    }
+  }
+
+  /// The items of [expenses] that are payments. A failed read only drops
+  /// the detail line.
+  Future<Map<int, RecurringItem>> _itemsOf(List<Expense> expenses) async {
+    final recurring = _recurring;
+    if (recurring == null) return const {};
+    try {
+      return await recurring.byIds({
+        for (final e in expenses) ?e.recurringExpenseId,
+      });
+    } catch (error) {
+      debugPrint('Reading the recurring items of the bin failed: $error');
+      return const {};
     }
   }
 

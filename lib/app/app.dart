@@ -89,33 +89,46 @@ class _AppState extends State<App> {
     );
   }
 
-  Widget _materialApp(AppSettings settings) {
-    final seed = themeSeedColor(
-      pickedSeed: settings.themeSeed,
-      wallpaperSeed: widget.wallpaperSeed,
-    );
-    return MaterialApp(
-      onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
-      theme: lightTheme(seed),
-      darkTheme: darkTheme(seed),
-      themeMode: themeModeOf(settings.theme),
-      locale: settings.locale,
-      supportedLocales: AppLocalizations.supportedLocales,
-      // Material's own strings come from material_ui, not from
-      // flutter_localizations: material_ui widgets look up
-      // material_ui's MaterialLocalizations type, so
-      // AppLocalizations.localizationsDelegates (which lists
-      // flutter_localizations' delegate) would leave them unlocalized.
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        ...GlobalMaterialLocalizations.delegates,
-      ],
-      home: MigrationGate(
-        child: StartupGate(
-          openDependencies: widget.openDependencies,
-          restoreTools: widget.restoreTools,
-        ),
+  Widget _materialApp(AppSettings settings) => appMaterialApp(
+    settings: settings,
+    wallpaperSeed: widget.wallpaperSeed,
+    home: MigrationGate(
+      child: StartupGate(
+        openDependencies: widget.openDependencies,
+        restoreTools: widget.restoreTools,
       ),
-    );
-  }
+    ),
+  );
+}
+
+/// The app's [MaterialApp] for [settings]: themes, language and
+/// localizations, with [home] as its first screen. [App] builds it; widget
+/// tests of one screen use it too, so they look exactly like the app.
+Widget appMaterialApp({
+  required AppSettings settings,
+  required int? wallpaperSeed,
+  required Widget home,
+}) {
+  final seed = themeSeedColor(
+    pickedSeed: settings.themeSeed,
+    wallpaperSeed: wallpaperSeed,
+  );
+  return MaterialApp(
+    onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
+    theme: lightTheme(seed),
+    darkTheme: darkTheme(seed),
+    themeMode: themeModeOf(settings.theme),
+    locale: settings.locale,
+    supportedLocales: AppLocalizations.supportedLocales,
+    // Material's own strings come from material_ui, not from
+    // flutter_localizations: material_ui widgets look up
+    // material_ui's MaterialLocalizations type, so
+    // AppLocalizations.localizationsDelegates (which lists
+    // flutter_localizations' delegate) would leave them unlocalized.
+    localizationsDelegates: const [
+      AppLocalizations.delegate,
+      ...GlobalMaterialLocalizations.delegates,
+    ],
+    home: home,
+  );
 }

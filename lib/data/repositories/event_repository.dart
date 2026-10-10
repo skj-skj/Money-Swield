@@ -108,14 +108,22 @@ class EventRepository {
     _dataVersion.bump();
   }
 
-  /// How many expenses have the event, binned ones included: deleting it
-  /// removes it from those too. Shown in the delete confirmation.
-  Future<int> usage(int id) async {
-    final rows = await _db.rawQuery(
+  /// How many expenses (binned ones included) and recurring items
+  /// (archived ones included) have the event: deleting it removes it from
+  /// all of them (phase-7a.md R3). Shown in the delete confirmation.
+  Future<({int expenses, int templates})> usage(int id) async {
+    final expenses = await _db.rawQuery(
       'SELECT COUNT(*) AS n FROM expense_events WHERE event_id = ?',
       [id],
     );
-    return rows.single['n']! as int;
+    final templates = await _db.rawQuery(
+      'SELECT COUNT(*) AS n FROM recurring_expense_events WHERE event_id = ?',
+      [id],
+    );
+    return (
+      expenses: expenses.single['n']! as int,
+      templates: templates.single['n']! as int,
+    );
   }
 
   static Event _fromRow(Map<String, Object?> row) => Event(

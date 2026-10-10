@@ -160,7 +160,55 @@ void main() {
         expect(candidate.activeExpenses, isNull);
         expect(candidate.binnedExpenses, isNull);
         expect(candidate.latestExpenseOn, isNull);
+        // Counted before the candidate is migrated: no table, no count.
+        expect(candidate.recurringItems, isNull);
       });
+
+      test(
+        'running recurring items are counted, archived ones not (R14)',
+        () async {
+          await pick(
+            await sourceDatabase(
+              fill: (db) async {
+                await insertRecurringRow(db, title: 'A');
+                await insertRecurringRow(db, title: 'B');
+                await insertRecurringRow(db, title: 'C', archivedAt: 5);
+              },
+            ),
+          );
+          final candidate = await repo.prepareFromZip();
+          expect(candidate.recurringItems, 2);
+        },
+      );
+    });
+
+    test('a backup from a Phase 6 build (create_expenses applied, no '
+        'recurring schema) is refused, nothing changed (P7a-14, R4)', () async {
+      await pick(
+        await sourceDatabase(
+          fill: (db) async {
+            await insertExpenseRow(db);
+            await db.execute('PRAGMA foreign_keys = OFF');
+            await db.execute(
+              'CREATE TABLE old_expenses AS SELECT id, title, description, '
+              'amount_minor, amount_expression, currency_code, occurred_at, '
+              'utc_offset_minutes, occurred_on, category_id, '
+              'payment_method_id, deleted_at, created_at, updated_at '
+              'FROM expenses',
+            );
+            await db.execute('DROP TABLE expenses');
+            await db.execute('ALTER TABLE old_expenses RENAME TO expenses');
+            for (final table in [
+              'recurring_expense_events',
+              'recurring_amounts',
+              'recurring_expenses',
+            ]) {
+              await db.execute('DROP TABLE $table');
+            }
+          },
+        ),
+      );
+      await expectRejected(RestoreRejection.damaged);
     });
 
     group('rejects', () {

@@ -10,6 +10,7 @@ import '../../../../data/repositories/event_repository.dart';
 import '../../../../data/repositories/expense_draft_repository.dart';
 import '../../../../data/repositories/expense_repository.dart';
 import '../../../../data/repositories/payment_method_repository.dart';
+import '../../../../data/repositories/recurring_repository.dart';
 import '../../../../data/services/photo_service.dart';
 import '../../../../data/services/photo_store.dart';
 import '../../../../domain/amount_expression.dart';
@@ -22,10 +23,13 @@ import '../../../../domain/models/expense.dart';
 import '../../../../domain/models/expense_draft.dart';
 import '../../../../domain/models/money.dart';
 import '../../../../domain/models/payment_method.dart';
+import '../../../../domain/models/recurring_item.dart';
 import '../../../../domain/periods.dart';
 import '../../../../domain/photo_sizing.dart';
 import '../../../../domain/photos.dart';
 import '../../../../domain/popularity.dart';
+import '../../../../domain/recurrence.dart';
+import '../../../../domain/repeat_input.dart';
 import '../../../../domain/selection.dart';
 import '../../../../domain/title_suggestions.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -45,13 +49,29 @@ sealed class ExpenseFormResult {
 }
 
 final class ExpenseSaved extends ExpenseFormResult {
-  const ExpenseSaved(this.expense, {this.photosNotKept = 0});
+  const ExpenseSaved(
+    this.expense, {
+    this.photosNotKept = 0,
+    this.repeating = false,
+    this.pastAdded = 0,
+    this.schedule,
+  });
 
   final Expense expense;
 
   /// Photos the save couldn't link: their row went meanwhile (phase-6.md
   /// §7.1). Home says so.
   final int photosNotKept;
+
+  /// Saved with Repeats (phase-7a.md §7.1): Home says "Saved. Repeats: …"
+  /// or "Saved with 2 earlier payments."
+  final bool repeating;
+
+  /// Earlier payments the save added with it.
+  final int pastAdded;
+
+  /// The rule it repeats by, when [repeating].
+  final Schedule? schedule;
 }
 
 final class ExpenseBinned extends ExpenseFormResult {
@@ -305,6 +325,7 @@ class ExpenseFields {
     required this.currencyCode,
     required this.wallClock,
     this.photos = const [],
+    this.repeat,
   });
 
   final String title;
@@ -326,8 +347,17 @@ class ExpenseFields {
   /// In the order added (phase-6.md §5.2).
   final List<FormPhoto> photos;
 
+  /// The Repeats section as typed (phase-7a.md §7.1); null = off. Add only.
+  final RepeatChoice? repeat;
+
   /// [expression] in canonical form, as stored and compared.
   String get canonicalExpression => fieldToCanonical(expression);
+
+  /// Without what a title suggestion never fills or removes (photos,
+  /// P6-27; Repeats, phase-7a.md §7.1): adding either doesn't stop the
+  /// picks, and a pick keeps both.
+  ExpenseFields get withoutExtras =>
+      copyWith(photos: const [], repeat: () => null);
 
   ExpenseFields copyWith({
     String? title,
@@ -339,6 +369,7 @@ class ExpenseFields {
     String? currencyCode,
     DateTime? wallClock,
     List<FormPhoto>? photos,
+    RepeatChoice? Function()? repeat,
   }) => ExpenseFields(
     title: title ?? this.title,
     expression: expression ?? this.expression,
@@ -349,6 +380,7 @@ class ExpenseFields {
     currencyCode: currencyCode ?? this.currencyCode,
     wallClock: wallClock ?? this.wallClock,
     photos: photos ?? this.photos,
+    repeat: repeat == null ? this.repeat : repeat(),
   );
 
   /// The canonical expression is compared, so `1,5` and `1.5` typed for the
@@ -364,7 +396,8 @@ class ExpenseFields {
       other.paymentMethodId == paymentMethodId &&
       other.currencyCode == currencyCode &&
       other.wallClock == wallClock &&
-      samePhotos(other.photos, photos);
+      samePhotos(other.photos, photos) &&
+      other.repeat == repeat;
 
   @override
   int get hashCode => Object.hash(
@@ -377,6 +410,7 @@ class ExpenseFields {
     currencyCode,
     wallClock,
     Object.hashAll([for (final p in photos) p.sha256]),
+    repeat,
   );
 }
 
@@ -422,6 +456,8 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     required this._l10n,
     required this._defaultCurrency,
     required this._defaultPaymentMethodId,
+    this._recurring,
+    this.startRepeating = false,
     PhotoStore? photos,
     this._cameraSizing = defaultPhotoSizing,
     this._gallerySizing = defaultPhotoSizing,
@@ -441,6 +477,14 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
   final ExpenseDraftRepository _drafts;
   final PhotoStore _photos;
 
+  /// For the link row of a payment's Edit (phase-7a.md §7.1). Null in
+  /// tests that don't need it: no link row.
+  final RecurringRepository? _recurring;
+
+  /// Opened from Recurring → New (§8.3): Repeats starts on. A new form's
+  /// baseline then has it on, so the form isn't a draft until it changes.
+  final bool startRepeating;
+
   /// Settings → Photos, as they were when the form opened.
   final PhotoSizing _cameraSizing;
   final PhotoSizing _gallerySizing;
@@ -455,6 +499,16 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
   final int? expenseId;
 
   bool get isEditing => expenseId != null;
+
+  /// The recurring item the edited expense is a payment of, for the link
+  /// row (§8.1 E); null for a plain expense, an Add, or an item gone.
+  RecurringItem? get linkedItem => _linkedItem;
+  RecurringItem? _linkedItem;
+
+  /// The Repeats settings last switched off, so switching on again finds
+  /// them (only while the form is open: a draft keeps Repeats only when
+  /// on).
+  RepeatChoice? _lastRepeat;
 
   /// The expense being edited, once loaded.
   Expense? _original;
@@ -545,6 +599,7 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
       _originalPhotos = original == null
           ? const []
           : await _expenses.photosOf(original.id);
+      _linkedItem = await _linkedItemOf(original);
       await _checkDraftPhotos();
       _original = original;
       _allEvents = events;
@@ -555,6 +610,20 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     }
     await _offerPendingCapture();
     await _loadTitleHistory();
+  }
+
+  /// The item [original] is a payment of. A failed read only loses the
+  /// link row: the form works without it.
+  Future<RecurringItem?> _linkedItemOf(Expense? original) async {
+    final itemId = original?.recurringExpenseId;
+    final recurring = _recurring;
+    if (itemId == null || recurring == null) return null;
+    try {
+      return await recurring.byId(itemId);
+    } catch (error) {
+      debugPrint('Reading the recurring item of the expense failed: $error');
+      return null;
+    }
   }
 
   /// Keeps the resumed draft's photos that still exist (P6-22): a saved
@@ -642,6 +711,11 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
         terms: draft.itemizeTerms,
       );
       _ownsDraft = true;
+      // Recurring → New with an Add draft in the slot: the draft as it
+      // was, Repeats switched on only if it has none (§8.3).
+      if (startRepeating && fields.repeat == null) {
+        fields = fields.copyWith(repeat: () => RepeatChoice.defaults);
+      }
     }
     // A chip is an explicit choice: it sets the amount and its currency,
     // whatever a resumed draft had there (owner, 2026-10-04). The chip
@@ -685,6 +759,7 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
       paymentMethodId: defaultMethod,
       currencyCode: _defaultCurrency,
       wallClock: _wallClockOf(now),
+      repeat: startRepeating ? RepeatChoice.defaults : null,
     );
   }
 
@@ -758,6 +833,8 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
           : draft.currencyCode,
       wallClock: picked == null ? baseline.wallClock : _wallClockOf(picked),
       photos: _draftPhotos,
+      // Repeats is Add only (P7a-6): an Edit draft never has it.
+      repeat: isEditing ? null : draft.repeat,
     );
   }
 
@@ -833,17 +910,17 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
   /// (P6-27), so adding one doesn't stop the picks. They still count for
   /// the draft ([_needsDraft]).
   bool _maySuggest(ExpenseFields fields) {
-    final withoutPhotos = fields.copyWith(photos: const []);
-    if (_sameButTitle(withoutPhotos, _baseline?.copyWith(photos: const []))) {
+    final withoutExtras = fields.withoutExtras;
+    if (_sameButTitle(withoutExtras, _baseline?.withoutExtras)) {
       return true;
     }
     if (_suggestionsBlocked) return false;
     final prefill = _prefill;
     return prefill == null ||
         _sameAsPrefill(
-          withoutPhotos,
+          withoutExtras,
           prefill,
-          filled: prefill.filled.copyWith(photos: const []),
+          filled: prefill.filled.withoutExtras,
         );
   }
 
@@ -1236,18 +1313,17 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     // was before it, so this one replaces everything that one filled,
     // an amount it filled into an emptied field too (P4-3).
     final last = _prefill;
-    // Photos added since don't make it a new start, and are kept: the
-    // form before the last prefill knew nothing of them (§12a).
+    // Photos and Repeats set since don't make it a new start, and are
+    // kept: the form before the last prefill knew nothing of them (§12a;
+    // phase-7a.md §12a).
     final again =
         last != null &&
-        _sameButTitle(
-          ready.fields.copyWith(photos: const []),
-          last.filled.copyWith(photos: const []),
-        );
+        _sameButTitle(ready.fields.withoutExtras, last.filled.withoutExtras);
     final start = again
         ? last.before.copyWith(
             title: ready.fields.title,
             photos: ready.fields.photos,
+            repeat: () => ready.fields.repeat,
           )
         : ready.fields;
     final touched = again ? {...last.touched, DraftField.title} : ready.touched;
@@ -1478,6 +1554,7 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
       updatedAt: _now().toUtc(),
       suggestionsBlocked: !_maySuggest(fields),
       photos: fields.photos,
+      repeat: fields.repeat,
     );
   }
 
@@ -1504,6 +1581,141 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     return _drafts.flush();
   }
 
+  // Repeats (phase-7a.md §7.1). Add only (P7a-6); a change like any field,
+  // so the draft follows.
+
+  /// Switches Repeats on (the settings last switched off, else every 1
+  /// month, never ending) or off. Off keeps the settings for switching on
+  /// again while the form is open.
+  void repeatToggled(bool on) {
+    final ready = _ready;
+    if (ready == null || isEditing) return;
+    final current = ready.fields.repeat;
+    if (on == (current != null)) return;
+    if (!on) _lastRepeat = current;
+    _setRepeat(ready, on ? _lastRepeat ?? RepeatChoice.defaults : null);
+  }
+
+  void repeatFrequencyChanged(Frequency frequency) =>
+      _updateRepeat((r) => r.copyWith(frequency: frequency));
+
+  /// The Every field as typed (the field takes digits only, two at most);
+  /// checked at Save (P7a-26).
+  void repeatIntervalChanged(String text) =>
+      _updateRepeat((r) => r.copyWith(intervalText: text));
+
+  /// Never or On date. On without a date yet gets one: six months after
+  /// the form's date (clamped to the month's end), so the row always
+  /// shows one and the picker opens on it.
+  void repeatEndChanged(RepeatEnd end) => _updateRepeat(
+    (r) => r.copyWith(
+      end: end,
+      endOn: r.endOn ?? (end == RepeatEnd.onDate ? _defaultEndOn() : null),
+    ),
+  );
+
+  /// The end date picked: ends on it.
+  void repeatEndDateChanged(DateTime date) => _updateRepeat(
+    (r) => r.copyWith(end: RepeatEnd.onDate, endOn: isoDay(date)),
+  );
+
+  void _updateRepeat(RepeatChoice Function(RepeatChoice repeat) change) {
+    final ready = _ready;
+    final repeat = ready?.fields.repeat;
+    if (ready == null || repeat == null) return;
+    _setRepeat(ready, change(repeat));
+  }
+
+  void _setRepeat(ExpenseFormReady ready, RepeatChoice? repeat) => _apply(
+    ready.copyWith(
+      fields: ready.fields.copyWith(repeat: () => repeat),
+      clearRestored: true,
+    ),
+  );
+
+  /// The end "On" gets when picked with no date yet, and shows meanwhile.
+  String get defaultEndOn => _defaultEndOn();
+
+  String _defaultEndOn() => occurrenceAt(
+    Schedule(
+      frequency: Frequency.monthly,
+      interval: 6,
+      startOn: repeatStartOn ?? todayOn(_now()),
+    ),
+    1,
+  );
+
+  /// The first payment's date: the form's date (§6.2 takes the saved
+  /// row's, which is this one).
+  String? get repeatStartOn {
+    final ready = _ready;
+    return ready == null ? null : isoDay(ready.fields.wallClock);
+  }
+
+  /// Today on the device, for the section's texts.
+  String get today => todayOn(_now());
+
+  /// What the section says under the rule (§8.2): the earlier payments a
+  /// Save adds (at most [maxPastPayments]; `pastCount` is them all) and
+  /// the next one after those. Null while Repeats is off or Every isn't 1
+  /// to 99. Live, before any Save attempt.
+  ({List<String> past, int pastCount, String? next})? get repeatSummary {
+    final repeat = _ready?.fields.repeat;
+    final startOn = repeatStartOn;
+    if (repeat == null || startOn == null || repeat.interval == null) {
+      return null;
+    }
+    final today = this.today;
+    final key = (repeat, startOn, today);
+    final cached = _summaryCache;
+    if (cached != null && cached.key == key) return cached.summary;
+    final (:past, :next) = repeatPreview(
+      repeat,
+      startOn: startOn,
+      today: today,
+    );
+    final summary = (
+      past: past,
+      pastCount: pastPaymentCount(repeat, startOn: startOn, today: today),
+      next: next,
+    );
+    _summaryCache = (key: key, summary: summary);
+    return summary;
+  }
+
+  /// The last [repeatSummary] and what it was computed from: the form
+  /// rebuilds on every keystroke, and a back-dated daily item walks up to
+  /// 1,000 dates (≈9 ms each time in a debug test run).
+  ({
+    (RepeatChoice, String, String) key,
+    ({List<String> past, int pastCount, String? next}) summary,
+  })?
+  _summaryCache;
+
+  /// What's wrong with the Repeats settings, after the first Save attempt
+  /// (like the other errors). Too many earlier payments shows live in the
+  /// preview instead.
+  RepeatError? get repeatError => _shown(_repeatError);
+
+  RepeatError? _repeatError(ExpenseFields fields) {
+    final repeat = fields.repeat;
+    if (repeat == null || isEditing) return null;
+    return validateRepeat(
+      repeat,
+      startOn: isoDay(fields.wallClock),
+      today: todayOn(_now()),
+    );
+  }
+
+  /// Whether the last save repeats, and how many earlier payments it
+  /// added: the screen pops with them (§8.9).
+  bool get lastSaveRepeating => _lastSaveRepeating;
+  bool _lastSaveRepeating = false;
+  int get lastPastAdded => _lastPastAdded;
+  int _lastPastAdded = 0;
+  Schedule? get lastSavedSchedule => _lastSavedSchedule;
+  Schedule? _lastSavedSchedule;
+
   // Saving.
 
   /// Validates and saves. Returns the saved expense, or null if a field is
@@ -1524,7 +1736,8 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
         _descriptionTooLong(fields) != null ||
         _categoryMissing(fields) != null ||
         paymentMethodId == null ||
-        fields.photos.length > maxPhotosPerExpense) {
+        fields.photos.length > maxPhotosPerExpense ||
+        _repeatError(fields) != null) {
       emitIfOpen(ready.copyWith(showErrors: true));
       return null;
     }
@@ -1553,15 +1766,37 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
         photos: links,
       );
       final id = expenseId;
-      final expense = id == null
-          ? await _expenses.add(input, clearDraft: owns)
-          : await _expenses.update(id, input, clearDraft: owns);
+      final repeat = id == null ? fields.repeat : null;
+      final Expense expense;
+      if (repeat != null) {
+        final result = await _expenses.addRepeating(
+          input,
+          repeat,
+          clearDraft: owns,
+        );
+        expense = result.expense;
+        _lastPastAdded = result.pastAdded;
+        _lastSavedSchedule = scheduleFor(repeat, expense.occurredOn);
+      } else {
+        expense = id == null
+            ? await _expenses.add(input, clearDraft: owns)
+            : await _expenses.update(id, input, clearDraft: owns);
+        _lastPastAdded = 0;
+        _lastSavedSchedule = null;
+      }
+      _lastSaveRepeating = repeat != null;
       saved = true;
       _afterDraftDeleted(owns);
       _baseline = fields;
       _lastPhotosNotKept = links.length - expense.photoCount;
       await _deleteSavedStaged(fields.photos);
       return expense;
+    } on RepeatRefused {
+      // Checked again inside the save (a Save across midnight can tip the
+      // count over the cap): nothing was written; the error shows.
+      final current = _ready;
+      if (current != null) emitIfOpen(current.copyWith(showErrors: true));
+      return null;
     } on ExpenseNotFound {
       // `update` refuses a binned or deleted expense: the edits become an
       // Add draft, so nothing typed is lost.

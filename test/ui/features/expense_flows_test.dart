@@ -587,6 +587,42 @@ void main() {
     expect((await deps.expenses.byId(upi.id))!.paymentMethodId, 1);
   });
 
+  testWidgets('a category used only by a recurring item asks where to move '
+      'it, then deletes (phase-7a.md R2: it read as unused and the delete '
+      'failed on the foreign key)', (tester) async {
+    usePhoneSize(tester);
+    final item = await insertRecurringRow(deps.database, categoryId: 1);
+    await pumpApp(tester, dependencies: deps);
+    await openTab(tester, 'Manage');
+    await tester.tap(find.text('Categories'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Food'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        '"Food" is used by 1 recurring item. '
+        'Its later payments use the one you pick.',
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Groceries'));
+    await tester.pump();
+    await tester.tap(find.widgetWithText(TextButton, 'Move and delete'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Food'), findsNothing, reason: 'deleted');
+    expect(find.text("Couldn't save"), findsNothing);
+    final row = (await deps.database.query(
+      'recurring_expenses',
+      where: 'id = ?',
+      whereArgs: [item],
+    )).single;
+    expect(row['category_id'], 3);
+  });
+
   testWidgets('the only category in use asks to add another one first', (
     tester,
   ) async {

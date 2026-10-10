@@ -17,10 +17,24 @@ void main() {
       if (!key.startsWith('@')) key,
   };
 
+  // A one-word plural branch (`=1{Daily}`, `other{days}`) is text, not a
+  // placeholder: braces right after a selector are skipped (phase-7a.md
+  // §12a; the first such branches came with the recurring texts).
   Set<String> placeholdersIn(String message) => {
-    for (final match in RegExp(r'\{(\w+)\}').allMatches(message))
+    for (final match in RegExp(
+      r'(?<!(?:=\d+|zero|one|two|few|many|other))\{(\w+)\}',
+    ).allMatches(message))
       match.group(1)!,
   };
+
+  test('a one-word plural branch is not read as a placeholder', () {
+    expect(
+      placeholdersIn('{count, plural, =1{Daily} other{Every {count} days}}'),
+      {'count'},
+    );
+    expect(placeholdersIn('{count, plural, other{days}}'), <String>{});
+    expect(placeholdersIn('Hello {name}'), {'name'});
+  });
 
   final template = read('en');
 

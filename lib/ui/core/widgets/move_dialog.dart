@@ -1,17 +1,20 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../../../domain/models/item_shape.dart';
+import '../../../domain/models/owner_usage.dart';
 import '../../../l10n/app_localizations.dart';
 import '../builtin_names.dart';
 import '../picker_order.dart';
+import 'back_guard.dart';
 import 'confirm_dialog.dart';
 import 'save_error.dart';
 import 'tile_picker.dart';
 
 /// Delete for a category or payment method (D7, phase-2.md §10.1): a plain
-/// confirm when no expense uses it; otherwise ask where to move its
-/// expenses, binned ones included, then move and delete in one transaction.
-/// Returns whether it was deleted.
+/// confirm when nothing uses it; otherwise ask where to move its expenses,
+/// binned ones included, and its recurring items, archived ones included
+/// (phase-7a.md R2), then move and delete in one transaction. Returns
+/// whether it was deleted.
 ///
 /// One copy for both forms, so the two delete flows can't drift apart.
 /// [targets] are the other items; they are shown in name order, like the
@@ -20,7 +23,7 @@ import 'tile_picker.dart';
 Future<bool> deleteOrMoveThenDelete(
   BuildContext context, {
   required String name,
-  required Future<({int active, int binned})> Function() usage,
+  required Future<OwnerUsage> Function() usage,
   required List<PickerItem> targets,
   required String searchHint,
   required String allTitle,
@@ -30,18 +33,15 @@ Future<bool> deleteOrMoveThenDelete(
   required Future<void> Function(int toId) moveAndDelete,
 }) async {
   final l10n = AppLocalizations.of(context);
-  ({int active, int binned})? used;
+  OwnerUsage? used;
   final read = await saveOrShowError(context, () async => used = await usage());
   if (!read || !context.mounted) return false;
-  final (:active, :binned) = used!;
-  if (active + binned == 0) {
+  if (isUnused(used!)) {
     if (!await confirmDelete(context, name) || !context.mounted) return false;
     return saveOrShowError(context, delete);
   }
 
-  final message = binned == 0
-      ? l10n.usedByExpenses(name, active + binned)
-      : l10n.usedByExpensesWithBin(name, active + binned, binned);
+  final message = ownerUsageMessage(l10n, name, used!);
   if (targets.isEmpty) {
     await showAddAnotherFirst(context, message);
     return false;
@@ -57,6 +57,26 @@ Future<bool> deleteOrMoveThenDelete(
   );
   if (toId == null || !context.mounted) return false;
   return saveOrShowError(context, () => moveAndDelete(toId));
+}
+
+/// What uses a category or payment method about to be deleted: "… is used
+/// by 4 expenses (1 in the bin). It is also used by 1 recurring item: its
+/// later payments use the one you pick." Sentences rather than one
+/// message per combination, so each language translates three plurals,
+/// not six.
+String ownerUsageMessage(AppLocalizations l10n, String name, OwnerUsage usage) {
+  final (:active, :binned, :templates) = usage;
+  final expenses = active + binned;
+  if (expenses == 0) {
+    return '${l10n.usedByTemplatesOnly(name, templates)} '
+        '${l10n.templatesMoveToo(templates)}';
+  }
+  final first = binned == 0
+      ? l10n.usedByExpenses(name, expenses)
+      : l10n.usedByExpensesWithBin(name, expenses, binned);
+  return templates == 0
+      ? first
+      : '$first ${l10n.alsoUsedByTemplates(templates)}';
 }
 
 /// Asks where to move the expenses of a category or payment method that is
@@ -131,12 +151,10 @@ class _MoveDialogState extends State<_MoveDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final selected = _selected;
-    return PopScope(
+    return BackGuard(
       // Back closes the search first, as on the expense form.
-      canPop: !_searching,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) setState(() => _searching = false);
-      },
+      intercept: _searching,
+      onBack: () => setState(() => _searching = false),
       child: AlertDialog(
         // Narrower margins than a plain dialog: at the default width the
         // four tiles per row cut most names to a few letters.

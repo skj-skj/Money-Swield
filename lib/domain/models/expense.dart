@@ -23,6 +23,8 @@ class Expense {
     required this.updatedAt,
     required this.deletedAt,
     this.photoCount = 0,
+    this.recurringExpenseId,
+    this.recurringDueOn,
   });
 
   final int id;
@@ -65,6 +67,19 @@ class Expense {
   /// The photos themselves are read with `ExpenseRepository.photosOf`.
   final int photoCount;
 
+  /// The recurring item it is a payment of (phase-7a.md §4.1): added by
+  /// the generator, or the first payment a Save with Repeats made. Null
+  /// for a plain expense, and once the item was deleted for good (the
+  /// foreign key sets it to NULL).
+  final int? recurringExpenseId;
+
+  /// Which payment of the item it is, `YYYY-MM-DD`. Kept when an Edit
+  /// re-dates the expense, so it is still that payment.
+  final String? recurringDueOn;
+
+  /// Whether a recurring item owns it: rows show the repeat mark.
+  bool get isRecurring => recurringExpenseId != null;
+
   bool get isInBin => deletedAt != null;
 
   /// The time as it was on the clock where it was recorded, as a UTC
@@ -98,7 +113,9 @@ class Expense {
       other.createdAt == createdAt &&
       other.updatedAt == updatedAt &&
       other.deletedAt == deletedAt &&
-      other.photoCount == photoCount;
+      other.photoCount == photoCount &&
+      other.recurringExpenseId == recurringExpenseId &&
+      other.recurringDueOn == recurringDueOn;
 
   @override
   int get hashCode => Object.hash(
@@ -117,11 +134,15 @@ class Expense {
     updatedAt,
     deletedAt,
     photoCount,
+    recurringExpenseId,
+    recurringDueOn,
   );
 
   @override
   String toString() =>
-      'Expense($id, $title, $amount, $occurredOn${isInBin ? ', in bin' : ''})';
+      'Expense($id, $title, $amount, $occurredOn'
+      '${isRecurring ? ', payment $recurringDueOn of $recurringExpenseId' : ''}'
+      '${isInBin ? ', in bin' : ''})';
 }
 
 /// What the Add/Edit form saves. The repository derives the rest (id,
@@ -159,6 +180,39 @@ class ExpenseInput {
   /// The photos, in order (phase-6.md §6.4). Saving replaces the
   /// expense's links with exactly these.
   final List<PhotoLinkInput> photos;
+}
+
+/// A payment the recurring generator, or a Save with Repeats, adds
+/// (phase-7a.md §6.1): an ordinary expense row that also says which item
+/// and which due date it is. Its events are the item's, copied in the same
+/// transaction; it has no amount expression (P7a-11) and no photos (P7a-4).
+class PaymentInput {
+  const PaymentInput({
+    required this.recurringExpenseId,
+    required this.dueOn,
+    required this.title,
+    required this.description,
+    required this.amount,
+    required this.occurredAt,
+    required this.utcOffsetMinutes,
+    required this.categoryId,
+    required this.paymentMethodId,
+  });
+
+  final int recurringExpenseId;
+
+  /// Which payment it is, `YYYY-MM-DD`.
+  final String dueOn;
+
+  final String title;
+  final String? description;
+  final Money amount;
+
+  /// UTC.
+  final DateTime occurredAt;
+  final int utcOffsetMinutes;
+  final int categoryId;
+  final int paymentMethodId;
 }
 
 /// One photo an [ExpenseInput] links (phase-6.md §6.4).

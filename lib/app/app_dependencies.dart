@@ -7,6 +7,7 @@ import '../data/repositories/event_repository.dart';
 import '../data/repositories/expense_draft_repository.dart';
 import '../data/repositories/expense_repository.dart';
 import '../data/repositories/payment_method_repository.dart';
+import '../data/repositories/recurring_repository.dart';
 import '../data/repositories/settings_repository.dart';
 import '../data/services/database/app_database.dart';
 import '../data/services/document_service.dart';
@@ -26,6 +27,7 @@ class AppDependencies {
     required this.events,
     required this.paymentMethods,
     required this.expenses,
+    required this.recurring,
     required this.drafts,
     required this.photos,
     required this.photoSweeper,
@@ -88,6 +90,11 @@ class AppDependencies {
         now: now,
       ),
       expenses: ExpenseRepository(database, dataVersion: dataVersion, now: now),
+      recurring: RecurringRepository(
+        database,
+        dataVersion: dataVersion,
+        now: now,
+      ),
       drafts: drafts,
       photos: photoStore,
       photoSweeper: photoStore.isAvailable && sweepPhotos
@@ -165,6 +172,11 @@ class AppDependencies {
     // Both photo tables, as the form and Settings read them (R12).
     await expenses.photosOf(0);
     await expenses.photoStats();
+    // The recurring columns and tables, named (phase-7a.md R4): `page`
+    // above passes a database without them. A Phase 6 backup has
+    // create_expenses applied but none of this schema, so it is refused
+    // here instead of failing at the generator after the swap.
+    await RecurringRepository.probe(db);
   }
 
   /// Closes the database for a restore's swap (phase-3.md §6.4): first
@@ -186,6 +198,9 @@ class AppDependencies {
   final PaymentMethodRepository paymentMethods;
   final ExpenseRepository expenses;
 
+  /// Recurring items and the generator (phase-7a.md §6.1).
+  final RecurringRepository recurring;
+
   /// The unsaved Add/Edit form (phase-4.md §6.4). Not part of
   /// [dataVersion]: a draft changes nothing Home counts.
   final ExpenseDraftRepository drafts;
@@ -200,7 +215,7 @@ class AppDependencies {
   final BackupRepository backups;
   final RestoreTools restoreTools;
 
-  /// Bumped by every write of the four repositories above (not settings).
+  /// Bumped by every write of the repositories above (not settings).
   final DataVersion dataVersion;
 
   /// The wallpaper's accent color (ARGB, Android 12+), or null when the

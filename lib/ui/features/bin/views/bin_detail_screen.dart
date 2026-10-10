@@ -9,6 +9,8 @@ import '../../../core/date_texts.dart';
 import '../../../core/formatting_locale.dart';
 import '../../../core/item_labels.dart';
 import '../../../core/money_formatter.dart';
+import '../../../core/recurrence_text.dart';
+import '../../../core/widgets/back_guard.dart';
 import '../../../core/widgets/confirm_then_save.dart';
 import '../../../core/widgets/photos/photo_grid.dart';
 import '../../../core/widgets/photos/photo_selection_bar.dart';
@@ -69,14 +71,14 @@ class BinDetailScreen extends StatelessWidget {
         if (lookups.events[id] case final event?) eventLabel(l10n, event),
     ];
     final description = expense.description;
+    final item = lookups.recurring[expense.recurringExpenseId];
+    final schedule = item?.schedule;
     return BlocSignalBuilder<ExpensePhotosCubit, ExpensePhotosState>(
       bloc: photos,
-      builder: (context, photoState) => PopScope(
+      builder: (context, photoState) => BackGuard(
         // Back leaves selection first.
-        canPop: photoState.selection == null,
-        onPopInvokedWithResult: (didPop, _) {
-          if (!didPop) photos.clearSelection();
-        },
+        intercept: photoState.selection != null,
+        onBack: photos.clearSelection,
         child: Scaffold(
           appBar: AppBar(title: Text(expense.title)),
           body: ListView(
@@ -86,6 +88,18 @@ class BinDetailScreen extends StatelessWidget {
                 label: l10n.fieldAmount,
                 value: MoneyFormatter.of(context).format(expense.amount),
               ),
+              if (item != null && schedule != null)
+                _Row(
+                  label: l10n.repeatsMark,
+                  value: l10n.binPaymentOf(
+                    item.title,
+                    shortScheduleText(
+                      l10n,
+                      schedule.frequency,
+                      schedule.interval,
+                    ),
+                  ),
+                ),
               _Row(
                 label: l10n.fieldCurrency,
                 value:

@@ -9,6 +9,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../core/builtin_names.dart';
 import '../../../core/picker_order.dart';
 import '../../../core/widgets/app_sheet.dart';
+import '../../../core/widgets/back_guard.dart';
 import '../../../core/widgets/section_heading.dart';
 import '../../../core/widgets/tile_picker.dart';
 import '../../settings/view_models/settings_cubit.dart';
@@ -114,12 +115,10 @@ class _FilterSheetState extends State<FilterSheet> {
     final settings = context.read<SettingsCubit>().value;
     final categoryItems = _categoryItems(l10n);
     final eventItems = _eventItems(l10n);
-    return PopScope(
+    return BackGuard(
       // Back closes a picker's search first, then the sheet.
-      canPop: _searching == _Searching.none,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _setSearching(_Searching.none);
-      },
+      intercept: _searching != _Searching.none,
+      onBack: () => _setSearching(_Searching.none),
       child: Padding(
         padding: EdgeInsets.only(
           bottom: MediaQuery.viewInsetsOf(context).bottom,

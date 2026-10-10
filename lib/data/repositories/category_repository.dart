@@ -90,8 +90,7 @@ class CategoryRepository {
   /// How many expenses use the category. Binned ones are counted on
   /// purpose: they block the delete too and must be moved (database.md
   /// §3.2).
-  Future<({int active, int binned})> usage(int id) =>
-      ExpenseOwner.category.usage(_db, id);
+  Future<OwnerUsage> usage(int id) => ExpenseOwner.category.usage(_db, id);
 
   /// Moves every expense of category [id], binned ones included, to [toId]
   /// and deletes [id], in one transaction (D7). If [toId] no longer exists

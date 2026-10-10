@@ -91,6 +91,78 @@ void main() {
       });
     });
 
+    test(
+      'F8: recurring items, prices, events and payment links are copied '
+      'row for row; the copy keeps the SET NULL and the unique index',
+      () async {
+        final item = await insertRecurringRow(live, eventIds: {1, 2});
+        await live.insert('recurring_amounts', {
+          'recurring_expense_id': item,
+          'amount_minor': 69900,
+          'effective_from': '2027-01-31',
+          'created_at': 1,
+          'updated_at': 1,
+        });
+        final archived = await insertRecurringRow(live, archivedAt: 9);
+        final payment = await insertExpenseRow(live, eventIds: {1});
+        await live.update(
+          'expenses',
+          {'recurring_expense_id': item, 'recurring_due_on': '2026-01-31'},
+          where: 'id = ?',
+          whereArgs: [payment],
+        );
+
+        final backup = await backUp();
+
+        final source = await dumpTables(live);
+        final copied = await files.withDatabase(backup.copy, dumpTables);
+        for (final table in [
+          'recurring_expenses',
+          'recurring_amounts',
+          'recurring_expense_events',
+          'expenses',
+        ]) {
+          expect(copied[table], source[table], reason: table);
+        }
+        expect(copied['recurring_expenses'], hasLength(2));
+        await files.withDatabase(backup.copy, (db) async {
+          await db.execute('PRAGMA foreign_keys = ON');
+          await checkForeignKeys(db);
+          // The unique index came along: a second payment 0 is refused.
+          await expectLater(
+            db.insert('expenses', {
+              'title': 'x',
+              'amount_minor': 1,
+              'currency_code': 'INR',
+              'occurred_at': 0,
+              'utc_offset_minutes': 0,
+              'occurred_on': '2026-01-31',
+              'category_id': 1,
+              'payment_method_id': 1,
+              'recurring_expense_id': item,
+              'recurring_due_on': '2026-01-31',
+              'created_at': 0,
+              'updated_at': 0,
+            }),
+            throwsA(isA<DatabaseException>()),
+          );
+          // And SET NULL: deleting the item keeps its payment.
+          await db.delete(
+            'recurring_expenses',
+            where: 'id = ?',
+            whereArgs: [item],
+          );
+          final kept = await db.query(
+            'expenses',
+            where: 'id = ?',
+            whereArgs: [payment],
+          );
+          expect(kept.single['recurring_expense_id'], isNull);
+          expect(archived, isPositive);
+        });
+      },
+    );
+
     test('the zip is in cache/backup, named by the local time', () async {
       final backup = await backUp();
       expect(p.dirname(backup.zip.path), files.paths.backupWorkFolder);

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_expense_tracker_app/domain/models/expense_draft.dart';
 import 'package:my_expense_tracker_app/domain/photos.dart';
+import 'package:my_expense_tracker_app/domain/repeat_input.dart';
 
 final _at = DateTime.utc(2026, 10, 4, 8);
 
@@ -276,6 +277,152 @@ void main() {
     test("the photos are part of the draft's equality", () {
       expect(withPhotos([saved]), isNot(withPhotos([])));
       expect(withPhotos([saved, staged]), isNot(withPhotos([staged, saved])));
+    });
+  });
+
+  group('repeat (phase-7a.md §5.7)', () {
+    ExpenseDraft withRepeat(RepeatChoice? repeat) => ExpenseDraft(
+      editingExpenseId: null,
+      title: 'Netflix',
+      amountExpression: '649',
+      description: '',
+      categoryId: 3,
+      eventIds: const {},
+      paymentMethodId: 4,
+      currencyCode: 'INR',
+      pickedWallClock: null,
+      touched: const {DraftField.title},
+      itemizeLine: null,
+      itemizeLabels: const [],
+      itemizeTerms: const [],
+      updatedAt: _at,
+      repeat: repeat,
+    );
+
+    /// The JSON of [withRepeat] with `repeat` replaced by [value].
+    String jsonWith(Object? value) {
+      final json =
+          jsonDecode(withRepeat(null).toJson()) as Map<String, Object?>;
+      return jsonEncode({...json, 'repeat': value});
+    }
+
+    RepeatChoice? readRepeat(Object? value) => read(jsonWith(value))!.repeat;
+
+    test('round trip of both end kinds, and off', () {
+      for (final repeat in [
+        null,
+        const RepeatChoice(),
+        const RepeatChoice(
+          frequency: Frequency.weekly,
+          intervalText: '2',
+          end: RepeatEnd.onDate,
+          endOn: '2027-04-09',
+        ),
+        // The date is kept while Never is chosen.
+        const RepeatChoice(endOn: '2027-04-09'),
+      ]) {
+        final original = withRepeat(repeat);
+        expect(read(original.toJson()), original, reason: '$repeat');
+        expect(read(original.toJson())!.repeat, repeat);
+      }
+    });
+
+    test('the stored shape', () {
+      final json = jsonDecode(
+        withRepeat(
+          const RepeatChoice(
+            intervalText: '1',
+            end: RepeatEnd.onDate,
+            endOn: '2027-04-09',
+          ),
+        ).toJson(),
+      ) as Map<String, Object?>;
+      expect(json['repeat'], {
+        'frequency': 'monthly',
+        'interval': '1',
+        'end': 'on',
+        'on': '2027-04-09',
+      });
+      expect(json['v'], 1);
+      expect(
+        (jsonDecode(withRepeat(null).toJson()) as Map).containsKey('repeat'),
+        isFalse,
+      );
+    });
+
+    test('half-typed intervals come back as typed', () {
+      for (final text in ['', '0', '100', '007']) {
+        final original = withRepeat(RepeatChoice(intervalText: text));
+        expect(read(original.toJson())!.repeat!.intervalText, text);
+      }
+    });
+
+    test('a draft from before Phase 7 has Repeats off', () {
+      expect(read(jsonWith(null))!.repeat, isNull);
+      final json = jsonDecode(withRepeat(null).toJson()) as Map<String, Object?>
+        ..remove('repeat');
+      expect(read(jsonEncode(json))!.repeat, isNull);
+    });
+
+    test('a repeat that is not an object is off; the rest of the draft is '
+        'kept', () {
+      for (final bad in [
+        'monthly',
+        1,
+        true,
+        ['monthly'],
+      ]) {
+        final draft = read(jsonWith(bad))!;
+        expect(draft.repeat, isNull, reason: '$bad');
+        expect(draft.title, 'Netflix');
+      }
+    });
+
+    test('a bad field drops to its default, the others are kept', () {
+      expect(
+        readRepeat({
+          'frequency': 'fortnightly',
+          'interval': '3',
+          'end': 'on',
+          'on': '2027-01-01',
+        }),
+        const RepeatChoice(
+          intervalText: '3',
+          end: RepeatEnd.onDate,
+          endOn: '2027-01-01',
+        ),
+      );
+      // A number, too long, not digits: back to '1'.
+      for (final interval in [5, '1000', '1a', ' 2', null]) {
+        expect(
+          readRepeat({'frequency': 'yearly', 'interval': interval})!,
+          const RepeatChoice(frequency: Frequency.yearly),
+          reason: '$interval',
+        );
+      }
+      // Not a real YYYY-MM-DD date: no date.
+      for (final on in ['31-12-2026', '2026-02-30', 20261231, '']) {
+        expect(
+          readRepeat({'end': 'on', 'on': on}),
+          const RepeatChoice(end: RepeatEnd.onDate),
+          reason: '$on',
+        );
+      }
+    });
+
+    test('7b\'s "after N payments" reads as never, the date kept', () {
+      expect(
+        readRepeat({'end': 'after', 'on': '2027-01-01', 'count': 12}),
+        const RepeatChoice(endOn: '2027-01-01'),
+      );
+    });
+
+    test('equality sees the repeat', () {
+      expect(
+        withRepeat(const RepeatChoice()),
+        isNot(withRepeat(const RepeatChoice(intervalText: '2'))),
+      );
+      expect(withRepeat(const RepeatChoice()), isNot(withRepeat(null)));
     });
   });
 }

@@ -167,9 +167,30 @@ void main() {
       await insertExpenseRow(db, eventIds: {1, 2});
       await insertExpenseRow(db, eventIds: {1}, deletedAt: 5);
       await insertExpenseRow(db);
-      expect(await repository.usage(1), 2);
-      expect(await repository.usage(2), 1);
-      expect(await repository.usage(3), 0);
+      expect(await repository.usage(1), (expenses: 2, templates: 0));
+      expect(await repository.usage(2), (expenses: 1, templates: 0));
+      expect(await repository.usage(3), (expenses: 0, templates: 0));
+    });
+
+    test(
+      'counts recurring items with the event, archived ones too (R3)',
+      () async {
+        await insertRecurringRow(db, eventIds: {1, 2});
+        await insertRecurringRow(db, eventIds: {1}, archivedAt: 5);
+        await insertExpenseRow(db, eventIds: {1});
+        expect(await repository.usage(1), (expenses: 1, templates: 2));
+        expect(await repository.usage(2), (expenses: 0, templates: 1));
+      },
+    );
+
+    test('deleting an event used only by an item keeps the item, without '
+        'the event', () async {
+      final item = await insertRecurringRow(db, eventIds: {1, 2});
+      await repository.delete(1);
+      expect(await db.query('recurring_expenses'), hasLength(1));
+      expect(await db.query('recurring_expense_events'), [
+        {'recurring_expense_id': item, 'event_id': 2},
+      ]);
     });
 
     test('deleting a used event keeps its expenses', () async {

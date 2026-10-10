@@ -15,17 +15,28 @@ void showMessage(
   bool long = false,
   SnackBarAction? action,
 }) {
-  messenger
-    ?..hideCurrentSnackBar()
-    ..showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: long ? longMessageDuration : shortMessageDuration,
-        showCloseIcon: long,
-        persist: false,
-        action: action,
-      ),
-    );
+  messenger?.hideCurrentSnackBar();
+  queueMessage(messenger, message, long: long, action: action);
+}
+
+/// Like [showMessage], but behind the snackbar showing instead of in its
+/// place: for messages said together at once (the restore message, then
+/// what the recurring generator did; phase-7a.md §7.5).
+void queueMessage(
+  ScaffoldMessengerState? messenger,
+  String message, {
+  bool long = false,
+  SnackBarAction? action,
+}) {
+  messenger?.showSnackBar(
+    SnackBar(
+      content: Text(message),
+      duration: long ? longMessageDuration : shortMessageDuration,
+      showCloseIcon: long,
+      persist: false,
+      action: action,
+    ),
+  );
 }
 
 /// How long a message shows: Material's default.

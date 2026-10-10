@@ -73,6 +73,65 @@ void main() {
     expect(cubit.value, isA<StartupReady>());
   });
 
+  group('recurring generator (phase-7a.md R13)', () {
+    test(
+      'runs before the bin purge, and its report reaches StartupReady',
+      () async {
+        // Due today (the clock is 2026-10-02): one payment to add.
+        await insertRecurringRow(
+          deps.database,
+          startOn: '2026-09-02',
+          nextDueOn: '2026-10-02',
+        );
+        final day = const Duration(days: 1).inMilliseconds;
+        await insertExpenseRow(
+          deps.database,
+          deletedAt: clock.now.millisecondsSinceEpoch - 31 * day,
+        );
+        // Writes logged in order: the payment's insert, the purge's delete.
+        await deps.database.execute('CREATE TEMP TABLE steps (step TEXT)');
+        await deps.database.execute(
+          'CREATE TEMP TRIGGER log_insert AFTER INSERT ON expenses '
+          "BEGIN INSERT INTO steps VALUES ('generate'); END",
+        );
+        await deps.database.execute(
+          'CREATE TEMP TRIGGER log_delete AFTER DELETE ON expenses '
+          "BEGIN INSERT INTO steps VALUES ('purge'); END",
+        );
+        final cubit = cubitFor(deps);
+        await cubit.start();
+        final ready = cubit.value as StartupReady;
+        expect(ready.recurring.added, 1);
+        expect(
+          [for (final r in await deps.database.query('steps')) r['step']],
+          ['generate', 'purge'],
+        );
+      },
+    );
+
+    test('a failing generator does not block the app', () async {
+      await deps.database.execute('PRAGMA foreign_keys = OFF');
+      await deps.database.execute('DROP TABLE recurring_expenses');
+      final cubit = cubitFor(deps);
+      await cubit.start();
+      final ready = cubit.value as StartupReady;
+      expect(ready.recurring.added, 0);
+    });
+
+    test('a backlog older than 31 days is held, not added', () async {
+      await insertRecurringRow(
+        deps.database,
+        startOn: '2026-07-02',
+        nextDueOn: '2026-08-02',
+      );
+      final cubit = cubitFor(deps);
+      await cubit.start();
+      final ready = cubit.value as StartupReady;
+      expect(ready.recurring.added, 0);
+      expect(ready.recurring.held.single.count, 3);
+    });
+  });
+
   group('leftovers of a cut-short backup or restore', () {
     late FileDatabases files;
     late RestoreTools tools;

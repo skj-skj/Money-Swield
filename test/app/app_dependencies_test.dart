@@ -65,6 +65,75 @@ void main() {
     }
   });
 
+  group('probe and the recurring schema (phase-7a.md R4)', () {
+    /// `expenses` without the two recurring columns, rows kept: a Phase 6
+    /// build's table, which `SELECT *` reads without complaint.
+    Future<void> dropRecurringColumns(Database db) async {
+      await db.execute('PRAGMA foreign_keys = OFF');
+      await db.execute(
+        'CREATE TABLE old_expenses AS SELECT id, title, description, '
+        'amount_minor, amount_expression, currency_code, occurred_at, '
+        'utc_offset_minutes, occurred_on, category_id, payment_method_id, '
+        'deleted_at, created_at, updated_at FROM expenses',
+      );
+      await db.execute('DROP TABLE expenses');
+      await db.execute('ALTER TABLE old_expenses RENAME TO expenses');
+    }
+
+    test('a Phase 6 database (no columns, no tables) is refused', () async {
+      final db = await openMigratedDatabase();
+      await insertExpenseRow(db);
+      await dropRecurringColumns(db);
+      for (final table in [
+        'recurring_expense_events',
+        'recurring_amounts',
+        'recurring_expenses',
+      ]) {
+        await db.execute('DROP TABLE $table');
+      }
+      await expectLater(
+        AppDependencies.probe(db, deviceCurrency: 'INR'),
+        throwsA(isA<DatabaseException>()),
+      );
+    });
+
+    test('the tables without the expense columns: refused', () async {
+      final db = await openMigratedDatabase();
+      await insertExpenseRow(db);
+      await dropRecurringColumns(db);
+      await expectLater(
+        AppDependencies.probe(db, deviceCurrency: 'INR'),
+        throwsA(isA<DatabaseException>()),
+      );
+    });
+
+    test('any one recurring table missing: refused', () async {
+      for (final table in [
+        'recurring_expense_events',
+        'recurring_amounts',
+        'recurring_expenses',
+      ]) {
+        final db = await openMigratedDatabase();
+        await db.execute('PRAGMA foreign_keys = OFF');
+        await db.execute('DROP TABLE $table');
+        await expectLater(
+          AppDependencies.probe(db, deviceCurrency: 'INR'),
+          throwsA(isA<DatabaseException>()),
+          reason: table,
+        );
+      }
+    });
+
+    test('a broken item passes: the app opens it (as broken)', () async {
+      final db = await openMigratedDatabase();
+      final id = await insertRecurringRow(db, amountMinor: null);
+      await db.update('recurring_expenses', {
+        'frequency': 'fortnightly',
+      }, where: 'id = $id');
+      await AppDependencies.probe(db, deviceCurrency: 'INR');
+    });
+  });
+
   // That close() writes what is due first is in
   // expense_draft_repository_test ("close writes what is due").
   test('closeForRestore closes the drafts, then the database; a change '

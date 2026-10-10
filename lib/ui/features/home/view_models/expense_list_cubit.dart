@@ -9,6 +9,7 @@ import '../../../../data/repositories/event_repository.dart';
 import '../../../../data/repositories/expense_draft_repository.dart';
 import '../../../../data/repositories/expense_repository.dart';
 import '../../../../data/repositories/payment_method_repository.dart';
+import '../../../../data/repositories/recurring_repository.dart';
 import '../../../../domain/amount_chips.dart';
 import '../../../../domain/expense_filter.dart';
 import '../../../../domain/home_list.dart';
@@ -19,6 +20,7 @@ import '../../../../domain/models/expense.dart';
 import '../../../../domain/models/expense_draft.dart';
 import '../../../../domain/models/money.dart';
 import '../../../../domain/models/payment_method.dart';
+import '../../../../domain/models/recurring_item.dart';
 import '../../../../domain/periods.dart';
 import '../../../../domain/totals.dart';
 import '../../../core/emit_if_open.dart';
@@ -226,8 +228,49 @@ class ExpenseListCubit extends CubitSignal<ExpenseListState>
     this._grouping = Period.week,
     this._weekStart = WeekStart.monday,
     this.pageSize = 30,
+    this._recurring,
+    DateTime Function()? now,
   }) : _chipCurrency = defaultCurrency,
-       super(initialState: const ExpenseListLoading());
+       _now = now ?? DateTime.now,
+       super(initialState: const ExpenseListLoading()) {
+    _lastRunDay = todayOn(_now());
+  }
+
+  /// Runs the recurring generator when a new day is noticed while the app
+  /// runs (phase-7a.md R12). Null in tests that don't need it.
+  final RecurringRepository? _recurring;
+  final DateTime Function() _now;
+
+  /// The day the generator last ran: the startup run's day at first (the
+  /// startup ran just before Home was built).
+  late String _lastRunDay;
+
+  /// A run in flight: an overlapping call doesn't start another.
+  bool _catchingUp = false;
+
+  /// Resume or local midnight on a new day (§7.5): adds what came due
+  /// since the last run, then reloads if anything changed. Once per day,
+  /// one run at a time; a failure is logged and the next new-day signal
+  /// tries again. Returns what the run did, for Home's messages.
+  Future<GenerateReport> catchUpRecurring() async {
+    final recurring = _recurring;
+    final today = todayOn(_now());
+    if (recurring == null || today == _lastRunDay || _catchingUp) {
+      return GenerateReport.none;
+    }
+    _catchingUp = true;
+    try {
+      final report = await recurring.generateDue();
+      _lastRunDay = today;
+      await reloadIfChanged();
+      return report;
+    } catch (error, stackTrace) {
+      debugPrint('Adding recurring payments failed: $error\n$stackTrace');
+      return GenerateReport.none;
+    } finally {
+      _catchingUp = false;
+    }
+  }
 
   final ExpenseDraftRepository _drafts;
   String _chipCurrency;

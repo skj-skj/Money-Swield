@@ -41,6 +41,32 @@ void main() {
       for (final e in (cubit.value as BinLoaded).expenses) e.id,
     ];
 
+    test('a binned payment brings its recurring item for the detail line; '
+        'a plain one and a deleted item none (phase-7a.md §8.7)', () async {
+      final item = await insertRecurringRow(deps.database);
+      final payment = await insertExpenseRow(deps.database);
+      await deps.database.update(
+        'expenses',
+        {'recurring_expense_id': item, 'recurring_due_on': '2026-01-31'},
+        where: 'id = ?',
+        whereArgs: [payment],
+      );
+      await deps.expenses.moveToBin(payment);
+      await deps.expenses.moveToBin(await insertExpenseRow(deps.database));
+      final cubit = BinCubit(
+        expenses: deps.expenses,
+        categories: deps.categories,
+        events: deps.events,
+        paymentMethods: deps.paymentMethods,
+        recurring: deps.recurring,
+      );
+      addTearDown(cubit.close);
+      await cubit.load();
+      final lookups = (cubit.value as BinLoaded).lookups;
+      expect(lookups.recurring.keys, [item]);
+      expect(lookups.recurring[item]!.title, 'Netflix');
+    });
+
     test('lists the bin, most recently deleted first, with lookups', () async {
       final (a, b, _) = await seed();
       final cubit = cubitFor();

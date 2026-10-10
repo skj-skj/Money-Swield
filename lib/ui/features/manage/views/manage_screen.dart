@@ -6,13 +6,24 @@ import '../../../../l10n/app_localizations.dart';
 import '../../categories/views/category_list_screen.dart';
 import '../../events/views/event_list_screen.dart';
 import '../../payment_methods/views/payment_method_list_screen.dart';
+import '../../recurring/views/recurring_list_screen.dart';
 import '../view_models/manage_cubit.dart';
 
-/// The Manage tab: categories, events and payment methods, with counts.
+/// The Manage tab: categories, events, payment methods and recurring
+/// items, with counts.
 class ManageScreen extends StatefulWidget {
-  const ManageScreen({super.key, required this.dependencies});
+  const ManageScreen({
+    super.key,
+    required this.dependencies,
+    this.isVisible = true,
+  });
 
   final AppDependencies dependencies;
+
+  /// Whether this tab is the one shown. The shell keeps it alive while
+  /// hidden, so its counts are read again when it comes back: a repeating
+  /// expense saved on Home left "None running" (Oppo, phase-7a.md §12a).
+  final bool isVisible;
 
   @override
   State<ManageScreen> createState() => _ManageScreenState();
@@ -23,7 +34,14 @@ class _ManageScreenState extends State<ManageScreen> {
     categories: widget.dependencies.categories,
     events: widget.dependencies.events,
     paymentMethods: widget.dependencies.paymentMethods,
+    recurring: widget.dependencies.recurring,
   )..load();
+
+  @override
+  void didUpdateWidget(ManageScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isVisible && !oldWidget.isVisible) _cubit.load();
+  }
 
   @override
   void dispose() {
@@ -70,6 +88,17 @@ class _ManageScreenState extends State<ManageScreen> {
                 PaymentMethodListScreen(repository: deps.paymentMethods),
               ),
             ),
+            _ManageTile(
+              key: const ValueKey('manageRecurring'),
+              icon: Icons.repeat,
+              title: l10n.recurringTitle,
+              count: null,
+              countText: switch (counts) {
+                final c? => l10n.recurringRunning(c.recurring),
+                null => null,
+              },
+              onTap: () => _open(RecurringListScreen(dependencies: deps)),
+            ),
           ],
         ),
       ),
@@ -79,23 +108,32 @@ class _ManageScreenState extends State<ManageScreen> {
 
 class _ManageTile extends StatelessWidget {
   const _ManageTile({
+    super.key,
     required this.icon,
     required this.title,
     required this.count,
     required this.onTap,
+    this.countText,
   });
 
   final IconData icon;
   final String title;
   final int? count;
+
+  /// Shown under the title instead of [count]: "3 running". Not trailing:
+  /// a trailing text that long took the whole tile at font 2.0 (Spanish
+  /// "Ninguno activo"; phase-7a.md §12a).
+  final String? countText;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final count = this.count;
+    final countText = this.countText;
     return ListTile(
       leading: Icon(icon),
       title: Text(title),
+      subtitle: countText == null ? null : Text(countText),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

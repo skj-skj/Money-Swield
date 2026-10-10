@@ -70,9 +70,10 @@ class EventFormCubit extends ItemFormCubit<Event> {
     (original) => _repository.setArchived(original.id, !original.isArchived),
   );
 
-  /// How many expenses have the edited event, binned ones included. Shown
-  /// in the delete confirmation.
-  Future<int> usage() => _repository.usage(original!.id);
+  /// How many expenses and recurring items have the edited event, binned
+  /// and archived ones included. Shown in the delete confirmation.
+  Future<({int expenses, int templates})> usage() =>
+      _repository.usage(original!.id);
 
   /// Deletes the edited event. Its links cascade; the expenses stay.
   Future<void> delete() =>

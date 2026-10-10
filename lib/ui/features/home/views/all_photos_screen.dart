@@ -10,6 +10,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../core/formatting_locale.dart';
 import '../../../core/period_names.dart';
 import '../../../core/widgets/async_body.dart';
+import '../../../core/widgets/back_guard.dart';
 import '../../../core/widgets/empty_state_view.dart';
 import '../../../core/widgets/list_frames.dart';
 import '../../../core/widgets/photos/photo_grid.dart';
@@ -20,6 +21,7 @@ import '../../../core/widgets/retry_row.dart';
 import '../../../core/widgets/save_error.dart';
 import '../../../core/widgets/show_message.dart';
 import '../../expenses/expense_form_opener.dart';
+import '../../recurring/views/recurring_navigation.dart';
 import '../../settings/view_models/settings_cubit.dart';
 import '../view_models/all_photos_cubit.dart';
 
@@ -57,6 +59,8 @@ class _AllPhotosScreenState extends State<AllPhotosScreen> {
   late final _opener = ExpenseFormOpener(
     dependencies: widget.dependencies,
     pendingDraft: _cubit.pendingDraft,
+    onOpenRecurring: (context, id) =>
+        openRecurringFromForm(context, widget.dependencies, id),
   );
 
   final _scroll = ScrollController();
@@ -144,12 +148,10 @@ class _AllPhotosScreenState extends State<AllPhotosScreen> {
           AllPhotosLoaded(:final selection) => selection,
           _ => null,
         };
-        return PopScope(
+        return BackGuard(
           // Back leaves selection first.
-          canPop: selection == null,
-          onPopInvokedWithResult: (didPop, _) {
-            if (!didPop) _cubit.clearSelection();
-          },
+          intercept: selection != null,
+          onBack: _cubit.clearSelection,
           child: ScaffoldMessenger(
             key: _messenger,
             child: Scaffold(

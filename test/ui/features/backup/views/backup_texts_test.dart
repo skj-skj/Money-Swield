@@ -64,12 +64,14 @@ void main() {
       int? active = 121,
       int? binned = 3,
       DateTime? latest,
+      int? recurring,
     }) => RestoreCandidate(
       source: source,
       createdAt: createdAt,
       activeExpenses: active,
       binnedExpenses: binned,
       latestExpenseOn: latest,
+      recurringItems: recurring,
     );
 
     List<String> summary(RestoreCandidate c, {int? current = 98}) =>
@@ -79,6 +81,32 @@ void main() {
           candidate: c,
           currentExpenses: current,
         );
+
+    test('running recurring items after the bin part (phase-7a.md R14); '
+        '0 and none left out; grouped', () {
+      String line(int? recurring, {int binned = 3}) => summary(
+        candidate(
+          binned: binned,
+          recurring: recurring,
+          latest: DateTime(2026, 10, 2),
+        ),
+      )[1];
+      expect(
+        line(4),
+        '121 expenses, plus 3 in the bin, 4 recurring items. '
+        'Latest on Oct 2, 2026',
+      );
+      expect(
+        line(1, binned: 0),
+        '121 expenses, 1 recurring item. Latest on Oct 2, 2026',
+      );
+      expect(line(0), '121 expenses, plus 3 in the bin. Latest on Oct 2, 2026');
+      expect(
+        line(null),
+        '121 expenses, plus 3 in the bin. Latest on Oct 2, 2026',
+      );
+      expect(line(1000), contains('1,000 recurring items'));
+    });
 
     test('the full dialog text', () {
       final lines = summary(

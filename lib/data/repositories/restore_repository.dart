@@ -364,7 +364,23 @@ class RestoreRepository {
       activeExpenses: row['active']! as int,
       binnedExpenses: row['binned']! as int,
       latestExpenseOn: DateTime.tryParse(row['latest'] as String? ?? ''),
+      recurringItems: await _runningRecurringItems(db),
     );
+  }
+
+  /// The running recurring items (phase-7a.md R14), or null when there is
+  /// no such table: the count is then left out, the line unchanged.
+  static Future<int?> _runningRecurringItems(Database db) async {
+    final hasTable = (await db.rawQuery(
+      "SELECT 1 FROM sqlite_master WHERE type = 'table' "
+      "AND name = 'recurring_expenses'",
+    )).isNotEmpty;
+    if (!hasTable) return null;
+    return (await db.rawQuery(
+          'SELECT count(*) AS n FROM recurring_expenses '
+          'WHERE archived_at IS NULL',
+        )).single['n']!
+        as int;
   }
 
   Future<T> _withCandidate<T>(

@@ -1,5 +1,6 @@
 import '../../../../data/repositories/category_repository.dart';
 import '../../../../domain/models/category.dart';
+import '../../../../domain/models/owner_usage.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/builtin_names.dart';
 import '../../manage/view_models/item_form_cubit.dart';
@@ -69,7 +70,7 @@ class CategoryFormCubit extends ItemFormCubit<Category> {
       runBusy((original) => _repository.delete(original.id));
 
   /// How many expenses use the edited category, binned ones included.
-  Future<({int active, int binned})> usage() => _repository.usage(original!.id);
+  Future<OwnerUsage> usage() => _repository.usage(original!.id);
 
   /// Moves the edited category's expenses to [toId] and deletes it, in one
   /// transaction (D7).

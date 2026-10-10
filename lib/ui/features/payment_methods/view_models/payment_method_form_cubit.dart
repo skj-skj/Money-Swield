@@ -1,4 +1,5 @@
 import '../../../../data/repositories/payment_method_repository.dart';
+import '../../../../domain/models/owner_usage.dart';
 import '../../../../domain/models/payment_method.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/builtin_names.dart';
@@ -85,7 +86,7 @@ class PaymentMethodFormCubit extends ItemFormCubit<PaymentMethod> {
       runBusy((original) => _repository.delete(original.id));
 
   /// How many expenses use the edited payment method, binned ones included.
-  Future<({int active, int binned})> usage() => _repository.usage(original!.id);
+  Future<OwnerUsage> usage() => _repository.usage(original!.id);
 
   /// Moves the edited payment method's expenses to [toId] and deletes it,
   /// in one transaction (D7).

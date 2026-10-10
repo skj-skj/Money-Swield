@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import '../photos.dart';
+import '../repeat_input.dart';
 
 /// A field of the Add/Edit form, for the touched set: prefill fills only
 /// fields the user hasn't touched (D13, phase-4.md §7.1).
@@ -35,6 +36,7 @@ class ExpenseDraft {
     required this.updatedAt,
     this.suggestionsBlocked = false,
     this.photos = const [],
+    this.repeat,
   });
 
   /// The expense being edited; null for an Add draft.
@@ -80,7 +82,13 @@ class ExpenseDraft {
   /// the slot (§7.1).
   final List<FormPhoto> photos;
 
-  /// The newest `form_json` version this app reads.
+  /// The Add form's Repeats section as typed (phase-7a.md §5.7); null when
+  /// Repeats is off.
+  final RepeatChoice? repeat;
+
+  /// The newest `form_json` version this app reads. Adding `repeat` kept
+  /// it at 1: an older draft simply has no `repeat` (Repeats off), and
+  /// unknown keys are ignored.
   static const version = 1;
 
   bool get isAdd => editingExpenseId == null;
@@ -103,6 +111,7 @@ class ExpenseDraft {
     updatedAt: updatedAt,
     suggestionsBlocked: suggestionsBlocked,
     photos: photos,
+    repeat: repeat,
   );
 
   /// `form_json`: every field but [editingExpenseId] and [updatedAt], which
@@ -125,6 +134,7 @@ class ExpenseDraft {
     'itemize_terms': itemizeTerms,
     'suggestions_blocked': suggestionsBlocked,
     'photos': [for (final photo in photos) _photoToJson(photo)],
+    if (repeat case final repeat?) 'repeat': _repeatToJson(repeat),
   });
 
   /// Reads `form_json` forgivingly (database.md §3.9): unknown keys are
@@ -180,8 +190,47 @@ class ExpenseDraft {
       updatedAt: updatedAt,
       suggestionsBlocked: json['suggestions_blocked'] == true,
       photos: _readPhotos(json['photos']),
+      repeat: _readRepeat(json['repeat']),
     );
   }
+
+  static Map<String, Object?> _repeatToJson(RepeatChoice repeat) => {
+    'frequency': repeat.frequency.name,
+    'interval': repeat.intervalText,
+    'end': switch (repeat.end) {
+      RepeatEnd.never => 'never',
+      RepeatEnd.onDate => 'on',
+    },
+    'on': repeat.endOn,
+  };
+
+  /// The Repeats section, read forgivingly (§5.7): not an object → null
+  /// (Repeats off); a bad field drops to its default and the rest is kept.
+  /// An unknown end kind (7b's `after`) reads as never.
+  static RepeatChoice? _readRepeat(Object? value) {
+    if (value is! Map<String, Object?>) return null;
+    return RepeatChoice(
+      frequency:
+          switch (value['frequency']) {
+            final String name => Frequency.values.asNameMap()[name],
+            _ => null,
+          } ??
+          Frequency.monthly,
+      // As typed, half-typed too; anything that isn't up to 3 digits is
+      // damaged and back to the default.
+      intervalText: switch (value['interval']) {
+        final String text when _intervalText.hasMatch(text) => text,
+        _ => RepeatChoice.defaults.intervalText,
+      },
+      end: value['end'] == 'on' ? RepeatEnd.onDate : RepeatEnd.never,
+      endOn: switch (value['on']) {
+        final String day when isValidDay(day) => day,
+        _ => null,
+      },
+    );
+  }
+
+  static final _intervalText = RegExp(r'^[0-9]{0,3}$');
 
   static Map<String, Object?> _photoToJson(FormPhoto photo) => switch (photo) {
     SavedPhoto(:final id, :final relativePath) => {
@@ -280,7 +329,8 @@ class ExpenseDraft {
       _sameList(other.itemizeTerms, itemizeTerms) &&
       other.updatedAt == updatedAt &&
       other.suggestionsBlocked == suggestionsBlocked &&
-      _sameList(other.photos, photos);
+      _sameList(other.photos, photos) &&
+      other.repeat == repeat;
 
   @override
   int get hashCode => Object.hash(
@@ -293,6 +343,7 @@ class ExpenseDraft {
     currencyCode,
     pickedWallClock,
     updatedAt,
+    repeat,
   );
 
   @override
