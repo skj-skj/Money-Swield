@@ -7,11 +7,12 @@ import '../../../../domain/models/app_settings.dart';
 import '../../../../domain/periods.dart';
 import '../../../../domain/photo_groups.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../../core/formatting_locale.dart';
 import '../../../core/period_names.dart';
+import '../../../core/scroll_paging.dart';
 import '../../../core/widgets/async_body.dart';
 import '../../../core/widgets/back_guard.dart';
 import '../../../core/widgets/empty_state_view.dart';
+import '../../../core/widgets/filtered_chip.dart';
 import '../../../core/widgets/list_frames.dart';
 import '../../../core/widgets/photos/photo_grid.dart';
 import '../../../core/widgets/photos/photo_selection_bar.dart';
@@ -46,7 +47,8 @@ class AllPhotosScreen extends StatefulWidget {
   State<AllPhotosScreen> createState() => _AllPhotosScreenState();
 }
 
-class _AllPhotosScreenState extends State<AllPhotosScreen> {
+class _AllPhotosScreenState extends State<AllPhotosScreen>
+    with ScrollPaging<AllPhotosScreen> {
   late final AllPhotosCubit _cubit = AllPhotosCubit(
     expenses: widget.dependencies.expenses,
     drafts: widget.dependencies.drafts,
@@ -63,31 +65,21 @@ class _AllPhotosScreenState extends State<AllPhotosScreen> {
         openRecurringFromForm(context, widget.dependencies, id),
   );
 
-  final _scroll = ScrollController();
   final _messenger = GlobalKey<ScaffoldMessengerState>();
   final _scaffoldKey = GlobalKey<ScaffoldState>();
 
   /// The next page once less than about two rows are left below.
-  static const _loadMoreLead = 400.0;
-
   @override
-  void initState() {
-    super.initState();
-    _scroll.addListener(_maybeLoadMore);
-  }
+  double get loadMoreLead => 400.0;
 
   @override
   void dispose() {
-    _scroll.dispose();
     _cubit.close();
     super.dispose();
   }
 
-  void _maybeLoadMore() {
-    if (_scroll.hasClients && _scroll.position.extentAfter < _loadMoreLead) {
-      _cubit.loadMore();
-    }
-  }
+  @override
+  void loadMore() => _cubit.loadMore();
 
   BuildContext get _messengerContext => _scaffoldKey.currentContext ?? context;
 
@@ -161,14 +153,7 @@ class _AllPhotosScreenState extends State<AllPhotosScreen> {
                       title: Text(l10n.photos),
                       actions: [
                         if (!widget.filter.isEmpty)
-                          Padding(
-                            padding: const EdgeInsetsDirectional.only(end: 16),
-                            child: Chip(
-                              key: const ValueKey('photosFiltered'),
-                              avatar: const Icon(Icons.filter_alt, size: 18),
-                              label: Text(l10n.trendFiltered),
-                            ),
-                          ),
+                          const FilteredChip(key: ValueKey('photosFiltered')),
                       ],
                     )
                   : null,
@@ -230,10 +215,10 @@ class _AllPhotosScreenState extends State<AllPhotosScreen> {
     // A short first page may not fill the screen: no scroll would ever
     // ask for the next one.
     if (state.hasMore && !state.loadingMore && !state.loadMoreFailed) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _maybeLoadMore());
+      loadMoreAfterFrame();
     }
     return CustomScrollView(
-      controller: _scroll,
+      controller: pagingScroll,
       slivers: [
         for (final month in state.months)
           DecoratedSliver(
@@ -323,10 +308,10 @@ class _AllPhotosScreenState extends State<AllPhotosScreen> {
     );
   }
 
-  PeriodNames _names(BuildContext context, AppSettings settings) => PeriodNames(
-    l10n: AppLocalizations.of(context),
-    locale: dateLocaleOf(context),
-    today: todayOn(widget.dependencies.now()),
-    weekLabel: settings.weekLabel,
-  );
+  PeriodNames _names(BuildContext context, AppSettings settings) =>
+      PeriodNames.of(
+        context,
+        today: todayOn(widget.dependencies.now()),
+        weekLabel: settings.weekLabel,
+      );
 }

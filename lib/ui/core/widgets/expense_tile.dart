@@ -23,7 +23,19 @@ class ExpenseTile extends StatelessWidget {
     this.marks = const [],
     this.contentPadding,
     this.subtitleStyle,
+    this.action,
+    this.muted = false,
+    this.semanticsLabel,
+    this.titleMaxLines = 1,
   });
+
+  /// What TalkBack reads for the row, in place of its texts ("Netflix,
+  /// ₹649, 9 November"); null reads the texts.
+  final String? semanticsLabel;
+
+  /// 1 on Home (phase-5.md: the row keeps its height); 2 on Upcoming,
+  /// whose button left "Swim…" at the largest font (phase-7b.md §12a).
+  final int titleMaxLines;
 
   /// The category's emoji (`missingEmoji` when the category is gone).
   final String emoji;
@@ -44,6 +56,13 @@ class ExpenseTile extends StatelessWidget {
   /// The tile's side padding; the list's default when null.
   final EdgeInsetsGeometry? contentPadding;
 
+  /// A button after the amount, outside its scaling (Upcoming's Skip and
+  /// Bring back, phase-7b.md §8.3).
+  final Widget? action;
+
+  /// Greyed: a payment skipped once (phase-7b.md §8.3).
+  final bool muted;
+
   /// Shown when a row's category or payment method is missing. RESTRICT
   /// forbids that, but a crash would be worse than a question mark.
   static const missingEmoji = '❓';
@@ -51,34 +70,77 @@ class ExpenseTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return ListTile(
-      onTap: onTap,
-      contentPadding: contentPadding,
-      leading: Text(emoji, style: const TextStyle(fontSize: 28)),
-      title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
-      subtitle: Text(subtitle, style: subtitleStyle),
-      trailing: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.sizeOf(context).width * 0.45,
-        ),
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(switch (amount) {
+    // Half the text colour: onSurfaceVariant alone read as white in the
+    // dark theme on the Oppo, so a skipped row didn't look skipped.
+    final faint = theme.colorScheme.onSurface.withValues(alpha: 0.5);
+    final amountView = ConstrainedBox(
+      constraints: BoxConstraints(
+        maxWidth: MediaQuery.sizeOf(context).width * 0.45,
+      ),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              switch (amount) {
                 final Money amount => MoneyFormatter.of(context).format(amount),
                 null => '—',
-              }, style: theme.textTheme.titleMedium),
-              for (final mark in marks)
-                Padding(
-                  padding: const EdgeInsetsDirectional.only(start: 4),
-                  child: mark,
-                ),
-            ],
-          ),
+              },
+              // Struck through when muted: this payment won't be made.
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: muted ? faint : null,
+                decoration: muted ? TextDecoration.lineThrough : null,
+                decorationColor: muted ? faint : null,
+              ),
+            ),
+            for (final mark in marks)
+              Padding(
+                padding: const EdgeInsetsDirectional.only(start: 4),
+                child: mark,
+              ),
+          ],
         ),
       ),
+    );
+    final tile = ListTile(
+      onTap: onTap,
+      contentPadding: contentPadding,
+      leading: Opacity(
+        opacity: muted ? 0.5 : 1,
+        child: Text(emoji, style: const TextStyle(fontSize: 28)),
+      ),
+      title: Text(
+        title,
+        maxLines: titleMaxLines,
+        overflow: TextOverflow.ellipsis,
+        style: muted ? TextStyle(color: faint) : null,
+      ),
+      // No second line when there is nothing to say: an empty one only
+      // made the row taller.
+      subtitle: subtitle.isEmpty ? null : Text(subtitle, style: subtitleStyle),
+      trailing: amountView,
+    );
+    final label = semanticsLabel;
+    final row = label == null
+        ? tile
+        : Semantics(
+            container: true,
+            button: true,
+            label: label,
+            excludeSemantics: true,
+            onTap: onTap,
+            child: tile,
+          );
+    final action = this.action;
+    if (action == null) return row;
+    // Beside the tile, not inside it: its own button for TalkBack, and
+    // outside the amount's scaling.
+    return Row(
+      children: [
+        Expanded(child: row),
+        action,
+      ],
     );
   }
 }

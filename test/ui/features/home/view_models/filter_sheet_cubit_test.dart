@@ -26,10 +26,13 @@ void main() {
     expect(start.categoryIds, {1});
   });
 
-  test('Clear empties text, categories and events; grouping stays', () {
-    final cubit = cubitFor(
-      const ExpenseFilter(text: 'x', categoryIds: {1}, eventIds: {2}),
-    )..setGrouping(Period.year);
+  test('setOnlyRecurring (phase-7b.md §7.5); Clear empties text, '
+      'categories, events and Only recurring; grouping stays', () {
+    const filter = ExpenseFilter(text: 'x', categoryIds: {1}, eventIds: {2});
+    final cubit = cubitFor(filter)
+      ..setGrouping(Period.year)
+      ..setOnlyRecurring(true);
+    expect(cubit.value.filter, filter.copyWith(onlyRecurring: true));
     cubit.clear();
     expect(cubit.value.filter, ExpenseFilter.none);
     expect(cubit.value.grouping, Period.year);

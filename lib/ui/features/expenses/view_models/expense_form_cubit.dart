@@ -55,9 +55,14 @@ final class ExpenseSaved extends ExpenseFormResult {
     this.repeating = false,
     this.pastAdded = 0,
     this.schedule,
+    this.updated = false,
   });
 
   final Expense expense;
+
+  /// An Edit's Update, not an Add's Save: "Updated. Repeats: …"
+  /// (phase-7b.md §8.5).
+  final bool updated;
 
   /// Photos the save couldn't link: their row went meanwhile (phase-6.md
   /// §7.1). Home says so.
@@ -500,6 +505,13 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
 
   bool get isEditing => expenseId != null;
 
+  /// Whether the Repeats section shows: on Add, and on the Edit of a plain
+  /// expense (phase-7b.md §6.2, P7b-2). A payment's Edit shows its link row
+  /// instead (P7a-5). False until the edited expense is loaded.
+  bool get canRepeat =>
+      !isEditing ||
+      (_original != null && _original!.recurringExpenseId == null);
+
   /// The recurring item the edited expense is a payment of, for the link
   /// row (§8.1 E); null for a plain expense, an Add, or an item gone.
   RecurringItem? get linkedItem => _linkedItem;
@@ -833,8 +845,9 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
           : draft.currencyCode,
       wallClock: picked == null ? baseline.wallClock : _wallClockOf(picked),
       photos: _draftPhotos,
-      // Repeats is Add only (P7a-6): an Edit draft never has it.
-      repeat: isEditing ? null : draft.repeat,
+      // A payment's Edit has no Repeats (P7a-5); a plain expense's may
+      // (phase-7b.md §6.2).
+      repeat: canRepeat ? draft.repeat : null,
     );
   }
 
@@ -1581,15 +1594,16 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     return _drafts.flush();
   }
 
-  // Repeats (phase-7a.md §7.1). Add only (P7a-6); a change like any field,
-  // so the draft follows.
+  // Repeats (phase-7a.md §7.1): on Add and on a plain expense's Edit
+  // (phase-7b.md §7.1); a change like any field, so the draft follows and
+  // Update is enabled by Repeats alone.
 
   /// Switches Repeats on (the settings last switched off, else every 1
   /// month, never ending) or off. Off keeps the settings for switching on
   /// again while the form is open.
   void repeatToggled(bool on) {
     final ready = _ready;
-    if (ready == null || isEditing) return;
+    if (ready == null || !canRepeat) return;
     final current = ready.fields.repeat;
     if (on == (current != null)) return;
     if (!on) _lastRepeat = current;
@@ -1604,14 +1618,24 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
   void repeatIntervalChanged(String text) =>
       _updateRepeat((r) => r.copyWith(intervalText: text));
 
-  /// Never or On date. On without a date yet gets one: six months after
-  /// the form's date (clamped to the month's end), so the row always
-  /// shows one and the picker opens on it.
+  /// Never, On date or After N payments. On without a date yet gets one:
+  /// six months after the form's date (clamped to the month's end), so the
+  /// row always shows one and the picker opens on it. After with nothing
+  /// typed gets [defaultRepeatCountText] the same way (phase-7b.md §12a).
   void repeatEndChanged(RepeatEnd end) => _updateRepeat(
     (r) => r.copyWith(
       end: end,
       endOn: r.endOn ?? (end == RepeatEnd.onDate ? _defaultEndOn() : null),
+      countText: end == RepeatEnd.afterCount && r.countText.isEmpty
+          ? defaultRepeatCountText
+          : null,
     ),
+  );
+
+  /// The After field as typed (digits only, three at most; phase-7b.md
+  /// §7.1); checked at Save, like Every.
+  void repeatCountChanged(String text) => _updateRepeat(
+    (r) => r.copyWith(end: RepeatEnd.afterCount, countText: text),
   );
 
   /// The end date picked: ends on it.
@@ -1656,29 +1680,35 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
   String get today => todayOn(_now());
 
   /// What the section says under the rule (§8.2): the earlier payments a
-  /// Save adds (at most [maxPastPayments]; `pastCount` is them all) and
-  /// the next one after those. Null while Repeats is off or Every isn't 1
-  /// to 99. Live, before any Save attempt.
-  ({List<String> past, int pastCount, String? next})? get repeatSummary {
+  /// Save adds (at most [maxPastPayments]; `pastCount` is them all), the
+  /// next one after those and, with an end, the last one (phase-7b.md
+  /// §8.2). Null while Repeats is off, or Every or After N isn't valid
+  /// ([scheduleOrNull]). Live, before any Save attempt.
+  RepeatSummary? get repeatSummary {
     final repeat = _ready?.fields.repeat;
     final startOn = repeatStartOn;
-    if (repeat == null || startOn == null || repeat.interval == null) {
-      return null;
-    }
+    if (repeat == null || startOn == null) return null;
     final today = this.today;
     final key = (repeat, startOn, today);
     final cached = _summaryCache;
     if (cached != null && cached.key == key) return cached.summary;
-    final (:past, :next) = repeatPreview(
-      repeat,
-      startOn: startOn,
-      today: today,
-    );
-    final summary = (
-      past: past,
-      pastCount: pastPaymentCount(repeat, startOn: startOn, today: today),
-      next: next,
-    );
+    final schedule = scheduleOrNull(repeat, startOn);
+    final RepeatSummary? summary;
+    if (schedule == null) {
+      summary = null;
+    } else {
+      final (:past, :next) = repeatPreview(
+        repeat,
+        startOn: startOn,
+        today: today,
+      );
+      summary = (
+        past: past,
+        pastCount: pastPaymentCount(repeat, startOn: startOn, today: today),
+        next: next,
+        last: lastOccurrence(schedule),
+      );
+    }
     _summaryCache = (key: key, summary: summary);
     return summary;
   }
@@ -1686,11 +1716,7 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
   /// The last [repeatSummary] and what it was computed from: the form
   /// rebuilds on every keystroke, and a back-dated daily item walks up to
   /// 1,000 dates (≈9 ms each time in a debug test run).
-  ({
-    (RepeatChoice, String, String) key,
-    ({List<String> past, int pastCount, String? next}) summary,
-  })?
-  _summaryCache;
+  ({(RepeatChoice, String, String) key, RepeatSummary? summary})? _summaryCache;
 
   /// What's wrong with the Repeats settings, after the first Save attempt
   /// (like the other errors). Too many earlier payments shows live in the
@@ -1699,7 +1725,7 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
 
   RepeatError? _repeatError(ExpenseFields fields) {
     final repeat = fields.repeat;
-    if (repeat == null || isEditing) return null;
+    if (repeat == null || !canRepeat) return null;
     return validateRepeat(
       repeat,
       startOn: isoDay(fields.wallClock),
@@ -1766,14 +1792,17 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
         photos: links,
       );
       final id = expenseId;
-      final repeat = id == null ? fields.repeat : null;
+      final repeat = canRepeat ? fields.repeat : null;
       final Expense expense;
       if (repeat != null) {
-        final result = await _expenses.addRepeating(
-          input,
-          repeat,
-          clearDraft: owns,
-        );
+        final result = id == null
+            ? await _expenses.addRepeating(input, repeat, clearDraft: owns)
+            : await _expenses.updateRepeating(
+                id,
+                input,
+                repeat,
+                clearDraft: owns,
+              );
         expense = result.expense;
         _lastPastAdded = result.pastAdded;
         _lastSavedSchedule = scheduleFor(repeat, expense.occurredOn);

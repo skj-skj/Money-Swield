@@ -12,7 +12,8 @@ import '../migration/migration.dart';
 /// references them, and the framework refuses a reference to a table that
 /// doesn't exist yet. They live in this migration, not a new one, because
 /// the app is unreleased (owner: migrations are edited until release;
-/// P7a-14), so a Phase 6 database needs a fresh install.
+/// P7a-14), so a Phase 6 database needs a fresh install; phase 7b edited it
+/// again (`replaces_id`, `recurring_skips`), so a 7a database does too.
 class CreateExpenses extends Migration {
   const CreateExpenses() : super(version: 1790960250, name: 'create_expenses');
 
@@ -55,6 +56,15 @@ class CreateExpenses extends Migration {
       t.integer('archived_at');
       t.integer('created_at', nullable: false);
       t.integer('updated_at', nullable: false);
+      // The item this one was made from when its schedule changed
+      // (phase-7b.md §4.1), so restoring the old one can swap them and the
+      // Archive can call it "replaced". SET NULL: deleting the old one for
+      // good keeps this one. A self-reference: the framework allows it.
+      t.references(
+        'replaces_id',
+        toTable: 'recurring_expenses',
+        onDelete: ForeignKeyAction.setNull,
+      );
     });
     await m.createTable('recurring_amounts', (t) {
       t.references(
@@ -87,6 +97,25 @@ class CreateExpenses extends Migration {
         onDelete: ForeignKeyAction.cascade,
       );
       t.primaryKey(['recurring_expense_id', 'event_id']);
+    });
+    // Upcoming payments skipped once (phase-7b.md §4.1). A skip can't be a
+    // binned row (the payment has no row yet), and the cursor can't jump
+    // one date without the ones before it. The generator passes over a
+    // skipped date and deletes the skips its cursor has passed in the same
+    // transaction, so only future skips are kept.
+    await m.createTable('recurring_skips', (t) {
+      t.references(
+        'recurring_expense_id',
+        toTable: 'recurring_expenses',
+        nullable: false,
+        onDelete: ForeignKeyAction.cascade,
+        index: false, // First column of the unique index below.
+      );
+      t.text('due_on', nullable: false);
+      t.integer('created_at', nullable: false);
+      t.integer('updated_at', nullable: false);
+      // One skip per payment; also covers the foreign key.
+      t.index(['recurring_expense_id', 'due_on'], unique: true);
     });
     await m.createTable('expenses', (t) {
       t.text('title', nullable: false);
@@ -147,6 +176,7 @@ class CreateExpenses extends Migration {
   @override
   Future<void> down(Migrator m) async {
     await m.dropTable('expenses');
+    await m.dropTable('recurring_skips');
     await m.dropTable('recurring_expense_events');
     await m.dropTable('recurring_amounts');
     await m.dropTable('recurring_expenses');

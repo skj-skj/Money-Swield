@@ -229,4 +229,220 @@ void main() {
     expect(dueCount(s, cursor: '2026-02-28', today: '2026-05-15'), 3);
     expect(dueCount(s, cursor: '2026-06-30', today: '2026-05-15'), 0);
   });
+
+  group('a new schedule (phase-7b.md §7.3)', () {
+    test('lastHandledOn: the payment before the cursor; none left: the '
+        'last before the end', () {
+      final s = monthlyFrom('2026-01-31');
+      expect(lastHandledOn(s, cursor: '2026-03-31'), '2026-02-28');
+      expect(lastHandledOn(s, cursor: '2026-01-31'), isNull);
+      // A damaged cursor between payments: the one before it.
+      expect(lastHandledOn(s, cursor: '2026-03-15'), '2026-02-28');
+      final ends = monthlyFrom('2026-01-31', end: '2026-04-15');
+      expect(lastHandledOn(ends, cursor: null), '2026-03-31');
+    });
+
+    test('earliestFirstPayment: the day after the last handled date, never '
+        'before today', () {
+      final s = monthlyFrom('2026-09-09');
+      // Netflix: 9 Oct handled (today), cursor 9 Nov: from 10 Oct.
+      expect(
+        earliestFirstPayment(s, cursor: '2026-11-09', today: today),
+        '2026-10-10',
+      );
+      // Last handled long ago (no payment left, the end ahead): today.
+      expect(
+        earliestFirstPayment(
+          monthlyFrom('2026-01-09', end: '2027-01-01'),
+          cursor: null,
+          today: '2027-01-05',
+        ),
+        '2027-01-05',
+      );
+      // Nothing handled yet can't happen (payment 0 is saved), but reads
+      // as today.
+      expect(
+        earliestFirstPayment(
+          monthlyFrom('2026-12-01'),
+          cursor: '2026-12-01',
+          today: today,
+        ),
+        today,
+      );
+    });
+
+    test('paymentsWaiting: a cursor on or before today', () {
+      expect(paymentsWaiting(cursor: today, today: today), isTrue);
+      expect(paymentsWaiting(cursor: '2026-08-09', today: today), isTrue);
+      expect(paymentsWaiting(cursor: '2026-10-10', today: today), isFalse);
+      expect(paymentsWaiting(cursor: null, today: today), isFalse);
+    });
+  });
+
+  group('Add selected (phase-7b.md §5.2: held monthly 09-07, 10-07; today '
+      '10-09)', () {
+    final s = monthlyFrom('2026-08-07');
+    ({List<String> add, int listed, String? next}) select(
+      Set<String> ticked, {
+      String cursor = '2026-09-07',
+      Set<String> skipped = const {},
+    }) => selectedPlan(
+      s,
+      cursor: cursor,
+      today: today,
+      ticked: ticked,
+      skipped: skipped,
+    );
+
+    test('{10-07} → adds 10-07, cursor 11-07', () {
+      final p = select({'2026-10-07'});
+      expect(p.add, ['2026-10-07']);
+      expect(p.next, '2026-11-07');
+    });
+
+    test('nothing ticked → adds nothing, cursor 11-07 (skipped for good)', () {
+      final p = select({});
+      expect(p.add, isEmpty);
+      expect(p.listed, 2);
+      expect(p.next, '2026-11-07');
+    });
+
+    test('a date that isn\'t held (08-07, already handled) is ignored', () {
+      final p = select({'2026-09-07', '2026-08-07', '2026-09-08', 'x'});
+      expect(p.add, ['2026-09-07']);
+      expect(p.next, '2026-11-07');
+    });
+
+    test('a skipped date ticked (a stale list) is not added', () {
+      final p = select({'2026-09-07', '2026-10-07'}, skipped: {'2026-10-07'});
+      expect(p.add, ['2026-09-07']);
+    });
+
+    test('over 1,000 waiting: the cursor goes to the first not listed, '
+        'still waiting (never skipped unseen)', () {
+      final daily = Schedule(
+        frequency: Frequency.daily,
+        interval: 1,
+        startOn: '2023-01-01',
+      );
+      final p = selectedPlan(
+        daily,
+        cursor: '2023-01-02',
+        today: today,
+        ticked: {'2023-01-02'},
+      );
+      expect(p.add, ['2023-01-02']);
+      expect(p.next, '2025-09-28', reason: 'the 1,001st date');
+      expect(p.next!.compareTo(today) < 0, isTrue);
+    });
+  });
+
+  group('planTemplate with skips (phase-7b.md §5.2)', () {
+    test('cursor 09-07 (monthly), 09-07 skipped, today 10-09: Add [10-07] '
+        '(2 days old: not held)', () {
+      final p = planTemplate(
+        monthlyFrom('2026-08-07'),
+        cursor: '2026-09-07',
+        today: today,
+        confirmed: false,
+        skipped: {'2026-09-07'},
+      );
+      expect(p, isA<AddPayments>());
+      expect((p as AddPayments).due, ['2026-10-07']);
+      expect(p.next, '2026-11-07');
+    });
+
+    test('cursor 10-09, 10-09 skipped: Add [], next 11-09 (the cursor still '
+        'moves)', () {
+      final p = planTemplate(
+        monthlyFrom('2026-09-09'),
+        cursor: today,
+        today: today,
+        confirmed: false,
+        skipped: {today},
+      );
+      expect(p, isA<AddPayments>());
+      expect((p as AddPayments).due, isEmpty);
+      expect(p.next, '2026-11-09');
+    });
+
+    test('a hold counts without the skips, from the oldest real one', () {
+      final p = planTemplate(
+        monthlyFrom('2026-01-09'),
+        cursor: '2026-05-09',
+        today: today,
+        confirmed: false,
+        skipped: {'2026-05-09', '2026-10-09', '2026-07-15'},
+      );
+      expect(p, isA<HoldPayments>());
+      final hold = p as HoldPayments;
+      // 05-09 … 10-09 is 6; two of them skipped (07-15 isn't a payment).
+      expect(hold.count, 4);
+      expect(hold.from, '2026-06-09');
+      expect(hold.to, '2026-09-09');
+    });
+
+    test('confirmed (Add all) adds every one but the skipped', () {
+      final p = planTemplate(
+        monthlyFrom('2026-01-09'),
+        cursor: '2026-05-09',
+        today: today,
+        confirmed: true,
+        skipped: {'2026-05-09'},
+      );
+      expect((p as AddPayments).due, [
+        '2026-06-09',
+        '2026-07-09',
+        '2026-08-09',
+        '2026-09-09',
+        '2026-10-09',
+      ]);
+      expect(p.next, '2026-11-09');
+    });
+  });
+
+  group('runningRelatives (P7b-3)', () {
+    Map<int, FamilyLink> family(Map<int, (int?, bool)> rows) => {
+      for (final MapEntry(key: id, value: (parent, running)) in rows.entries)
+        id: (replacesId: parent, running: running),
+    };
+
+    test('A → B: restoring A finds B; restoring B (swapped out) finds A', () {
+      final items = family({1: (null, false), 2: (1, true)});
+      expect(runningRelatives(1, items), [2]);
+      final swapped = family({1: (null, true), 2: (1, false)});
+      expect(runningRelatives(2, swapped), [1]);
+    });
+
+    test('a chain A → B → C: restoring A finds C, B is archived', () {
+      final items = family({1: (null, false), 2: (1, false), 3: (2, true)});
+      expect(runningRelatives(1, items), [3]);
+      expect(runningRelatives(2, items), [3]);
+    });
+
+    test('A replaced twice (A → B, swap back, A → C): restoring B finds C '
+        'through A', () {
+      final items = family({1: (null, false), 2: (1, false), 3: (1, true)});
+      expect(runningRelatives(2, items), [3]);
+    });
+
+    test('nothing running, other families and itself left out', () {
+      final items = family({
+        1: (null, false),
+        2: (1, false),
+        3: (null, true),
+        4: (null, false),
+      });
+      expect(runningRelatives(1, items), isEmpty);
+      expect(runningRelatives(4, items), isEmpty);
+      expect(runningRelatives(3, items), isEmpty);
+    });
+
+    test('a damaged loop or a missing parent ends', () {
+      final loop = family({1: (2, false), 2: (1, true)});
+      expect(runningRelatives(1, loop), [2]);
+      final orphan = family({2: (99, false), 3: (2, true)});
+      expect(runningRelatives(2, orphan), [3]);
+    });
+  });
 }

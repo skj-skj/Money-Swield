@@ -138,6 +138,27 @@ class ExpenseRepository {
     ExpenseInput input,
     RepeatChoice choice, {
     bool clearDraft = false,
+  }) => _saveRepeating(null, input, choice, clearDraft: clearDraft);
+
+  /// **Make an existing expense repeat** (phase-7b.md §6.2): [input] is
+  /// saved over the active expense [id], which becomes the first payment
+  /// of a new item, as [addRepeating] does for a new one, in one
+  /// transaction. Throws [ExpenseNotFound] for a binned or gone expense and
+  /// [ArgumentError] for one that is a payment already (the form hides
+  /// Repeats there, so only a bug gets here): nothing is written.
+  Future<({Expense expense, int pastAdded})> updateRepeating(
+    int id,
+    ExpenseInput input,
+    RepeatChoice choice, {
+    bool clearDraft = false,
+  }) => _saveRepeating(id, input, choice, clearDraft: clearDraft);
+
+  /// [addRepeating] ([id] null) and [updateRepeating].
+  Future<({Expense expense, int pastAdded})> _saveRepeating(
+    int? id,
+    ExpenseInput input,
+    RepeatChoice choice, {
+    required bool clearDraft,
   }) async {
     final now = _now();
     final nowMs = now.millisecondsSinceEpoch;
@@ -156,6 +177,9 @@ class ExpenseRepository {
     );
     final timeOfDay = wallClock.hour * 60 + wallClock.minute;
     final expense = await _db.transaction((txn) async {
+      // Checked before anything is written, though a throw rolls it all
+      // back anyway.
+      if (id != null) await _plainActiveRow(txn, id);
       final itemId = await RecurringRepository.insertTemplate(
         txn,
         NewRecurringItem(
@@ -171,15 +195,24 @@ class ExpenseRepository {
         ),
         nowMs,
       );
-      final id = await txn.insert('expenses', {
-        ..._columns(input),
+      final link = {
         'recurring_expense_id': itemId,
         'recurring_due_on': startOn,
-        'created_at': nowMs,
-        'updated_at': nowMs,
-      });
-      await _insertEvents(txn, id, input.eventIds);
-      await _linkPhotos(txn, id, input.photos, nowMs);
+      };
+      final int expenseId;
+      if (id == null) {
+        expenseId = await txn.insert('expenses', {
+          ..._columns(input),
+          ...link,
+          'created_at': nowMs,
+          'updated_at': nowMs,
+        });
+        await _insertEvents(txn, expenseId, input.eventIds);
+        await _linkPhotos(txn, expenseId, input.photos, nowMs);
+      } else {
+        expenseId = id;
+        await _overwrite(txn, id, input, nowMs, extra: link);
+      }
       await insertPayments(txn, itemId, [
         for (final day in past)
           if (paymentMoment(day, timeOfDay, localMoment: _localMoment)
@@ -198,7 +231,7 @@ class ExpenseRepository {
             ),
       ], nowMs: nowMs);
       if (clearDraft) await _deleteDraft(txn);
-      return (await _read(txn, where: 'id = ?', whereArgs: [id])).single;
+      return (await _read(txn, where: 'id = ?', whereArgs: [expenseId])).single;
     });
     _dataVersion.bump();
     return (expense: expense, pastAdded: past.length);
@@ -215,32 +248,61 @@ class ExpenseRepository {
   }) async {
     final now = _now().millisecondsSinceEpoch;
     final expense = await _db.transaction((txn) async {
-      final changed = await txn.update(
-        'expenses',
-        {..._columns(input), 'updated_at': now},
-        where: 'id = ? AND $_active',
-        whereArgs: [id],
-      );
-      if (changed == 0) throw ExpenseNotFound(id);
-      await txn.delete(
-        'expense_events',
-        where: 'expense_id = ?',
-        whereArgs: [id],
-      );
-      await _insertEvents(txn, id, input.eventIds);
-      // Replaced like the events: the rows of photos no longer linked stay
-      // until the startup sweep (P6-13).
-      await txn.delete(
-        'expense_photos',
-        where: 'expense_id = ?',
-        whereArgs: [id],
-      );
-      await _linkPhotos(txn, id, input.photos, now);
+      await _overwrite(txn, id, input, now);
       if (clearDraft) await _deleteDraft(txn);
       return (await _read(txn, where: 'id = ?', whereArgs: [id])).single;
     });
     _dataVersion.bump();
     return expense;
+  }
+
+  /// [input] over the active expense [id] (with [extra] columns), its
+  /// events and photos replaced, inside [txn]: [update]'s and
+  /// [updateRepeating]'s. [ExpenseNotFound] when it is binned or gone.
+  static Future<void> _overwrite(
+    Transaction txn,
+    int id,
+    ExpenseInput input,
+    int nowMs, {
+    Map<String, Object?> extra = const {},
+  }) async {
+    final changed = await txn.update(
+      'expenses',
+      {..._columns(input), ...extra, 'updated_at': nowMs},
+      where: 'id = ? AND $_active',
+      whereArgs: [id],
+    );
+    if (changed == 0) throw ExpenseNotFound(id);
+    await txn.delete(
+      'expense_events',
+      where: 'expense_id = ?',
+      whereArgs: [id],
+    );
+    await _insertEvents(txn, id, input.eventIds);
+    // Replaced like the events: the rows of photos no longer linked stay
+    // until the startup sweep (P6-13).
+    await txn.delete(
+      'expense_photos',
+      where: 'expense_id = ?',
+      whereArgs: [id],
+    );
+    await _linkPhotos(txn, id, input.photos, nowMs);
+  }
+
+  /// Checks that [id] is active ([ExpenseNotFound]) and not a payment yet
+  /// ([ArgumentError]): only a plain expense is made to repeat (§6.2).
+  static Future<void> _plainActiveRow(Transaction txn, int id) async {
+    final rows = await txn.query(
+      'expenses',
+      columns: ['recurring_expense_id'],
+      where: 'id = ? AND $_active',
+      whereArgs: [id],
+    );
+    if (rows.isEmpty) throw ExpenseNotFound(id);
+    final itemId = rows.single['recurring_expense_id'];
+    if (itemId != null) {
+      throw ArgumentError.value(id, 'id', 'a payment of item $itemId already');
+    }
   }
 
   /// The active expense [id], or null if it is in the bin or gone.
@@ -1031,15 +1093,22 @@ class ExpenseRepository {
     return (isoDay(today.subtract(Duration(days: days))), isoDay(today));
   }
 
-  /// [filter]'s category and event part as SQL terms (phase-5.md §6.1).
-  /// The ids are written into the SQL as literals, so a long selection
-  /// never meets the 999-variable limit; they're `int`s from the app's
-  /// own models, never text, so nothing can be injected.
+  /// [filter]'s category, event and recurring part as SQL terms
+  /// (phase-5.md §6.1, phase-7b.md §6.4). The ids are written into the SQL
+  /// as literals, so a long selection never meets the 999-variable limit;
+  /// they're `int`s from the app's own models, never text, so nothing can
+  /// be injected.
   static List<String> _filterWhere(ExpenseFilter filter) => [
     if (filter.categoryIds.isNotEmpty)
       'category_id IN (${_idList(filter.categoryIds)})',
     if (filter.eventIds.isNotEmpty) _withAnyEvent(filter.eventIds),
+    // On 3.22 this keeps Home's plan on its date index (F3; the unique
+    // index isn't picked for IS NOT NULL): a plan test pins it.
+    if (filter.onlyRecurring) _recurringOnly,
   ];
+
+  /// A payment of a recurring item (phase-7b.md §6.4).
+  static const _recurringOnly = 'recurring_expense_id IS NOT NULL';
 
   /// Has at least one photo.
   static const _withPhotos = 'id IN (SELECT expense_id FROM expense_photos)';

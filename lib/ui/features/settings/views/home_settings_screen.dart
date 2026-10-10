@@ -131,9 +131,8 @@ class HomeSettingsScreen extends StatelessWidget {
     WeekLabel label,
   ) {
     final today = todayOn(dependencies.now());
-    return PeriodNames(
-      l10n: AppLocalizations.of(context),
-      locale: dateLocaleOf(context),
+    return PeriodNames.of(
+      context,
       today: today,
       weekLabel: label,
     ).week(periodOf(today, Period.week, settings.weekStart));

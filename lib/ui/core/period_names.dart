@@ -1,9 +1,11 @@
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart' show BuildContext;
 
 import '../../domain/periods.dart';
 import '../../domain/totals.dart';
 import '../../l10n/app_localizations.dart';
 import 'date_texts.dart';
+import 'formatting_locale.dart';
 import 'money_formatter.dart';
 
 /// The names of days, weeks, months and years on Home (phase-5.md §8.3,
@@ -18,6 +20,19 @@ class PeriodNames {
     required this.today,
     required this.weekLabel,
   });
+
+  /// With [context]'s language and date locale: what every screen naming
+  /// periods builds (Home, Photos, Upcoming, a recurring page, Settings).
+  factory PeriodNames.of(
+    BuildContext context, {
+    required String today,
+    required WeekLabel weekLabel,
+  }) => PeriodNames(
+    l10n: AppLocalizations.of(context),
+    locale: dateLocaleOf(context),
+    today: today,
+    weekLabel: weekLabel,
+  );
 
   final AppLocalizations l10n;
 

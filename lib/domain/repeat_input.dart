@@ -7,17 +7,20 @@ import 'recurrence.dart';
 
 export 'recurrence.dart' show Frequency, lastEndOn;
 
-enum RepeatEnd { never, onDate }
+/// How Repeats ends: never, on a date, or after N payments (phase-7b.md
+/// §5.1; offered where an item is created, not in its Edit screen, P7b-1).
+enum RepeatEnd { never, onDate, afterCount }
 
 /// What the Repeats section holds. Kept **as typed** (P7a-26): a half-typed
-/// interval ("", "0") stays as it is, in the form and the draft, and is
-/// checked at Save only.
+/// interval ("", "0") or count stays as it is, in the form and the draft,
+/// and is checked at Save only.
 final class RepeatChoice {
   const RepeatChoice({
     this.frequency = Frequency.monthly,
     this.intervalText = '1',
     this.end = RepeatEnd.never,
     this.endOn,
+    this.countText = '',
   });
 
   /// What switching Repeats on starts with: every 1 month, never ends.
@@ -30,35 +33,36 @@ final class RepeatChoice {
 
   final RepeatEnd end;
 
-  /// The "On" date; kept while [end] is never, so switching back finds it.
+  /// The "On" date; kept while [end] is something else, so switching back
+  /// finds it.
   final String? endOn;
+
+  /// The "After N payments" field as typed: payments in all, the first one
+  /// included (phase-7b.md §5.1). Kept while [end] is something else.
+  final String countText;
 
   RepeatChoice copyWith({
     Frequency? frequency,
     String? intervalText,
     RepeatEnd? end,
     String? endOn,
+    String? countText,
   }) => RepeatChoice(
     frequency: frequency ?? this.frequency,
     intervalText: intervalText ?? this.intervalText,
     end: end ?? this.end,
     endOn: endOn ?? this.endOn,
+    countText: countText ?? this.countText,
   );
 
   /// The interval when [intervalText] is 1 to [maxRepeatInterval], else
   /// null. Leading zeros are read ("007" from a draft is 7): the field
   /// itself takes two digits.
-  int? get interval {
-    final text = intervalText;
-    if (text.isEmpty || text.length > 3 || !_digits.hasMatch(text)) {
-      return null;
-    }
-    final value = int.parse(text);
-    return value >= 1 && value <= maxRepeatInterval ? value : null;
-  }
+  int? get interval => intervalOf(intervalText);
 
-  /// The end date that applies: [endOn] when it ends on a date.
-  String? get effectiveEndOn => end == RepeatEnd.onDate ? endOn : null;
+  /// The payment count when [countText] is 2 to [maxRepeatCount], else
+  /// null. 1 isn't a repeat: the expense alone is that.
+  int? get count => _number(countText, 2, maxRepeatCount);
 
   @override
   bool operator ==(Object other) =>
@@ -66,20 +70,43 @@ final class RepeatChoice {
       other.frequency == frequency &&
       other.intervalText == intervalText &&
       other.end == end &&
-      other.endOn == endOn;
+      other.endOn == endOn &&
+      other.countText == countText;
 
   @override
-  int get hashCode => Object.hash(frequency, intervalText, end, endOn);
+  int get hashCode =>
+      Object.hash(frequency, intervalText, end, endOn, countText);
 
   @override
   String toString() =>
       'RepeatChoice(${frequency.name} × "$intervalText", ${end.name}'
-      '${endOn == null ? '' : ' $endOn'})';
+      '${endOn == null ? '' : ' $endOn'}'
+      '${countText.isEmpty ? '' : ' count "$countText"'})';
+}
+
+/// The Every field's [text] as an interval, 1 to [maxRepeatInterval], or
+/// null: the Add form's and the Edit screen's.
+int? intervalOf(String text) => _number(text, 1, maxRepeatInterval);
+
+/// [text] as a number from [min] to [max], or null. At most 3 digits, so a
+/// damaged draft can't hold a number too long to parse.
+int? _number(String text, int min, int max) {
+  if (text.isEmpty || text.length > 3 || !_digits.hasMatch(text)) return null;
+  final value = int.parse(text);
+  return value >= min && value <= max ? value : null;
 }
 
 final _digits = RegExp(r'^[0-9]+$');
 
 const maxRepeatInterval = 99;
+
+/// The most payments "After N payments" takes (phase-7b.md §5.1).
+const maxRepeatCount = 999;
+
+/// What the After field holds when After is picked with nothing typed:
+/// the flow's example (§8.1 A), so the row always says what it means, as
+/// "On" shows a date (phase-7a.md §12a D2).
+const defaultRepeatCountText = '12';
 
 /// The most earlier payments a Save adds, and the most one generator run
 /// adds per item (P7a-13).
@@ -100,20 +127,36 @@ enum RepeatError {
 
   /// More than [maxPastPayments] earlier payments.
   tooManyPast,
+
+  /// After N payments, N not 2 to [maxRepeatCount] (phase-7b.md §5.1).
+  countRange,
 }
 
-/// The schedule a Save stores for a first payment on [startOn]. Only for a
+/// The schedule a Save stores for a first payment on [startOn]. "After N
+/// payments" is stored as the N-th payment's date (P7b-1). Only for a
 /// choice [validateRepeat] accepts.
 Schedule scheduleFor(RepeatChoice c, String startOn) {
   final interval = c.interval;
   if (interval == null) {
     throw ArgumentError.value(c.intervalText, 'interval', 'not 1 to 99');
   }
+  final String? endOn;
+  switch (c.end) {
+    case RepeatEnd.never:
+      endOn = null;
+    case RepeatEnd.onDate:
+      endOn = c.endOn;
+    case RepeatEnd.afterCount:
+      endOn = _afterCountEnd(c, interval, startOn);
+      if (endOn == null) {
+        throw ArgumentError.value(c.countText, 'count', 'not 2 to 999 by 2200');
+      }
+  }
   return Schedule(
     frequency: c.frequency,
     interval: interval,
     startOn: startOn,
-    endOn: c.effectiveEndOn,
+    endOn: endOn,
   );
 }
 
@@ -124,12 +167,23 @@ RepeatError? validateRepeat(
   required String startOn,
   required String today,
 }) {
-  if (c.interval == null) return RepeatError.intervalRange;
-  if (c.end == RepeatEnd.onDate) {
-    final endOn = c.endOn;
-    if (endOn == null || !isValidDay(endOn)) return RepeatError.endMissing;
-    if (endOn.compareTo(startOn) < 0) return RepeatError.endBeforeStart;
-    if (endOn.compareTo(lastEndOn) > 0) return RepeatError.endTooLate;
+  final interval = c.interval;
+  if (interval == null) return RepeatError.intervalRange;
+  switch (c.end) {
+    case RepeatEnd.never:
+      break;
+    case RepeatEnd.onDate:
+      final endOn = c.endOn;
+      if (endOn == null || !isValidDay(endOn)) return RepeatError.endMissing;
+      if (endOn.compareTo(startOn) < 0) return RepeatError.endBeforeStart;
+      if (endOn.compareTo(lastEndOn) > 0) return RepeatError.endTooLate;
+    case RepeatEnd.afterCount:
+      if (c.count == null) return RepeatError.countRange;
+      // The N-th payment past 2200-12-31 (yearly × 99, after 999): an end
+      // nothing could read back.
+      if (_afterCountEnd(c, interval, startOn) == null) {
+        return RepeatError.endTooLate;
+      }
   }
   if (pastPaymentCount(c, startOn: startOn, today: today) > maxPastPayments) {
     return RepeatError.tooManyPast;
@@ -137,8 +191,42 @@ RepeatError? validateRepeat(
   return null;
 }
 
+/// What the Repeats section says under the rule: the earlier payments a
+/// Save adds, how many in all, the next payment after them and, when it
+/// ends, its last payment (phase-7b.md §8.2).
+typedef RepeatSummary = ({
+  List<String> past,
+  int pastCount,
+  String? next,
+  String? last,
+});
+
+/// [scheduleFor], or null while Every or After N isn't valid yet: what the
+/// section's live texts are computed from, before any Save attempt.
+Schedule? scheduleOrNull(RepeatChoice c, String startOn) {
+  final interval = c.interval;
+  if (interval == null) return null;
+  if (c.end == RepeatEnd.afterCount &&
+      _afterCountEnd(c, interval, startOn) == null) {
+    return null;
+  }
+  return scheduleFor(c, startOn);
+}
+
+/// The end "After N payments" stores: the N-th payment's date. Null when N
+/// isn't 2 to [maxRepeatCount] or that payment falls after [lastEndOn].
+String? _afterCountEnd(RepeatChoice c, int interval, String startOn) {
+  final count = c.count;
+  if (count == null) return null;
+  return occurrenceWithinLimit(
+    Schedule(frequency: c.frequency, interval: interval, startOn: startOn),
+    count - 1,
+  );
+}
+
 /// How many payments a Save would add besides the first: those after
-/// [startOn] up to [today] (and the end). Only for a valid interval.
+/// [startOn] up to [today] (and the end). Only for a choice
+/// [scheduleOrNull] accepts.
 int pastPaymentCount(
   RepeatChoice c, {
   required String startOn,
@@ -152,8 +240,8 @@ int pastPaymentCount(
 
 /// What the section shows: the payments Save would also add (after the
 /// first, up to [today], at most [maxPastPayments]) and the next one after
-/// those; null when none is left before the end. Only for a choice with a
-/// valid interval.
+/// those; null when none is left before the end. Only for a choice
+/// [scheduleOrNull] accepts.
 ({List<String> past, String? next}) repeatPreview(
   RepeatChoice c, {
   required String startOn,

@@ -328,4 +328,138 @@ void main() {
       expect([for (final p in pages) p.length].take(2), [30, 30]);
     });
   });
+
+  group('make an existing expense repeat (phase-7b.md §6.2)', () {
+    /// A plain Rent expense on [day], 10:00, with event 2 and no photos.
+    Future<Expense> plain({String day = '2026-09-01'}) =>
+        f.expenses.add(f.input(title: 'Rent', day: day));
+
+    test('a plain expense from 1 Sep, monthly: it becomes payment 0, 1 Oct '
+        'is added, next 1 Nov; the edit\'s fields are saved', () async {
+      final original = await plain();
+      final version = f.dataVersion.value;
+      final (:expense, :pastAdded) = await f.expenses.updateRepeating(
+        original.id,
+        f.input(
+          title: 'Rent',
+          day: '2026-09-01',
+          amount: const Money(2500000, 'INR'),
+          description: 'Flat',
+        ),
+        const RepeatChoice(),
+      );
+      expect(pastAdded, 1);
+      expect(expense.id, original.id, reason: 'the same row');
+      expect(expense.description, 'Flat');
+      expect(expense.amount, const Money(2500000, 'INR'));
+      expect(expense.recurringDueOn, '2026-09-01');
+      final itemId = expense.recurringExpenseId!;
+      expect(await f.paymentsOf(itemId), [
+        ('2026-09-01', false, 2500000),
+        ('2026-10-01', false, 2500000),
+      ]);
+      expect(await f.cursorOf(itemId), '2026-11-01');
+      final item = await f.itemRow(itemId);
+      expect(item['start_on'], '2026-09-01');
+      expect(item['title'], 'Rent');
+      expect(item['description'], 'Flat');
+      expect(f.dataVersion.value, version + 1);
+      expect(await count('expenses'), 2, reason: 'no duplicate of the edit');
+    });
+
+    test('the date edited at the same time: the item starts on the new '
+        'date', () async {
+      final original = await plain();
+      final (:expense, :pastAdded) = await f.expenses.updateRepeating(
+        original.id,
+        f.input(title: 'Rent', day: '2026-10-05'),
+        const RepeatChoice(frequency: Frequency.weekly),
+      );
+      expect(pastAdded, 0);
+      expect(expense.occurredOn, '2026-10-05');
+      expect(await f.cursorOf(expense.recurringExpenseId!), '2026-10-12');
+    });
+
+    test('a payment is refused (ArgumentError), nothing written', () async {
+      final (:expense, pastAdded: _) = await f.addRepeating();
+      final before = await f.expenseRows();
+      final items = await count('recurring_expenses');
+      await expectLater(
+        f.expenses.updateRepeating(
+          expense.id,
+          f.input(title: 'Changed'),
+          const RepeatChoice(),
+        ),
+        throwsArgumentError,
+      );
+      expect(await f.expenseRows(), before);
+      expect(await count('recurring_expenses'), items);
+    });
+
+    test(
+      'a binned or gone expense: ExpenseNotFound, nothing written',
+      () async {
+        final original = await plain();
+        await f.expenses.moveToBin(original.id);
+        for (final id in [original.id, 999]) {
+          await expectLater(
+            f.expenses.updateRepeating(id, f.input(), const RepeatChoice()),
+            throwsA(isA<ExpenseNotFound>()),
+          );
+        }
+        expect(await count('recurring_expenses'), 0);
+        expect(await count('recurring_amounts'), 0);
+      },
+    );
+
+    test('a refused choice (After 1): RepeatRefused, the expense as it '
+        'was', () async {
+      final original = await plain();
+      final before = await f.expenseRows();
+      await expectLater(
+        f.expenses.updateRepeating(
+          original.id,
+          f.input(title: 'Changed'),
+          const RepeatChoice(end: RepeatEnd.afterCount, countText: '1'),
+        ),
+        throwsA(isA<RepeatRefused>()),
+      );
+      expect(await f.expenseRows(), before);
+    });
+
+    test('a failure after the item insert rolls everything back', () async {
+      final original = await plain();
+      final before = await f.expenseRows();
+      // Fails the earlier payment's insert: after the item and the edit.
+      await f.db.execute(
+        'CREATE TEMP TRIGGER fail BEFORE INSERT ON expenses '
+        "BEGIN SELECT RAISE(ABORT, 'boom'); END",
+      );
+      await expectLater(
+        f.expenses.updateRepeating(
+          original.id,
+          f.input(title: 'Rent', day: '2026-09-01'),
+          const RepeatChoice(),
+        ),
+        throwsA(isA<DatabaseException>()),
+      );
+      await f.db.execute('DROP TRIGGER fail');
+      expect(await f.expenseRows(), before);
+      expect(await count('recurring_expenses'), 0);
+    });
+
+    test('after N payments: an end on the N-th; nothing past it', () async {
+      final original = await plain(day: '2026-08-01');
+      final (:expense, :pastAdded) = await f.expenses.updateRepeating(
+        original.id,
+        f.input(title: 'Rent', day: '2026-08-01'),
+        const RepeatChoice(end: RepeatEnd.afterCount, countText: '2'),
+      );
+      // 1 Aug and 1 Sep; 1 Oct would be the third.
+      expect(pastAdded, 1);
+      final itemId = expense.recurringExpenseId!;
+      expect((await f.itemRow(itemId))['end_on'], '2026-09-01');
+      expect(await f.cursorOf(itemId), isNull);
+    });
+  });
 }

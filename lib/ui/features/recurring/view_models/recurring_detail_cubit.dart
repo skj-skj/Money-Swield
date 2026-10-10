@@ -53,6 +53,7 @@ final class RecurringDetailLoaded extends RecurringDetailState {
     this.showingAll = false,
     this.busy = false,
     this.generateFailed = false,
+    this.relative,
   });
 
   final RecurringItem item;
@@ -76,6 +77,10 @@ final class RecurringDetailLoaded extends RecurringDetailState {
   /// The last generator run couldn't add its payments (§8.9).
   final bool generateFailed;
 
+  /// An archived item's running relative (phase-7b.md §7.2): Restore swaps
+  /// it out, after the swap dialog. Null for a running item.
+  final RecurringItem? relative;
+
   RecurringDetailLoaded copyWith({
     List<Expense>? payments,
     bool? hasMorePayments,
@@ -92,6 +97,7 @@ final class RecurringDetailLoaded extends RecurringDetailState {
     showingAll: showingAll ?? this.showingAll,
     busy: busy ?? this.busy,
     generateFailed: generateFailed,
+    relative: relative,
   );
 }
 
@@ -228,6 +234,9 @@ class RecurringDetailCubit extends CubitSignal<RecurringDetailState>
           events: [for (final id in item.eventIds) ?events[id]],
           showingAll: showingAll,
           generateFailed: _recurring.lastFailed.contains(itemId),
+          relative: item.isArchived
+              ? await _recurring.runningRelative(itemId)
+              : null,
         ),
       );
     } catch (error) {
@@ -297,14 +306,33 @@ class RecurringDetailCubit extends CubitSignal<RecurringDetailState>
     () => _recurring.generateDue(onlyId: itemId, confirmed: true),
   ))?.added;
 
+  /// The held dates for the Add selected sheet (phase-7b.md §7.2): skips
+  /// left out, at most 1,000, with the cursor and day they were read at.
+  /// Null when nothing is held any more.
+  Future<HeldDates?> heldDates() => _recurring.heldDates(itemId);
+
+  /// **Add selected**: the [ticked] dates added, the other listed ones
+  /// skipped for good (P7b-6). [held] is [heldDates]'s: refused if the
+  /// item moved on meanwhile (the page reloads). Busy-guarded.
+  Future<SelectedOutcome?> addSelected(
+    Set<String> ticked, {
+    required HeldDates held,
+  }) => _busy(() => _recurring.addSelected(itemId, ticked, held: held));
+
   /// **Skip them**: every payment before today is skipped.
   Future<SkipOutcome?> skipAll() => _busy(() => _recurring.skipBacklog(itemId));
 
   /// **Stop**: to the Archive; the page closes with Undo.
   Future<ArchiveUndo?> stop() => _busy(() => _recurring.archive(itemId));
 
-  /// The archived item back in the list, from the Archive.
-  Future<RestoreOutcome?> restore() => _busy(() => _recurring.restore(itemId));
+  /// The archived item back in the list, from the Archive. With a running
+  /// relative, it is swapped out in the same write (P7b-3: always, after
+  /// the screen's dialog). A relative that changed since the page read it
+  /// is refused by the repository; the page reads again.
+  Future<RestoreOutcome?> restore() {
+    final swapOut = _loaded?.relative?.id;
+    return _busy(() => _recurring.restore(itemId, swapOut: swapOut));
+  }
 
   /// Delete for good (archived only). True when deleted. Not read again
   /// after: the item is gone and the page closes with its own message; a

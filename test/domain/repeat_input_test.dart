@@ -120,8 +120,8 @@ void main() {
     });
 
     test('an end kept while Never is chosen is not checked', () {
-      const c = RepeatChoice(endOn: '2000-01-01');
-      expect(c.effectiveEndOn, isNull);
+      const c = RepeatChoice(endOn: '2000-01-01', countText: '0');
+      expect(scheduleFor(c, today).endOn, isNull);
       expect(check(c, today), isNull);
     });
 
@@ -209,5 +209,136 @@ void main() {
     expect(a == a.copyWith(intervalText: '2'), isFalse);
     expect(a == a.copyWith(end: RepeatEnd.onDate), isFalse);
     expect(a == a.copyWith(endOn: '2027-01-01'), isFalse);
+    expect(a == a.copyWith(countText: '3'), isFalse);
+    expect(a.hashCode == a.copyWith(countText: '3').hashCode, isFalse);
+  });
+
+  group('after N payments (phase-7b.md §5.1, today 2026-10-09)', () {
+    RepeatChoice after(
+      String count, {
+      Frequency frequency = Frequency.monthly,
+      String every = '1',
+    }) => RepeatChoice(
+      frequency: frequency,
+      intervalText: every,
+      end: RepeatEnd.afterCount,
+      countText: count,
+    );
+
+    test('weekly from today, after 3: ends on the third payment', () {
+      final c = after('3', frequency: Frequency.weekly);
+      expect(check(c, today), isNull);
+      expect(scheduleFor(c, today).endOn, '2026-10-23');
+      expect(lastOccurrence(scheduleFor(c, today)), '2026-10-23');
+      // Payments: 10-09, 10-16, 10-23: three in all, this one included.
+      expect(occurrencesThrough(scheduleFor(c, today), '2200-12-31'), 3);
+    });
+
+    test('count texts: 2 and 999 pass; empty, 0, 1, 1000, abc refused', () {
+      for (final ok in ['2', '999', '02']) {
+        expect(check(after(ok), today), isNull, reason: ok);
+      }
+      for (final bad in ['', '0', '1', '1000', 'abc', '-2', '9999']) {
+        expect(check(after(bad), today), RepeatError.countRange, reason: bad);
+        expect(scheduleOrNull(after(bad), today), isNull, reason: bad);
+      }
+    });
+
+    test('an N-th payment past 2200-12-31 is endTooLate, never stored', () {
+      // Yearly × 99 after 999 would end in year 100828; monthly × 99 in
+      // 10260: both read wrong as text ("100828" < "2200").
+      expect(
+        check(after('999', frequency: Frequency.yearly, every: '99'), today),
+        RepeatError.endTooLate,
+      );
+      expect(check(after('999', every: '99'), today), RepeatError.endTooLate);
+      expect(
+        check(
+          after('2', frequency: Frequency.yearly, every: '10'),
+          '2200-12-31',
+        ),
+        RepeatError.endTooLate,
+      );
+      expect(
+        scheduleOrNull(
+          after('999', frequency: Frequency.yearly, every: '99'),
+          today,
+        ),
+        isNull,
+      );
+      expect(
+        () => scheduleFor(
+          after('999', frequency: Frequency.yearly, every: '99'),
+          today,
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test('yearly from today, after 175: ends 2200-10-09, valid', () {
+      final c = after('175', frequency: Frequency.yearly);
+      expect(check(c, today), isNull);
+      expect(scheduleFor(c, today).endOn, '2200-10-09');
+    });
+
+    test('the end of a back-dated start counts the earlier payments', () {
+      // Monthly from 9 Aug, after 3: 9 Aug, 9 Sep, 9 Oct; nothing next.
+      final c = after('3');
+      final p = preview(c, '2026-08-09');
+      expect(p.past, ['2026-09-09', '2026-10-09']);
+      expect(p.next, isNull);
+    });
+
+    test('property: no accepted choice stores a year past 2200', () {
+      // Every frequency × interval 1–99 × count 2–999 from 2026-10-09 (and
+      // from the last day allowed): an accepted end is a 4-digit date on
+      // or before 2200-12-31; a refused one is endTooLate.
+      for (final start in [today, '2200-12-01']) {
+        for (final f in Frequency.values) {
+          for (var every = 1; every <= 99; every += 7) {
+            for (final count in [2, 3, 12, 100, 175, 500, 998, 999]) {
+              final c = after('$count', frequency: f, every: '$every');
+              final error = check(c, start);
+              if (error == null) {
+                final endOn = scheduleFor(c, start).endOn!;
+                expect(isValidDay(endOn), isTrue, reason: '$c $endOn');
+                expect(endOn.compareTo(lastEndOn) <= 0, isTrue, reason: '$c');
+              } else {
+                expect(
+                  error,
+                  anyOf(RepeatError.endTooLate, RepeatError.tooManyPast),
+                  reason: '$c',
+                );
+              }
+            }
+          }
+        }
+      }
+    });
+  });
+
+  group('lastOccurrence', () {
+    test('no end: none; an end between payments: the payment before', () {
+      const s = Schedule(
+        frequency: Frequency.monthly,
+        interval: 1,
+        startOn: '2026-01-31',
+      );
+      expect(lastOccurrence(s), isNull);
+      const ends = Schedule(
+        frequency: Frequency.monthly,
+        interval: 1,
+        startOn: '2026-01-31',
+        endOn: '2026-03-15',
+      );
+      expect(lastOccurrence(ends), '2026-02-28');
+      const beforeStart = Schedule(
+        frequency: Frequency.monthly,
+        interval: 1,
+        startOn: '2026-01-31',
+        endOn: '2026-01-01',
+      );
+      expect(lastOccurrence(beforeStart), isNull);
+    });
   });
 }

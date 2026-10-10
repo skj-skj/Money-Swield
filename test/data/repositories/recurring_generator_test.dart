@@ -622,4 +622,71 @@ void main() {
       }
     });
   });
+
+  group('a payment re-dated by the user (owner\'s question, 2026-10-10)', () {
+    /// Re-dates payment [id] to [day] through the form's path, as an Edit
+    /// that only changes the date does.
+    Future<void> redate(int id, String day) async {
+      final e = (await f.expenses.byId(id))!;
+      final moved = f.input(day: day, amount: e.amount, eventIds: e.eventIds);
+      await f.expenses.update(id, moved);
+    }
+
+    test('paid 5 days late: moved from 9 Nov to 14 Nov → nothing re-added '
+        'for 9 Nov, next month on schedule', () async {
+      final id = await monthlyFrom('2026-10-09');
+      f.setToday('2026-11-09');
+      await f.recurring.generateDue();
+      final nov = (await f.recurring.payments(id, limit: 1)).single;
+      expect(nov.recurringDueOn, '2026-11-09');
+      await redate(nov.id, '2026-11-14');
+      for (final day in ['2026-11-10', '2026-11-14', '2026-12-09']) {
+        f.setToday(day);
+        await f.recurring.generateDue();
+      }
+      final payments = await f.recurring.payments(id);
+      expect(
+        [for (final p in payments) p.recurringDueOn],
+        ['2026-12-09', '2026-11-09', '2026-10-09'],
+      );
+      // The moved one keeps which payment it is; only its date changed.
+      final moved = payments.singleWhere((p) => p.id == nov.id);
+      expect(moved.occurredOn, '2026-11-14');
+      expect(moved.recurringDueOn, '2026-11-09');
+      expect(await f.cursorOf(id), '2027-01-09');
+    });
+
+    test('moved into another month (9 Nov paid on 2 Dec) or earlier (paid '
+        'on 1 Nov): never a second November payment', () async {
+      final id = await monthlyFrom('2026-10-09');
+      f.setToday('2026-11-09');
+      await f.recurring.generateDue();
+      final nov = (await f.recurring.payments(id, limit: 1)).single;
+      await redate(nov.id, '2026-12-02');
+      f.setToday('2026-12-09');
+      await f.recurring.generateDue();
+      await redate(nov.id, '2026-11-01');
+      f.setToday('2027-01-09');
+      await f.recurring.generateDue();
+      expect(
+        [for (final p in await f.recurring.payments(id)) p.recurringDueOn],
+        ['2027-01-09', '2026-12-09', '2026-11-09', '2026-10-09'],
+      );
+    });
+
+    test(
+      'a held backlog doesn\'t count a re-dated payment as missing',
+      () async {
+        final id = await monthlyFrom('2026-10-09');
+        f.setToday('2026-11-09');
+        await f.recurring.generateDue();
+        final nov = (await f.recurring.payments(id, limit: 1)).single;
+        await redate(nov.id, '2026-11-20');
+        f.setToday('2027-01-20');
+        final item = (await f.recurring.byId(id))!;
+        expect(item.hold!.from, '2026-12-09', reason: 'not 9 Nov');
+        expect(item.hold!.count, 2);
+      },
+    );
+  });
 }

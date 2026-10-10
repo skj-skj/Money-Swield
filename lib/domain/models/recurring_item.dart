@@ -1,5 +1,6 @@
 import '../recurrence.dart';
 import '../recurring_plan.dart';
+import '../recurring_price.dart';
 import 'money.dart';
 
 /// Why an item is in the Archive (P7a-12).
@@ -9,6 +10,9 @@ enum ArchiveReason {
 
   /// Its end date passed with no payment left.
   expired,
+
+  /// How often changed: a new item was made from it (phase-7b.md §6.1).
+  replaced,
 }
 
 /// A recurring item as the lists and its page show it (phase-7a.md §6.1).
@@ -31,7 +35,14 @@ class RecurringItem {
     required this.priceMinor,
     required this.paymentCount,
     required this.hold,
+    this.replacesId,
+    this.replaced = false,
+    this.prices = const [],
   });
+
+  /// Its prices, any order: Upcoming shows each payment at the price on its
+  /// date (phase-7b.md §5.3).
+  final List<PricePoint> prices;
 
   final int id;
   final String title;
@@ -74,6 +85,15 @@ class RecurringItem {
   /// The backlog waiting for Add all / Skip them (§5.3); null when none.
   final HoldPayments? hold;
 
+  /// The item this one was made from when its schedule changed
+  /// (`replaces_id`, phase-7b.md §4.1); null otherwise.
+  final int? replacesId;
+
+  /// Archived by a change of how often: an item made from it was created
+  /// in the same write (its `created_at` is this one's `archived_at`), so
+  /// a later Stop of a restored item isn't called "replaced".
+  final bool replaced;
+
   bool get isArchived => archivedAt != null;
 
   bool get isBroken => schedule == null || priceMinor == null;
@@ -92,6 +112,7 @@ class RecurringItem {
   ArchiveReason? get archiveReason {
     final on = archivedOn;
     if (on == null) return null;
+    if (replaced) return ArchiveReason.replaced;
     final endOn = schedule?.endOn;
     return nextDueOn == null && endOn != null && endOn.compareTo(on) < 0
         ? ArchiveReason.expired
@@ -104,8 +125,9 @@ class RecurringItem {
       '${isArchived ? ', archived' : ''}${isBroken ? ', broken' : ''})';
 }
 
-/// What the Edit screen saves (phase-7a.md §7.4). The schedule and the
-/// currency are never edited (P7a-10; changing how often is 7b's).
+/// What the Edit screen saves (phase-7a.md §7.4). The currency is never
+/// edited (P7a-10); changing how often makes a new item instead
+/// (`RecurringRepository.replaceSchedule`, phase-7b.md §6.1).
 class RecurringEdit {
   const RecurringEdit({
     required this.title,

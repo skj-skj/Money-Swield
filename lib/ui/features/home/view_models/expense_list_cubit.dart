@@ -23,6 +23,8 @@ import '../../../../domain/models/payment_method.dart';
 import '../../../../domain/models/recurring_item.dart';
 import '../../../../domain/periods.dart';
 import '../../../../domain/totals.dart';
+import '../../../../domain/upcoming.dart'
+    show hasUpcomingPayment, upcomingItemMatches;
 import '../../../core/emit_if_open.dart';
 import '../../../core/recent_currencies.dart';
 
@@ -79,7 +81,8 @@ final class ExpenseListLoaded extends ExpenseListState {
     this.chips = const [],
     this.draftExpenseId,
     this.subtotals = const {},
-    this.photosIcon = PhotosIcon.hidden,
+    this.photosIcon = FilteredScreenIcon.hidden,
+    this.upcomingIcon = FilteredScreenIcon.hidden,
   });
 
   /// In list order: by local date, then moment (phase-5.md §4.1).
@@ -123,7 +126,12 @@ final class ExpenseListLoaded extends ExpenseListState {
   final Map<SubtotalKey, SubtotalState> subtotals;
 
   /// Read with every load and filter change.
-  final PhotosIcon photosIcon;
+  final FilteredScreenIcon photosIcon;
+
+  /// The Upcoming payments icon (phase-7b.md §7.5): hidden while no item
+  /// runs, greyed when the filters hide every upcoming payment (owner,
+  /// 2026-10-10: Upcoming follows the filters, like the Photos screen).
+  final FilteredScreenIcon upcomingIcon;
 
   /// Whether this state differs from [other] only in its subtotals, so the
   /// list itself needn't be built again (each frame top and day header
@@ -142,7 +150,8 @@ final class ExpenseListLoaded extends ExpenseListState {
       loadMoreFailed == other.loadMoreFailed &&
       identical(chips, other.chips) &&
       draftExpenseId == other.draftExpenseId &&
-      photosIcon == other.photosIcon;
+      photosIcon == other.photosIcon &&
+      upcomingIcon == other.upcomingIcon;
 
   /// A copy; [groups] are rebuilt when the rows, [hasMore], the grouping
   /// or the week start change.
@@ -186,19 +195,23 @@ final class ExpenseListLoaded extends ExpenseListState {
           : draftExpenseId(),
       subtotals: subtotals ?? this.subtotals,
       photosIcon: photosIcon,
+      upcomingIcon: upcomingIcon,
     );
   }
 }
 
-/// Home's photos icon (phase-6.md §8.9, P6-36, P6-45).
-enum PhotosIcon {
-  /// No active expense has a photo, or they couldn't be counted.
+/// An icon on Home's filter bar that opens a screen following Home's
+/// filters: the photos icon (phase-6.md §8.9, P6-36, P6-45) and the
+/// Upcoming payments icon (phase-7b.md §8.3, owner 2026-10-10).
+enum FilteredScreenIcon {
+  /// Nothing to show at all (no photo; no running item), or it couldn't
+  /// be counted.
   hidden,
 
-  /// The filters let at least one photo through.
+  /// The filters let at least one through.
   enabled,
 
-  /// Photos exist, but the filters hide every one: greyed out.
+  /// Some exist, but the filters hide every one: greyed out.
   disabled,
 }
 
@@ -587,6 +600,7 @@ class ExpenseListCubit extends CubitSignal<ExpenseListState>
       }
       final draft = await pendingDraft();
       final photosIcon = await _photosIcon(filter, matches);
+      final upcomingIcon = await _upcomingIcon(filter);
       // Last, with no await after it: the chips are for the chip currency
       // as it is when this emits, even if it changed while loading.
       final chips = await _loadChips();
@@ -616,6 +630,7 @@ class ExpenseListCubit extends CubitSignal<ExpenseListState>
           chips: chips,
           draftExpenseId: draft?.editingExpenseId,
           photosIcon: photosIcon,
+          upcomingIcon: upcomingIcon,
         ),
       );
       return true;
@@ -634,22 +649,45 @@ class ExpenseListCubit extends CubitSignal<ExpenseListState>
   /// through (P6-45). With a text filter its [matches] are already read:
   /// they are checked against the expenses with photos. Its own try/catch:
   /// a failure hides the icon (logged), the list loads normally.
-  Future<PhotosIcon> _photosIcon(
+  Future<FilteredScreenIcon> _photosIcon(
     ExpenseFilter filter,
     List<SearchEntry>? matches,
   ) async {
     try {
-      if (!await _expenses.hasPhotos()) return PhotosIcon.hidden;
+      if (!await _expenses.hasPhotos()) return FilteredScreenIcon.hidden;
       final bool any;
       if (matches != null) {
         any = (await _expenses.withPhotos(matches)).isNotEmpty;
       } else {
         any = await _expenses.hasMatchingPhotos(filter);
       }
-      return any ? PhotosIcon.enabled : PhotosIcon.disabled;
+      return any ? FilteredScreenIcon.enabled : FilteredScreenIcon.disabled;
     } catch (error) {
       debugPrint('Checking for photos failed: $error');
-      return PhotosIcon.hidden;
+      return FilteredScreenIcon.hidden;
+    }
+  }
+
+  /// Home's Upcoming icon (phase-7b.md §7.5): hidden while no item has a
+  /// payment Upcoming would list ([hasUpcomingPayment]), greyed when
+  /// [filter] lets none of them through ([upcomingItemMatches]). Its own
+  /// try/catch: a failure hides the icon (logged), the list loads normally.
+  Future<FilteredScreenIcon> _upcomingIcon(ExpenseFilter filter) async {
+    final recurring = _recurring;
+    if (recurring == null) return FilteredScreenIcon.hidden;
+    try {
+      final today = todayOn(_now());
+      final items = [
+        for (final item in await recurring.all())
+          if (hasUpcomingPayment(item, today: today)) item,
+      ];
+      if (items.isEmpty) return FilteredScreenIcon.hidden;
+      return items.any((item) => upcomingItemMatches(item, filter))
+          ? FilteredScreenIcon.enabled
+          : FilteredScreenIcon.disabled;
+    } catch (error) {
+      debugPrint('Reading recurring items failed: $error');
+      return FilteredScreenIcon.hidden;
     }
   }
 

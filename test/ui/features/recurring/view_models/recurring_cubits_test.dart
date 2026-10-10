@@ -4,6 +4,7 @@ import 'package:my_expense_tracker_app/domain/amount_expression.dart';
 import 'package:my_expense_tracker_app/domain/models/expense.dart';
 import 'package:my_expense_tracker_app/domain/models/money.dart';
 import 'package:my_expense_tracker_app/domain/models/recurring_item.dart';
+import 'package:my_expense_tracker_app/domain/recurrence.dart';
 import 'package:my_expense_tracker_app/domain/recurring_price.dart';
 import 'package:my_expense_tracker_app/domain/repeat_input.dart';
 import 'package:my_expense_tracker_app/ui/features/expenses/view_models/expense_form_cubit.dart'
@@ -491,6 +492,148 @@ void main() {
       final version = deps.dataVersion.value;
       await Future.wait([cubit.save(), cubit.save()]);
       expect(deps.dataVersion.value, version + 1);
+    });
+
+    group('how often (phase-7b.md §7.3)', () {
+      test('Every changed → First payment, default the next date; back to '
+          'the item\'s → no change', () async {
+        final cubit = await form(await item('Netflix'));
+        expect(cubit.scheduleChanged, isFalse);
+        cubit.frequencyChanged(Frequency.weekly);
+        expect(cubit.scheduleChanged, isTrue);
+        expect(cubit.isDirty, isTrue);
+        expect(cubit.firstPaymentOn, '2026-11-09');
+        final state = cubit.value as RecurringFormReady;
+        expect(state.earliestFirst, '2026-10-10', reason: 'after 9 Oct');
+        cubit.frequencyChanged(Frequency.monthly);
+        expect(cubit.scheduleChanged, isFalse);
+        expect(cubit.isDirty, isFalse);
+        // "01" typed for 1 is no change either.
+        cubit.intervalChanged('01');
+        expect(cubit.scheduleChanged, isFalse);
+        expect(cubit.isDirty, isFalse);
+      });
+
+      test('limits: a First payment before the earliest is refused; an end '
+          'before the First payment too; save() never writes a new '
+          'schedule', () async {
+        final id = await item('Netflix');
+        final cubit = await form(id)
+          ..frequencyChanged(Frequency.weekly)
+          ..firstPaymentChanged(DateTime(2026, 10, 9))
+          ..endDateChanged(DateTime(2026, 10, 20));
+        expect(await cubit.save(), isFalse, reason: 'the screen asks first');
+        expect(cubit.validate(), isFalse);
+        expect(cubit.firstPaymentError, FirstPaymentError.tooEarly);
+        cubit.firstPaymentChanged(DateTime(2026, 10, 25));
+        expect(cubit.firstPaymentError, isNull);
+        expect(cubit.endError, EndError.beforeEarliest);
+        expect((await deps.recurring.all()).single.id, id, reason: 'unsaved');
+      });
+
+      test(
+        'an Every that isn\'t 1 to 99 is an error, no new schedule',
+        () async {
+          final cubit = await form(await item('Netflix'))
+            ..intervalChanged('');
+          expect(cubit.scheduleChanged, isTrue);
+          expect(cubit.newSchedule, isNull);
+          expect(await cubit.saveAsNew(), isNull);
+          expect(cubit.intervalInvalid, isTrue);
+        },
+      );
+
+      test('saveAsNew: a new item with the fields and First payment; the old '
+          'one archived; a double tap makes one', () async {
+        final id = await item('Netflix');
+        final cubit = await form(id)
+          ..titleChanged('Netflix 4K')
+          ..frequencyChanged(Frequency.weekly)
+          ..intervalChanged('2');
+        final results = await Future.wait([
+          cubit.saveAsNew(),
+          cubit.saveAsNew(),
+        ]);
+        final newIds = results.whereType<int>().toList();
+        expect(newIds, hasLength(1));
+        final created = (await deps.recurring.byId(newIds.single))!;
+        expect(created.title, 'Netflix 4K');
+        expect(created.schedule!.frequency, Frequency.weekly);
+        expect(created.schedule!.interval, 2);
+        expect(created.schedule!.startOn, '2026-11-09');
+        expect(created.replacesId, id);
+        expect((await deps.recurring.byId(id))!.isArchived, isTrue);
+        expect(await deps.recurring.all(), hasLength(1));
+      });
+
+      test('payments waiting: how often is locked', () async {
+        final id = await item('Rent', start: '2026-08-09');
+        await deps.database.update('recurring_expenses', {
+          'next_due_on': '2026-09-09',
+        }, where: 'id = $id');
+        final cubit = await form(id);
+        expect((cubit.value as RecurringFormReady).scheduleLocked, isTrue);
+        cubit.frequencyChanged(Frequency.weekly);
+        cubit.intervalChanged('3');
+        expect(cubit.scheduleChanged, isFalse);
+      });
+
+      test('the day moved on meanwhile (refused): the limits are read again '
+          'and the error shows; nothing written', () async {
+        final id = await item('Netflix');
+        final cubit = await form(id)
+          ..frequencyChanged(Frequency.weekly)
+          ..firstPaymentChanged(DateTime(2026, 10, 10));
+        // Two midnights passed while the screen was open: 10 Oct is in the
+        // past now.
+        clock.now = DateTime(2026, 10, 11, 12);
+        expect(await cubit.saveAsNew(), isNull);
+        expect(cubit.firstPaymentError, FirstPaymentError.tooEarly);
+        expect(await deps.recurring.all(), hasLength(1));
+        expect((await deps.recurring.byId(id))!.isArchived, isFalse);
+      });
+    });
+  });
+
+  group('the swap (phase-7b.md §7.2)', () {
+    test('an archived replaced item\'s page knows its running relative; '
+        'Restore swaps it out', () async {
+      final a = await item('Netflix');
+      final b = await deps.recurring.replaceSchedule(
+        a,
+        const RecurringEdit(
+          title: 'Netflix',
+          description: null,
+          categoryId: 17,
+          paymentMethodId: 4,
+          eventIds: {},
+          timeOfDayMinutes: 600,
+          endOn: null,
+        ),
+        const Schedule(
+          frequency: Frequency.weekly,
+          interval: 1,
+          startOn: '2026-10-12',
+        ),
+      );
+      final cubit = RecurringDetailCubit(
+        itemId: a,
+        recurring: deps.recurring,
+        expenses: deps.expenses,
+        categories: deps.categories,
+        paymentMethods: deps.paymentMethods,
+        events: deps.events,
+        drafts: deps.drafts,
+        now: clock.call,
+      );
+      addTearDown(cubit.close);
+      await cubit.load();
+      final state = cubit.value as RecurringDetailLoaded;
+      expect(state.item.archiveReason, ArchiveReason.replaced);
+      expect(state.relative!.id, b);
+      final results = await Future.wait([cubit.restore(), cubit.restore()]);
+      expect(results.nonNulls, hasLength(1), reason: 'a double tap once');
+      expect([for (final i in await deps.recurring.all()) i.id], [a]);
     });
   });
 }

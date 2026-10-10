@@ -1,10 +1,11 @@
 /// Home's filters and text matching (phase-5.md §5.6).
 ///
 /// They combine as: **any** chosen category, **and** at least **one**
-/// chosen event, **and** every word of the text (P5-32). The category and
-/// event parts are SQL (`ExpenseRepository`); the text part is matched
-/// here, in Dart, because SQL's `LIKE` folds ASCII only in tests and
-/// Unicode on phones (sqlite.md §5.4).
+/// chosen event, **and** every word of the text (P5-32), **and**, with
+/// Only recurring, a payment of a recurring item (phase-7b.md §6.4). The
+/// category, event and recurring parts are SQL (`ExpenseRepository`); the
+/// text part is matched here, in Dart, because SQL's `LIKE` folds ASCII
+/// only in tests and Unicode on phones (sqlite.md §5.4).
 library;
 
 import 'package:characters/characters.dart';
@@ -18,6 +19,7 @@ class ExpenseFilter {
     this.text = '',
     this.categoryIds = const {},
     this.eventIds = const {},
+    this.onlyRecurring = false,
   });
 
   static const none = ExpenseFilter();
@@ -31,22 +33,33 @@ class ExpenseFilter {
   /// Empty = with or without events.
   final Set<int> eventIds;
 
+  /// Only payments of recurring items (P7b-11): every payment linked to an
+  /// item, payment 0 and archived items' included; one whose item was
+  /// deleted for good lost its link and drops out.
+  final bool onlyRecurring;
+
   bool get hasText => searchWords(text).isNotEmpty;
 
-  bool get isEmpty => !hasText && categoryIds.isEmpty && eventIds.isEmpty;
+  bool get isEmpty =>
+      !hasText && categoryIds.isEmpty && eventIds.isEmpty && !onlyRecurring;
 
-  /// The category and event part only, the one SQL applies.
-  ExpenseFilter get withoutText =>
-      ExpenseFilter(categoryIds: categoryIds, eventIds: eventIds);
+  /// The SQL part only (categories, events, Only recurring).
+  ExpenseFilter get withoutText => ExpenseFilter(
+    categoryIds: categoryIds,
+    eventIds: eventIds,
+    onlyRecurring: onlyRecurring,
+  );
 
   ExpenseFilter copyWith({
     String? text,
     Set<int>? categoryIds,
     Set<int>? eventIds,
+    bool? onlyRecurring,
   }) => ExpenseFilter(
     text: text ?? this.text,
     categoryIds: categoryIds ?? this.categoryIds,
     eventIds: eventIds ?? this.eventIds,
+    onlyRecurring: onlyRecurring ?? this.onlyRecurring,
   );
 
   @override
@@ -54,18 +67,21 @@ class ExpenseFilter {
       other is ExpenseFilter &&
       other.text == text &&
       _sameSet(other.categoryIds, categoryIds) &&
-      _sameSet(other.eventIds, eventIds);
+      _sameSet(other.eventIds, eventIds) &&
+      other.onlyRecurring == onlyRecurring;
 
   @override
   int get hashCode => Object.hash(
     text,
     Object.hashAllUnordered(categoryIds),
     Object.hashAllUnordered(eventIds),
+    onlyRecurring,
   );
 
   @override
   String toString() =>
-      'ExpenseFilter("$text", categories: $categoryIds, events: $eventIds)';
+      'ExpenseFilter("$text", categories: $categoryIds, events: $eventIds'
+      '${onlyRecurring ? ', only recurring' : ''})';
 
   static bool _sameSet(Set<int> a, Set<int> b) =>
       a.length == b.length && a.containsAll(b);

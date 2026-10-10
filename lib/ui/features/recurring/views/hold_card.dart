@@ -7,9 +7,9 @@ import '../../../core/formatting_locale.dart';
 import 'recurring_texts.dart';
 
 /// The question a held backlog asks on its page (phase-7a.md §8.6): "⚠ 10
-/// payments are due, 3 Aug – 5 Oct." with **Add all 10** and **Skip them**.
-/// No confirm: the card is the question. While one runs, a progress ring
-/// and both buttons off.
+/// payments are due, 3 Aug – 5 Oct." with **Add all 10**, **Add selected**
+/// (phase-7b.md §8.1 E) and **Skip them**. No confirm: the card is the
+/// question. While one runs, a progress ring and the buttons off.
 class HoldCard extends StatelessWidget {
   const HoldCard({
     super.key,
@@ -17,6 +17,7 @@ class HoldCard extends StatelessWidget {
     required this.today,
     required this.busy,
     required this.onAddAll,
+    required this.onAddSelected,
     required this.onSkip,
   });
 
@@ -24,6 +25,9 @@ class HoldCard extends StatelessWidget {
   final String today;
   final bool busy;
   final VoidCallback onAddAll;
+
+  /// Opens the sheet to tick the ones to add.
+  final VoidCallback onAddSelected;
   final VoidCallback onSkip;
 
   @override
@@ -56,7 +60,8 @@ class HoldCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            // A Wrap: at a large font the buttons go one under the other.
+            // A Wrap: three buttons take two lines at 360 dp (phase-7b.md
+            // §8.2), and at a large font they go one under the other.
             Wrap(
               alignment: WrapAlignment.end,
               crossAxisAlignment: WrapCrossAlignment.center,
@@ -72,6 +77,11 @@ class HoldCard extends StatelessWidget {
                   key: const ValueKey('skipThem'),
                   onPressed: busy ? null : onSkip,
                   child: Text(l10n.skipThem),
+                ),
+                OutlinedButton(
+                  key: const ValueKey('addSelected'),
+                  onPressed: busy ? null : onAddSelected,
+                  child: Text(l10n.addSelected),
                 ),
                 FilledButton(
                   key: const ValueKey('addAll'),

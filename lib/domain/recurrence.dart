@@ -62,6 +62,24 @@ final class Schedule {
 /// need that use [occurrenceAfter] and friends.
 String occurrenceAt(Schedule s, int k) => isoDay(_dateAt(s, k));
 
+/// The [k]-th payment, or null when it falls after [lastEndOn]: "after 999
+/// payments" yearly × 99 would be year 100828, which [parseDay] can't read
+/// and which sorts before "2200" as text (phase-7b.md §5.1). Compared as
+/// dates, never as strings. The end is not applied.
+String? occurrenceWithinLimit(Schedule s, int k) {
+  final date = _dateAt(s, k);
+  return date.isAfter(_lastEnd) ? null : isoDay(date);
+}
+
+/// The last payment before the end, or null when [s] has no end (it runs to
+/// [lastEndOn]) or none falls before it.
+String? lastOccurrence(Schedule s) {
+  final endOn = s.endOn;
+  if (endOn == null) return null;
+  final count = occurrencesThrough(s, endOn);
+  return count == 0 ? null : occurrenceAt(s, count - 1);
+}
+
 /// The first payment strictly after [day], or null when it would fall
 /// after the end (or after [lastEndOn]).
 String? occurrenceAfter(Schedule s, String day) {

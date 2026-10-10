@@ -3070,6 +3070,12 @@ abstract class AppLocalizations {
   /// **'{title} stopped and archived.'**
   String recurringStopped(String title);
 
+  /// No description provided for @undoStopRefused.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t undo: it was restored, deleted or switched for another item since.'**
+  String get undoStopRefused;
+
   /// No description provided for @archiveTitle.
   ///
   /// In en, this message translates to:
@@ -3279,6 +3285,288 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Nothing is archived. Stopped and ended items go here.'**
   String get recurringNoneArchived;
+
+  /// Before the count field in 'After [12] payments'. Hindi: 'कुल [12] भुगतानों के बाद' (after 12 payments in all).
+  ///
+  /// In en, this message translates to:
+  /// **'After'**
+  String get repeatEndsAfter;
+
+  /// After the count field in 'After [12] payments'.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{payment} other{payments}}'**
+  String repeatEndsAfterUnit(int count);
+
+  /// The count field's label for TalkBack: payments in all, this one included.
+  ///
+  /// In en, this message translates to:
+  /// **'Number of payments'**
+  String get repeatCountLabel;
+
+  /// No description provided for @repeatCountError.
+  ///
+  /// In en, this message translates to:
+  /// **'{min} to {max}'**
+  String repeatCountError(int min, int max);
+
+  /// After 'Next: 9 Nov' when the item ends: 'Next: 9 Nov · last 9 Sep 2027'.
+  ///
+  /// In en, this message translates to:
+  /// **'last {date}'**
+  String repeatLast(String date);
+
+  /// No description provided for @repeatCountTooLate.
+  ///
+  /// In en, this message translates to:
+  /// **'The last payment would be after {date}. Use fewer payments.'**
+  String repeatCountTooLate(String date);
+
+  /// An existing expense made to repeat (phase-7b.md §8.5).
+  ///
+  /// In en, this message translates to:
+  /// **'Updated. Repeats: {schedule}'**
+  String updatedRepeats(String schedule);
+
+  /// No description provided for @updatedWithEarlier.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Updated with 1 earlier payment.} other{Updated with {count} earlier payments.}}'**
+  String updatedWithEarlier(int count);
+
+  /// No description provided for @howOften.
+  ///
+  /// In en, this message translates to:
+  /// **'How often'**
+  String get howOften;
+
+  /// No description provided for @firstPayment.
+  ///
+  /// In en, this message translates to:
+  /// **'First payment'**
+  String get firstPayment;
+
+  /// Under How often once it differs from the item's (phase-7b.md §8.2).
+  ///
+  /// In en, this message translates to:
+  /// **'Saving makes a new recurring item; this one is archived.'**
+  String get newItemNotice;
+
+  /// No description provided for @scheduleLockedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Payments are waiting. Add or skip them on the item\'s page before changing how often.'**
+  String get scheduleLockedNotice;
+
+  /// The First payment of a new schedule must be after the old item's last handled payment and not before today.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick {date} or later'**
+  String firstPaymentTooEarly(String date);
+
+  /// No description provided for @newItemTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Make a new recurring item?'**
+  String get newItemTitle;
+
+  /// name: 'Netflix · Every week on Monday'; date: the First payment.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Changing how often creates a new item, {name}, from {date}. This one is archived: it adds nothing more, and you can restore or delete it from the Archive.} =1{Changing how often creates a new item, {name}, from {date}. This one is archived: it adds nothing more, and you can restore or delete it from the Archive. Its payment stays.} other{Changing how often creates a new item, {name}, from {date}. This one is archived: it adds nothing more, and you can restore or delete it from the Archive. Its {count} payments stay.}}'**
+  String newItemText(int count, String name, String date);
+
+  /// No description provided for @createNew.
+  ///
+  /// In en, this message translates to:
+  /// **'Create new'**
+  String get createNew;
+
+  /// No description provided for @recurringArchivedShort.
+  ///
+  /// In en, this message translates to:
+  /// **'{title} archived'**
+  String recurringArchivedShort(String title);
+
+  /// After the schedule in an Archive row: 'Monthly · replaced 9 Oct'.
+  ///
+  /// In en, this message translates to:
+  /// **'replaced {date}'**
+  String archivedReplaced(String date);
+
+  /// name: 'Netflix · Every month'.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch back to {name}?'**
+  String swapTitle(String name);
+
+  /// name: the item switched out, 'Netflix · Every week on Monday'.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{{name} is archived: it adds nothing more. It added no payments.} =1{{name} is archived: it adds nothing more. Its 1 payment already added stays. Delete it from the list if you don\'t want it.} other{{name} is archived: it adds nothing more. Its {count} payments already added stay. Delete the ones you don\'t want from the list.}}'**
+  String swapText(int count, String name);
+
+  /// No description provided for @switchBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch back'**
+  String get switchBack;
+
+  /// No description provided for @switchedBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Switched back to {name}'**
+  String switchedBack(String name);
+
+  /// No description provided for @addSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Add selected'**
+  String get addSelected;
+
+  /// No description provided for @whichPaymentsToAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Which payments to add?'**
+  String get whichPaymentsToAdd;
+
+  /// Unticks every payment in the Add selected sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get selectNone;
+
+  /// No description provided for @addN.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Add 1} other{Add {count}}}'**
+  String addN(int count);
+
+  /// The Add selected sheet's button when nothing is ticked.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Skip it} other{Skip all {count}}}'**
+  String skipAllN(int count);
+
+  /// No description provided for @addedAndSkipped.
+  ///
+  /// In en, this message translates to:
+  /// **'{added} added, {skipped} skipped. Next: {date}'**
+  String addedAndSkipped(int added, int skipped, String date);
+
+  /// No description provided for @addedAndSkippedNoNext.
+  ///
+  /// In en, this message translates to:
+  /// **'{added} added, {skipped} skipped. No more payments.'**
+  String addedAndSkippedNoNext(int added, int skipped);
+
+  /// More than 1,000 were waiting: the rest are asked about next.
+  ///
+  /// In en, this message translates to:
+  /// **'{added} added, {skipped} skipped. More are waiting.'**
+  String addedAndSkippedMore(int added, int skipped);
+
+  /// No description provided for @upcomingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming payments'**
+  String get upcomingTitle;
+
+  /// Home's icon left of the photos icon (phase-7b.md §8.3).
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming payments'**
+  String get upcomingTooltip;
+
+  /// No description provided for @upcomingEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing coming up. Recurring items you add show here.'**
+  String get upcomingEmpty;
+
+  /// No description provided for @upcomingEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'Shows the next 12 months.'**
+  String get upcomingEnd;
+
+  /// No description provided for @skip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get skip;
+
+  /// No description provided for @skipDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip {title} on {date}?'**
+  String skipDialogTitle(String title, String date);
+
+  /// No description provided for @skipOnlyThis.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip only this payment'**
+  String get skipOnlyThis;
+
+  /// No description provided for @stopItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop {title}: no more payments'**
+  String stopItem(String title);
+
+  /// An upcoming payment skipped once: its row's second line.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped'**
+  String get skipped;
+
+  /// No description provided for @skippedOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped {title} on {date}'**
+  String skippedOn(String title, String date);
+
+  /// Undoes a skip of one upcoming payment.
+  ///
+  /// In en, this message translates to:
+  /// **'Bring back'**
+  String get bringBack;
+
+  /// No description provided for @paymentBack.
+  ///
+  /// In en, this message translates to:
+  /// **'{title} on {date} is back'**
+  String paymentBack(String title, String date);
+
+  /// What TalkBack reads for an Upcoming row: 'Netflix, ₹649, 9 November'.
+  ///
+  /// In en, this message translates to:
+  /// **'{title}, {amount}, {date}'**
+  String upcomingRowSemantics(String title, String amount, String date);
+
+  /// The filter sheet's switch: the list, totals and trend show payments of recurring items only.
+  ///
+  /// In en, this message translates to:
+  /// **'Only recurring'**
+  String get onlyRecurring;
+
+  /// Home's chip while Only recurring is on; its ✕ turns it off.
+  ///
+  /// In en, this message translates to:
+  /// **'🔁 Recurring'**
+  String get filterChipRecurring;
+
+  /// No description provided for @noUpcomingMatchTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'No upcoming payments match the filters'**
+  String get noUpcomingMatchTooltip;
+
+  /// No description provided for @noUpcomingMatchFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'No upcoming payments match the filters on Home.'**
+  String get noUpcomingMatchFilters;
 }
 
 class _AppLocalizationsDelegate

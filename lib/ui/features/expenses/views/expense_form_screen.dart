@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:bloc_signals_flutter/bloc_signals_flutter.dart';
@@ -106,6 +107,11 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   /// The Repeats section's Every field (phase-7a.md §8.2).
   final _interval = TextEditingController(text: '1');
 
+  /// Its "After N payments" field (phase-7b.md §8.2).
+  final _count = TextEditingController();
+  final _countFocus = FocusNode();
+  final _intervalFocus = FocusNode();
+
   /// Focused once when the Add form opens. Not `autofocus`: the form is a
   /// lazy list, so the title field is disposed when scrolled away and built
   /// again later, and `autofocus` then fires again, pulling the focus (and
@@ -140,6 +146,8 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   void initState() {
     super.initState();
     _amountFocus.addListener(_onAmountFocus);
+    _countFocus.addListener(_onRepeatFieldFocus);
+    _intervalFocus.addListener(_onRepeatFieldFocus);
     _titleFocus.addListener(_onTitleFocus);
     _lifecycle = AppLifecycleListener(
       onHide: _flushDraftInBackground,
@@ -187,6 +195,10 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
     _amount.dispose();
     _description.dispose();
     _interval.dispose();
+    _count.dispose();
+    _countFocus.dispose();
+    _intervalFocus.dispose();
+    _repeatScroll?.cancel();
     _titleFocus.dispose();
     _amountFocus.dispose();
     super.dispose();
@@ -205,6 +217,31 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   }
 
   void _onAmountFocus() => setState(() {});
+
+  /// Typing Every or After N changes "Next: … · last …" at the section's
+  /// end, which the keyboard covered on the Oppo (phase-7b.md §12a): once
+  /// the keyboard is up, the section's end is scrolled into view (only as
+  /// far as needed, the field staying above it).
+  void _onRepeatFieldFocus() {
+    if (!_countFocus.hasFocus && !_intervalFocus.hasFocus) return;
+    _repeatScroll?.cancel();
+    // A Timer, not Future.delayed: cancelled when the form closes first.
+    _repeatScroll = Timer(_keyboardDelay, () {
+      final section = _repeatKey.currentContext;
+      if (!mounted || section == null || !section.mounted) return;
+      Scrollable.ensureVisible(
+        section,
+        alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+        duration: MediaQuery.disableAnimationsOf(context)
+            ? Duration.zero
+            : const Duration(milliseconds: 200),
+      );
+    });
+  }
+
+  /// About how long the keyboard takes to come up and shrink the form.
+  static const _keyboardDelay = Duration(milliseconds: 400);
+  Timer? _repeatScroll;
 
   /// Reacts to the cubit: copies programmatic text changes into the
   /// controllers, focuses the title of a new form once, and leaves when
@@ -283,8 +320,11 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   /// last settings come back) or reset; typing sends the same text the
   /// field has, so the cursor never moves.
   void _syncInterval(ExpenseFields fields) {
-    final text = fields.repeat?.intervalText;
-    if (text != null) _setText(_interval, text);
+    final repeat = fields.repeat;
+    if (repeat == null) return;
+    _setText(_interval, repeat.intervalText);
+    // The After field likewise: picking After fills in the default count.
+    _setText(_count, repeat.countText);
   }
 
   /// Sets [text] with the cursor at the end; leaves an equal text (and
@@ -310,6 +350,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
           repeating: _form.lastSaveRepeating,
           pastAdded: _form.lastPastAdded,
           schedule: _form.lastSavedSchedule,
+          updated: _form.isEditing,
         ),
       );
     } else if (_form.value is! ExpenseFormGone) {
@@ -621,17 +662,15 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   bool get _tooManyPast =>
       (_form.repeatSummary?.pastCount ?? 0) > maxPastPayments;
 
-  /// Repeats at the end of the Add form; on a payment's Edit, the link to
-  /// its recurring item instead (§8.1 E, P7a-5); nothing on a plain
-  /// expense's Edit.
+  /// Repeats at the end of the Add form and of a plain expense's Edit
+  /// (phase-7b.md §8.2); on a payment's Edit, the link to its recurring
+  /// item instead (§8.1 E, P7a-5).
   List<Widget> _repeatPart(ExpenseFormReady state) {
-    if (_form.isEditing) {
-      final item = _form.linkedItem;
-      if (item == null) return const [];
+    if (_form.linkedItem case final item?) {
       return [const SizedBox(height: 16), _linkRow(item)];
     }
     final startOn = _form.repeatStartOn;
-    if (startOn == null) return const [];
+    if (startOn == null || !_form.canRepeat) return const [];
     return [
       const SizedBox(height: 16),
       RepeatSection(
@@ -643,6 +682,9 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
         today: _form.today,
         defaultEndOn: _form.defaultEndOn,
         intervalController: _interval,
+        countController: _count,
+        countFocus: _countFocus,
+        intervalFocus: _intervalFocus,
         onToggled: (on) {
           _dropFocus();
           _form.repeatToggled(on);
@@ -650,6 +692,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
         onFrequency: _form.repeatFrequencyChanged,
         onInterval: _form.repeatIntervalChanged,
         onEnd: _form.repeatEndChanged,
+        onCount: _form.repeatCountChanged,
         onPickEndDate: _pickEndDate,
       ),
     ];
@@ -776,7 +819,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
     final busy = ready == null || ready.saving;
     return AppBar(
       title: Text(_form.isEditing ? l10n.editExpense : l10n.addExpense),
-      actions: [
+      actions: _clampedActions([
         if (_form.isEditing)
           IconButton(
             icon: const Icon(Icons.delete_outline),
@@ -793,9 +836,23 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
           onPressed: _form.canSave ? _save : null,
           child: Text(_form.isEditing ? l10n.update : l10n.save),
         ),
-      ],
+      ]),
     );
   }
+
+  /// The app bar's buttons with their labels' text scale capped: at 360 dp
+  /// and font 2.0, "Limpiar" and "Guardar" (and the Hindi labels) needed
+  /// 397 dp and more, past the screen's width (phase-7b.md §12a). The
+  /// title, which can be cut, keeps the full scale.
+  static List<Widget> _clampedActions(List<Widget> actions) => [
+    for (final action in actions)
+      MediaQuery.withClampedTextScaling(
+        maxScaleFactor: _maxActionTextScale,
+        child: action,
+      ),
+  ];
+
+  static const _maxActionTextScale = 1.3;
 
   /// The form, a banner above it when it came from a draft, and the
   /// operator row below it, right on top of the keyboard (the Scaffold

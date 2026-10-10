@@ -88,14 +88,23 @@ void showExpenseFormResult(
   switch (result) {
     case ExpenseSaved(:final photosNotKept) when photosNotKept > 0:
       showMessage(messenger, l10n.photosNotKept(photosNotKept), long: true);
-    case ExpenseSaved(:final pastAdded) when pastAdded > 0:
-      showMessage(messenger, l10n.savedWithEarlier(pastAdded));
-    case ExpenseSaved(repeating: true, :final schedule?) when messenger != null:
+    case ExpenseSaved(:final pastAdded, :final updated) when pastAdded > 0:
       showMessage(
         messenger,
-        l10n.savedRepeats(
-          scheduleText(l10n, dateLocaleOf(messenger.context), schedule),
-        ),
+        updated
+            ? l10n.updatedWithEarlier(pastAdded)
+            : l10n.savedWithEarlier(pastAdded),
+      );
+    case ExpenseSaved(repeating: true, :final schedule?, :final updated)
+        when messenger != null:
+      final rule = scheduleText(
+        l10n,
+        dateLocaleOf(messenger.context),
+        schedule,
+      );
+      showMessage(
+        messenger,
+        updated ? l10n.updatedRepeats(rule) : l10n.savedRepeats(rule),
       );
     case ExpenseBinned(:final id):
       showMessage(

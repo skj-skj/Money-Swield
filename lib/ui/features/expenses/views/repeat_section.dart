@@ -1,16 +1,14 @@
-import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../domain/periods.dart';
+import '../../../../domain/recurrence.dart' show Schedule;
 import '../../../../domain/repeat_input.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/date_texts.dart';
 import '../../../core/formatting_locale.dart';
 import '../../../core/recurrence_text.dart';
-
-/// What the section says under the rule: the earlier payments a Save adds,
-/// how many in all, and the next payment after them.
-typedef RepeatSummary = ({List<String> past, int pastCount, String? next});
+import '../../../core/widgets/repeat_every_row.dart';
+import '../../../core/widgets/repeat_number_field.dart';
 
 /// The Repeats section at the end of the Add form (phase-7a.md §8.2): a
 /// switch, then every N days / weeks / months / years, the rule in words,
@@ -29,10 +27,14 @@ class RepeatSection extends StatelessWidget {
     required this.today,
     required this.defaultEndOn,
     required this.intervalController,
+    required this.countController,
+    required this.countFocus,
+    required this.intervalFocus,
     required this.onToggled,
     required this.onFrequency,
     required this.onInterval,
     required this.onEnd,
+    required this.onCount,
     required this.onPickEndDate,
   });
 
@@ -53,10 +55,22 @@ class RepeatSection extends StatelessWidget {
   final String defaultEndOn;
 
   final TextEditingController intervalController;
+
+  /// The "After N payments" field (phase-7b.md §8.2), owned by the screen
+  /// like Every's.
+  final TextEditingController countController;
+
+  /// Picking "After" focuses it, so the count can be typed at once.
+  final FocusNode countFocus;
+
+  /// Every's field; the screen keeps "Next …" in view while either has
+  /// focus.
+  final FocusNode intervalFocus;
   final ValueChanged<bool> onToggled;
   final ValueChanged<Frequency> onFrequency;
   final ValueChanged<String> onInterval;
   final ValueChanged<RepeatEnd> onEnd;
+  final ValueChanged<String> onCount;
 
   /// Opens the date picker for the end.
   final VoidCallback onPickEndDate;
@@ -96,7 +110,15 @@ class RepeatSection extends StatelessWidget {
       color: theme.colorScheme.onSurfaceVariant,
     );
     return [
-      _everyRow(context, l10n, repeat),
+      RepeatEveryRow(
+        frequency: repeat.frequency,
+        interval: interval,
+        controller: intervalController,
+        focusNode: intervalFocus,
+        onInterval: onInterval,
+        onFrequency: onFrequency,
+        showError: error == RepeatError.intervalRange,
+      ),
       if (interval != null) ...[
         const SizedBox(height: 4),
         // Each line its own node: merged, TalkBack read the rule, "Ends"
@@ -104,7 +126,17 @@ class RepeatSection extends StatelessWidget {
         Semantics(
           container: true,
           child: Text(
-            scheduleText(l10n, locale, scheduleFor(repeat, startOn)),
+            // The rule only: not scheduleFor, which throws while After N
+            // isn't valid yet ("After 1" typed; phase-7b.md §12a).
+            scheduleText(
+              l10n,
+              locale,
+              Schedule(
+                frequency: repeat.frequency,
+                interval: interval,
+                startOn: startOn,
+              ),
+            ),
             key: const ValueKey('repeatSchedule'),
             style: muted,
           ),
@@ -121,8 +153,25 @@ class RepeatSection extends StatelessWidget {
         onChanged: (end) {
           if (end == null) return;
           onEnd(end);
-          // Picking "On" asks for the date at once (§8.2).
-          if (end == RepeatEnd.onDate) onPickEndDate();
+          switch (end) {
+            // Picking "On" asks for the date at once (§8.2).
+            case RepeatEnd.onDate:
+              onPickEndDate();
+            // Picking "After" puts the cursor in its field, the count
+            // selected, so typing replaces it (phase-7b.md §8.2).
+            case RepeatEnd.afterCount:
+              countFocus.requestFocus();
+              // After the frame: the default count reaches the field
+              // through the cubit first.
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                countController.selection = TextSelection(
+                  baseOffset: 0,
+                  extentOffset: countController.text.length,
+                );
+              });
+            case RepeatEnd.never:
+              break;
+          }
         },
         child: Column(
           children: [
@@ -137,6 +186,12 @@ class RepeatSection extends StatelessWidget {
               contentPadding: EdgeInsets.zero,
               value: RepeatEnd.onDate,
               title: _endOnRow(context, l10n, repeat, locale),
+            ),
+            RadioListTile<RepeatEnd>(
+              key: const ValueKey('repeatEndsAfter'),
+              contentPadding: EdgeInsets.zero,
+              value: RepeatEnd.afterCount,
+              title: _afterRow(l10n, repeat),
             ),
           ],
         ),
@@ -153,64 +208,6 @@ class RepeatSection extends StatelessWidget {
         ),
       if (summary != null) ..._summaryLines(context, l10n, locale, summary),
     ];
-  }
-
-  /// "Every [ 1 ] [ month ▾ ]". A Wrap, so at a large font the dropdown
-  /// goes under the field instead of being cut (§8.2).
-  Widget _everyRow(
-    BuildContext context,
-    AppLocalizations l10n,
-    RepeatChoice repeat,
-  ) {
-    final count = repeat.interval ?? 1;
-    final showError = error == RepeatError.intervalRange;
-    return Wrap(
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: 12,
-      runSpacing: 8,
-      children: [
-        // The field carries the label for TalkBack ("Every, 1").
-        ExcludeSemantics(child: Text(l10n.repeatEvery)),
-        SizedBox(
-          width: 72,
-          child: TextField(
-            key: const ValueKey('repeatInterval'),
-            controller: intervalController,
-            onChanged: onInterval,
-            keyboardType: TextInputType.number,
-            textAlign: TextAlign.center,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(2),
-            ],
-            decoration: InputDecoration(
-              labelText: l10n.repeatEvery,
-              floatingLabelBehavior: FloatingLabelBehavior.never,
-              // The label is for TalkBack; the text before the field shows
-              // it. A hint keeps it out of an empty field's way.
-              hintText: '1',
-              errorText: showError
-                  ? l10n.repeatIntervalError(maxRepeatInterval)
-                  : null,
-              errorMaxLines: 2,
-              border: const OutlineInputBorder(),
-              isDense: true,
-            ),
-          ),
-        ),
-        DropdownButton<Frequency>(
-          key: const ValueKey('repeatFrequency'),
-          value: repeat.frequency,
-          onChanged: (f) {
-            if (f != null) onFrequency(f);
-          },
-          items: [
-            for (final f in Frequency.values)
-              DropdownMenuItem(value: f, child: Text(unitText(l10n, f, count))),
-          ],
-        ),
-      ],
-    );
   }
 
   /// "On [ 9 Apr 2027 ]": the date box opens the picker too.
@@ -246,6 +243,42 @@ class RepeatSection extends StatelessWidget {
     );
   }
 
+  /// "After [ 12 ] payments" (phase-7b.md §8.2): the field takes three
+  /// digits; its error ("2 to 999") shows under it after a Save attempt.
+  /// A Wrap, so a large font puts the words under the field.
+  Widget _afterRow(AppLocalizations l10n, RepeatChoice repeat) {
+    final showError = error == RepeatError.countRange;
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 12,
+      runSpacing: 4,
+      children: [
+        ExcludeSemantics(child: Text(l10n.repeatEndsAfter)),
+        RepeatNumberField(
+          fieldKey: const ValueKey('repeatCount'),
+          // TalkBack: "Number of payments, 12".
+          label: l10n.repeatCountLabel,
+          hint: defaultRepeatCountText,
+          controller: countController,
+          focusNode: countFocus,
+          onChanged: onCount,
+          maxDigits: 3,
+          width: 88,
+          errorText: showError
+              ? l10n.repeatCountError(2, maxRepeatCount)
+              : null,
+        ),
+        ExcludeSemantics(
+          // The plural of what is typed, "1" too (refused at Save): "After
+          // 1 payment", not "1 payments".
+          child: Text(
+            l10n.repeatEndsAfterUnit(int.tryParse(repeat.countText) ?? 2),
+          ),
+        ),
+      ],
+    );
+  }
+
   String? _endErrorText(
     AppLocalizations l10n,
     String locale,
@@ -255,10 +288,16 @@ class RepeatSection extends StatelessWidget {
     RepeatError.endBeforeStart => l10n.repeatEndBeforeStart(
       shortDateText(locale, parseDay(startOn)),
     ),
+    // After N: the N-th payment would fall after the last date allowed.
+    RepeatError.endTooLate when repeat?.end == RepeatEnd.afterCount =>
+      l10n.repeatCountTooLate(shortDateText(locale, parseDay(lastEndOn))),
     RepeatError.endTooLate => l10n.repeatEndTooLate(
       shortDateText(locale, parseDay(lastEndOn)),
     ),
-    RepeatError.intervalRange || RepeatError.tooManyPast || null => null,
+    RepeatError.intervalRange ||
+    RepeatError.countRange ||
+    RepeatError.tooManyPast ||
+    null => null,
   };
 
   /// The earlier payments a Save adds (or that there are too many), then
@@ -299,7 +338,12 @@ class RepeatSection extends StatelessWidget {
             container: true,
             liveRegion: true,
             child: Text(
-              nextText(l10n, locale, summary.next, today: today),
+              [
+                nextText(l10n, locale, summary.next, today: today),
+                // With an end, its last payment too (phase-7b.md §8.2).
+                if (summary.last case final last? when summary.next != null)
+                  l10n.repeatLast(dayText(locale, last, today: today)),
+              ].join(' · '),
               key: const ValueKey('repeatNext'),
               style: theme.textTheme.bodyMedium,
             ),

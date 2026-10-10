@@ -200,13 +200,16 @@ class ExpenseDraft {
     'end': switch (repeat.end) {
       RepeatEnd.never => 'never',
       RepeatEnd.onDate => 'on',
+      RepeatEnd.afterCount => 'after',
     },
     'on': repeat.endOn,
+    // As typed, like the interval (phase-7b.md §5.1).
+    'count': repeat.countText,
   };
 
   /// The Repeats section, read forgivingly (§5.7): not an object → null
   /// (Repeats off); a bad field drops to its default and the rest is kept.
-  /// An unknown end kind (7b's `after`) reads as never.
+  /// An unknown end kind reads as never; a 7a draft has no `count` (`''`).
   static RepeatChoice? _readRepeat(Object? value) {
     if (value is! Map<String, Object?>) return null;
     return RepeatChoice(
@@ -219,18 +222,27 @@ class ExpenseDraft {
       // As typed, half-typed too; anything that isn't up to 3 digits is
       // damaged and back to the default.
       intervalText: switch (value['interval']) {
-        final String text when _intervalText.hasMatch(text) => text,
+        final String text when _upToThreeDigits.hasMatch(text) => text,
         _ => RepeatChoice.defaults.intervalText,
       },
-      end: value['end'] == 'on' ? RepeatEnd.onDate : RepeatEnd.never,
+      end: switch (value['end']) {
+        'on' => RepeatEnd.onDate,
+        'after' => RepeatEnd.afterCount,
+        _ => RepeatEnd.never,
+      },
       endOn: switch (value['on']) {
         final String day when isValidDay(day) => day,
         _ => null,
       },
+      // Not up to 3 digits: damaged, so empty (the field takes 3).
+      countText: switch (value['count']) {
+        final String text when _upToThreeDigits.hasMatch(text) => text,
+        _ => '',
+      },
     );
   }
 
-  static final _intervalText = RegExp(r'^[0-9]{0,3}$');
+  static final _upToThreeDigits = RegExp(r'^[0-9]{0,3}$');
 
   static Map<String, Object?> _photoToJson(FormPhoto photo) => switch (photo) {
     SavedPhoto(:final id, :final relativePath) => {

@@ -31,7 +31,12 @@ class FilterSheetCubit extends CubitSignal<FilterSheetValue>
 
   void setGrouping(Period grouping) => _emit(value.filter, grouping);
 
-  /// Empties the text, categories and events; the grouping stays.
+  /// Only recurring (phase-7b.md §7.5).
+  void setOnlyRecurring(bool on) =>
+      _emit(value.filter.copyWith(onlyRecurring: on), value.grouping);
+
+  /// Empties the text, categories, events and Only recurring; the grouping
+  /// stays.
   void clear() => _emit(ExpenseFilter.none, value.grouping);
 
   void _emit(ExpenseFilter filter, Period grouping) {

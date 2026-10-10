@@ -46,34 +46,135 @@ final class HoldPayments extends TemplatePlan {
 
 /// The plan for an item with [s] and [cursor] (`next_due_on`) on [today].
 /// [confirmed]: the user already said yes (Save with Repeats, Add all), so
-/// no hold.
+/// no hold. [skipped]: dates skipped once from Upcoming (phase-7b.md §5.2):
+/// neither added nor counted, so "Add all 10" adds 10, and the hold looks
+/// at the oldest date it would really add. The cursor still moves past
+/// them.
 TemplatePlan planTemplate(
   Schedule s, {
   required String? cursor,
   required String today,
   required bool confirmed,
+  Set<String> skipped = const {},
 }) {
   if (cursor == null || cursor.compareTo(today) > 0) return const NothingDue();
-  final age = parseDay(today).difference(parseDay(cursor)).inDays;
-  if (!confirmed && age > holdAfterDays) {
-    final count = dueCount(s, cursor: cursor, today: today);
-    if (count > 0) {
-      return HoldPayments(
-        count: count,
-        from: cursor,
-        to: occurrenceAt(s, occurrencesThrough(s, today) - 1),
-      );
-    }
+  final oldest = _firstNotSkipped(s, cursor, today, skipped);
+  if (!confirmed &&
+      oldest != null &&
+      parseDay(today).difference(parseDay(oldest)).inDays > holdAfterDays) {
+    final count =
+        dueCount(s, cursor: cursor, today: today) -
+        skippedBetween(s, skipped, cursor, today);
+    return HoldPayments(
+      count: count,
+      from: oldest,
+      to: _lastNotSkipped(s, today, skipped),
+    );
   }
-  final (:due, :next) = dueDates(
+  final (:due, :next) = dueDatesSkipping(
     s,
     from: cursor,
     through: today,
-    limit: maxPastPayments,
+    skipped: skipped,
   );
   if (due.isEmpty && next == cursor) return const NothingDue();
   return AddPayments(due, next);
 }
+
+/// [dueDates] with the [skipped] dates passed over: at most [limit] dates
+/// to add, and the payment after the last date looked at (added or
+/// skipped). The cursor goes there, past the skips.
+({List<String> due, String? next}) dueDatesSkipping(
+  Schedule s, {
+  required String from,
+  required String through,
+  Set<String> skipped = const {},
+  int limit = maxPastPayments,
+}) {
+  if (skipped.isEmpty) {
+    return dueDates(s, from: from, through: through, limit: limit);
+  }
+  final throughDate = parseDay(through);
+  final due = <String>[];
+  var next = occurrenceOnOrAfter(s, from);
+  while (next != null &&
+      due.length < limit &&
+      !parseDay(next).isAfter(throughDate)) {
+    if (!skipped.contains(next)) due.add(next);
+    next = occurrenceAfter(s, next);
+  }
+  return (due: due, next: next);
+}
+
+/// **Add selected** (phase-7b.md §5.2, P7b-6): the dates to add are the
+/// [ticked] ones that are really due (the held dates: from [cursor]
+/// through [today], [skipped] left out, at most [maxPastPayments]);
+/// anything else ticked is ignored, so a stale list can't add a wrong
+/// date. `listed`: how many dates the sheet listed. The cursor goes after
+/// them: after [today], so the unticked ones are skipped for good; with
+/// more than 1,000 waiting, to the first one not listed, which is asked
+/// about again (phase-7b.md §12a: never skipped unseen).
+///
+/// [today] is the day the sheet was read on, not the day of the tap: past
+/// midnight, the new day's payment wasn't listed and must not be skipped
+/// unseen either.
+({List<String> add, int listed, String? next}) selectedPlan(
+  Schedule s, {
+  required String cursor,
+  required String today,
+  required Set<String> ticked,
+  Set<String> skipped = const {},
+}) {
+  final (:due, :next) = dueDatesSkipping(
+    s,
+    from: cursor,
+    through: today,
+    skipped: skipped,
+  );
+  return (
+    add: [
+      for (final day in due)
+        if (ticked.contains(day)) day,
+    ],
+    listed: due.length,
+    next: next,
+  );
+}
+
+/// The first payment from [cursor] through [today] that isn't skipped.
+String? _firstNotSkipped(
+  Schedule s,
+  String cursor,
+  String today,
+  Set<String> skipped,
+) {
+  var day = occurrenceOnOrAfter(s, cursor);
+  while (day != null && day.compareTo(today) <= 0 && skipped.contains(day)) {
+    day = occurrenceAfter(s, day);
+  }
+  return day == null || day.compareTo(today) > 0 ? null : day;
+}
+
+/// The last payment through [today] that isn't skipped (one exists: the
+/// hold found one).
+String _lastNotSkipped(Schedule s, String today, Set<String> skipped) {
+  var k = occurrencesThrough(s, today) - 1;
+  while (k > 0 && skipped.contains(occurrenceAt(s, k))) {
+    k--;
+  }
+  return occurrenceAt(s, k);
+}
+
+/// How many of [skipped] are payments from [from] through [to].
+int skippedBetween(Schedule s, Set<String> skipped, String from, String to) =>
+    skipped
+        .where(
+          (d) =>
+              d.compareTo(from) >= 0 &&
+              d.compareTo(to) <= 0 &&
+              occurrenceOnOrAfter(s, d) == d,
+        )
+        .length;
 
 /// The cursor after an Edit changed the end (the schedule [s] has the new
 /// one). Every date up to the old cursor, or up to [oldEnd] when no
@@ -157,6 +258,83 @@ String earliestEndFor({
   today,
   ?newestPayment,
 ].reduce((a, b) => a.compareTo(b) >= 0 ? a : b);
+
+/// The last payment date item [s] has handled (added, deleted or skipped):
+/// the payment before its [cursor]; with no cursor (no payment left), its
+/// last payment before the end. Null when none was handled.
+String? lastHandledOn(Schedule s, {required String? cursor}) {
+  if (cursor == null) {
+    return lastOccurrence(
+      Schedule(
+        frequency: s.frequency,
+        interval: s.interval,
+        startOn: s.startOn,
+        endOn: s.endOn ?? lastEndOn,
+      ),
+    );
+  }
+  final before = occurrencesThrough(s, addDays(cursor, -1));
+  return before == 0 ? null : occurrenceAt(s, before - 1);
+}
+
+/// The earliest First payment a new schedule may start on (phase-7b.md
+/// §7.3, P7b-4): after the old item's last handled date, so no date it
+/// added, deleted or skipped is paid again (§6.5), and not before [today].
+String earliestFirstPayment(
+  Schedule old, {
+  required String? cursor,
+  required String today,
+}) {
+  final handled = lastHandledOn(old, cursor: cursor);
+  final after = handled == null ? today : addDays(handled, 1);
+  return after.compareTo(today) > 0 ? after : today;
+}
+
+/// An item as [runningRelatives] sees it: what it was made from, and
+/// whether it runs.
+typedef FamilyLink = ({int? replacesId, bool running});
+
+/// The running items of [id]'s family, itself left out: every item joined
+/// to it through `replaces_id`, up or down, any number of steps (A → B →
+/// C: restoring A finds C; restoring B, swapped out for A, finds A).
+/// Restoring one of them swaps these out (P7b-3), so one bill never has two
+/// items running. Newest first. [items] is every item, by id.
+List<int> runningRelatives(int id, Map<int, FamilyLink> items) {
+  final children = <int, List<int>>{};
+  for (final MapEntry(key: child, value: link) in items.entries) {
+    final parent = link.replacesId;
+    if (parent != null) children.putIfAbsent(parent, () => []).add(child);
+  }
+  // Up to the first item, then every item below it. The seen set keeps a
+  // damaged loop from running forever.
+  var root = id;
+  final up = <int>{root};
+  while (true) {
+    final parent = items[root]?.replacesId;
+    if (parent == null || !items.containsKey(parent) || !up.add(parent)) {
+      break;
+    }
+    root = parent;
+  }
+  final family = <int>{};
+  final queue = [root];
+  while (queue.isNotEmpty) {
+    final next = queue.removeLast();
+    if (!family.add(next)) continue;
+    queue.addAll(children[next] ?? const []);
+  }
+  return [
+    for (final member in family)
+      if (member != id && items[member]?.running == true) member,
+  ]..sort((a, b) => b.compareTo(a));
+}
+
+/// Whether an item's payments are waiting to be added ([cursor] on or
+/// before [today]: held, or a run that failed): changing how often would
+/// drop them, so the Edit screen asks to add or skip them first
+/// (phase-7b.md §12a).
+bool paymentsWaiting({required String? cursor, required String today}) =>
+    cursor != null && cursor.compareTo(today) <= 0;
 
 /// How many payments are due from [cursor] through [today]; 0 when the
 /// cursor is after today.

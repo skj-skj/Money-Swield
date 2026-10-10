@@ -68,6 +68,23 @@ void main() {
     });
   });
 
+  test('onlyRecurring (phase-7b.md §6.4): in ==, hashCode, isEmpty, '
+      'withoutText, copyWith', () {
+    const on = ExpenseFilter(onlyRecurring: true);
+    expect(on.isEmpty, isFalse);
+    expect(on == ExpenseFilter.none, isFalse);
+    expect(on.hashCode == ExpenseFilter.none.hashCode, isFalse);
+    expect(on, const ExpenseFilter(onlyRecurring: true));
+    expect(
+      const ExpenseFilter(text: 'x', onlyRecurring: true).withoutText,
+      on,
+      reason: 'an SQL part: kept without the text',
+    );
+    expect(on.copyWith(text: 'y').onlyRecurring, isTrue);
+    expect(on.copyWith(onlyRecurring: false), ExpenseFilter.none);
+    expect('$on', contains('only recurring'));
+  });
+
   test('ExpenseFilter equality ignores set order', () {
     expect(
       const ExpenseFilter(categoryIds: {1, 2}),

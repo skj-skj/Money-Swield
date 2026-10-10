@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_expense_tracker_app/app/app_dependencies.dart';
+import 'package:my_expense_tracker_app/domain/expense_filter.dart';
 import 'package:my_expense_tracker_app/domain/models/expense.dart';
 import 'package:my_expense_tracker_app/domain/models/money.dart';
 import 'package:my_expense_tracker_app/domain/repeat_input.dart';
@@ -106,5 +107,44 @@ void main() {
     addTearDown(cubit.close);
     await cubit.load();
     expect(cubit.value!.recurring, 1);
+  });
+
+  group('upcomingIcon (phase-7b.md §7.5)', () {
+    FilteredScreenIcon icon(ExpenseListCubit cubit) =>
+        (cubit.value as ExpenseListLoaded).upcomingIcon;
+
+    test('hidden with nothing running, shown once an item runs, hidden '
+        'again when it is stopped; follows the filter like the photos icon '
+        '(owner, 2026-10-10): greyed when it hides every item', () async {
+      final cubit = await home();
+      expect(icon(cubit), FilteredScreenIcon.hidden);
+      await dailyMilk(); // category 3, no events, "Milk"
+      await cubit.reloadIfChanged();
+      expect(icon(cubit), FilteredScreenIcon.enabled);
+      // Another category (999 would be dropped: it doesn't exist).
+      await cubit.setFilter(const ExpenseFilter(categoryIds: {1}));
+      expect(icon(cubit), FilteredScreenIcon.disabled);
+      await cubit.setFilter(const ExpenseFilter(categoryIds: {3}));
+      expect(icon(cubit), FilteredScreenIcon.enabled);
+      await cubit.setFilter(const ExpenseFilter(text: 'mil'));
+      expect(icon(cubit), FilteredScreenIcon.enabled);
+      await cubit.setFilter(const ExpenseFilter(text: 'bread'));
+      expect(icon(cubit), FilteredScreenIcon.disabled);
+      await cubit.setFilter(const ExpenseFilter(onlyRecurring: true));
+      expect(icon(cubit), FilteredScreenIcon.enabled);
+      final milk = (await deps.recurring.all()).single;
+      await deps.recurring.archive(milk.id);
+      await cubit.reloadIfChanged();
+      expect(icon(cubit), FilteredScreenIcon.hidden);
+    });
+
+    test('a failed read hides it; the list still loads', () async {
+      await dailyMilk();
+      final cubit = await home();
+      await deps.database.execute('ALTER TABLE recurring_expenses RENAME TO x');
+      await cubit.reload();
+      expect(icon(cubit), FilteredScreenIcon.hidden);
+      expect(rows(cubit), 1);
+    });
   });
 }

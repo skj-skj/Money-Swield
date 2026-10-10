@@ -161,6 +161,52 @@ void main() {
       expect(cubit.repeatError, RepeatError.endBeforeStart);
     });
 
+    test('after N payments (phase-7b.md §7.1): picking After fills 12; '
+        'the count is kept as typed; the preview gives the last date; a '
+        'bad count blocks Save', () async {
+      final cubit = await validForm()
+        ..repeatToggled(true)
+        ..repeatFrequencyChanged(Frequency.weekly)
+        ..repeatEndChanged(RepeatEnd.afterCount);
+      expect(repeatOf(cubit)!.countText, '12');
+      cubit.repeatCountChanged('3');
+      expect(cubit.repeatSummary!.next, '2026-10-16');
+      expect(cubit.repeatSummary!.last, '2026-10-23');
+      // Typing selects After even if another end was picked meanwhile.
+      cubit
+        ..repeatEndChanged(RepeatEnd.never)
+        ..repeatCountChanged('1');
+      expect(repeatOf(cubit)!.end, RepeatEnd.afterCount);
+      expect(repeatOf(cubit)!.countText, '1', reason: 'as typed');
+      expect(cubit.repeatSummary, isNull, reason: 'no schedule yet');
+      expect(cubit.repeatError, isNull, reason: 'before a Save attempt');
+      expect(await cubit.save(), isNull);
+      expect(cubit.repeatError, RepeatError.countRange);
+      expect(await deps.database.query('expenses'), isEmpty);
+      // Never again: the count stays for switching back, isn't checked.
+      cubit.repeatEndChanged(RepeatEnd.never);
+      expect(cubit.repeatError, isNull);
+      expect(repeatOf(cubit)!.countText, '1');
+      // Back to After keeps what was typed (not the default).
+      cubit.repeatEndChanged(RepeatEnd.afterCount);
+      expect(repeatOf(cubit)!.countText, '1');
+    });
+
+    test('after 3 weekly saves the 3rd payment\'s date as the end; the '
+        'draft keeps the count', () async {
+      final cubit = await validForm()
+        ..repeatToggled(true)
+        ..repeatFrequencyChanged(Frequency.weekly)
+        ..repeatCountChanged('3');
+      await drafts.flush();
+      expect((await drafts.read())!.repeat!.countText, '3');
+      final saved = await cubit.save();
+      expect(saved, isNotNull);
+      final item = await deps.recurring.byId(saved!.recurringExpenseId!);
+      expect(item!.schedule!.endOn, '2026-10-23');
+      expect(cubit.lastSavedSchedule!.endOn, '2026-10-23');
+    });
+
     test('too many earlier payments: counted live, Save blocked', () async {
       final cubit = await validForm()
         ..repeatToggled(true)
@@ -249,7 +295,8 @@ void main() {
       expect(repeatOf(cubit)!.intervalText, '2');
     });
 
-    test('an Edit draft never brings Repeats into the Edit form', () async {
+    test('a plain expense\'s Edit draft brings Repeats back (phase-7b.md '
+        '§7.1; was "never", Add only, in 7a)', () async {
       final saved = await deps.expenses.add(
         ExpenseInput(
           title: 'Lunch',
@@ -280,9 +327,8 @@ void main() {
         repeat: RepeatChoice.defaults,
       );
       final cubit = await openForm(expenseId: saved.id, draft: draft);
-      expect(repeatOf(cubit), isNull);
-      cubit.repeatToggled(true);
-      expect(repeatOf(cubit), isNull, reason: 'Add only (P7a-6)');
+      expect(repeatOf(cubit), RepeatChoice.defaults);
+      expect(cubit.isDirty, isTrue);
     });
   });
 
@@ -367,6 +413,115 @@ void main() {
       );
       expect((await openForm(expenseId: saved.id)).linkedItem, isNull);
     });
+
+    /// A plain Rent expense on 1 Sep, 10:00 device time.
+    Future<Expense> rent() {
+      final local = DateTime(2026, 9, 1, 10);
+      return deps.expenses.add(
+        ExpenseInput(
+          title: 'Rent',
+          description: null,
+          amount: const Money(2500000, 'INR'),
+          occurredAt: local.toUtc(),
+          utcOffsetMinutes: local.timeZoneOffset.inMinutes,
+          categoryId: 1,
+          paymentMethodId: 1,
+          eventIds: const {},
+        ),
+      );
+    }
+
+    test('a plain expense (phase-7b.md §7.1): Repeats alone enables Update; '
+        'Update makes it payment 0 and adds 1 Oct', () async {
+      final saved = await rent();
+      final cubit = await openForm(expenseId: saved.id);
+      expect(cubit.canRepeat, isTrue);
+      expect(cubit.canSave, isFalse, reason: 'no change yet');
+      cubit.repeatToggled(true);
+      expect(cubit.isDirty, isTrue);
+      expect(cubit.canSave, isTrue);
+      expect(cubit.repeatSummary!.past, ['2026-10-01']);
+      expect(cubit.repeatSummary!.next, '2026-11-01');
+      final updated = await cubit.save();
+      expect(updated!.id, saved.id);
+      expect(updated.recurringDueOn, '2026-09-01');
+      expect(cubit.lastSaveRepeating, isTrue);
+      expect(cubit.lastPastAdded, 1);
+      expect(await deps.database.query('expenses'), hasLength(2));
+      expect(await deps.database.query('recurring_expenses'), hasLength(1));
+    });
+
+    test('switched on then off again: Update is off (no change)', () async {
+      final saved = await rent();
+      final cubit = await openForm(expenseId: saved.id)
+        ..repeatToggled(true)
+        ..repeatToggled(false);
+      expect(cubit.isDirty, isFalse);
+      expect(cubit.canSave, isFalse);
+    });
+
+    test('a double tap on Update makes one item', () async {
+      final saved = await rent();
+      final cubit = await openForm(expenseId: saved.id)
+        ..repeatToggled(true);
+      await Future.wait([cubit.save(), cubit.save()]);
+      expect(await deps.database.query('recurring_expenses'), hasLength(1));
+      expect(await deps.database.query('expenses'), hasLength(2));
+    });
+
+    test('binned meanwhile: the edits, Repeats too, become an Add draft; '
+        'nothing written', () async {
+      final saved = await rent();
+      final cubit = await openForm(expenseId: saved.id)
+        ..repeatToggled(true);
+      await deps.expenses.moveToBin(saved.id);
+      expect(await cubit.save(), isNull);
+      expect(cubit.value, isA<ExpenseFormGone>());
+      await drafts.flush();
+      final draft = (await drafts.read())!;
+      expect(draft.editingExpenseId, isNull);
+      expect(draft.repeat, RepeatChoice.defaults);
+      expect(await deps.database.query('recurring_expenses'), isEmpty);
+    });
+
+    test(
+      'a payment\'s Edit draft with Repeats (a damaged draft) drops it',
+      () async {
+        final (:expense, pastAdded: _) = await deps.expenses.addRepeating(
+          ExpenseInput(
+            title: 'Gym',
+            description: null,
+            amount: const Money(150000, 'INR'),
+            occurredAt: clock.now.toUtc(),
+            utcOffsetMinutes: clock.now.timeZoneOffset.inMinutes,
+            categoryId: 11,
+            paymentMethodId: 1,
+            eventIds: const {},
+          ),
+          RepeatChoice.defaults,
+        );
+        final draft = ExpenseDraft(
+          editingExpenseId: expense.id,
+          title: 'Gym',
+          amountExpression: '1500',
+          description: '',
+          categoryId: 11,
+          eventIds: const {},
+          paymentMethodId: 1,
+          currencyCode: 'INR',
+          pickedWallClock: null,
+          touched: const {DraftField.title},
+          itemizeLine: null,
+          itemizeLabels: const [],
+          itemizeTerms: const [],
+          updatedAt: clock.now.toUtc(),
+          repeat: RepeatChoice.defaults,
+        );
+        final cubit = await openForm(expenseId: expense.id, draft: draft);
+        expect(cubit.canRepeat, isFalse);
+        expect(repeatOf(cubit), isNull);
+      },
+    );
   });
 
   group('Recurring → New (startRepeating)', () {

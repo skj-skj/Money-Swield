@@ -16,6 +16,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../core/currency_labels.dart';
 import '../../../core/formatting_locale.dart';
 import '../../../core/period_names.dart';
+import '../../../core/scroll_paging.dart';
 import '../../../core/widgets/async_body.dart';
 import '../../../core/widgets/currency_picker_sheet.dart';
 import '../../../core/widgets/empty_state_view.dart';
@@ -26,6 +27,7 @@ import '../../expenses/expense_form_opener.dart';
 import '../../expenses/view_models/expense_form_cubit.dart';
 import '../../recurring/views/recurring_list_screen.dart';
 import '../../recurring/views/recurring_navigation.dart';
+import '../../recurring/views/upcoming_screen.dart';
 import '../../settings/view_models/settings_cubit.dart';
 import '../view_models/expense_list_cubit.dart';
 import '../view_models/trend_cubit.dart';
@@ -70,7 +72,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with ScrollPaging<HomeScreen> {
   late final AppSettings _startSettings = context.read<SettingsCubit>().value;
 
   late final ExpenseListCubit _cubit = ExpenseListCubit(
@@ -104,7 +106,6 @@ class _HomeScreenState extends State<HomeScreen> {
         openRecurringFromForm(context, widget.dependencies, id),
   );
 
-  final _scroll = ScrollController();
   bool _fabExtended = true;
 
   /// Home's own messenger, so its snackbars show on Home's Scaffold (which
@@ -119,7 +120,8 @@ class _HomeScreenState extends State<HomeScreen> {
   BuildContext get _messengerContext => _scaffoldKey.currentContext ?? context;
 
   /// Next page once fewer than about 5 rows are left below the screen.
-  static const _loadMoreLead = 5 * 72.0;
+  @override
+  double get loadMoreLead => 5 * 72.0;
 
   /// Fires at the next local midnight, so a new day can start a new week,
   /// month or year on the card and in the names (R5) while the app is
@@ -131,7 +133,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _scroll.addListener(_maybeLoadMore);
     _lifecycle = AppLifecycleListener(onResume: _rebuildForNewDay);
     _scheduleMidnight();
     // On Home's own messenger, like its other snackbars, so the FAB moves
@@ -211,9 +212,10 @@ class _HomeScreenState extends State<HomeScreen> {
     dateLocaleOf(context),
     result,
     today: todayOn(widget.dependencies.now()),
-    onUndoStop: (undo) => saveOrShowError(_messengerContext, () async {
-      await widget.dependencies.recurring.undoArchive(undo);
+    onUndoStop: (undo) => undoStopOrSay(_messengerContext, () async {
+      final done = await widget.dependencies.recurring.undoArchive(undo);
       await _reload();
+      return done;
     }),
   );
 
@@ -260,17 +262,13 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _midnight?.cancel();
     _lifecycle.dispose();
-    _scroll.dispose();
     _cubit.close();
     _trend.close();
     super.dispose();
   }
 
-  void _maybeLoadMore() {
-    if (_scroll.hasClients && _scroll.position.extentAfter < _loadMoreLead) {
-      _cubit.loadMore();
-    }
-  }
+  @override
+  void loadMore() => _cubit.loadMore();
 
   /// Opens Add (no [expenseId]; [chipAmount] from a chip) or Edit
   /// ([ExpenseFormOpener]), then reloads what the form changed and says
@@ -314,6 +312,22 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
     await _reloadIfChanged();
     await _cubit.refreshDraftMark();
+  }
+
+  /// Upcoming payments for Home's filters (phase-7b.md §8.3; owner,
+  /// 2026-10-10: like the Photos screen). Skips, stops and the item pages
+  /// opened there change data: back here the list reloads if anything
+  /// changed (DataVersion), with the trend card.
+  Future<void> _openUpcoming(ExpenseFilter filter) async {
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            UpcomingScreen(dependencies: widget.dependencies, filter: filter),
+      ),
+    );
+    if (!mounted) return;
+    await _reloadIfChanged();
   }
 
   /// Undo of "Moved to bin".
@@ -362,7 +376,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// After the filters or the grouping changed (P5-34).
   void _scrollToTop() {
-    if (_scroll.hasClients) _scroll.jumpTo(0);
+    if (pagingScroll.hasClients) pagingScroll.jumpTo(0);
   }
 
   /// Applies [filter] to the list; the card follows (the list's listener),
@@ -525,11 +539,10 @@ class _HomeScreenState extends State<HomeScreen> {
     // A short first page may not fill the screen, and then no scroll ever
     // asks for the next one.
     if (state.hasMore && !state.loadingMore && !state.loadMoreFailed) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _maybeLoadMore());
+      loadMoreAfterFrame();
     }
-    final names = PeriodNames(
-      l10n: AppLocalizations.of(context),
-      locale: dateLocaleOf(context),
+    final names = PeriodNames.of(
+      context,
       today: todayOn(widget.dependencies.now()),
       weekLabel: settings.weekLabel,
     );
@@ -543,12 +556,14 @@ class _HomeScreenState extends State<HomeScreen> {
       onChange: _setFilter,
       photosIcon: state.photosIcon,
       onPhotos: () => _openPhotos(state.filter),
+      upcomingIcon: state.upcomingIcon,
+      onUpcoming: () => _openUpcoming(state.filter),
     );
     final locked = settings.trendCardPosition == TrendCardPosition.locked;
     final list = NotificationListener<UserScrollNotification>(
       onNotification: _onUserScroll,
       child: CustomScrollView(
-        controller: _scroll,
+        controller: pagingScroll,
         slivers: [
           if (!locked) ...[
             SliverToBoxAdapter(child: card),

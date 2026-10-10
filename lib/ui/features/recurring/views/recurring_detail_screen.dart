@@ -2,6 +2,7 @@ import 'package:bloc_signals_flutter/bloc_signals_flutter.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../app/app_dependencies.dart';
+import '../../../../data/repositories/recurring_repository.dart';
 import '../../../../domain/models/expense.dart';
 import '../../../../domain/models/money.dart';
 import '../../../../domain/models/recurring_item.dart';
@@ -12,6 +13,7 @@ import '../../../core/date_texts.dart';
 import '../../../core/formatting_locale.dart';
 import '../../../core/item_labels.dart';
 import '../../../core/money_formatter.dart';
+import '../../../core/period_names.dart';
 import '../../../core/recurrence_text.dart';
 import '../../../core/widgets/confirm_dialog.dart';
 import '../../../core/widgets/expense_tile.dart';
@@ -20,11 +22,14 @@ import '../../../core/widgets/save_error.dart';
 import '../../../core/widgets/section_heading.dart';
 import '../../../core/widgets/show_message.dart';
 import '../../expenses/expense_form_opener.dart';
+import '../../settings/view_models/settings_cubit.dart';
 import '../view_models/recurring_detail_cubit.dart';
+import 'add_selected_sheet.dart';
 import 'change_price_sheet.dart';
 import 'hold_card.dart';
 import 'recurring_form_screen.dart';
 import 'recurring_navigation.dart';
+import 'recurring_texts.dart';
 
 /// A recurring item's page (phase-7a.md §8.4): the hold card when held,
 /// the rule, the price history and the payments added, with Change price,
@@ -56,7 +61,8 @@ class _RecurringDetailScreenState extends State<RecurringDetailScreen> {
   /// back to this page, so it opens nothing.
   late final _opener = ExpenseFormOpener(
     dependencies: widget.dependencies,
-    pendingDraft: _page.pendingDraft,
+    // Not a tear-off: the page's cubit is replaced after a new schedule.
+    pendingDraft: () => _page.pendingDraft(),
   );
 
   final _messenger = GlobalKey<ScaffoldMessengerState>();
@@ -73,9 +79,15 @@ class _RecurringDetailScreenState extends State<RecurringDetailScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_cubit != null) return;
+    _cubit = _cubitFor(widget.itemId);
+  }
+
+  /// The page's item: [RecurringDetailScreen.itemId] at first, then the
+  /// new item after a change of how often ([_edit]).
+  RecurringDetailCubit _cubitFor(int itemId) {
     final deps = widget.dependencies;
-    _cubit = RecurringDetailCubit(
-      itemId: widget.itemId,
+    return RecurringDetailCubit(
+      itemId: itemId,
       recurring: deps.recurring,
       expenses: deps.expenses,
       categories: deps.categories,
@@ -124,6 +136,56 @@ class _RecurringDetailScreenState extends State<RecurringDetailScreen> {
     }
   }
 
+  /// **Add selected** (phase-7b.md §8.1 E): the held dates in a sheet, all
+  /// ticked; the ticked ones are added, the rest skipped for good.
+  Future<void> _addSelected(RecurringItem item) async {
+    final l10n = AppLocalizations.of(context);
+    final locale = dateLocaleOf(context);
+    final today = _page.today;
+    final held = await _page.heldDates();
+    if (held == null || held.days.isEmpty || !mounted) return;
+    final prices = switch (_page.value) {
+      RecurringDetailLoaded(:final prices) => prices,
+      _ => const <PricePoint>[],
+    };
+    final names = PeriodNames.of(
+      context,
+      today: today,
+      weekLabel: context.read<SettingsCubit>().value.weekLabel,
+    );
+    final ticked = await showAddSelectedSheet(
+      context,
+      days: held.days,
+      priceOn: (day) => switch (priceOn(prices, day)) {
+        final int minor => Money(minor, item.currencyCode),
+        null => null,
+      },
+      dayName: names.day,
+    );
+    if (ticked == null || !mounted) return;
+    SelectedOutcome? outcome;
+    await saveOrShowError(
+      _messengerContext,
+      () async => outcome = await _page.addSelected(ticked, held: held),
+    );
+    final done = outcome;
+    if (done == null || !mounted) return;
+    final next = done.next;
+    _showMessage(switch (next) {
+      null => l10n.addedAndSkippedNoNext(done.added, done.skipped),
+      // More than 1,000 were waiting: the rest are asked about next.
+      _ when next.compareTo(today) <= 0 => l10n.addedAndSkippedMore(
+        done.added,
+        done.skipped,
+      ),
+      _ => l10n.addedAndSkipped(
+        done.added,
+        done.skipped,
+        dayText(locale, next, today: today),
+      ),
+    });
+  }
+
   Future<void> _skipAll() async {
     final l10n = AppLocalizations.of(context);
     final locale = dateLocaleOf(context);
@@ -155,7 +217,9 @@ class _RecurringDetailScreenState extends State<RecurringDetailScreen> {
     }
   }
 
-  Future<void> _restore(RecurringItem item) async {
+  /// Restore, after its dialog; with a running relative, the swap dialog
+  /// instead (phase-7b.md §8.1 D, P7b-3).
+  Future<void> _restore(RecurringItem item, RecurringItem? relative) async {
     final l10n = AppLocalizations.of(context);
     final locale = dateLocaleOf(context);
     final preview = _page.restorePreview;
@@ -163,17 +227,25 @@ class _RecurringDetailScreenState extends State<RecurringDetailScreen> {
     final today = _page.today;
     final next = preview.next;
     final endPassed = preview.endPassed;
+    final name = recurringName(l10n, locale, item);
     final confirmed = await confirmAction(
       context,
-      title: l10n.restoreRecurringTitle(item.title),
+      title: relative == null
+          ? l10n.restoreRecurringTitle(item.title)
+          : l10n.swapTitle(name),
       message: [
+        if (relative != null)
+          l10n.swapText(
+            relative.paymentCount,
+            recurringName(l10n, locale, relative),
+          ),
         next == null
             ? l10n.restoreRecurringNoMore
             : l10n.restoreRecurringText(dayText(locale, next, today: today)),
         if (endPassed != null)
           l10n.restoreEndPassed(shortDateText(locale, parseDay(endPassed))),
       ].join('\n\n'),
-      confirmLabel: l10n.restore,
+      confirmLabel: relative == null ? l10n.restore : l10n.switchBack,
     );
     if (!confirmed || !mounted) return;
     String? restoredNext;
@@ -184,7 +256,12 @@ class _RecurringDetailScreenState extends State<RecurringDetailScreen> {
       restoredNext = outcome?.next;
     });
     if (restored && mounted) {
-      Navigator.pop(context, RecurringRestored(item.title, restoredNext));
+      Navigator.pop(
+        context,
+        relative == null
+            ? RecurringRestored(item.title, restoredNext)
+            : RecurringSwitchedBack(name),
+      );
     }
   }
 
@@ -225,19 +302,38 @@ class _RecurringDetailScreenState extends State<RecurringDetailScreen> {
       saveOrShowError(_messengerContext, () => _page.removePrice(from));
 
   Future<void> _edit() async {
-    final saved = await Navigator.push<bool>(
+    final result = await Navigator.push<RecurringFormResult>(
       context,
       MaterialPageRoute(
         builder: (_) => RecurringFormScreen(
           dependencies: widget.dependencies,
-          itemId: widget.itemId,
+          itemId: _page.itemId,
         ),
       ),
     );
     if (!mounted) return;
-    await _page.load();
-    if (saved == true && mounted) {
-      _showMessage(AppLocalizations.of(context).changesSaved);
+    switch (result) {
+      case RecurringReplaced(:final newId, :final oldTitle):
+        // How often changed: this item is archived, and this page shows
+        // the new one, saying so (no Undo: restore the old one from the
+        // Archive, P7b-5). The same route, so what the new page does later
+        // (Stop and its Undo) still reaches the screen below; a
+        // pushReplacement would have answered that screen already.
+        final old = _cubit;
+        setState(() => _cubit = _cubitFor(newId));
+        await old?.close();
+        if (mounted) {
+          _showMessage(
+            AppLocalizations.of(context).recurringArchivedShort(oldTitle),
+          );
+        }
+      case RecurringEdited():
+        await _page.load();
+        if (mounted) {
+          _showMessage(AppLocalizations.of(context).changesSaved);
+        }
+      case null:
+        await _page.load();
     }
   }
 
@@ -343,6 +439,7 @@ class _RecurringDetailScreenState extends State<RecurringDetailScreen> {
             today: today,
             busy: state.busy,
             onAddAll: _addAll,
+            onAddSelected: () => _addSelected(item),
             onSkip: _skipAll,
           ),
           const SizedBox(height: 16),
@@ -428,7 +525,9 @@ class _RecurringDetailScreenState extends State<RecurringDetailScreen> {
           ? [
               FilledButton.icon(
                 key: const ValueKey('restoreRecurring'),
-                onPressed: busy || item.isBroken ? null : () => _restore(item),
+                onPressed: busy || item.isBroken
+                    ? null
+                    : () => _restore(item, state.relative),
                 icon: const Icon(Icons.unarchive_outlined),
                 label: Text(l10n.restore),
               ),

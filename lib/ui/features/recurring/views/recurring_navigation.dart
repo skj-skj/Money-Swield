@@ -6,6 +6,7 @@ import '../../../../domain/periods.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/formatting_locale.dart';
 import '../../../core/recurrence_text.dart';
+import '../../../core/widgets/save_error.dart';
 import '../../../core/widgets/show_message.dart';
 import 'recurring_detail_screen.dart';
 
@@ -30,6 +31,13 @@ final class RecurringRestored extends RecurringPageResult {
   const RecurringRestored(super.title, this.next);
 
   final String? next;
+}
+
+/// Restore with the swap (phase-7b.md §8.1 D): "Switched back to Netflix ·
+/// Every month". No Undo: restoring the other one switches again. [title]
+/// is the item named with its rule.
+final class RecurringSwitchedBack extends RecurringPageResult {
+  const RecurringSwitchedBack(super.title);
 }
 
 /// Delete for good: "Netflix deleted. Its 12 payments stay."
@@ -68,8 +76,31 @@ Future<void> openRecurringFromForm(
     dateLocaleOf(formContext),
     result,
     today: todayOn(dependencies.now()),
-    onUndoStop: (undo) => dependencies.recurring.undoArchive(undo),
+    onUndoStop: (undo) => undoStopOrSay(
+      formContext,
+      () => dependencies.recurring.undoArchive(undo),
+    ),
   );
+}
+
+/// Undo of Stop from its "… stopped and archived." message: runs [undo]
+/// (true when the item runs again). Refused (restored or deleted since, or
+/// another item of its bill runs now: never two for one bill), it says
+/// so rather than nothing; a failure says "Couldn't save".
+Future<void> undoStopOrSay(
+  BuildContext context,
+  Future<bool> Function() undo,
+) async {
+  // The screen that showed the message may have closed since.
+  if (!context.mounted) {
+    await undo();
+    return;
+  }
+  final messenger = ScaffoldMessenger.maybeOf(context);
+  final refused = AppLocalizations.of(context).undoStopRefused;
+  var done = true;
+  await saveOrShowError(context, () async => done = await undo());
+  if (!done) showMessage(messenger, refused);
 }
 
 /// Says what [result] did on [messenger]; Stop's Undo runs [onUndoStop].
@@ -98,6 +129,8 @@ void showRecurringPageResult(
       );
     case RecurringRestored(:final title):
       showMessage(messenger, l10n.recurringRestoredNoNext(title));
+    case RecurringSwitchedBack(:final title):
+      showMessage(messenger, l10n.switchedBack(title));
     case RecurringDeleted(:final title, :final payments):
       showMessage(messenger, l10n.recurringDeleted(title, payments));
     case null:

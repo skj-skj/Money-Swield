@@ -10,6 +10,7 @@ import '../../domain/recurring_moment.dart';
 import '../../domain/recurring_plan.dart';
 import '../../domain/recurring_price.dart';
 import '../../domain/repeat_input.dart' show isValidDay, maxRepeatInterval;
+import '../../domain/upcoming.dart' show SkipKey;
 import '../services/database/sql_helpers.dart';
 import 'data_version.dart';
 import 'expense_repository.dart';
@@ -26,6 +27,7 @@ class NewRecurringItem {
     required this.schedule,
     required this.timeOfDayMinutes,
     required this.nextDueOn,
+    this.replacesId,
   });
 
   final String title;
@@ -41,6 +43,9 @@ class NewRecurringItem {
 
   /// The first payment not yet added.
   final String? nextDueOn;
+
+  /// The item it was made from when how often changed (phase-7b.md §6.1).
+  final int? replacesId;
 }
 
 /// The item is gone, archived (for a write only a running item takes),
@@ -74,6 +79,16 @@ typedef RestoreOutcome = ({String? next, bool endCleared, int added});
 
 /// What Skip them did (§8.6).
 typedef SkipOutcome = ({int skipped, int added, String? next});
+
+/// What Add selected did (phase-7b.md §8.1 E): payments added, listed
+/// dates not added (unticked, or with a row already: skipped for good), and
+/// the cursor after. `added + skipped` is how many the sheet listed.
+typedef SelectedOutcome = ({int added, int skipped, String? next});
+
+/// What the Add selected sheet lists ([RecurringRepository.heldDates]):
+/// the held `days`, and the `cursor` and day (`through`) they were read
+/// with, which [RecurringRepository.addSelected] holds to.
+typedef HeldDates = ({List<String> days, String cursor, String through});
 
 /// Reads and writes the recurring tables (phase-7a.md §6.1) and runs the
 /// generator (§6.3). Bumps [DataVersion] after every commit that changed
@@ -185,6 +200,7 @@ class RecurringRepository {
       'end_on': s.endOn,
       'time_of_day_minutes': item.timeOfDayMinutes,
       'next_due_on': item.nextDueOn,
+      'replaces_id': item.replacesId,
       'created_at': nowMs,
       'updated_at': nowMs,
     });
@@ -220,9 +236,7 @@ class RecurringRepository {
           newestPayment: await _newestPaymentOn(txn, id),
           today: _today,
         );
-        if (!isValidDay(endOn) ||
-            endOn.compareTo(earliest) < 0 ||
-            endOn.compareTo(lastEndOn) > 0) {
+        if (!_dayWithin(endOn, earliest)) {
           throw RecurringChangeRefused('End $endOn: before $earliest');
         }
       }
@@ -260,6 +274,126 @@ class RecurringRepository {
     });
     _dataVersion.bump();
   }
+
+  /// **Changing how often** (phase-7b.md §6.1, P7b-4): one transaction
+  /// makes a new item with [edit]'s fields and [schedule] (its end is
+  /// [edit]'s), `replaces_id` = [id], the old item's price on the new start
+  /// and its scheduled prices after it (P7b-5) and [edit]'s events; then
+  /// archives the old one (its cursor kept, so restoring it never pays a
+  /// date twice). A start of today adds today's payment in the same
+  /// transaction. Returns the new id.
+  ///
+  /// Refused ([RecurringChangeRefused]), nothing written: a start before
+  /// [earliestFirstPayment] (on or before the old item's last handled
+  /// date, or before today) or after [lastEndOn]; an end before the start
+  /// or after [lastEndOn]; payments waiting ([paymentsWaiting]: they would
+  /// be dropped). [RecurringItemUnavailable] for an archived, gone or
+  /// broken item.
+  Future<int> replaceSchedule(
+    int id,
+    RecurringEdit edit,
+    Schedule schedule,
+  ) async {
+    final nowMs = _now().millisecondsSinceEpoch;
+    final today = _today;
+    final newId = await _db.transaction((txn) async {
+      final row = await _runningRow(txn, id);
+      final old = _scheduleOf(row);
+      if (old == null) throw RecurringItemUnavailable('Item $id is broken');
+      final cursor = row['next_due_on'] as String?;
+      if (paymentsWaiting(cursor: cursor, today: today)) {
+        throw RecurringChangeRefused('Item $id has payments waiting');
+      }
+      final startOn = schedule.startOn;
+      final earliest = earliestFirstPayment(old, cursor: cursor, today: today);
+      final endOn = edit.endOn;
+      if (!_dayWithin(startOn, earliest)) {
+        throw RecurringChangeRefused('Start $startOn: before $earliest');
+      }
+      if (endOn != null && !_dayWithin(endOn, startOn)) {
+        throw RecurringChangeRefused('End $endOn: before $startOn');
+      }
+      if (schedule.interval < 1 || schedule.interval > maxRepeatInterval) {
+        throw RecurringChangeRefused('Interval ${schedule.interval}');
+      }
+      final points = await _prices(txn, id);
+      // Before the item's first price only when it hasn't started yet (made
+      // with a later start, nothing handled, so the First payment may be
+      // any day from today): its first price is what it would charge.
+      final price = priceOn(points, startOn) ?? _firstPrice(points);
+      if (price == null) {
+        throw RecurringItemUnavailable('Item $id has no price');
+      }
+      final newSchedule = Schedule(
+        frequency: schedule.frequency,
+        interval: schedule.interval,
+        startOn: startOn,
+        endOn: endOn,
+      );
+      final created = await insertTemplate(
+        txn,
+        NewRecurringItem(
+          title: edit.title,
+          description: edit.description,
+          amount: Money(price, row['currency_code']! as String),
+          categoryId: edit.categoryId,
+          paymentMethodId: edit.paymentMethodId,
+          eventIds: edit.eventIds,
+          schedule: newSchedule,
+          timeOfDayMinutes: edit.timeOfDayMinutes,
+          nextDueOn: startOn,
+          replacesId: id,
+        ),
+        nowMs,
+      );
+      for (final p in points) {
+        if (p.from.compareTo(startOn) <= 0) continue;
+        await txn.insert('recurring_amounts', {
+          'recurring_expense_id': created,
+          'amount_minor': p.amountMinor,
+          'effective_from': p.from,
+          'created_at': nowMs,
+          'updated_at': nowMs,
+        });
+      }
+      // The same moment as the new item's created_at: that is how the
+      // Archive tells "replaced" from a later Stop.
+      await txn.update(
+        'recurring_expenses',
+        _archivedAt(nowMs),
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+      // A start today: its first payment now, not at the next start.
+      await _runItem(txn, created, today: today, confirmed: true);
+      return created;
+    });
+    _dataVersion.bump();
+    return newId;
+  }
+
+  /// The running item of [id]'s family ([runningRelatives]): what
+  /// Restoring [id] swaps out (P7b-3); null when none runs. The newest when
+  /// (only by a bug) several do.
+  Future<RecurringItem?> runningRelative(int id) async {
+    final relatives = await _runningRelatives(_db, id);
+    return relatives.isEmpty ? null : byId(relatives.first);
+  }
+
+  static Future<List<int>> _runningRelatives(
+    DatabaseExecutor db,
+    int id,
+  ) async => runningRelatives(id, {
+    // A handful of rows: read whole, walked in Dart (no recursive SQL).
+    for (final row in await db.query(
+      'recurring_expenses',
+      columns: ['id', 'replaces_id', 'archived_at'],
+    ))
+      row['id']! as int: (
+        replacesId: row['replaces_id'] as int?,
+        running: row['archived_at'] == null,
+      ),
+  });
 
   /// A new price for the running item [id] from [from] (§5.4): a new row,
   /// or the scheduled price on that date replaced. Payments already added
@@ -336,7 +470,7 @@ class RecurringRepository {
     final nowMs = _now().millisecondsSinceEpoch;
     final changed = await _db.update(
       'recurring_expenses',
-      {'archived_at': nowMs, 'updated_at': nowMs},
+      _archivedAt(nowMs),
       where: 'id = ? AND archived_at IS NULL',
       whereArgs: [id],
     );
@@ -349,13 +483,20 @@ class RecurringRepository {
 
   /// Undo of Stop: back to running, only if nothing changed since (Restore
   /// or Delete in the meantime). Returns whether it did.
+  ///
+  /// Nor when another item of its family runs now (phase-7b.md §12a): Stop
+  /// B, restore A (nothing to swap), then Undo of B's Stop would have run
+  /// both for one bill.
   Future<bool> undoArchive(ArchiveUndo undo) async {
-    final changed = await _db.update(
-      'recurring_expenses',
-      {'archived_at': null, 'updated_at': _now().millisecondsSinceEpoch},
-      where: 'id = ? AND archived_at IS NOT NULL AND updated_at = ?',
-      whereArgs: [undo.id, undo.updatedAtMs],
-    );
+    final changed = await _db.transaction((txn) async {
+      if ((await _runningRelatives(txn, undo.id)).isNotEmpty) return 0;
+      return txn.update(
+        'recurring_expenses',
+        {'archived_at': null, 'updated_at': _now().millisecondsSinceEpoch},
+        where: 'id = ? AND archived_at IS NOT NULL AND updated_at = ?',
+        whereArgs: [undo.id, undo.updatedAtMs],
+      );
+    });
     if (changed > 0) _dataVersion.bump();
     return changed > 0;
   }
@@ -365,7 +506,14 @@ class RecurringRepository {
   /// today's payment, if one is due, is added. Throws
   /// [RecurringItemUnavailable] for an
   /// item that isn't archived, or is broken.
-  Future<RestoreOutcome> restore(int id) async {
+  ///
+  /// **The swap** (phase-7b.md §6.1, P7b-3): [swapOut] is the running item
+  /// of its family the dialog named ([runningRelative]); it is archived in
+  /// the same transaction (its payments stay). A family member running
+  /// that isn't [swapOut] (none was named, or another one runs now) is
+  /// refused ([RecurringChangeRefused]), nothing written: two items must
+  /// never run for one bill. A [swapOut] stopped meanwhile is fine.
+  Future<RestoreOutcome> restore(int id, {int? swapOut}) async {
     final nowMs = _now().millisecondsSinceEpoch;
     final today = _today;
     final endCleared = await _db.transaction((txn) async {
@@ -376,6 +524,18 @@ class RecurringRepository {
       final schedule = _scheduleOf(row);
       if (schedule == null) {
         throw RecurringItemUnavailable('Item $id is broken');
+      }
+      final running = await _runningRelatives(txn, id);
+      if (running.any((other) => other != swapOut)) {
+        throw RecurringChangeRefused('Item $id: $running run in its family');
+      }
+      if (running.isNotEmpty) {
+        await txn.update(
+          'recurring_expenses',
+          _archivedAt(nowMs),
+          where: 'id = ?',
+          whereArgs: [swapOut],
+        );
       }
       final plan = planRestore(
         schedule,
@@ -438,16 +598,21 @@ class RecurringRepository {
       if (schedule == null || cursor == null || cursor.compareTo(today) >= 0) {
         return 0;
       }
+      final skips = await _skipsOf(txn, id);
+      final next = occurrenceOnOrAfter(schedule, today);
       await txn.update(
         'recurring_expenses',
-        {
-          'next_due_on': occurrenceOnOrAfter(schedule, today),
-          'updated_at': nowMs,
-        },
+        {'next_due_on': next, 'updated_at': nowMs},
         where: 'id = ?',
         whereArgs: [id],
       );
-      return dueCount(schedule, cursor: cursor, today: addDays(today, -1));
+      await _dropPassedSkips(txn, id, next);
+      // Dates skipped once from Upcoming were never going to be added:
+      // they aren't counted as skipped now (phase-7b.md §6.3). Counted,
+      // not walked: a daily item from 1900 has 46,000 dates.
+      final yesterday = addDays(today, -1);
+      return dueCount(schedule, cursor: cursor, today: yesterday) -
+          skippedBetween(schedule, skips, cursor, yesterday);
     });
     if (skipped > 0) _dataVersion.bump();
     final report = await generateDue(onlyId: id, confirmed: true);
@@ -456,6 +621,123 @@ class RecurringRepository {
       added: report.added,
       next: (await byId(id))?.nextDueOn,
     );
+  }
+
+  // Add selected and skips (phase-7b.md §6.1).
+
+  /// The held dates of item [id] that the Add selected sheet lists: due
+  /// from its cursor through today, skipped ones left out, at most 1,000
+  /// ([dueDatesSkipping]); with the cursor and the day they were read on,
+  /// which [addSelected] holds to.
+  Future<HeldDates?> heldDates(int id) async {
+    final row = await _row(_db, id);
+    final schedule = row == null ? null : _scheduleOf(row);
+    final cursor = row?['next_due_on'] as String?;
+    if (row == null || schedule == null || cursor == null) return null;
+    final today = _today;
+    final (:due, next: _) = dueDatesSkipping(
+      schedule,
+      from: cursor,
+      through: today,
+      skipped: await _skipsOf(_db, id),
+    );
+    return (days: due, cursor: cursor, through: today);
+  }
+
+  /// **Add selected** (§8.1 E, P7b-6): in one transaction, the [ticked]
+  /// dates that are really due ([selectedPlan]) are added (one with a row
+  /// already is passed over) and the cursor moves past every listed date,
+  /// so the unticked ones are skipped for good. [held] is what the sheet
+  /// listed ([heldDates]): its cursor moved since (a run, another tap),
+  /// nothing is written and [RecurringChangeRefused] is thrown; the page
+  /// reloads. Its day holds past midnight: the new day's payment wasn't
+  /// listed, so it is left for the generator, never skipped unseen.
+  Future<SelectedOutcome> addSelected(
+    int id,
+    Set<String> ticked, {
+    required HeldDates held,
+  }) async {
+    final today = _today;
+    // Never after today (a clock set back): no future payment is added.
+    final through = held.through.compareTo(today) < 0 ? held.through : today;
+    final outcome = await _db.transaction((txn) async {
+      final row = await _runningRow(txn, id);
+      final schedule = _scheduleOf(row);
+      if (schedule == null) {
+        throw RecurringItemUnavailable('Item $id is broken');
+      }
+      if (row['next_due_on'] != held.cursor) {
+        throw RecurringChangeRefused('Item $id: the cursor moved');
+      }
+      final (:add, :listed, :next) = selectedPlan(
+        schedule,
+        cursor: held.cursor,
+        today: through,
+        ticked: ticked,
+        skipped: await _skipsOf(txn, id),
+      );
+      final added = await _addDue(txn, row, add, next);
+      return (added: added, skipped: listed - added, next: next);
+    });
+    _dataVersion.bump();
+    return outcome;
+  }
+
+  /// The skips stored for days after [after] (Upcoming's, §6.1).
+  Future<Set<SkipKey>> skips({required String after}) async => {
+    for (final row in await _db.rawQuery(
+      'SELECT recurring_expense_id, due_on FROM recurring_skips '
+      'WHERE due_on > ?',
+      [after],
+    ))
+      (
+        itemId: row['recurring_expense_id']! as int,
+        day: row['due_on']! as String,
+      ),
+  };
+
+  /// **Skip once** (§8.1 F, P7b-8): payment [day] of item [id] won't be
+  /// added. Only a day Upcoming lists: a payment of a running item, after
+  /// today, on or after its cursor, before its end; anything else is
+  /// [RecurringChangeRefused] (the day passed while the screen was open).
+  /// A second skip of the same day does nothing (checked first; the
+  /// unique index backs it).
+  Future<void> skipOnce(int id, String day) async {
+    final nowMs = _now().millisecondsSinceEpoch;
+    final today = _today;
+    final added = await _db.transaction((txn) async {
+      final row = await _runningRow(txn, id);
+      final schedule = _scheduleOf(row);
+      final cursor = row['next_due_on'] as String?;
+      if (schedule == null ||
+          cursor == null ||
+          !isValidDay(day) ||
+          day.compareTo(today) <= 0 ||
+          day.compareTo(cursor) < 0 ||
+          occurrenceOnOrAfter(schedule, day) != day) {
+        throw RecurringChangeRefused('Item $id: $day is not upcoming');
+      }
+      if ((await _skipsOf(txn, id)).contains(day)) return false;
+      await txn.insert('recurring_skips', {
+        'recurring_expense_id': id,
+        'due_on': day,
+        'created_at': nowMs,
+        'updated_at': nowMs,
+      });
+      return true;
+    });
+    if (added) _dataVersion.bump();
+  }
+
+  /// **Bring back** a skipped payment (§8.1 F); Undo of Skip once. Does
+  /// nothing when it isn't skipped.
+  Future<void> unskip(int id, String day) async {
+    final count = await _db.delete(
+      'recurring_skips',
+      where: 'recurring_expense_id = ? AND due_on = ?',
+      whereArgs: [id, day],
+    );
+    if (count > 0) _dataVersion.bump();
   }
 
   // The generator (§6.3).
@@ -521,11 +803,21 @@ class RecurringRepository {
     // running with a past end, and its Edit refused every save.
     final expired = await _db.update(
       'recurring_expenses',
-      {'archived_at': nowMs, 'updated_at': nowMs},
+      _archivedAt(nowMs),
       where:
           'archived_at IS NULL AND next_due_on IS NULL AND end_on IS NOT NULL '
           'AND end_on < ?',
       whereArgs: [today],
+    );
+    // Skips no cursor can reach any more: an archived item's from before
+    // today (Restore starts from today), and any its cursor passed (a
+    // Restore or an Edit moved it). A handful of rows.
+    await _db.rawDelete(
+      'DELETE FROM recurring_skips WHERE EXISTS (SELECT 1 FROM '
+      'recurring_expenses r WHERE r.id = recurring_skips.recurring_expense_id '
+      'AND (recurring_skips.due_on < r.next_due_on OR (r.archived_at IS NOT '
+      'NULL AND recurring_skips.due_on < ?)))',
+      [today],
     );
     _lastFailed = onlyId == null
         ? failed
@@ -565,6 +857,8 @@ class RecurringRepository {
       cursor: row['next_due_on'] as String?,
       today: today,
       confirmed: confirmed,
+      // Read in this transaction: a skip is never added (§6.3).
+      skipped: await _skipsOf(txn, id),
     );
     switch (plan) {
       case NothingDue():
@@ -578,35 +872,72 @@ class RecurringRepository {
           to: to,
         );
       case AddPayments(:final due, :final next):
-        final points = await _prices(txn, id);
-        final existing = await _paymentsOnOrBetween(txn, id, due);
-        final payments = <PaymentInput>[];
-        for (final day in due) {
-          // A payment with a row (active or binned) is passed over.
-          if (existing.contains(day)) continue;
-          final amount = priceOn(points, day);
-          if (amount == null) {
-            throw RecurringItemUnavailable('Item $id has no price on $day');
-          }
-          payments.add(_paymentOf(row, day, amount));
-        }
-        await ExpenseRepository.insertPayments(
-          txn,
-          id,
-          payments,
-          nowMs: _now().millisecondsSinceEpoch,
-        );
-        // updated_at is left alone: the item itself didn't change (and
-        // Undo of a Stop compares it).
-        await txn.update(
-          'recurring_expenses',
-          {'next_due_on': next},
-          where: 'id = ?',
-          whereArgs: [id],
-        );
-        return (added: payments.length, moved: next != row['next_due_on']);
+        final added = await _addDue(txn, row, due, next);
+        return (added: added, moved: next != row['next_due_on']);
     }
   }
+
+  /// Adds the payments of [days] for the item in [row] at their prices,
+  /// passing over any with a row already (active or binned), then moves
+  /// its cursor to [next] and drops the skips it passed: the generator's
+  /// and Add selected's write, inside [txn]. Returns how many it added.
+  /// Throws (rolling it all back) when a day has no price.
+  Future<int> _addDue(
+    Transaction txn,
+    Map<String, Object?> row,
+    List<String> days,
+    String? next,
+  ) async {
+    final id = row['id']! as int;
+    final points = await _prices(txn, id);
+    final existing = await _paymentsOnOrBetween(txn, id, days);
+    final payments = <PaymentInput>[];
+    for (final day in days) {
+      if (existing.contains(day)) continue;
+      final amount = priceOn(points, day);
+      if (amount == null) {
+        throw RecurringItemUnavailable('Item $id has no price on $day');
+      }
+      payments.add(_paymentOf(row, day, amount));
+    }
+    await ExpenseRepository.insertPayments(
+      txn,
+      id,
+      payments,
+      nowMs: _now().millisecondsSinceEpoch,
+    );
+    // updated_at is left alone: the item itself didn't change (and Undo of
+    // a Stop compares it).
+    await txn.update(
+      'recurring_expenses',
+      {'next_due_on': next},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    // With the cursor, in the same transaction: a crash before the commit
+    // leaves the skip and adds nothing.
+    await _dropPassedSkips(txn, id, next);
+    return payments.length;
+  }
+
+  /// What Stop, an expiry, a swap and a new schedule write.
+  static Map<String, Object?> _archivedAt(int nowMs) => {
+    'archived_at': nowMs,
+    'updated_at': nowMs,
+  };
+
+  /// Whether [day] is a real date from [from] through [lastEndOn].
+  static bool _dayWithin(String day, String from) =>
+      isValidDay(day) &&
+      day.compareTo(from) >= 0 &&
+      day.compareTo(lastEndOn) <= 0;
+
+  /// The oldest of [points]' prices; null when there are none.
+  static int? _firstPrice(List<PricePoint> points) => points.isEmpty
+      ? null
+      : points
+            .reduce((a, b) => a.from.compareTo(b.from) <= 0 ? a : b)
+            .amountMinor;
 
   /// The payment due on [day] of the item in [row], at [amountMinor], in
   /// the device's zone now (§5.6).
@@ -648,8 +979,13 @@ class RecurringRepository {
     await db.rawQuery(
       'SELECT id, title, description, currency_code, category_id, '
       'payment_method_id, frequency, interval_count, start_on, end_on, '
-      'time_of_day_minutes, next_due_on, archived_at, created_at, updated_at '
-      'FROM recurring_expenses LIMIT 1',
+      'time_of_day_minutes, next_due_on, archived_at, created_at, updated_at, '
+      'replaces_id FROM recurring_expenses LIMIT 1',
+    );
+    // Phase 7b's schema (phase-7b.md §6.6): a 7a database lacks both.
+    await db.rawQuery(
+      'SELECT recurring_expense_id, due_on, created_at, updated_at '
+      'FROM recurring_skips LIMIT 1',
     );
     await db.rawQuery(
       'SELECT id, recurring_expense_id, amount_minor, effective_from, '
@@ -680,6 +1016,11 @@ class RecurringRepository {
     final points = <int, List<PricePoint>>{};
     final events = <int, Set<int>>{};
     final counts = <int, int>{};
+    // When each item's replacements were made: "replaced" (phase-7b.md
+    // §6.1) is one made in the same write that archived it.
+    final replacedAt = <int, Set<int>>{};
+    // Skipped dates: the hold leaves them out (phase-7b.md §5.2).
+    final skips = <int, Set<String>>{};
     await inChunks(ids, (chunk) async {
       final list = sqlPlaceholders(chunk.length);
       for (final p in await db.rawQuery(
@@ -709,6 +1050,24 @@ class RecurringRepository {
       )) {
         counts[c['id']! as int] = c['n']! as int;
       }
+      for (final r in await db.rawQuery(
+        'SELECT replaces_id AS id, created_at FROM recurring_expenses '
+        'WHERE replaces_id IN ($list)',
+        chunk,
+      )) {
+        replacedAt
+            .putIfAbsent(r['id']! as int, () => {})
+            .add(r['created_at']! as int);
+      }
+      for (final k in await db.rawQuery(
+        'SELECT recurring_expense_id AS id, due_on FROM recurring_skips '
+        'WHERE recurring_expense_id IN ($list)',
+        chunk,
+      )) {
+        skips
+            .putIfAbsent(k['id']! as int, () => {})
+            .add(k['due_on']! as String);
+      }
       return const <void>[];
     });
     final today = _today;
@@ -719,6 +1078,8 @@ class RecurringRepository {
           points: points[row['id']] ?? const [],
           eventIds: events[row['id']] ?? const {},
           paymentCount: counts[row['id']] ?? 0,
+          replacedAt: replacedAt[row['id']] ?? const {},
+          skipped: skips[row['id']] ?? const {},
           today: today,
         ),
     ];
@@ -729,6 +1090,8 @@ class RecurringRepository {
     required List<PricePoint> points,
     required Set<int> eventIds,
     required int paymentCount,
+    required Set<int> replacedAt,
+    required Set<String> skipped,
     required String today,
   }) {
     final schedule = _scheduleOf(row);
@@ -745,6 +1108,7 @@ class RecurringRepository {
             cursor: cursor,
             today: today,
             confirmed: false,
+            skipped: skipped,
           );
     return RecurringItem(
       id: row['id']! as int,
@@ -768,6 +1132,9 @@ class RecurringRepository {
       ),
       paymentCount: paymentCount,
       hold: plan is HoldPayments ? plan : null,
+      replacesId: row['replaces_id'] as int?,
+      replaced: replacedAt.contains(row['archived_at']),
+      prices: points,
     );
   }
 
@@ -854,6 +1221,33 @@ class RecurringRepository {
       [id, days.first, days.last],
     );
     return {for (final r in rows) r['recurring_due_on']! as String};
+  }
+
+  static Future<Set<String>> _skipsOf(DatabaseExecutor db, int id) async => {
+    for (final row in await db.query(
+      'recurring_skips',
+      columns: ['due_on'],
+      where: 'recurring_expense_id = ?',
+      whereArgs: [id],
+    ))
+      row['due_on']! as String,
+  };
+
+  /// Deletes item [id]'s skips before [next], its new cursor: they were
+  /// passed over and are never looked at again. With no cursor (no payment
+  /// left) they stay: an Edit that extends the end makes them payments
+  /// again (phase-7b.md §12a).
+  static Future<void> _dropPassedSkips(
+    Transaction txn,
+    int id,
+    String? next,
+  ) async {
+    if (next == null) return;
+    await txn.delete(
+      'recurring_skips',
+      where: 'recurring_expense_id = ? AND due_on < ?',
+      whereArgs: [id, next],
+    );
   }
 
   static Future<String?> _newestPaymentOn(DatabaseExecutor db, int id) async =>

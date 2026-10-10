@@ -4,6 +4,7 @@ import '../../../../domain/expense_filter.dart';
 import '../../../../domain/models/category.dart';
 import '../../../../domain/models/event.dart';
 import '../../../../domain/periods.dart';
+import '../../../../domain/upcoming.dart' show upcomingFiltered;
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/builtin_names.dart';
 import '../../../core/item_labels.dart';
@@ -22,8 +23,10 @@ class FilterBar extends StatelessWidget {
     required this.events,
     required this.onOpen,
     required this.onChange,
-    this.photosIcon = PhotosIcon.hidden,
+    this.photosIcon = FilteredScreenIcon.hidden,
     this.onPhotos,
+    this.upcomingIcon = FilteredScreenIcon.hidden,
+    this.onUpcoming,
   });
 
   final ExpenseFilter filter;
@@ -40,10 +43,17 @@ class FilterBar extends StatelessWidget {
   /// The photos icon left of the filter icon (phase-6.md §8.9, P6-36):
   /// hidden without photos, greyed out when the filters hide every one
   /// (P6-45).
-  final PhotosIcon photosIcon;
+  final FilteredScreenIcon photosIcon;
 
   /// Opens the Photos screen.
   final VoidCallback? onPhotos;
+
+  /// The Upcoming payments icon left of the photos icon (phase-7b.md
+  /// §8.3, P7b-7): hidden while no item runs, greyed when the filters hide
+  /// every upcoming payment, with the filter dot, like the photos icon
+  /// (owner, 2026-10-10: Upcoming follows the filters).
+  final FilteredScreenIcon upcomingIcon;
+  final VoidCallback? onUpcoming;
 
   @override
   Widget build(BuildContext context) {
@@ -67,6 +77,15 @@ class FilterBar extends StatelessWidget {
                         key: const ValueKey('filterChipText'),
                         label: l10n.filterSearchChip(text),
                         onDeleted: () => onChange(filter.copyWith(text: '')),
+                      ),
+                    // First after the text chip (phase-7b.md §8.4).
+                    if (filter.onlyRecurring)
+                      _chip(
+                        context,
+                        key: const ValueKey('filterChipRecurring'),
+                        label: l10n.filterChipRecurring,
+                        onDeleted: () =>
+                            onChange(filter.copyWith(onlyRecurring: false)),
                       ),
                     if (_namesOf(
                           filter.categoryIds,
@@ -106,21 +125,25 @@ class FilterBar extends StatelessWidget {
                 ),
               ),
             ),
-            if (photosIcon != PhotosIcon.hidden)
-              IconButton(
-                key: const ValueKey('photosButton'),
-                tooltip: photosIcon == PhotosIcon.enabled
-                    ? l10n.photos
-                    : l10n.noPhotosMatchTooltip,
-                onPressed: photosIcon == PhotosIcon.enabled ? onPhotos : null,
-                // The filter icon's dot too: the Photos screen shows only
-                // the filtered expenses' photos (owner, after the Oppo run).
-                icon: Badge(
-                  isLabelVisible: !filter.isEmpty,
-                  smallSize: 8,
-                  child: const Icon(Icons.photo_library_outlined),
-                ),
-              ),
+            ?_screenIcon(
+              key: const ValueKey('upcomingButton'),
+              state: upcomingIcon,
+              tooltip: l10n.upcomingTooltip,
+              noneTooltip: l10n.noUpcomingMatchTooltip,
+              icon: Icons.event_repeat_outlined,
+              onPressed: onUpcoming,
+              // Only recurring alone narrows nothing there.
+              filtered: upcomingFiltered(filter),
+            ),
+            ?_screenIcon(
+              key: const ValueKey('photosButton'),
+              state: photosIcon,
+              tooltip: l10n.photos,
+              noneTooltip: l10n.noPhotosMatchTooltip,
+              icon: Icons.photo_library_outlined,
+              onPressed: onPhotos,
+              filtered: !filter.isEmpty,
+            ),
             IconButton(
               key: const ValueKey('filterButton'),
               tooltip: l10n.filters,
@@ -136,6 +159,29 @@ class FilterBar extends StatelessWidget {
       ),
     );
   }
+
+  /// An icon opening a screen that follows the filters: null when
+  /// [state] is hidden, greyed (with [noneTooltip]) when the filters hide
+  /// everything, and the filter icon's dot while [filtered] (a filter
+  /// narrows that screen), since it shows only what the filters let
+  /// through (owner, after the Oppo run; Upcoming too, owner 2026-10-10).
+  IconButton? _screenIcon({
+    required Key key,
+    required FilteredScreenIcon state,
+    required String tooltip,
+    required String noneTooltip,
+    required IconData icon,
+    required VoidCallback? onPressed,
+    required bool filtered,
+  }) => switch (state) {
+    FilteredScreenIcon.hidden => null,
+    _ => IconButton(
+      key: key,
+      tooltip: state == FilteredScreenIcon.enabled ? tooltip : noneTooltip,
+      onPressed: state == FilteredScreenIcon.enabled ? onPressed : null,
+      icon: Badge(isLabelVisible: filtered, smallSize: 8, child: Icon(icon)),
+    ),
+  };
 
   Widget _chip(
     BuildContext context, {

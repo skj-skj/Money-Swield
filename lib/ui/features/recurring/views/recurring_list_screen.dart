@@ -10,7 +10,6 @@ import '../../../core/formatting_locale.dart';
 import '../../../core/widgets/async_body.dart';
 import '../../../core/widgets/empty_state_view.dart';
 import '../../../core/widgets/expense_tile.dart';
-import '../../../core/widgets/save_error.dart';
 import '../../../core/widgets/section_tile.dart';
 import '../../expenses/expense_form_opener.dart';
 import '../view_models/recurring_list_cubit.dart';
@@ -86,9 +85,10 @@ class _RecurringListScreenState extends State<RecurringListScreen> {
       result,
       today: _today,
       onUndoStop: (undo) =>
-          saveOrShowError(_scaffold.currentContext ?? context, () async {
-            await widget.dependencies.recurring.undoArchive(undo);
+          undoStopOrSay(_scaffold.currentContext ?? context, () async {
+            final done = await widget.dependencies.recurring.undoArchive(undo);
             await _cubit.load();
+            return done;
           }),
     );
   }

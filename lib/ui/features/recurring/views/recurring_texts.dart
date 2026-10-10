@@ -46,9 +46,23 @@ String archiveRowSubtitle(
     ArchiveReason.expired => l10n.archivedExpired(
       _day(locale, schedule.endOn!, today),
     ),
+    ArchiveReason.replaced => l10n.archivedReplaced(
+      _day(locale, item.archivedOn ?? today, today),
+    ),
     _ => l10n.archivedStopped(_day(locale, item.archivedOn ?? today, today)),
   };
   return '$short · $label';
+}
+
+/// "Netflix · Every week on Monday": an item named with its rule, where two
+/// items of one bill must be told apart (the new-schedule and swap
+/// dialogs, phase-7b.md §8.1 C–D). The title alone when the rule can't be
+/// read.
+String recurringName(AppLocalizations l10n, String locale, RecurringItem item) {
+  final schedule = item.schedule;
+  return schedule == null
+      ? item.title
+      : '${item.title} · ${scheduleText(l10n, locale, schedule)}';
 }
 
 /// The hold card's text (§8.6): "10 payments are due, 3 Aug – 5 Oct.";

@@ -85,6 +85,7 @@ void main() {
       await insertExpenseRow(db);
       await dropRecurringColumns(db);
       for (final table in [
+        'recurring_skips',
         'recurring_expense_events',
         'recurring_amounts',
         'recurring_expenses',
@@ -109,6 +110,7 @@ void main() {
 
     test('any one recurring table missing: refused', () async {
       for (final table in [
+        'recurring_skips',
         'recurring_expense_events',
         'recurring_amounts',
         'recurring_expenses',
@@ -122,6 +124,34 @@ void main() {
           reason: table,
         );
       }
+    });
+
+    test('a phase 7a database (no replaces_id, no recurring_skips) is '
+        'refused (phase-7b.md §6.6)', () async {
+      // Either part missing alone is refused, so a 7a backup is too.
+      final noSkips = await openMigratedDatabase();
+      await noSkips.execute('DROP TABLE recurring_skips');
+      await expectLater(
+        AppDependencies.probe(noSkips, deviceCurrency: 'INR'),
+        throwsA(isA<DatabaseException>()),
+      );
+      final noReplaces = await openMigratedDatabase();
+      await insertRecurringRow(noReplaces);
+      await noReplaces.execute('PRAGMA foreign_keys = OFF');
+      await noReplaces.execute(
+        'CREATE TABLE old_items AS SELECT id, title, description, '
+        'currency_code, category_id, payment_method_id, frequency, '
+        'interval_count, start_on, end_on, time_of_day_minutes, next_due_on, '
+        'archived_at, created_at, updated_at FROM recurring_expenses',
+      );
+      await noReplaces.execute('DROP TABLE recurring_expenses');
+      await noReplaces.execute(
+        'ALTER TABLE old_items RENAME TO recurring_expenses',
+      );
+      await expectLater(
+        AppDependencies.probe(noReplaces, deviceCurrency: 'INR'),
+        throwsA(isA<DatabaseException>()),
+      );
     });
 
     test('a broken item passes: the app opens it (as broken)', () async {

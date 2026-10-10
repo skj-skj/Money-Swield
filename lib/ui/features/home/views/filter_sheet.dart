@@ -163,7 +163,17 @@ class _FilterSheetState extends State<FilterSheet> {
                                 ),
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      // Under the search (phase-7b.md §8.4); shown even
+                      // with no recurring item.
+                      SwitchListTile(
+                        key: const ValueKey('filterOnlyRecurring'),
+                        contentPadding: EdgeInsets.zero,
+                        secondary: const Icon(Icons.repeat),
+                        title: Text(l10n.onlyRecurring),
+                        value: filter.onlyRecurring,
+                        onChanged: widget.cubit.setOnlyRecurring,
+                      ),
+                      const SizedBox(height: 8),
                       SectionHeading(l10n.filterCategories),
                       TilePicker(
                         key: const ValueKey('filterCategories'),

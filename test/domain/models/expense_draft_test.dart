@@ -320,6 +320,14 @@ void main() {
         ),
         // The date is kept while Never is chosen.
         const RepeatChoice(endOn: '2027-04-09'),
+        // After N payments (phase-7b.md §5.1), the date kept too.
+        const RepeatChoice(
+          end: RepeatEnd.afterCount,
+          countText: '12',
+          endOn: '2027-04-09',
+        ),
+        // The count is kept while another end is chosen.
+        const RepeatChoice(countText: '5'),
       ]) {
         final original = withRepeat(repeat);
         expect(read(original.toJson()), original, reason: '$repeat');
@@ -342,8 +350,16 @@ void main() {
         'interval': '1',
         'end': 'on',
         'on': '2027-04-09',
+        'count': '',
       });
       expect(json['v'], 1);
+      final after = jsonDecode(
+        withRepeat(
+          const RepeatChoice(end: RepeatEnd.afterCount, countText: '12'),
+        ).toJson(),
+      ) as Map<String, Object?>;
+      expect((after['repeat']! as Map)['end'], 'after');
+      expect((after['repeat']! as Map)['count'], '12');
       expect(
         (jsonDecode(withRepeat(null).toJson()) as Map).containsKey('repeat'),
         isFalse,
@@ -355,6 +371,43 @@ void main() {
         final original = withRepeat(RepeatChoice(intervalText: text));
         expect(read(original.toJson())!.repeat!.intervalText, text);
       }
+    });
+
+    test('half-typed counts come back as typed; anything not up to 3 digits '
+        'is empty (phase-7b.md §5.1)', () {
+      for (final text in ['', '0', '1', '2', '999', '000']) {
+        final original = withRepeat(
+          RepeatChoice(end: RepeatEnd.afterCount, countText: text),
+        );
+        expect(read(original.toJson())!.repeat!.countText, text);
+      }
+      for (final bad in ['1000', 'abc', '1.5', 12, null, '-3', ' 12']) {
+        final repeat = readRepeat({
+          'frequency': 'weekly',
+          'interval': '1',
+          'end': 'after',
+          'count': bad,
+        })!;
+        expect(repeat.countText, '', reason: '$bad');
+        expect(repeat.end, RepeatEnd.afterCount, reason: '$bad');
+      }
+    });
+
+    test('a 7a draft (no count) reads unchanged', () {
+      expect(
+        readRepeat({
+          'frequency': 'weekly',
+          'interval': '2',
+          'end': 'on',
+          'on': '2027-01-01',
+        }),
+        const RepeatChoice(
+          frequency: Frequency.weekly,
+          intervalText: '2',
+          end: RepeatEnd.onDate,
+          endOn: '2027-01-01',
+        ),
+      );
     });
 
     test('a draft from before Phase 7 has Repeats off', () {
@@ -410,10 +463,15 @@ void main() {
       }
     });
 
-    test('7b\'s "after N payments" reads as never, the date kept', () {
+    test('"after N payments" reads back (phase-7b.md §5.1); a count that '
+        'isn\'t text is empty, the date kept; an unknown end is never', () {
       expect(
         readRepeat({'end': 'after', 'on': '2027-01-01', 'count': 12}),
-        const RepeatChoice(endOn: '2027-01-01'),
+        const RepeatChoice(end: RepeatEnd.afterCount, endOn: '2027-01-01'),
+      );
+      expect(
+        readRepeat({'end': 'afterwards', 'count': '12'}),
+        const RepeatChoice(countText: '12'),
       );
     });
 

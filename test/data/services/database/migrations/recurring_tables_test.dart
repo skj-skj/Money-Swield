@@ -14,19 +14,18 @@ void main() {
 
   setUp(() async => db = await openMigratedDatabase());
 
-  Future<int> insertItem() =>
-      db.insert('recurring_expenses', {
-        'title': 'Netflix',
-        'currency_code': 'INR',
-        'category_id': 1,
-        'payment_method_id': 1,
-        'frequency': 'monthly',
-        'start_on': '2026-01-31',
-        'time_of_day_minutes': 600,
-        'next_due_on': '2026-02-28',
-        'created_at': 0,
-        'updated_at': 0,
-      });
+  Future<int> insertItem() => db.insert('recurring_expenses', {
+    'title': 'Netflix',
+    'currency_code': 'INR',
+    'category_id': 1,
+    'payment_method_id': 1,
+    'frequency': 'monthly',
+    'start_on': '2026-01-31',
+    'time_of_day_minutes': 600,
+    'next_due_on': '2026-02-28',
+    'created_at': 0,
+    'updated_at': 0,
+  });
 
   Future<List<Map<String, Object?>>> columns(String table) =>
       db.rawQuery('PRAGMA table_info($table)');
@@ -55,6 +54,7 @@ void main() {
       'archived_at',
       'created_at',
       'updated_at',
+      'replaces_id',
     ]);
     const notNull = {
       'title',
@@ -113,6 +113,30 @@ void main() {
       action(await foreignKeys('expenses'), 'recurring_expense_id'),
       'SET NULL',
     );
+    // Phase 7b: deleting the old item for good keeps its replacement; a
+    // skip goes with its item.
+    expect(action(item, 'replaces_id'), 'SET NULL');
+    expect(
+      action(await foreignKeys('recurring_skips'), 'recurring_expense_id'),
+      'CASCADE',
+    );
+  });
+
+  test('recurring_skips has its columns, all NOT NULL (phase-7b.md '
+      '§4.1)', () async {
+    final byName = {
+      for (final c in await columns('recurring_skips')) c['name']: c,
+    };
+    expect(byName.keys, [
+      'id',
+      'recurring_expense_id',
+      'due_on',
+      'created_at',
+      'updated_at',
+    ]);
+    for (final name in byName.keys.skip(1)) {
+      expect(byName[name]!['notnull'], 1, reason: '$name');
+    }
   });
 
   test('the unique indexes: one price per item and date, one payment per '
@@ -132,6 +156,9 @@ void main() {
     ]);
     expect(await uniqueIndexColumns('expenses'), [
       'recurring_expense_id,recurring_due_on',
+    ]);
+    expect(await uniqueIndexColumns('recurring_skips'), [
+      'recurring_expense_id,due_on',
     ]);
   });
 }

@@ -368,32 +368,32 @@ void main() {
       return cubit;
     }
 
-    PhotosIcon icon(ExpenseListCubit c) =>
+    FilteredScreenIcon icon(ExpenseListCubit c) =>
         (c.value as ExpenseListLoaded).photosIcon;
 
     test('none → hidden; photos → enabled; a filter hiding them all → '
         'disabled; a text filter; cleared → enabled', () async {
       await add('No photo', '2026-10-05', '');
       final c = await list();
-      expect(icon(c), PhotosIcon.hidden);
+      expect(icon(c), FilteredScreenIcon.hidden);
       await add('Lunch', '2026-10-05', 'a', categoryId: 1);
       await c.reload();
-      expect(icon(c), PhotosIcon.enabled);
+      expect(icon(c), FilteredScreenIcon.enabled);
       await c.setFilter(const ExpenseFilter(categoryIds: {2}));
-      expect(icon(c), PhotosIcon.disabled);
+      expect(icon(c), FilteredScreenIcon.disabled);
       await c.setFilter(const ExpenseFilter(text: 'photo'));
-      expect(icon(c), PhotosIcon.disabled, reason: 'matches, no photo');
+      expect(icon(c), FilteredScreenIcon.disabled, reason: 'matches, no photo');
       await c.setFilter(const ExpenseFilter(text: 'lun'));
-      expect(icon(c), PhotosIcon.enabled);
+      expect(icon(c), FilteredScreenIcon.enabled);
       await c.setFilter(ExpenseFilter.none);
-      expect(icon(c), PhotosIcon.enabled);
+      expect(icon(c), FilteredScreenIcon.enabled);
     });
 
     test('only a binned expense has photos → hidden', () async {
       final e = await add('Lunch', '2026-10-05', 'a');
       await deps.expenses.moveToBin(e.id);
       await add('Other', '2026-10-05', '');
-      expect(icon(await list()), PhotosIcon.hidden);
+      expect(icon(await list()), FilteredScreenIcon.hidden);
     });
 
     test('a failing read hides the icon; the list loads', () async {
@@ -410,7 +410,7 @@ void main() {
       addTearDown(cubit.close);
       await cubit.load();
       expect(cubit.value, isA<ExpenseListLoaded>());
-      expect(icon(cubit), PhotosIcon.hidden);
+      expect(icon(cubit), FilteredScreenIcon.hidden);
     });
   });
 }
