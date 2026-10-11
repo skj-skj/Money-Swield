@@ -40,6 +40,19 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/photo_paths" />
         </provider>
+        <!-- Share hands a report to another app through this (phase-8.md
+             §6.6); res/xml/report_paths.xml shares cache/reports/ only.
+             Saving to Download/ goes through MediaStore and needs no
+             permission (Android 10+, F14). -->
+        <provider
+            android:name=".ReportsFileProvider"
+            android:authorities="${applicationId}.reports"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/report_paths" />
+        </provider>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
@@ -55,6 +68,12 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- Share of a report says when no app can receive it (phase-8.md
+             §6.6): without this, Android 11+ hides every share target. -->
+        <intent>
+            <action android:name="android.intent.action.SEND"/>
+            <data android:mimeType="*/*"/>
         </intent>
     </queries>
 </manifest>

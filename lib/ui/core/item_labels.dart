@@ -20,3 +20,32 @@ String eventLabel(AppLocalizations l10n, Event event) =>
 /// [emojiLabel] of [method] in the app's language.
 String paymentMethodLabel(AppLocalizations l10n, PaymentMethod method) =>
     emojiLabel(method.emoji, paymentMethodName(l10n, method));
+
+/// The items of [ids] found in [items], as [show] writes them (else their
+/// [name]), in [name] order ([compareNames], the app's language). An id
+/// not in [items] (deleted, or a newer app's) is [missing] at the end, one
+/// per id, or left out when [missing] is null. For lists of chosen items:
+/// a filter chip, a report's filter line, a row's events.
+List<String> namesInOrder<T>(
+  Iterable<int> ids,
+  Map<int, T> items, {
+  required String Function(T item) name,
+  String Function(T item)? show,
+  String? missing,
+}) {
+  final found = <T>[];
+  var gone = 0;
+  for (final id in ids) {
+    if (items[id] case final item?) {
+      found.add(item);
+    } else {
+      gone++;
+    }
+  }
+  found.sort((a, b) => compareNames(name(a), name(b)));
+  return [
+    for (final item in found) (show ?? name)(item),
+    if (missing != null)
+      for (var i = 0; i < gone; i++) missing,
+  ];
+}

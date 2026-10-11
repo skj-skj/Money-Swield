@@ -1,12 +1,17 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:my_expense_tracker_app/data/repositories/settings_repository.dart';
+import 'package:my_expense_tracker_app/domain/expense_filter.dart';
 import 'package:my_expense_tracker_app/domain/models/app_settings.dart';
 import 'package:my_expense_tracker_app/domain/models/app_theme_mode.dart';
 import 'package:my_expense_tracker_app/domain/models/dashboard_options.dart';
 import 'package:my_expense_tracker_app/domain/models/item_shape.dart';
 import 'package:my_expense_tracker_app/domain/periods.dart';
 import 'package:my_expense_tracker_app/domain/photo_sizing.dart';
+import 'package:my_expense_tracker_app/domain/report.dart';
+import 'package:my_expense_tracker_app/domain/report_document.dart';
+import 'package:my_expense_tracker_app/domain/report_filter.dart';
+import 'package:my_expense_tracker_app/domain/report_range.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../../helpers/test_database.dart';
@@ -303,8 +308,8 @@ void main() {
       expect(settings.trendCardHaptics, CardHaptics.light);
     });
 
-    test('restoreHomeDefaults resets the six Home settings and nothing '
-        'else', () async {
+    test('restoreHomeDefaults resets the five Home settings and nothing '
+        'else; vibration has its own tile (owner, 2026-10-11)', () async {
       await repository.setTrendChartStyle(TrendChartStyle.bar);
       await repository.setTrendCardPosition(TrendCardPosition.scrolls);
       await repository.setTrendCardSize(TrendCardSize.small);
@@ -321,7 +326,7 @@ void main() {
       expect(settings.trendChartStyle, TrendChartStyle.lineFilled);
       expect(settings.trendCardPosition, TrendCardPosition.locked);
       expect(settings.trendCardSize, TrendCardSize.medium);
-      expect(settings.trendCardHaptics, CardHaptics.light);
+      expect(settings.trendCardHaptics, CardHaptics.off, reason: 'own tile');
       expect(settings.weekStart, WeekStart.monday);
       expect(settings.weekLabel, WeekLabel.month);
       expect(settings.cardPeriod, Period.year, reason: 'set on Home itself');
@@ -593,6 +598,103 @@ void main() {
       await repository.restoreHomeDefaults();
       await repository.restoreDefaultLook();
       expect((await repository.load()).cameraPhotos, sizing);
+    });
+  });
+
+  group('Reports (phase-8.md §4, §6.2; owner 2026-10-10)', () {
+    test('defaults: bars, month, no range, no filter, export by category '
+        'as PDF bars with Others; both faces, locked, medium', () async {
+      final (:prefs, :filterUnreadable) = await repository.loadReport();
+      expect(prefs.chart, ReportChart.bars);
+      expect(prefs.period, ReportPeriod.month);
+      expect(prefs.range, isNull);
+      expect(prefs.filter, ReportFilter.none);
+      expect(prefs.export, const ReportExportOptions());
+      expect(prefs.export.groupBy, GroupDimension.category);
+      expect(prefs.export.chart, ExportChart.bars);
+      expect(prefs.export.groupOthers, isTrue);
+      expect(prefs.export.format, ReportExport.pdf);
+      expect(filterUnreadable, isFalse);
+    });
+
+    test('round trips', () async {
+      const filter = ReportFilter(
+        base: ExpenseFilter(text: 'dinner', eventIds: {7}),
+        paymentMethodIds: {2},
+      );
+      const export = ReportExportOptions(
+        groupBy: GroupDimension.event,
+        chart: ExportChart.donut,
+        groupOthers: false,
+        format: ReportExport.xlsx,
+      );
+      await repository.setReportChart(ReportChart.donut);
+      // The range stays remembered when another period is picked after it.
+      await repository.setReportCustomRange(const ReportRange.allTime());
+      await repository.setReportPeriod(ReportPeriod.week);
+      await repository.setReportFilter(filter);
+      await repository.setReportExportOptions(export);
+      final (:prefs, filterUnreadable: _) = await repository.loadReport();
+      expect(prefs.chart, ReportChart.donut);
+      expect(prefs.period, ReportPeriod.week);
+      expect(prefs.range, const ReportRange.allTime());
+      expect(prefs.filter, filter);
+      expect(prefs.export, export);
+    });
+
+    test('a custom range and its period in one write', () async {
+      final range = defaultCustomRange('2026-10-10');
+      await repository.setReportCustomRange(range);
+      final (:prefs, filterUnreadable: _) = await repository.loadReport();
+      expect(prefs.period, ReportPeriod.range);
+      expect(prefs.range, range);
+    });
+
+    test('unknown or invalid stored values → defaults', () async {
+      await store('report_chart', 'trend'); // dropped by the owner
+      await store('report_period', 'day');
+      await store('report_range', '2026-10-31..2026-10-01');
+      await store('report_export_group_by', 'title'); // never a section
+      await store('report_export_chart', 'radar');
+      await store('report_export_others', 'maybe');
+      await store('report_export_format', 'csv');
+      await store('report_card_size', 'huge');
+      final (:prefs, filterUnreadable: _) = await repository.loadReport();
+      expect(prefs.chart, ReportChart.bars);
+      expect(prefs.period, ReportPeriod.month);
+      expect(prefs.range, isNull);
+      expect(prefs.export, const ReportExportOptions());
+    });
+
+    test('report_range out of bounds or malformed → none', () async {
+      for (final bad in ['1899-12-31..2026-01-01', 'x..y', 'all..']) {
+        await db.delete('settings');
+        await store('report_range', bad);
+        expect((await repository.loadReport()).prefs.range, isNull);
+      }
+    });
+
+    test('an empty filter deletes the row', () async {
+      await repository.setReportFilter(
+        const ReportFilter(base: ExpenseFilter(eventIds: {7})),
+      );
+      await repository.setReportFilter(ReportFilter.none);
+      expect(
+        await db.query(
+          'settings',
+          where: 'key = ?',
+          whereArgs: ['report_filter'],
+        ),
+        isEmpty,
+      );
+    });
+
+    test('Home\'s Restore defaults leaves the vibration alone (owner, '
+        '2026-10-11: it has its own tile)', () async {
+      await repository.setTrendCardHaptics(CardHaptics.strong);
+      await repository.restoreHomeDefaults();
+      final settings = await repository.load();
+      expect(settings.trendCardHaptics, CardHaptics.strong);
     });
   });
 }

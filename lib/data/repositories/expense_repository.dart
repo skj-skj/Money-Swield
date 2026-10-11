@@ -13,6 +13,7 @@ import '../../domain/title_suggestions.dart';
 import '../../domain/totals.dart';
 import '../services/database/sql_helpers.dart';
 import 'data_version.dart';
+import 'expense_filter_sql.dart';
 import 'recurring_repository.dart';
 
 /// Thrown by [ExpenseRepository.update] and [ExpenseRepository.moveToBin]
@@ -325,7 +326,7 @@ class ExpenseRepository {
     _db,
     where: [
       _active,
-      ..._filterWhere(filter),
+      ...expenseFilterSql(filter),
       if (after != null) '(occurred_on, occurred_at, id) < (?, ?, ?)',
     ].join(' AND '),
     whereArgs: after == null
@@ -350,7 +351,7 @@ class ExpenseRepository {
       columns: ['occurred_on', 'currency_code', 'amount_minor'],
       where: [
         _active,
-        ..._filterWhere(filter),
+        ...expenseFilterSql(filter),
         'occurred_on BETWEEN ? AND ?',
       ].join(' AND '),
       whereArgs: [from, to],
@@ -382,7 +383,7 @@ class ExpenseRepository {
         'title',
         'description',
       ],
-      where: [_active, ..._filterWhere(filter)].join(' AND '),
+      where: [_active, ...expenseFilterSql(filter)].join(' AND '),
       orderBy: _listOrder,
     );
     return [
@@ -535,7 +536,7 @@ class ExpenseRepository {
     if (!filter.hasText) {
       return (await _db.rawQuery(
         'SELECT 1 FROM expenses WHERE '
-        '${[_active, ..._filterWhere(filter), _withPhotos].join(' AND ')} '
+        '${[_active, ...expenseFilterSql(filter), _withPhotos].join(' AND ')} '
         'LIMIT 1',
       )).isNotEmpty;
     }
@@ -585,7 +586,7 @@ class ExpenseRepository {
       _db,
       where: [
         _active,
-        ..._filterWhere(filter),
+        ...expenseFilterSql(filter),
         _withPhotos,
         if (after != null) '(occurred_on, occurred_at, id) < (?, ?, ?)',
       ].join(' AND '),
@@ -646,7 +647,7 @@ class ExpenseRepository {
         // Ints from the app's own rows, as literals (like the filter's).
         final count = await txn.delete(
           'expense_photos',
-          where: 'expense_id = ? AND photo_id IN (${_idList(photoIds)})',
+          where: 'expense_id = ? AND photo_id IN (${sqlIdList(photoIds)})',
           whereArgs: [expenseId],
         );
         if (count == 0) continue;
@@ -1093,32 +1094,8 @@ class ExpenseRepository {
     return (isoDay(today.subtract(Duration(days: days))), isoDay(today));
   }
 
-  /// [filter]'s category, event and recurring part as SQL terms
-  /// (phase-5.md §6.1, phase-7b.md §6.4). The ids are written into the SQL
-  /// as literals, so a long selection never meets the 999-variable limit;
-  /// they're `int`s from the app's own models, never text, so nothing can
-  /// be injected.
-  static List<String> _filterWhere(ExpenseFilter filter) => [
-    if (filter.categoryIds.isNotEmpty)
-      'category_id IN (${_idList(filter.categoryIds)})',
-    if (filter.eventIds.isNotEmpty) _withAnyEvent(filter.eventIds),
-    // On 3.22 this keeps Home's plan on its date index (F3; the unique
-    // index isn't picked for IS NOT NULL): a plan test pins it.
-    if (filter.onlyRecurring) _recurringOnly,
-  ];
-
-  /// A payment of a recurring item (phase-7b.md §6.4).
-  static const _recurringOnly = 'recurring_expense_id IS NOT NULL';
-
   /// Has at least one photo.
   static const _withPhotos = 'id IN (SELECT expense_id FROM expense_photos)';
-
-  /// Any one of [eventIds]: an expense with two of them is still one row.
-  static String _withAnyEvent(Set<int> eventIds) =>
-      'id IN (SELECT expense_id FROM expense_events '
-      'WHERE event_id IN (${_idList(eventIds)}))';
-
-  static String _idList(Set<int> ids) => (ids.toList()..sort()).join(', ');
 
   /// [_listOrder] in Dart, for rows read in chunks.
   static int _compareListOrder(Expense a, Expense b) {

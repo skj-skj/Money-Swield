@@ -3567,6 +3567,576 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No upcoming payments match the filters on Home.'**
   String get noUpcomingMatchFilters;
+
+  /// No description provided for @navReports.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports'**
+  String get navReports;
+
+  /// The period row's fourth choice: From / To or All time.
+  ///
+  /// In en, this message translates to:
+  /// **'Range'**
+  String get reportPeriodRange;
+
+  /// TalkBack hint of the period's name: a tap goes back to this week, month or year.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to the current period'**
+  String get reportBackToCurrent;
+
+  /// No description provided for @reportRangeDates.
+  ///
+  /// In en, this message translates to:
+  /// **'{from} – {to}'**
+  String reportRangeDates(String from, String to);
+
+  /// The range row for All time, with the first and last day of the expenses.
+  ///
+  /// In en, this message translates to:
+  /// **'All time · {from} – {to}'**
+  String reportAllTimeSpan(String from, String to);
+
+  /// TalkBack label of the range row's edit button.
+  ///
+  /// In en, this message translates to:
+  /// **'Change the range'**
+  String get reportChangeRange;
+
+  /// No description provided for @reportRangeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Report range'**
+  String get reportRangeTitle;
+
+  /// No description provided for @reportFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get reportFrom;
+
+  /// No description provided for @reportTo.
+  ///
+  /// In en, this message translates to:
+  /// **'To'**
+  String get reportTo;
+
+  /// No description provided for @reportAllTime.
+  ///
+  /// In en, this message translates to:
+  /// **'All time'**
+  String get reportAllTime;
+
+  /// No description provided for @reportShow.
+  ///
+  /// In en, this message translates to:
+  /// **'Show'**
+  String get reportShow;
+
+  /// No description provided for @reportGroupBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Group by'**
+  String get reportGroupBy;
+
+  /// No description provided for @reportGroupCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get reportGroupCategory;
+
+  /// No description provided for @reportGroupEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Event'**
+  String get reportGroupEvent;
+
+  /// No description provided for @reportGroupPaymentMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment method'**
+  String get reportGroupPaymentMethod;
+
+  /// No description provided for @reportNoEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'No event'**
+  String get reportNoEvent;
+
+  /// No description provided for @reportFilterPaymentMethods.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment methods'**
+  String get reportFilterPaymentMethods;
+
+  /// No description provided for @searchPaymentMethods.
+  ///
+  /// In en, this message translates to:
+  /// **'Search payment methods…'**
+  String get searchPaymentMethods;
+
+  /// No description provided for @allPaymentMethods.
+  ///
+  /// In en, this message translates to:
+  /// **'All payment methods'**
+  String get allPaymentMethods;
+
+  /// No description provided for @reportExpenseCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 expense} other{{count} expenses}}'**
+  String reportExpenseCount(int count);
+
+  /// The Other slice: how many groups it holds.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, other{Other ({count})}}'**
+  String reportOtherGroups(int count);
+
+  /// A share, already formatted with one decimal (33.3).
+  ///
+  /// In en, this message translates to:
+  /// **'{share} %'**
+  String reportSharePercent(String share);
+
+  /// A share under 0.1 % that isn't 0: '< 0.1 %'.
+  ///
+  /// In en, this message translates to:
+  /// **'< {share} %'**
+  String reportShareTiny(String share);
+
+  /// TalkBack: a slice or bar of the card. The share ends in % already (TalkBack reads it as percent).
+  ///
+  /// In en, this message translates to:
+  /// **'{name}, {amount}, {share}'**
+  String reportSliceSemantics(String name, String amount, String share);
+
+  /// Under the card's total: the tapped slice or bar.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} · {amount} · {share}'**
+  String reportSliceDetail(String name, String amount, String share);
+
+  /// No description provided for @reportFaceBars.
+  ///
+  /// In en, this message translates to:
+  /// **'Bars'**
+  String get reportFaceBars;
+
+  /// No description provided for @reportFaceDonut.
+  ///
+  /// In en, this message translates to:
+  /// **'Donut'**
+  String get reportFaceDonut;
+
+  /// No description provided for @nextChart.
+  ///
+  /// In en, this message translates to:
+  /// **'Next chart'**
+  String get nextChart;
+
+  /// No description provided for @previousChart.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous chart'**
+  String get previousChart;
+
+  /// No description provided for @reportCardSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'{range}, {chart}, total {amount}'**
+  String reportCardSemantics(String range, String chart, String amount);
+
+  /// No description provided for @reportCardSemanticsFiltered.
+  ///
+  /// In en, this message translates to:
+  /// **'{range}, filtered, {chart}, total {amount}'**
+  String reportCardSemanticsFiltered(String range, String chart, String amount);
+
+  /// No description provided for @reportEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No expenses in {range}.'**
+  String reportEmpty(String range);
+
+  /// No description provided for @reportEmptyFiltered.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing in {range} matches the filter.'**
+  String reportEmptyFiltered(String range);
+
+  /// No description provided for @reportNoExpensesYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No expenses yet.'**
+  String get reportNoExpensesYet;
+
+  /// No description provided for @reportLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the report.'**
+  String get reportLoadFailed;
+
+  /// No description provided for @reportFilterChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter changed: {name} was deleted.'**
+  String reportFilterChanged(String name);
+
+  /// No description provided for @reportFilterChangedMany.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Filter changed: a chosen item was deleted.} other{Filter changed: {count} chosen items were deleted.}}'**
+  String reportFilterChangedMany(int count);
+
+  /// No description provided for @reportFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Format'**
+  String get reportFormat;
+
+  /// No description provided for @reportFormatPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF'**
+  String get reportFormatPdf;
+
+  /// No description provided for @reportFormatExcel.
+  ///
+  /// In en, this message translates to:
+  /// **'Excel (.xlsx)'**
+  String get reportFormatExcel;
+
+  /// No description provided for @reportShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get reportShare;
+
+  /// No description provided for @reportSaveAs.
+  ///
+  /// In en, this message translates to:
+  /// **'Save as…'**
+  String get reportSaveAs;
+
+  /// No description provided for @reportSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get reportSave;
+
+  /// No description provided for @reportMakingPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Making the PDF…'**
+  String get reportMakingPdf;
+
+  /// No description provided for @reportMakingPdfPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Making the PDF… page {page} of {pages}'**
+  String reportMakingPdfPage(int page, int pages);
+
+  /// No description provided for @reportMakingExcel.
+  ///
+  /// In en, this message translates to:
+  /// **'Making the Excel file…'**
+  String get reportMakingExcel;
+
+  /// No description provided for @reportSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Report saved'**
+  String get reportSaved;
+
+  /// No description provided for @reportPdfFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t make the PDF. Try again.'**
+  String get reportPdfFailed;
+
+  /// No description provided for @reportExcelFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t make the Excel file. Try again.'**
+  String get reportExcelFailed;
+
+  /// No description provided for @reportTooManyRows.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many expenses for one sheet. Pick a shorter range.'**
+  String get reportTooManyRows;
+
+  /// No description provided for @reportSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save the file. Try again.'**
+  String get reportSaveFailed;
+
+  /// No description provided for @reportNoShareTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'No app on this phone can receive the file.'**
+  String get reportNoShareTarget;
+
+  /// No description provided for @reportNothingToExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to export'**
+  String get reportNothingToExport;
+
+  /// No description provided for @reportDocTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Expense report'**
+  String get reportDocTitle;
+
+  /// No description provided for @reportDocMadeOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Made on {date}'**
+  String reportDocMadeOn(String date);
+
+  /// No description provided for @reportDocFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter: {parts}'**
+  String reportDocFilter(String parts);
+
+  /// No description provided for @reportDocSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search: {text}'**
+  String reportDocSearch(String text);
+
+  /// No description provided for @reportDocCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Categories: {names}'**
+  String reportDocCategories(String names);
+
+  /// No description provided for @reportDocEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'Events: {names}'**
+  String reportDocEvents(String names);
+
+  /// No description provided for @reportDocPaidWith.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid with: {names}'**
+  String reportDocPaidWith(String names);
+
+  /// No description provided for @reportDocNoFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'No filter'**
+  String get reportDocNoFilter;
+
+  /// No description provided for @reportDocGrouping.
+  ///
+  /// In en, this message translates to:
+  /// **'Grouped by {grouping}'**
+  String reportDocGrouping(String grouping);
+
+  /// No description provided for @reportDocTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get reportDocTotal;
+
+  /// No description provided for @reportDocAlsoIn.
+  ///
+  /// In en, this message translates to:
+  /// **'also in {names}'**
+  String reportDocAlsoIn(String names);
+
+  /// The PDF's footer; Kotlin fills both numbers per page.
+  ///
+  /// In en, this message translates to:
+  /// **'Page {page} of {pages}'**
+  String reportDocPageOf(String page, String pages);
+
+  /// No description provided for @reportColDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get reportColDate;
+
+  /// No description provided for @reportColTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get reportColTime;
+
+  /// No description provided for @reportColTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get reportColTitle;
+
+  /// No description provided for @reportColCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get reportColCategory;
+
+  /// No description provided for @reportColEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'Events'**
+  String get reportColEvents;
+
+  /// No description provided for @reportColPaymentMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment method'**
+  String get reportColPaymentMethod;
+
+  /// No description provided for @reportColCurrency.
+  ///
+  /// In en, this message translates to:
+  /// **'Currency'**
+  String get reportColCurrency;
+
+  /// No description provided for @reportColAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get reportColAmount;
+
+  /// No description provided for @reportColSubtotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Subtotal'**
+  String get reportColSubtotal;
+
+  /// No description provided for @reportColCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Count'**
+  String get reportColCount;
+
+  /// No description provided for @reportColShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get reportColShare;
+
+  /// No description provided for @reportColRecurring.
+  ///
+  /// In en, this message translates to:
+  /// **'Recurring'**
+  String get reportColRecurring;
+
+  /// No description provided for @reportGenerate.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate report'**
+  String get reportGenerate;
+
+  /// No description provided for @reportGenerateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate a report'**
+  String get reportGenerateTitle;
+
+  /// No description provided for @reportChart.
+  ///
+  /// In en, this message translates to:
+  /// **'Chart'**
+  String get reportChart;
+
+  /// No description provided for @reportChartPie.
+  ///
+  /// In en, this message translates to:
+  /// **'Pie'**
+  String get reportChartPie;
+
+  /// No description provided for @reportGroupOthers.
+  ///
+  /// In en, this message translates to:
+  /// **'Group small items as Others'**
+  String get reportGroupOthers;
+
+  /// No description provided for @reportGroupOthersHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Off: every item has its own bar or slice and legend line'**
+  String get reportGroupOthersHint;
+
+  /// No description provided for @reportOtherTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'In Other'**
+  String get reportOtherTitle;
+
+  /// No description provided for @reportOverall.
+  ///
+  /// In en, this message translates to:
+  /// **'Overall'**
+  String get reportOverall;
+
+  /// No description provided for @reportSectionsOverlap.
+  ///
+  /// In en, this message translates to:
+  /// **'An expense in two events is in both sections: section totals can add up to more than the overall total, which counts it once.'**
+  String get reportSectionsOverlap;
+
+  /// No description provided for @reportColNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get reportColNote;
+
+  /// No description provided for @reportSavedNoViewer.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to Download/Expense Tracker. No app on this phone can open it.'**
+  String get reportSavedNoViewer;
+
+  /// No description provided for @reportHighlights.
+  ///
+  /// In en, this message translates to:
+  /// **'Highlights'**
+  String get reportHighlights;
+
+  /// No description provided for @reportHiExpenses.
+  ///
+  /// In en, this message translates to:
+  /// **'Expenses'**
+  String get reportHiExpenses;
+
+  /// No description provided for @reportHiPerDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Per day'**
+  String get reportHiPerDay;
+
+  /// Under the average per day: how many days it is over.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 day} other{over {count} days}}'**
+  String reportHiOverDays(int count);
+
+  /// No description provided for @reportHiLargest.
+  ///
+  /// In en, this message translates to:
+  /// **'Largest expense'**
+  String get reportHiLargest;
+
+  /// No description provided for @reportHiTopMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Most paid with'**
+  String get reportHiTopMethod;
+
+  /// No description provided for @reportHiTopEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Top event'**
+  String get reportHiTopEvent;
 }
 
 class _AppLocalizationsDelegate

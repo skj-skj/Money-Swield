@@ -6,8 +6,13 @@ import '../../domain/models/app_settings.dart';
 import '../../domain/models/app_theme_mode.dart';
 import '../../domain/models/dashboard_options.dart';
 import '../../domain/models/item_shape.dart';
+import '../../domain/models/report_prefs.dart';
 import '../../domain/periods.dart';
 import '../../domain/photo_sizing.dart';
+import '../../domain/report.dart';
+import '../../domain/report_document.dart';
+import '../../domain/report_filter.dart';
+import '../../domain/report_range.dart';
 import '../services/database/sql_helpers.dart';
 
 /// Language codes the app is translated into. A stored language outside
@@ -49,6 +54,14 @@ class SettingsRepository {
   static const _cameraQualityKey = 'photo_camera_quality';
   static const _gallerySizeKey = 'photo_gallery_size';
   static const _galleryQualityKey = 'photo_gallery_quality';
+  static const _reportChartKey = 'report_chart';
+  static const _reportPeriodKey = 'report_period';
+  static const _reportRangeKey = 'report_range';
+  static const _reportExportGroupByKey = 'report_export_group_by';
+  static const _reportExportChartKey = 'report_export_chart';
+  static const _reportExportOthersKey = 'report_export_others';
+  static const _reportExportFormatKey = 'report_export_format';
+  static const _reportFilterKey = 'report_filter';
 
   /// The stored values of `trend_chart_style` (database.md §3.1).
   static const _chartStyleNames = {
@@ -144,6 +157,68 @@ class SettingsRepository {
         values[_gallerySizeKey],
         values[_galleryQualityKey],
       ),
+    );
+  }
+
+  /// What the Reports screen opens on (phase-8.md §4). Each value falls
+  /// back to its default on its own when missing or unreadable; a filter
+  /// that can't be read is no filter (logged by the caller, which sees
+  /// [ReportPrefs.filter] empty while the row isn't).
+  Future<({ReportPrefs prefs, bool filterUnreadable})> loadReport() async {
+    final rows = await _db.query(
+      'settings',
+      where: 'key IN (?, ?, ?, ?, ?, ?, ?, ?)',
+      whereArgs: [
+        _reportChartKey,
+        _reportPeriodKey,
+        _reportRangeKey,
+        _reportFilterKey,
+        _reportExportGroupByKey,
+        _reportExportChartKey,
+        _reportExportOthersKey,
+        _reportExportFormatKey,
+      ],
+    );
+    final values = {
+      for (final row in rows) row['key']! as String: row['value'] as String?,
+    };
+    final storedFilter = values[_reportFilterKey];
+    final filter = ReportFilter.fromJson(storedFilter);
+    return (
+      prefs: ReportPrefs(
+        chart: _enumOr(
+          ReportChart.values,
+          values[_reportChartKey],
+          ReportChart.bars,
+        ),
+        period: _enumOr(
+          ReportPeriod.values,
+          values[_reportPeriodKey],
+          ReportPeriod.month,
+        ),
+        range: decodeCustomRange(values[_reportRangeKey]),
+        filter: filter ?? ReportFilter.none,
+        export: ReportExportOptions(
+          groupBy: _enumOr(
+            ReportExportOptions.sectionDimensions,
+            values[_reportExportGroupByKey],
+            GroupDimension.category,
+          ),
+          chart: _enumOr(
+            ExportChart.values,
+            values[_reportExportChartKey],
+            ExportChart.bars,
+          ),
+          // Missing or unknown: on (the default).
+          groupOthers: values[_reportExportOthersKey] != '0',
+          format: _enumOr(
+            ReportExport.values,
+            values[_reportExportFormatKey],
+            ReportExport.pdf,
+          ),
+        ),
+      ),
+      filterUnreadable: storedFilter != null && filter == null,
     );
   }
 
@@ -253,6 +328,50 @@ class SettingsRepository {
   Future<void> setTrendCardHaptics(CardHaptics haptics) =>
       _write(_trendCardHapticsKey, haptics.name);
 
+  /// The report card's face, set by swiping it.
+  Future<void> setReportChart(ReportChart chart) =>
+      _write(_reportChartKey, chart.name);
+
+  Future<void> setReportPeriod(ReportPeriod period) =>
+      _write(_reportPeriodKey, period.name);
+
+  /// Range chosen in the dialog: the period and the range in one
+  /// transaction, so the next start can't open on Range with an old range
+  /// or the other way round.
+  Future<void> setReportCustomRange(ReportRange range) => _writeAll({
+    _reportPeriodKey: ReportPeriod.range.name,
+    _reportRangeKey: encodeCustomRange(range),
+  });
+
+  /// The report's filter (null JSON deletes the row: no filter).
+  Future<void> setReportFilter(ReportFilter filter) =>
+      _writeAll({_reportFilterKey: filter.toJson()});
+
+  /// The Generate sheet's options, in one transaction.
+  Future<void> setReportExportOptions(ReportExportOptions options) =>
+      _writeAll({
+        _reportExportGroupByKey: options.groupBy.name,
+        _reportExportChartKey: options.chart.name,
+        _reportExportOthersKey: _bool(options.groupOthers),
+        _reportExportFormatKey: options.format.name,
+      });
+
+  /// Writes every key of [values] in one transaction (null deletes a
+  /// key's row: it then reads as its default).
+  Future<void> _writeAll(Map<String, String?> values) =>
+      _db.transaction((txn) async {
+        for (final MapEntry(:key, :value) in values.entries) {
+          if (value == null) {
+            await txn.delete('settings', where: 'key = ?', whereArgs: [key]);
+          } else {
+            await txn.insert('settings', {
+              'key': key,
+              'value': value,
+            }, conflictAlgorithm: ConflictAlgorithm.replace);
+          }
+        }
+      });
+
   /// How camera photos are kept, both values in one transaction.
   Future<void> setCameraPhotos(PhotoSizing sizing) =>
       _writeSizing(_cameraSizeKey, _cameraQualityKey, sizing);
@@ -287,14 +406,14 @@ class SettingsRepository {
   ]);
 
   /// Settings → Home's Restore defaults, in one transaction: chart style,
-  /// card position, size and vibration, week start and week names. Removing the rows
+  /// card position and size, week start and week names (the card vibration
+  /// has its own tile since owner 2026-10-11). Removing the rows
   /// is enough, as for [restoreDefaultLook]. The card's period and the
   /// list's grouping stay.
   Future<void> restoreHomeDefaults() => _deleteKeys([
     _trendChartStyleKey,
     _trendCardPositionKey,
     _trendCardSizeKey,
-    _trendCardHapticsKey,
     _weekStartKey,
     _weekLabelKey,
   ]);

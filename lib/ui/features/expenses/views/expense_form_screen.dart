@@ -628,8 +628,8 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
       context,
       initial: isoDay(wallClock),
       // Future dates are allowed (P2-4); no real limit either way.
-      first: '1900-01-01',
-      last: '2200-01-01',
+      first: firstExpenseDay,
+      last: lastExpenseDay,
     );
     if (picked != null) _form.dateChanged(parseDay(picked));
   }

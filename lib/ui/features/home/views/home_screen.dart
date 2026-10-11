@@ -394,7 +394,7 @@ class _HomeScreenState extends State<HomeScreen> with ScrollPaging<HomeScreen> {
   }
 
   Future<void> _openFilters(ExpenseListLoaded state) async {
-    final result = await showFilterSheet(
+    final result = await showHomeFilterSheet(
       context,
       filter: state.filter,
       grouping: state.grouping,

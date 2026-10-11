@@ -1,3 +1,4 @@
+import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../data/repositories/backup_repository.dart';
@@ -8,11 +9,13 @@ import '../data/repositories/expense_draft_repository.dart';
 import '../data/repositories/expense_repository.dart';
 import '../data/repositories/payment_method_repository.dart';
 import '../data/repositories/recurring_repository.dart';
+import '../data/repositories/report_repository.dart';
 import '../data/repositories/settings_repository.dart';
 import '../data/services/database/app_database.dart';
 import '../data/services/document_service.dart';
 import '../data/services/photo_store.dart';
 import '../data/services/photo_sweeper.dart';
+import '../data/services/report_export_service.dart';
 import '../domain/periods.dart';
 import 'restore_tools.dart';
 
@@ -28,6 +31,8 @@ class AppDependencies {
     required this.paymentMethods,
     required this.expenses,
     required this.recurring,
+    required this.reports,
+    required this.reportExports,
     required this.drafts,
     required this.photos,
     required this.photoSweeper,
@@ -56,6 +61,7 @@ class AppDependencies {
     String? photoRoot,
     PhotoStore? photos,
     bool sweepPhotos = true,
+    ReportExportService? reportExports,
   }) {
     final settings = SettingsRepository(
       database,
@@ -95,6 +101,14 @@ class AppDependencies {
         dataVersion: dataVersion,
         now: now,
       ),
+      reports: ReportRepository(database),
+      reportExports:
+          reportExports ??
+          ChannelReportExportService(
+            cacheDir: getTemporaryDirectory,
+            documents: tools.documents,
+            now: now,
+          ),
       drafts: drafts,
       photos: photoStore,
       photoSweeper: photoStore.isAvailable && sweepPhotos
@@ -200,6 +214,12 @@ class AppDependencies {
 
   /// Recurring items and the generator (phase-7a.md §6.1).
   final RecurringRepository recurring;
+
+  /// Reads reports (phase-8.md §6.1); writes nothing.
+  final ReportRepository reports;
+
+  /// Writes, saves and shares a report's PDF and Excel files (§6.3).
+  final ReportExportService reportExports;
 
   /// The unsaved Add/Edit form (phase-4.md §6.4). Not part of
   /// [dataVersion]: a draft changes nothing Home counts.

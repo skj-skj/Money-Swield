@@ -26,8 +26,13 @@ class EventRepository {
 
   /// Every event, archived ones included, in no particular order. The list
   /// screen sorts by display name, which depends on the language.
-  Future<List<Event>> all() async {
-    final rows = await _db.query('events');
+  Future<List<Event>> all() => allOn(_db);
+
+  /// [all] on [db]: inside a transaction, the transaction's executor (a
+  /// call to the database itself there waits for the transaction to end,
+  /// and so never returns; phase-8.md R13).
+  static Future<List<Event>> allOn(DatabaseExecutor db) async {
+    final rows = await db.query('events');
     return [for (final row in rows) _fromRow(row)];
   }
 

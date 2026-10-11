@@ -3,10 +3,12 @@ import 'package:material_ui/material_ui.dart';
 import 'package:my_expense_tracker_app/app/app_dependencies.dart';
 import 'package:my_expense_tracker_app/data/services/database/migrations/all_migrations.dart';
 import 'package:my_expense_tracker_app/data/services/photo_store.dart';
+import 'package:my_expense_tracker_app/data/services/report_export_service.dart';
 import 'package:my_expense_tracker_app/l10n/app_localizations.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../data/services/database/migration/test_helpers.dart';
+import 'fake_report_export_service.dart';
 
 /// A fresh in-memory database with every migration applied (so with the
 /// seed rows) and foreign keys on, like `AppDatabase.open`. Closed when the
@@ -46,12 +48,15 @@ Future<AppDependencies> openTestDependencies({
   TestClock? clock,
   int? wallpaperSeed,
   PhotoStore? photos,
+  ReportExportService? reportExports,
 }) async => AppDependencies.forDatabase(
   await openMigratedDatabase(),
   deviceCurrency: deviceCurrency,
   wallpaperSeed: wallpaperSeed,
   now: clock?.call,
   photos: photos,
+  // No real files or channels in widget tests (phase-8.md §12).
+  reportExports: reportExports ?? FakeReportExportService(),
   // The sweeper has its own tests; its file I/O would hang a widget test.
   sweepPhotos: false,
 );

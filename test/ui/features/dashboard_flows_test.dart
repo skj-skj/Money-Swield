@@ -118,6 +118,17 @@ void main() {
     await tester.pump();
   }
 
+  /// Settings → the Card vibration tile → [option].
+  Future<void> pickVibration(WidgetTester tester, String option) async {
+    await openTab(tester, 'Settings');
+    final tile = find.byKey(const ValueKey('settingsVibration'));
+    await tester.scrollUntilVisible(tile, 100);
+    await tester.tap(tile);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(option).last);
+    await tester.pumpAndSettle();
+  }
+
   Future<void> backHome(WidgetTester tester) async {
     await tester.pageBack();
     await tester.pumpAndSettle();
@@ -367,19 +378,17 @@ void main() {
       expect(felt, ['HapticFeedbackType.selectionClick']);
 
       felt.clear();
-      await openHomeSettings(tester);
-      expect(find.text('Light'), findsOneWidget, reason: 'the default');
-      await choose(tester, 'Card vibration', 'Strong');
+      // Its own Settings tile since the owner's change of 2026-10-11.
+      await pickVibration(tester, 'Strong');
       expect(felt, ['HapticFeedbackType.heavyImpact'], reason: 'a preview');
-      await backHome(tester);
+      await openTab(tester, 'Home');
       felt.clear();
       await tester.fling(card, const Offset(0, -80), 1500);
       await tester.pumpAndSettle();
       expect(felt, ['HapticFeedbackType.heavyImpact']);
 
-      await openHomeSettings(tester);
-      await choose(tester, 'Card vibration', 'Off');
-      await backHome(tester);
+      await pickVibration(tester, 'Off');
+      await openTab(tester, 'Home');
       felt.clear();
       await tester.fling(card, const Offset(0, -80), 1500);
       await tester.pumpAndSettle();
@@ -396,7 +405,6 @@ void main() {
       await deps.settings.setTrendCardPosition(TrendCardPosition.scrolls);
       await deps.settings.setWeekStart(WeekStart.sunday);
       await deps.settings.setWeekLabel(WeekLabel.number);
-      await deps.settings.setTrendCardHaptics(CardHaptics.off);
       await pumpApp(tester, dependencies: deps);
       await openHomeSettings(tester);
       await tester.tap(find.byKey(const ValueKey('restoreHomeDefaults')));
@@ -414,7 +422,6 @@ void main() {
         'Smooth line, filled',
         'Locked at the top',
         'Medium',
-        'Light',
         'Monday',
         'Oct Week 2',
       ]) {
@@ -791,10 +798,9 @@ void main() {
   });
 
   group('settings grid', () {
-    testWidgets('seven tiles in rows of two, Photos after Backup and Bin '
-        'alone at the left (phase-6.md §8.6); Bin opens the bin', (
-      tester,
-    ) async {
+    testWidgets('eight tiles in rows of two, Card vibration after Home '
+        '(owner, 2026-10-11; no Reports tile: nothing left to choose), Bin '
+        'beside Photos; Bin opens the bin', (tester) async {
       useOppoSize(tester);
       await pumpApp(tester, dependencies: deps);
       await openTab(tester, 'Settings');
@@ -802,15 +808,26 @@ void main() {
         'settingsLanguage',
         'settingsLook',
         'settingsHome',
+        'settingsVibration',
         'settingsDefaults',
         'settingsBackup',
         'settingsPhotos',
         'settingsBin',
       ];
-      final rects = [
-        for (final key in keys) tester.getRect(find.byKey(ValueKey(key))),
-      ];
-      for (var row = 0; row < 3; row++) {
+      Rect rectOf(String key) {
+        final finder = find.byKey(ValueKey(key));
+        return tester.getRect(finder);
+      }
+
+      expect(find.text('Smooth line, filled · Locked · Monday'), findsOne);
+      expect(find.text('INR · 💵 Cash'), findsOne);
+      // The last row is below the fold at 800 dp.
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('settingsBin')),
+        100,
+      );
+      final rects = [for (final key in keys) rectOf(key)];
+      for (var row = 0; row < 4; row++) {
         final left = rects[row * 2];
         final right = rects[row * 2 + 1];
         expect(left.top, right.top);
@@ -818,11 +835,18 @@ void main() {
         expect(left.left, lessThan(right.left));
       }
       expect(rects[2].top, greaterThan(rects[0].bottom));
-      expect(rects[6].left, rects[0].left);
+      expect(rects[7].left, greaterThan(rects[6].left));
       expect(rects[6].top, greaterThan(rects[4].bottom));
       expect(find.text('Camera 1080p · Gallery 1080p'), findsOne);
-      expect(find.text('Smooth line, filled · Locked · Monday'), findsOne);
-      expect(find.text('INR · 💵 Cash'), findsOne);
+      expect(find.byKey(const ValueKey('settingsReports')), findsNothing);
+      // The vibration's summary is its strength.
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('settingsVibration')),
+          matching: find.text('Light'),
+        ),
+        findsOne,
+      );
 
       await tester.scrollUntilVisible(
         find.byKey(const ValueKey('settingsBin')),

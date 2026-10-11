@@ -39,6 +39,9 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   intl: ^0.20.3
+  # HCT for the report's slice colours (phase-8.md F11); the version
+  # Flutter itself pins, so it adds no code.
+  material_color_utilities: ^0.13.0
   material_ui: ^1.5.0
   path: ^1.9.1
   path_provider: ^2.1.6

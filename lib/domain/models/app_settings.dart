@@ -169,14 +169,14 @@ class AppSettings {
   AppSettings withDefaultLook() => withThemeSeed(null)
       .copyWith(tileShape: defaultTileShape, buttonShape: defaultButtonShape);
 
-  /// A copy with Settings → Home's defaults: chart, card position, size
-  /// and vibration, week start and week names. The card's period and the
+  /// A copy with Settings → Home's defaults: chart, card position and
+  /// size, week start and week names. The card vibration has its own tile
+  /// (owner, 2026-10-11) and stays. The card's period and the
   /// list's grouping are set on Home itself and stay.
   AppSettings withDefaultHome() => copyWith(
     trendChartStyle: defaultTrendChartStyle,
     trendCardPosition: defaultTrendCardPosition,
     trendCardSize: defaultTrendCardSize,
-    trendCardHaptics: defaultTrendCardHaptics,
     weekStart: defaultWeekStart,
     weekLabel: defaultWeekLabel,
   );
@@ -265,7 +265,7 @@ class AppSettings {
       other.galleryPhotos == galleryPhotos;
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     onboardingCompleted,
     locale,
     theme,
@@ -286,7 +286,7 @@ class AppSettings {
     trendCardHaptics,
     cameraPhotos,
     galleryPhotos,
-  );
+  ]);
 
   @override
   String toString() =>

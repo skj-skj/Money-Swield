@@ -36,6 +36,7 @@ class MainActivity : FlutterActivity() {
         registerDynamicColor(engine, appContext)
         documents = DocumentsChannel(engine.dartExecutor.binaryMessenger, appContext)
         photos = PhotosChannel(engine.dartExecutor.binaryMessenger, appContext)
+        reportPdf = ReportPdfChannel(engine.dartExecutor.binaryMessenger, appContext)
         engine.dartExecutor.executeDartEntrypoint(
             DartExecutor.DartEntrypoint.createDefault(),
         )
@@ -102,5 +103,6 @@ class MainActivity : FlutterActivity() {
         /** Created with the cached engine, so they live as long as it. */
         var documents: DocumentsChannel? = null
         var photos: PhotosChannel? = null
+        var reportPdf: ReportPdfChannel? = null
     }
 }

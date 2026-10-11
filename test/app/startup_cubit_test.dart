@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -10,6 +11,7 @@ import 'package:my_expense_tracker_app/domain/models/app_settings.dart';
 import 'package:my_expense_tracker_app/ui/features/settings/view_models/settings_cubit.dart';
 
 import '../helpers/fake_document_service.dart';
+import '../helpers/fake_report_export_service.dart';
 import '../helpers/file_database.dart';
 import '../helpers/test_database.dart';
 
@@ -62,6 +64,18 @@ void main() {
       expect(ids, isNot(contains(old)));
     },
   );
+
+  test('old report files are gone before the app is ready (an export '
+      'started meanwhile would lose its work file)', () async {
+    final files = FakeReportExportService()..holdDeleteOld = Completer();
+    final cubit = cubitFor(await openTestDependencies(reportExports: files));
+    final starting = cubit.start();
+    await pumpEventQueue();
+    expect(cubit.value, isNot(isA<StartupReady>()));
+    files.holdDeleteOld!.complete();
+    await starting;
+    expect(cubit.value, isA<StartupReady>());
+  });
 
   test('a failing purge does not block the app', () async {
     // Without the tables the purge throws, but the rest of startup works.

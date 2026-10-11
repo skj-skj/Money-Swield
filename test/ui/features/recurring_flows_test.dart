@@ -619,7 +619,11 @@ void main() {
     await deps.settings.setLocale(const Locale('es'));
     await pumpApp(tester, dependencies: deps);
     noException(tester);
+    // Reports first (index 1 since phase 8): it must lay out too.
     await tester.tap(find.byType(NavigationDestination).at(1));
+    await tester.pumpAndSettle();
+    noException(tester);
+    await tester.tap(find.byType(NavigationDestination).at(2));
     await tester.pumpAndSettle();
     noException(tester);
     expect(find.text('Ninguno activo'), findsOneWidget);

@@ -10,6 +10,7 @@ import '../../../core/formatting_locale.dart';
 import '../../../core/item_labels.dart';
 import '../../../core/languages.dart';
 import '../../../core/widgets/choice_dialog.dart';
+import '../../../core/widgets/reel_card.dart';
 import '../../../core/widgets/save_error.dart';
 import '../../backup/views/backup_screen.dart';
 import '../../backup/views/backup_texts.dart';
@@ -108,6 +109,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await saveOrShowError(context, () => cubit.setLocale(locales[index]));
   }
 
+  /// The tick both cards' reels give at each face (its own tile since the
+  /// owner's change of 2026-10-11; it was in Settings → Home). Felt once
+  /// when picked, so the choice can be judged.
+  Future<void> _pickVibration(AppSettings settings) async {
+    final l10n = AppLocalizations.of(context);
+    final index = await showChoiceDialog(
+      context,
+      title: l10n.settingCardHaptics,
+      options: [
+        for (final haptics in CardHaptics.values)
+          Text(cardHapticsName(l10n, haptics)),
+      ],
+      selectedIndex: settings.trendCardHaptics.index,
+    );
+    if (index == null || !mounted) return;
+    final haptics = CardHaptics.values[index];
+    final cubit = context.read<SettingsCubit>();
+    final saved = await saveOrShowError(
+      context,
+      () => cubit.setTrendCardHaptics(haptics),
+    );
+    if (saved) cardHaptic(haptics);
+  }
+
   /// Opens [screen]; back here, the summaries are read again (a payment
   /// method renamed, a backup saved).
   Future<void> _open(Widget screen) async {
@@ -171,6 +196,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           onTap: () => _open(
                             HomeSettingsScreen(dependencies: dependencies),
                           ),
+                        ),
+                        _SettingsTile(
+                          key: const ValueKey('settingsVibration'),
+                          icon: Icons.vibration,
+                          title: l10n.settingCardHaptics,
+                          summary: cardHapticsName(
+                            l10n,
+                            settings.trendCardHaptics,
+                          ),
+                          onTap: () => _pickVibration(settings),
                         ),
                         _SettingsTile(
                           key: const ValueKey('settingsDefaults'),

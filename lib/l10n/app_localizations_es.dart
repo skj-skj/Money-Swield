@@ -3020,4 +3020,397 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get noUpcomingMatchFilters =>
       'Ningún próximo pago coincide con los filtros de Inicio.';
+
+  @override
+  String get navReports => 'Informes';
+
+  @override
+  String get reportPeriodRange => 'Rango';
+
+  @override
+  String get reportBackToCurrent => 'Volver al período actual';
+
+  @override
+  String reportRangeDates(String from, String to) {
+    return '$from – $to';
+  }
+
+  @override
+  String reportAllTimeSpan(String from, String to) {
+    return 'Todo · $from – $to';
+  }
+
+  @override
+  String get reportChangeRange => 'Cambiar el rango';
+
+  @override
+  String get reportRangeTitle => 'Rango del informe';
+
+  @override
+  String get reportFrom => 'Desde';
+
+  @override
+  String get reportTo => 'Hasta';
+
+  @override
+  String get reportAllTime => 'Todo';
+
+  @override
+  String get reportShow => 'Mostrar';
+
+  @override
+  String get reportGroupBy => 'Agrupar por';
+
+  @override
+  String get reportGroupCategory => 'Categoría';
+
+  @override
+  String get reportGroupEvent => 'Evento';
+
+  @override
+  String get reportGroupPaymentMethod => 'Método de pago';
+
+  @override
+  String get reportNoEvent => 'Sin evento';
+
+  @override
+  String get reportFilterPaymentMethods => 'Métodos de pago';
+
+  @override
+  String get searchPaymentMethods => 'Buscar métodos de pago…';
+
+  @override
+  String get allPaymentMethods => 'Todos los métodos de pago';
+
+  @override
+  String reportExpenseCount(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString gastos',
+      one: '1 gasto',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String reportOtherGroups(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Otros ($countString)',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String reportSharePercent(String share) {
+    return '$share %';
+  }
+
+  @override
+  String reportShareTiny(String share) {
+    return '< $share %';
+  }
+
+  @override
+  String reportSliceSemantics(String name, String amount, String share) {
+    return '$name, $amount, $share';
+  }
+
+  @override
+  String reportSliceDetail(String name, String amount, String share) {
+    return '$name · $amount · $share';
+  }
+
+  @override
+  String get reportFaceBars => 'Barras';
+
+  @override
+  String get reportFaceDonut => 'Anillo';
+
+  @override
+  String get nextChart => 'Gráfico siguiente';
+
+  @override
+  String get previousChart => 'Gráfico anterior';
+
+  @override
+  String reportCardSemantics(String range, String chart, String amount) {
+    return '$range, $chart, total $amount';
+  }
+
+  @override
+  String reportCardSemanticsFiltered(
+    String range,
+    String chart,
+    String amount,
+  ) {
+    return '$range, filtrado, $chart, total $amount';
+  }
+
+  @override
+  String reportEmpty(String range) {
+    return 'No hay gastos en $range.';
+  }
+
+  @override
+  String reportEmptyFiltered(String range) {
+    return 'Nada en $range coincide con el filtro.';
+  }
+
+  @override
+  String get reportNoExpensesYet => 'Aún no hay gastos.';
+
+  @override
+  String get reportLoadFailed => 'No se pudo cargar el informe.';
+
+  @override
+  String reportFilterChanged(String name) {
+    return 'Filtro cambiado: se eliminó $name.';
+  }
+
+  @override
+  String reportFilterChangedMany(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Filtro cambiado: se eliminaron $countString elementos elegidos.',
+      one: 'Filtro cambiado: se eliminó un elemento elegido.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get reportFormat => 'Formato';
+
+  @override
+  String get reportFormatPdf => 'PDF';
+
+  @override
+  String get reportFormatExcel => 'Excel (.xlsx)';
+
+  @override
+  String get reportShare => 'Compartir';
+
+  @override
+  String get reportSaveAs => 'Guardar como…';
+
+  @override
+  String get reportSave => 'Guardar';
+
+  @override
+  String get reportMakingPdf => 'Creando el PDF…';
+
+  @override
+  String reportMakingPdfPage(int page, int pages) {
+    final intl.NumberFormat pageNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String pageString = pageNumberFormat.format(page);
+    final intl.NumberFormat pagesNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String pagesString = pagesNumberFormat.format(pages);
+
+    return 'Creando el PDF… página $pageString de $pagesString';
+  }
+
+  @override
+  String get reportMakingExcel => 'Creando el archivo de Excel…';
+
+  @override
+  String get reportSaved => 'Informe guardado';
+
+  @override
+  String get reportPdfFailed => 'No se pudo crear el PDF. Inténtalo de nuevo.';
+
+  @override
+  String get reportExcelFailed =>
+      'No se pudo crear el archivo de Excel. Inténtalo de nuevo.';
+
+  @override
+  String get reportTooManyRows =>
+      'Demasiados gastos para una hoja. Elige un rango más corto.';
+
+  @override
+  String get reportSaveFailed =>
+      'No se pudo guardar el archivo. Inténtalo de nuevo.';
+
+  @override
+  String get reportNoShareTarget =>
+      'Ninguna app de este teléfono puede recibir el archivo.';
+
+  @override
+  String get reportNothingToExport => 'Nada que exportar';
+
+  @override
+  String get reportDocTitle => 'Informe de gastos';
+
+  @override
+  String reportDocMadeOn(String date) {
+    return 'Creado el $date';
+  }
+
+  @override
+  String reportDocFilter(String parts) {
+    return 'Filtro: $parts';
+  }
+
+  @override
+  String reportDocSearch(String text) {
+    return 'Búsqueda: $text';
+  }
+
+  @override
+  String reportDocCategories(String names) {
+    return 'Categorías: $names';
+  }
+
+  @override
+  String reportDocEvents(String names) {
+    return 'Eventos: $names';
+  }
+
+  @override
+  String reportDocPaidWith(String names) {
+    return 'Pagado con: $names';
+  }
+
+  @override
+  String get reportDocNoFilter => 'Sin filtro';
+
+  @override
+  String reportDocGrouping(String grouping) {
+    return 'Agrupado por $grouping';
+  }
+
+  @override
+  String get reportDocTotal => 'Total';
+
+  @override
+  String reportDocAlsoIn(String names) {
+    return 'también en $names';
+  }
+
+  @override
+  String reportDocPageOf(String page, String pages) {
+    return 'Página $page de $pages';
+  }
+
+  @override
+  String get reportColDate => 'Fecha';
+
+  @override
+  String get reportColTime => 'Hora';
+
+  @override
+  String get reportColTitle => 'Título';
+
+  @override
+  String get reportColCategory => 'Categoría';
+
+  @override
+  String get reportColEvents => 'Eventos';
+
+  @override
+  String get reportColPaymentMethod => 'Método de pago';
+
+  @override
+  String get reportColCurrency => 'Moneda';
+
+  @override
+  String get reportColAmount => 'Importe';
+
+  @override
+  String get reportColSubtotal => 'Subtotal';
+
+  @override
+  String get reportColCount => 'Número';
+
+  @override
+  String get reportColShare => 'Parte';
+
+  @override
+  String get reportColRecurring => 'Recurrente';
+
+  @override
+  String get reportGenerate => 'Generar informe';
+
+  @override
+  String get reportGenerateTitle => 'Generar un informe';
+
+  @override
+  String get reportChart => 'Gráfico';
+
+  @override
+  String get reportChartPie => 'Circular';
+
+  @override
+  String get reportGroupOthers => 'Agrupar lo pequeño en Otros';
+
+  @override
+  String get reportGroupOthersHint =>
+      'Desactivado: cada elemento tiene su propia barra o porción y línea en la leyenda';
+
+  @override
+  String get reportOtherTitle => 'En Otros';
+
+  @override
+  String get reportOverall => 'General';
+
+  @override
+  String get reportSectionsOverlap =>
+      'Un gasto en dos eventos está en las dos secciones: los totales de las secciones pueden sumar más que el total general, que lo cuenta una vez.';
+
+  @override
+  String get reportColNote => 'Nota';
+
+  @override
+  String get reportSavedNoViewer =>
+      'Guardado en Download/Expense Tracker. Ninguna app de este teléfono puede abrirlo.';
+
+  @override
+  String get reportHighlights => 'Destacados';
+
+  @override
+  String get reportHiExpenses => 'Gastos';
+
+  @override
+  String get reportHiPerDay => 'Por día';
+
+  @override
+  String reportHiOverDays(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'en $countString días',
+      one: '1 día',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get reportHiLargest => 'Gasto mayor';
+
+  @override
+  String get reportHiTopMethod => 'Más pagado con';
+
+  @override
+  String get reportHiTopEvent => 'Evento principal';
 }

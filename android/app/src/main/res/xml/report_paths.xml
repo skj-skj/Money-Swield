@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- What the reports FileProvider may share (phase-8.md §6.6): only the
+     exports in cache/reports/, never the app's database or photos. -->
+<paths>
+    <cache-path name="reports" path="reports/" />
+</paths>

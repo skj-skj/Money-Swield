@@ -85,6 +85,7 @@ class StartupCubit extends CubitSignal<StartupState>
       final recurring = await _generateRecurring(dependencies);
       await _purgeBin(dependencies);
       await _cleanUpLeftovers(dependencies);
+      await _deleteOldReports(dependencies);
       await _sweepPhotos(dependencies);
       emitIfOpen(StartupReady(dependencies, recurring: recurring));
     } catch (error, stackTrace) {
@@ -149,6 +150,19 @@ class StartupCubit extends CubitSignal<StartupState>
       debugPrint(
         'Deleting backup and restore leftovers failed: $error\n$stackTrace',
       );
+    }
+  }
+
+  /// Deletes report exports older than a day and any half-made PDF's work
+  /// file (phase-8.md §6.3, application-design §3 step 4b). Awaited: it
+  /// empties `cache/report_work/`, so an export started meanwhile would
+  /// lose its work file; it only lists the app's own cache, quickly. A
+  /// failure is logged and doesn't block the app.
+  static Future<void> _deleteOldReports(AppDependencies dependencies) async {
+    try {
+      await dependencies.reportExports.deleteOld();
+    } catch (error, stackTrace) {
+      debugPrint('Deleting old report files failed: $error\n$stackTrace');
     }
   }
 

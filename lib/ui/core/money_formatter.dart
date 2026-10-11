@@ -52,6 +52,22 @@ class MoneyFormatter {
     return _splice(currencyCode, major.toInt(), (amountMinor % scale).toInt());
   }
 
+  /// Every digit of a total, for an export (phase-8.md R7): [formatTotal]
+  /// when it can, else the code and every digit with the locale's decimal
+  /// separator, ungrouped (`INR 276701161105643274.21`): an export never
+  /// says "Too large".
+  String exactTotal(String currencyCode, BigInt amountMinor) {
+    final shown = formatTotal(currencyCode, amountMinor);
+    if (shown != null) return shown;
+    final digits = _minorDigits(currencyCode);
+    final text = amountMinor.toString().padLeft(digits + 1, '0');
+    final whole = text.substring(0, text.length - digits);
+    if (digits == 0) return '$currencyCode $whole';
+    final separator = _whole(currencyCode).symbols.DECIMAL_SEP;
+    return '$currencyCode $whole$separator'
+        '${text.substring(text.length - digits)}';
+  }
+
   /// Like [format], but a whole amount without its zero decimals: `₹50`,
   /// while `₹12.50` stays as it is. For the amount chips, where six have to
   /// share one row (found on the Oppo: `₹10.00` let only 3½ show).

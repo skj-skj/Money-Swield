@@ -12,6 +12,12 @@ enum Period { day, week, month, year }
 
 enum WeekStart { monday, sunday }
 
+/// The earliest and latest dates an expense can have: the form's date
+/// picker and a report's Range stop there (phase-8.md R12). Far from any
+/// real date on purpose (P2-4: no real limit either way).
+const firstExpenseDay = '1900-01-01';
+const lastExpenseDay = '2200-01-01';
+
 /// How weeks are named: "Oct Week 3" or "Week 41" (phase-5.md P5-10).
 enum WeekLabel { month, number }
 

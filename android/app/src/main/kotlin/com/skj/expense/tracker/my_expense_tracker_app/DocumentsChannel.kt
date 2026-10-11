@@ -1,13 +1,18 @@
 package com.skj.expense.tracker.my_expense_tracker_app
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
+import android.content.ClipData
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.provider.DocumentsContract
+import android.provider.MediaStore
 import android.provider.OpenableColumns
+import androidx.core.content.FileProvider
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -21,7 +26,9 @@ import java.util.concurrent.Executors
 /**
  * `expense_tracker/documents`: the system save and open dialogs (Storage
  * Access Framework) and the app version, for backup and restore
- * (phase-3.md §7). Own code instead of a file-picker plugin (P3-1).
+ * (phase-3.md §7). Own code instead of a file-picker plugin (P3-1). Also
+ * a report's Save to `Download/<AppName>/`, Share and Open (phase-8.md
+ * §6.6).
  *
  * Created once, with the cached engine, so it outlives any one activity;
  * the one open dialog is a [PendingActivityCall] (phase-6.md R8).
@@ -76,8 +83,103 @@ class DocumentsChannel(messenger: BinaryMessenger, context: Context) :
                     }
                 }
             }
+            "saveToDownloads" -> runInBackground(result) {
+                saveToDownloads(
+                    call.argument<String>("sourcePath")!!,
+                    call.argument<String>("folder")!!,
+                    call.argument<String>("displayName")!!,
+                    call.argument<String>("mimeType")!!,
+                )
+            }
+            "share" -> {
+                val file = File(call.argument<String>("path")!!)
+                val uri = FileProvider.getUriForFile(appContext, "${appContext.packageName}.reports", file)
+                val send = Intent(Intent.ACTION_SEND).apply {
+                    type = call.argument<String>("mimeType")!!
+                    putExtra(Intent.EXTRA_STREAM, uri)
+                    clipData = ClipData.newRawUri(file.name, uri)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                val chooser = Intent.createChooser(send, call.argument<String>("title"))
+                startOrSay(result, chooser, send, "noShareTarget")
+            }
+            "open" -> {
+                val uri = Uri.parse(call.argument<String>("uri")!!)
+                val view = Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(uri, call.argument<String>("mimeType")!!)
+                    clipData = ClipData.newRawUri("", uri)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                startOrSay(result, view, null, "noViewer")
+            }
             else -> result.notImplemented()
         }
+    }
+
+    /**
+     * Starts [intent] from the app (a plain `startActivity`, no result
+     * awaited); no app can take it → the error [code]. A chooser always
+     * starts, so for one the [target] inside is checked first (the
+     * manifest's `<queries>` makes share targets visible, API 30+).
+     */
+    private fun startOrSay(result: MethodChannel.Result, intent: Intent, target: Intent?, code: String) {
+        try {
+            if (target != null && target.resolveActivity(appContext.packageManager) == null) {
+                throw ActivityNotFoundException()
+            }
+            appContext.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            result.success(null)
+        } catch (e: ActivityNotFoundException) {
+            result.error(code, e.toString(), null)
+        }
+    }
+
+    /**
+     * Copies [sourcePath] into `Download/<folder>/` as a new file named
+     * [displayName] (phase-8.md §6.6, the Save to Pictures pattern). Only
+     * ever **inserts**: a file of the user's is never opened, changed or
+     * deleted; a name already there is renamed by MediaStore ("name
+     * (1).pdf", probed on the Oppo). `IS_PENDING` until fully written; if
+     * the copy fails, the one item inserted here is deleted. Returns the
+     * item's URI and the name MediaStore gave it.
+     */
+    private fun saveToDownloads(
+        sourcePath: String,
+        folder: String,
+        displayName: String,
+        mimeType: String,
+    ): Map<String, String> {
+        val resolver = appContext.contentResolver
+        val collection = MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+        val values = ContentValues().apply {
+            put(MediaStore.Downloads.DISPLAY_NAME, displayName)
+            put(MediaStore.Downloads.MIME_TYPE, mimeType)
+            put(MediaStore.Downloads.RELATIVE_PATH, "Download/$folder/")
+            put(MediaStore.Downloads.IS_PENDING, 1)
+        }
+        val item = resolver.insert(collection, values) ?: throw IOException("MediaStore refused the file")
+        try {
+            val out = resolver.openOutputStream(item, "w") ?: throw IOException("Can't write the file")
+            out.use { stream -> FileInputStream(sourcePath).use { it.copyTo(stream, BUFFER) } }
+            resolver.update(
+                item,
+                ContentValues().apply { put(MediaStore.Downloads.IS_PENDING, 0) },
+                null,
+                null,
+            )
+        } catch (e: Exception) {
+            try {
+                resolver.delete(item, null, null)
+            } catch (_: Exception) {
+                // Best effort; the error below is what matters.
+            }
+            throw e
+        }
+        var name = displayName
+        resolver.query(item, arrayOf(MediaStore.Downloads.DISPLAY_NAME), null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst()) name = cursor.getString(0) ?: displayName
+        }
+        return mapOf("uri" to item.toString(), "name" to name)
     }
 
     /**

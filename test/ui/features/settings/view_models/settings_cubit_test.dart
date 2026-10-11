@@ -245,7 +245,8 @@ void main() {
       await cubit.setWeekLabel(WeekLabel.number);
       await cubit.setListGrouping(Period.year);
       await cubit.restoreHomeDefaults();
-      expect(cubit.value.trendCardHaptics, CardHaptics.light);
+      // Its own tile since the owner's change of 2026-10-11: kept.
+      expect(cubit.value.trendCardHaptics, CardHaptics.off);
       expect(cubit.value.trendChartStyle, TrendChartStyle.lineFilled);
       expect(cubit.value.trendCardSize, TrendCardSize.medium);
       expect(cubit.value.weekLabel, WeekLabel.month);

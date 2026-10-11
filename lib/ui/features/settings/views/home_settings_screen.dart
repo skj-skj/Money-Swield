@@ -69,18 +69,6 @@ class HomeSettingsScreen extends StatelessWidget {
               label: (size) => cardSizeName(l10n, size),
               onSave: cubit.setTrendCardSize,
             ),
-            ChoiceSettingTile<CardHaptics>(
-              icon: Icons.vibration,
-              title: l10n.settingCardHaptics,
-              values: CardHaptics.values,
-              current: settings.trendCardHaptics,
-              label: (haptics) => cardHapticsName(l10n, haptics),
-              onSave: (haptics) async {
-                await cubit.setTrendCardHaptics(haptics);
-                // Felt once, so the choice can be judged.
-                cardHaptic(haptics);
-              },
-            ),
             ChoiceSettingTile<WeekStart>(
               icon: Icons.calendar_view_week,
               title: l10n.settingWeekStart,

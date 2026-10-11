@@ -119,4 +119,9 @@ List<String> searchWords(String text) => text.characters
 /// part of a word. No wildcards: `%`, `_`, `*` are plain characters. No
 /// accent folding (P5-25) and no Unicode normalization.
 bool matchesText(SearchEntry entry, List<String> words) =>
-    words.every(entry.folded.contains);
+    matchesWords(entry.folded, words);
+
+/// Whether every one of [words] is in [folded] (`foldForSearch`'s text),
+/// as [matchesText]: Home's entries and a report's rows match alike.
+bool matchesWords(String folded, List<String> words) =>
+    words.every(folded.contains);

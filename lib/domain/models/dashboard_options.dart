@@ -30,3 +30,8 @@ enum TrendCardSize { small, medium, large }
 /// mechanical dial's detent (owner, 2026-10-07): none, or a light, medium
 /// or strong one. Android's own touch-feedback switch still applies.
 enum CardHaptics { off, light, medium, strong }
+
+/// The report card's faces, in reel order (phase-8.md §8.5, P8-2): bars
+/// (the default) and a donut. No trend line (owner, 2026-10-10: a report
+/// is an overview).
+enum ReportChart { bars, donut }

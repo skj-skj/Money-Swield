@@ -5,11 +5,13 @@ import '../l10n/app_localizations.dart';
 import '../ui/core/widgets/back_guard.dart';
 import '../ui/features/home/views/home_screen.dart';
 import '../ui/features/manage/views/manage_screen.dart';
+import '../ui/features/reports/views/report_screen.dart';
 import '../ui/features/settings/views/settings_screen.dart';
 import 'app_dependencies.dart';
 import 'app_restart.dart';
 
-/// The app after onboarding: Home · Manage · Settings in a navigation bar.
+/// The app after onboarding: Home · Reports · Manage · Settings in a
+/// navigation bar (application-design §5, phase-8.md §8.1).
 ///
 /// Tabs keep their state when switching (IndexedStack). Back on another tab
 /// goes to Home; back on Home leaves the app.
@@ -29,11 +31,12 @@ class Shell extends StatefulWidget {
   State<Shell> createState() => _ShellState();
 }
 
-class _ShellState extends State<Shell> {
-  static const _home = 0;
-  static const _settings = 2;
+/// The tabs in bar order. An enum, not literal indexes: inserting a tab
+/// shifted the numbers under the screens' `isVisible` (phase-8.md R1).
+enum _Tab { home, reports, manage, settings }
 
-  int _index = _home;
+class _ShellState extends State<Shell> {
+  _Tab _tab = _Tab.home;
 
   /// Read once: the notice is cleared as it's read, and on the next
   /// restart.
@@ -45,30 +48,42 @@ class _ShellState extends State<Shell> {
     final l10n = AppLocalizations.of(context);
     final deps = widget.dependencies;
     return BackGuard(
-      intercept: _index != _home,
-      onBack: () => setState(() => _index = _home),
+      intercept: _tab != _Tab.home,
+      onBack: () => setState(() => _tab = _Tab.home),
       child: Scaffold(
         body: IndexedStack(
-          index: _index,
+          index: _tab.index,
+          // In _Tab's order.
           children: [
             HomeScreen(
               dependencies: deps,
-              isVisible: _index == _home,
+              isVisible: _tab == _Tab.home,
               restoreNotice: _restoreNotice,
               recurringReport: widget.recurringReport,
             ),
-            ManageScreen(dependencies: deps, isVisible: _index == 1),
-            SettingsScreen(dependencies: deps, isVisible: _index == _settings),
+            ReportScreen(dependencies: deps, isVisible: _tab == _Tab.reports),
+            ManageScreen(dependencies: deps, isVisible: _tab == _Tab.manage),
+            SettingsScreen(
+              dependencies: deps,
+              isVisible: _tab == _Tab.settings,
+            ),
           ],
         ),
         bottomNavigationBar: NavigationBar(
-          selectedIndex: _index,
-          onDestinationSelected: (index) => setState(() => _index = index),
+          selectedIndex: _tab.index,
+          onDestinationSelected: (index) =>
+              setState(() => _tab = _Tab.values[index]),
+          // In _Tab's order.
           destinations: [
             NavigationDestination(
               icon: const Icon(Icons.home_outlined),
               selectedIcon: const Icon(Icons.home),
               label: l10n.navHome,
+            ),
+            NavigationDestination(
+              icon: const Icon(Icons.pie_chart_outline),
+              selectedIcon: const Icon(Icons.pie_chart),
+              label: l10n.navReports,
             ),
             NavigationDestination(
               icon: const Icon(Icons.folder_copy_outlined),

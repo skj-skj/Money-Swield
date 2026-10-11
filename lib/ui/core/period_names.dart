@@ -143,3 +143,11 @@ String totalText(
   String code,
   BigInt minor,
 ) => formatter.formatTotal(code, minor) ?? l10n.totalTooLarge;
+
+/// "Day", "Week" and the like.
+String periodName(AppLocalizations l10n, Period period) => switch (period) {
+  Period.day => l10n.periodDay,
+  Period.week => l10n.periodWeek,
+  Period.month => l10n.periodMonth,
+  Period.year => l10n.periodYear,
+};
