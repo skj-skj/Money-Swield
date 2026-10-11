@@ -3413,4 +3413,112 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get reportHiTopEvent => 'Evento principal';
+
+  @override
+  String get smsSuggestions => 'Sugerencias por SMS';
+
+  @override
+  String smsNewCount(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString sugerencias nuevas por SMS',
+      one: '1 sugerencia nueva por SMS',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get smsNone => 'No hay SMS bancarios nuevos';
+
+  @override
+  String smsLastChecked(String time) {
+    return 'Revisado: $time';
+  }
+
+  @override
+  String get smsDismiss => 'Descartar';
+
+  @override
+  String get smsDismissed => 'Sugerencia descartada';
+
+  @override
+  String get smsPermissionOff => 'El permiso de SMS está desactivado';
+
+  @override
+  String get smsAllow => 'Permitir';
+
+  @override
+  String get smsOpenSettings => 'Abrir ajustes';
+
+  @override
+  String get smsPermissionRefused =>
+      'Sin el permiso de SMS, la app no puede sugerir gastos. Puedes activarlo en Ajustes → SMS.';
+
+  @override
+  String get smsAlreadyAdded => 'Este SMS ya se añadió';
+
+  @override
+  String smsFromBanner(String sender, String time) {
+    return 'Del SMS · $sender · $time';
+  }
+
+  @override
+  String get smsDraftTitle => 'Borrador sin guardar';
+
+  @override
+  String get smsDraftMessage =>
+      'Tienes un gasto sin guardar. ¿Descartarlo para añadir este SMS? El borrador no se podrá recuperar.';
+
+  @override
+  String smsEditDraftMessage(String title) {
+    return 'Tienes cambios sin guardar en «$title». ¿Descartarlos para añadir este SMS?';
+  }
+
+  @override
+  String get smsDismissDraft => 'Descartar borrador';
+
+  @override
+  String get smsOnboardingQuestion =>
+      '¿Sugerir gastos a partir de SMS bancarios?';
+
+  @override
+  String get smsPrivacyNote =>
+      'La app lee los SMS bancarios de este teléfono y solo guarda el importe, el destinatario y la hora. Las sugerencias no añadidas se eliminan a los 30 días.';
+
+  @override
+  String get backupWaitingForSms =>
+      'Esperando a que termine la lectura de SMS…';
+
+  @override
+  String get smsTile => 'SMS';
+
+  @override
+  String smsTileOn(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Activado · $countString pendientes',
+      one: 'Activado · 1 pendiente',
+      zero: 'Activado',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get smsTileOff => 'Desactivado';
+
+  @override
+  String get smsNotNow => 'Ahora no';
+
+  @override
+  String get smsYes => 'Sí';
 }

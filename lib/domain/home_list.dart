@@ -42,44 +42,79 @@ List<ListGroup> homeGroups(
   required Period grouping,
   required WeekStart weekStart,
   required bool hasMore,
+}) => [
+  for (final group in framesByDay(
+    expenses,
+    dayOf: (e) => e.occurredOn,
+    grouping: grouping,
+    weekStart: weekStart,
+    hasMore: hasMore,
+  ))
+    ListGroup(
+      range: group.range,
+      open: group.open,
+      days: [
+        for (final day in group.days)
+          ListDay(day: day.day, expenses: day.items),
+      ],
+    ),
+];
+
+/// A frame of any dated rows: its period, its days (newest first, each
+/// with its rows in the order given) and whether more pages may add to it.
+typedef DayFrame<T> = ({
+  PeriodRange range,
+  List<({String day, List<T> items})> days,
+  bool open,
+});
+
+/// [items], sorted newest day first ([dayOf] gives a row's `YYYY-MM-DD`),
+/// cut into frames of [grouping] holding days: Home's list
+/// ([homeGroups]), the Photos screen and the SMS screen share this cut.
+/// The last frame (and its last day) stays `open` while
+/// [hasMore].
+List<DayFrame<T>> framesByDay<T>(
+  List<T> items, {
+  required String Function(T) dayOf,
+  required Period grouping,
+  required WeekStart weekStart,
+  required bool hasMore,
 }) {
-  final groups = <ListGroup>[];
+  final frames = <DayFrame<T>>[];
   PeriodRange? range;
-  var days = <ListDay>[];
-  var rows = <Expense>[];
+  var days = <({String day, List<T> items})>[];
+  var rows = <T>[];
   String? day;
 
   void endDay() {
-    if (day != null) days.add(ListDay(day: day, expenses: rows));
+    if (day != null) days.add((day: day, items: rows));
     rows = [];
   }
 
-  void endGroup({required bool open}) {
+  void endFrame({required bool open}) {
     endDay();
-    if (range != null) {
-      groups.add(ListGroup(range: range, days: days, open: open));
-    }
+    if (range != null) frames.add((range: range, days: days, open: open));
     days = [];
   }
 
-  for (final expense in expenses) {
-    final on = expense.occurredOn;
+  for (final item in items) {
+    final on = dayOf(item);
     if (on != day) {
-      final next = range;
-      final inGroup =
-          next != null &&
-          on.compareTo(next.from) >= 0 &&
-          on.compareTo(next.to) <= 0;
-      if (inGroup) {
+      final current = range;
+      final inFrame =
+          current != null &&
+          on.compareTo(current.from) >= 0 &&
+          on.compareTo(current.to) <= 0;
+      if (inFrame) {
         endDay();
       } else {
-        endGroup(open: false);
+        endFrame(open: false);
         range = periodOf(on, grouping, weekStart);
       }
       day = on;
     }
-    rows.add(expense);
+    rows.add(item);
   }
-  endGroup(open: hasMore);
-  return groups;
+  endFrame(open: hasMore);
+  return frames;
 }

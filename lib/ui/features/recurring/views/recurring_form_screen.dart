@@ -2,6 +2,8 @@ import 'package:bloc_signals_flutter/bloc_signals_flutter.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../app/app_dependencies.dart';
+import '../../../../domain/models/expense.dart'
+    show maxExpenseDescriptionLength, maxTitleLength;
 import '../../../../domain/periods.dart';
 import '../../../../domain/repeat_input.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -20,8 +22,7 @@ import '../../../core/widgets/save_error.dart';
 import '../../../core/widgets/section_heading.dart';
 import '../../../core/widgets/show_message.dart';
 import '../../../core/widgets/tile_picker.dart';
-import '../../expenses/view_models/expense_form_cubit.dart'
-    show maxExpenseDescriptionLength, maxTitleLength, TitleError;
+import '../../expenses/view_models/expense_form_cubit.dart' show TitleError;
 import '../../settings/view_models/settings_cubit.dart';
 import '../view_models/recurring_form_cubit.dart';
 

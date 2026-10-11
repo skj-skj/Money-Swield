@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 
 import 'app/app.dart';
 import 'app/app_dependencies.dart';
+import 'app/build_flavor.dart';
 import 'app/restore_tools.dart';
 import 'data/services/database/app_database.dart';
 import 'data/services/document_service.dart';
@@ -15,6 +16,7 @@ import 'ui/features/settings/view_models/settings_cubit.dart';
 
 Future<void> main() async {
   final binding = WidgetsFlutterBinding.ensureInitialized();
+  debugPrint('Flavor: ${currentAppFlavor.name}');
   // Read once at start, before the first frame, so the app never flashes
   // in the default color. A wallpaper change while the app runs shows on
   // the next start.

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_expense_tracker_app/domain/models/expense_draft.dart';
+import 'package:my_expense_tracker_app/domain/models/sms_suggestion.dart';
 import 'package:my_expense_tracker_app/domain/photos.dart';
 import 'package:my_expense_tracker_app/domain/repeat_input.dart';
 
@@ -483,4 +484,61 @@ void main() {
       expect(withRepeat(const RepeatChoice()), isNot(withRepeat(null)));
     });
   });
+
+  group('sms (phase-9a.md §7.3)', () {
+    final sha = 'c' * 64;
+    ExpenseDraft withSms(SmsLink? sms) => draft().copyForTest(sms);
+
+    test('round trip; equality sees the link', () {
+      final linked = withSms((id: 4, bodySha256: sha));
+      expect(read(linked.toJson()), linked);
+      expect(read(linked.toJson())!.sms, (id: 4, bodySha256: sha));
+      expect(linked, isNot(withSms(null)));
+      expect((jsonDecode(linked.toJson()) as Map<String, Object?>)['sms'], {
+        'id': 4,
+        'sha256': sha,
+      });
+    });
+
+    test('an older draft has no key: no link; a damaged one is no link, '
+        'the rest of the draft kept', () {
+      expect(read(draft().toJson())!.sms, isNull);
+      for (final bad in [
+        {'id': '4', 'sha256': sha},
+        {'id': 4, 'sha256': 'not a hash'},
+        {'id': 4},
+        'x',
+        [4, sha],
+      ]) {
+        final json = jsonDecode(draft().toJson()) as Map<String, Object?>;
+        json['sms'] = bad;
+        final readBack = read(jsonEncode(json))!;
+        expect(readBack.sms, isNull, reason: '$bad');
+        expect(readBack.title, draft().title);
+      }
+    });
+  });
+}
+
+extension on ExpenseDraft {
+  ExpenseDraft copyForTest(SmsLink? sms) => ExpenseDraft(
+    editingExpenseId: editingExpenseId,
+    title: title,
+    amountExpression: amountExpression,
+    description: description,
+    categoryId: categoryId,
+    eventIds: eventIds,
+    paymentMethodId: paymentMethodId,
+    currencyCode: currencyCode,
+    pickedWallClock: pickedWallClock,
+    touched: touched,
+    itemizeLine: itemizeLine,
+    itemizeLabels: itemizeLabels,
+    itemizeTerms: itemizeTerms,
+    updatedAt: updatedAt,
+    suggestionsBlocked: suggestionsBlocked,
+    photos: photos,
+    repeat: repeat,
+    sms: sms,
+  );
 }

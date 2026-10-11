@@ -3398,4 +3398,111 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get reportHiTopEvent => 'सबसे बड़ा इवेंट';
+
+  @override
+  String get smsSuggestions => 'SMS सुझाव';
+
+  @override
+  String smsNewCount(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString नए SMS सुझाव',
+      one: '1 नया SMS सुझाव',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get smsNone => 'बैंक का कोई नया SMS नहीं';
+
+  @override
+  String smsLastChecked(String time) {
+    return 'जाँचा गया: $time';
+  }
+
+  @override
+  String get smsDismiss => 'हटाएँ';
+
+  @override
+  String get smsDismissed => 'सुझाव हटाया गया';
+
+  @override
+  String get smsPermissionOff => 'SMS की अनुमति बंद है';
+
+  @override
+  String get smsAllow => 'अनुमति दें';
+
+  @override
+  String get smsOpenSettings => 'सेटिंग्स खोलें';
+
+  @override
+  String get smsPermissionRefused =>
+      'SMS की अनुमति के बिना ऐप खर्च सुझा नहीं सकता। आप इसे सेटिंग्स → SMS में चालू कर सकते हैं।';
+
+  @override
+  String get smsAlreadyAdded => 'यह SMS पहले ही जोड़ा जा चुका है';
+
+  @override
+  String smsFromBanner(String sender, String time) {
+    return 'SMS से · $sender · $time';
+  }
+
+  @override
+  String get smsDraftTitle => 'बिना सहेजा ड्राफ़्ट';
+
+  @override
+  String get smsDraftMessage =>
+      'आपका एक खर्च सहेजा नहीं गया है। इस SMS को जोड़ने के लिए उसे हटाएँ? ड्राफ़्ट वापस नहीं लाया जा सकेगा।';
+
+  @override
+  String smsEditDraftMessage(String title) {
+    return '\"$title\" में आपके बदलाव सहेजे नहीं गए हैं। इस SMS को जोड़ने के लिए उन्हें हटाएँ?';
+  }
+
+  @override
+  String get smsDismissDraft => 'ड्राफ़्ट हटाएँ';
+
+  @override
+  String get smsOnboardingQuestion => 'बैंक SMS से खर्च सुझाएँ?';
+
+  @override
+  String get smsPrivacyNote =>
+      'ऐप इस फ़ोन पर बैंक SMS पढ़ता है और केवल राशि, प्राप्तकर्ता और समय रखता है। जो सुझाव जोड़े नहीं गए, वे 30 दिन बाद हटा दिए जाते हैं।';
+
+  @override
+  String get backupWaitingForSms =>
+      'SMS पढ़ना पूरा होने की प्रतीक्षा हो रही है…';
+
+  @override
+  String get smsTile => 'SMS';
+
+  @override
+  String smsTileOn(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'चालू · $countString बाकी',
+      one: 'चालू · 1 बाकी',
+      zero: 'चालू',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get smsTileOff => 'बंद';
+
+  @override
+  String get smsNotNow => 'अभी नहीं';
+
+  @override
+  String get smsYes => 'हाँ';
 }

@@ -29,6 +29,9 @@ import '../../recurring/views/recurring_list_screen.dart';
 import '../../recurring/views/recurring_navigation.dart';
 import '../../recurring/views/upcoming_screen.dart';
 import '../../settings/view_models/settings_cubit.dart';
+import '../../sms/view_models/sms_cubit.dart';
+import '../../sms/views/sms_icon_button.dart';
+import '../../sms/views/sms_screen.dart';
 import '../view_models/expense_list_cubit.dart';
 import '../view_models/trend_cubit.dart';
 import 'add_expense_fab.dart';
@@ -50,9 +53,14 @@ class HomeScreen extends StatefulWidget {
     required this.isVisible,
     this.restoreNotice,
     this.recurringReport = GenerateReport.none,
+    this.sms,
   });
 
   final AppDependencies dependencies;
+
+  /// The app-level SMS state (phase-9a.md §7.1): the SMS icon and its
+  /// badge. Null: no icon (tests that don't need it).
+  final SmsCubit? sms;
 
   /// What the recurring generator did at startup (phase-7a.md §8.6, §8.9):
   /// said once, after the restore message.
@@ -247,7 +255,10 @@ class _HomeScreenState extends State<HomeScreen> with ScrollPaging<HomeScreen> {
   @override
   void didUpdateWidget(HomeScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.isVisible && !oldWidget.isVisible) _reloadIfChanged();
+    if (widget.isVisible && !oldWidget.isVisible) {
+      _reloadIfChanged();
+      widget.sms?.refreshCount();
+    }
   }
 
   /// Reloads the list and the card after a write (save, bin, Undo).
@@ -313,6 +324,40 @@ class _HomeScreenState extends State<HomeScreen> with ScrollPaging<HomeScreen> {
     await _reloadIfChanged();
     await _cubit.refreshDraftMark();
   }
+
+  /// The SMS screen (phase-9a.md §8.2). Expenses are added there, so back
+  /// here the list reloads if anything changed, and the draft mark is read
+  /// again (a draft may have been dismissed or saved there).
+  Future<void> _openSms(SmsCubit sms) async {
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SmsScreen(dependencies: widget.dependencies, sms: sms),
+      ),
+    );
+    if (!mounted) return;
+    await _reloadIfChanged();
+    await _cubit.refreshDraftMark();
+  }
+
+  /// No active expenses at all (and no filter): the empty state, without
+  /// the card and the filter bar (P5-20).
+  static bool _isEmptyHome(ExpenseListState state) =>
+      state is ExpenseListLoaded &&
+      state.expenses.isEmpty &&
+      state.filter.isEmpty;
+
+  /// The SMS icon with its badge (§8.1), following the SMS state; hidden
+  /// while SMS is off. Null without the SMS state.
+  Widget? _smsButton() => switch (widget.sms) {
+    final sms? => BlocSignalBuilder<SmsCubit, SmsState>(
+      bloc: sms,
+      builder: (context, smsState) => SmsIconButton.showsFor(smsState)
+          ? SmsIconButton(state: smsState, onPressed: () => _openSms(sms))
+          : const SizedBox.shrink(),
+    ),
+    null => null,
+  };
 
   /// Upcoming payments for Home's filters (phase-7b.md §8.3; owner,
   /// 2026-10-10: like the Photos screen). Skips, stops and the item pages
@@ -443,6 +488,23 @@ class _HomeScreenState extends State<HomeScreen> with ScrollPaging<HomeScreen> {
       appBar: AppBar(
         title: Text(l10n.appTitle),
         actions: [
+          // The SMS icon, left of the currency button, only while Home is
+          // empty: there is no filter bar then (P5-20), and without it a
+          // new user had no way to their suggestions (found on the Oppo).
+          // Once an expense exists it lives in the filter bar's icon row
+          // only (owner, 2026-10-11).
+          if (_smsButton() case final sms?)
+            BlocSignalBuilder<ExpenseListCubit, ExpenseListState>(
+              bloc: _cubit,
+              builder: (context, state) => _isEmptyHome(state)
+                  // A gap, so the badge doesn't touch the currency chip
+                  // (seen on the Oppo).
+                  ? Padding(
+                      padding: const EdgeInsetsDirectional.only(end: 8),
+                      child: sms,
+                    )
+                  : const SizedBox.shrink(),
+            ),
           BlocSignalBuilder<SettingsCubit, AppSettings>(
             buildWhen: (previous, current) =>
                 previous.defaultCurrency != current.defaultCurrency,
@@ -521,7 +583,7 @@ class _HomeScreenState extends State<HomeScreen> with ScrollPaging<HomeScreen> {
       onTap: (amount) => _openForm(chipAmount: amount),
     );
     // No active expenses at all: no card, no filter bar (P5-20).
-    if (state.expenses.isEmpty && state.filter.isEmpty) {
+    if (_isEmptyHome(state)) {
       return Column(
         children: [
           // Shown on the empty state too (phase-4.md §8.1).
@@ -558,6 +620,7 @@ class _HomeScreenState extends State<HomeScreen> with ScrollPaging<HomeScreen> {
       onPhotos: () => _openPhotos(state.filter),
       upcomingIcon: state.upcomingIcon,
       onUpcoming: () => _openUpcoming(state.filter),
+      smsButton: _smsButton(),
     );
     final locked = settings.trendCardPosition == TrendCardPosition.locked;
     final list = NotificationListener<UserScrollNotification>(

@@ -440,19 +440,42 @@ class SettingsRepository {
   /// [AppSettings], so a backup doesn't rebuild `MaterialApp` (phase-3.md
   /// §3). An unreadable value reads as "never".
   Future<DateTime?> lastBackupAt() async {
-    final rows = await _db.query(
-      'settings',
-      columns: ['value'],
-      where: 'key = ?',
-      whereArgs: [_lastBackupAtKey],
-    );
-    final ms = int.tryParse(rows.firstOrNull?['value'] as String? ?? '');
+    final ms = int.tryParse(await valueOf(_db, _lastBackupAtKey) ?? '');
     return ms == null ? null : utcFromEpochMs(ms);
   }
 
   /// Stored as epoch ms UTC, like every time in the database.
   Future<void> setLastBackupAt(DateTime at) =>
       _write(_lastBackupAtKey, '${at.millisecondsSinceEpoch}');
+
+  /// Whether the user turned SMS suggestions on (phase-9a.md §4; `1` only
+  /// after the permission was granted once). Not part of [AppSettings]: only
+  /// `SmsCubit` reads it, and turning it on or off rebuilds nothing else.
+  Future<bool> smsEnabled() async => _isTrue(await valueOf(_db, smsEnabledKey));
+
+  Future<void> setSmsEnabled(bool enabled) =>
+      _write(smsEnabledKey, _bool(enabled));
+
+  /// `sms_enabled` (database.md §3.1).
+  static const smsEnabledKey = 'sms_enabled';
+
+  /// `sms_last_scanned_at`: the SMS scan's cursor, epoch ms (phase-9a.md
+  /// §6.3 step 7). Written and read only by `SmsSuggestionRepository`,
+  /// inside the scan's transaction, so it is public here only as the name.
+  static const smsCursorKey = 'sms_last_scanned_at';
+
+  /// One setting's stored value through [db], or null when it isn't
+  /// there. Public for the keys another repository owns (the SMS scan's
+  /// cursor).
+  static Future<String?> valueOf(DatabaseExecutor db, String key) async {
+    final rows = await db.query(
+      'settings',
+      columns: ['value'],
+      where: 'key = ?',
+      whereArgs: [key],
+    );
+    return rows.firstOrNull?['value'] as String?;
+  }
 
   Future<void> _write(String key, String? value) => _db.insert('settings', {
     'key': key,

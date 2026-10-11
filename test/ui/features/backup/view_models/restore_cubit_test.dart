@@ -303,8 +303,10 @@ void main() {
       'a backup that can\'t start the app is refused before the swap',
       () async {
         await live.execute('DROP TABLE expense_events');
-        // Phase 6's links point at expenses too.
+        // Phase 6's links point at expenses too, and so do phase 9a's SMS
+        // suggestions (`expense_id`).
         await live.execute('DROP TABLE expense_photos');
+        await live.execute('DROP TABLE sms_suggestions');
         await live.execute('DROP TABLE expenses');
         await backUpLive();
         final before = await liveBytesAfterClose();

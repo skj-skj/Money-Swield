@@ -84,6 +84,7 @@ class StartupCubit extends CubitSignal<StartupState>
       await _settingsCubit.load(dependencies.settings);
       final recurring = await _generateRecurring(dependencies);
       await _purgeBin(dependencies);
+      await _purgeOldSms(dependencies);
       await _cleanUpLeftovers(dependencies);
       await _deleteOldReports(dependencies);
       await _sweepPhotos(dependencies);
@@ -136,6 +137,22 @@ class StartupCubit extends CubitSignal<StartupState>
       debugPrint(
         'Emptying old expenses from the bin failed: $error\n$stackTrace',
       );
+    }
+  }
+
+  /// Deletes SMS suggestions not added (pending and dismissed)
+  /// received more than
+  /// the look-back ago (30 days, or a debug build's `SMS_LOOKBACK_DAYS`),
+  /// after the bin purge (phase-9a.md §4, application-design §3 step 3b).
+  /// Added ones stay. A failure is logged and never blocks the app.
+  static Future<void> _purgeOldSms(AppDependencies dependencies) async {
+    try {
+      await dependencies.smsSuggestions.purgeOld(
+        nowMs: dependencies.now().millisecondsSinceEpoch,
+        days: dependencies.smsScanner.lookbackDays,
+      );
+    } catch (error, stackTrace) {
+      debugPrint('Deleting old SMS suggestions failed: $error\n$stackTrace');
     }
   }
 

@@ -37,6 +37,7 @@ class MainActivity : FlutterActivity() {
         documents = DocumentsChannel(engine.dartExecutor.binaryMessenger, appContext)
         photos = PhotosChannel(engine.dartExecutor.binaryMessenger, appContext)
         reportPdf = ReportPdfChannel(engine.dartExecutor.binaryMessenger, appContext)
+        sms = SmsChannel(engine.dartExecutor.binaryMessenger, appContext)
         engine.dartExecutor.executeDartEntrypoint(
             DartExecutor.DartEntrypoint.createDefault(),
         )
@@ -54,11 +55,13 @@ class MainActivity : FlutterActivity() {
         super.onCreate(savedInstanceState) // Calls provideFlutterEngine.
         documents?.dialog?.attach(this)
         photos?.dialog?.attach(this)
+        sms?.attach(this)
     }
 
     override fun onDestroy() {
         documents?.dialog?.detach(this)
         photos?.dialog?.detach(this)
+        sms?.detach(this)
         super.onDestroy()
     }
 
@@ -69,6 +72,16 @@ class MainActivity : FlutterActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (documents?.dialog?.onActivityResult(requestCode, resultCode, data) == true) return
         photos?.dialog?.onActivityResult(requestCode, resultCode, data)
+    }
+
+    // The SMS permission's answer (phase-9a.md R5). super first, as above.
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray,
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        sms?.onRequestPermissionsResult(requestCode)
     }
 
     /**
@@ -104,5 +117,6 @@ class MainActivity : FlutterActivity() {
         var documents: DocumentsChannel? = null
         var photos: PhotosChannel? = null
         var reportPdf: ReportPdfChannel? = null
+        var sms: SmsChannel? = null
     }
 }

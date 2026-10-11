@@ -151,6 +151,66 @@ void main() {
     expect(cubit.value.lastBackupAt, DateTime.utc(2026, 9, 21));
     expect(cubit.value.newestCopy, isNull);
   });
+
+  group('waits for a running SMS scan (phase-9a.md §6.7)', () {
+    BackupCubit waitingCubit(Future<void>? Function() scan) {
+      final waiting = BackupCubit(
+        backups: BackupRepository(
+          live,
+          appDatabase: files.appDatabase(),
+          settings: SettingsRepository(live, deviceCurrency: 'INR'),
+          now: () => now,
+        ),
+        documents: documents,
+        appDatabase: files.appDatabase(),
+        runningSmsScan: scan,
+      );
+      addTearDown(waiting.close);
+      return waiting;
+    }
+
+    test('a scan running: "waiting", then the zip', () async {
+      final scan = Completer<void>();
+      final waiting = waitingCubit(() => scan.future);
+      final backup = waiting.backUp();
+      await pumpEventQueue();
+      expect(waiting.value.waitingForSms, isTrue);
+      expect(documents.savedName, isNull);
+      scan.complete();
+      expect(await backup, BackupResult.saved);
+      expect(waiting.value.waitingForSms, isFalse);
+      expect(documents.savedName, isNotNull);
+    });
+
+    test('Cancel while waiting: no zip, nothing changed', () async {
+      final scan = Completer<void>();
+      final waiting = waitingCubit(() => scan.future);
+      final backup = waiting.backUp();
+      await pumpEventQueue();
+      waiting.cancelWait();
+      expect(await backup, BackupResult.cancelled);
+      expect(waiting.value.backingUp, isFalse);
+      expect(waiting.value.waitingForSms, isFalse);
+      expect(documents.savedName, isNull);
+      expect(await lastBackupAt(), isNull);
+      expect(tempFilesLeft(), isFalse);
+      scan.complete();
+    });
+
+    test('no scan running: no "waiting" at all', () async {
+      final states = <bool>[];
+      final waiting = waitingCubit(() => null);
+      final backup = waiting.backUp();
+      states.add(waiting.value.waitingForSms);
+      expect(await backup, BackupResult.saved);
+      expect(states, [false]);
+    });
+
+    test('a scan that fails still lets the backup go on', () async {
+      final waiting = waitingCubit(() => Future<void>.error('scan failed'));
+      expect(await waiting.backUp(), BackupResult.saved);
+    });
+  });
 }
 
 /// Saving works; noting the time fails (e.g. the disk filled up meanwhile).

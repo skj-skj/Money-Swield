@@ -68,6 +68,18 @@ String paymentMethodBuiltinName(AppLocalizations l10n, String builtinKey) =>
       _ => builtinKey,
     };
 
+/// The emoji a built-in payment method is seeded with (the
+/// create_payment_methods migration keeps its own copy, as a released
+/// migration never changes), for a row that was deleted. Empty for an
+/// unknown key.
+String paymentMethodBuiltinEmoji(String builtinKey) => switch (builtinKey) {
+  'cash' => '💵',
+  'upi' => '📱',
+  'debit_card' => '🏧',
+  'credit_card' => '💳',
+  _ => '',
+};
+
 /// Orders display names alphabetically, ignoring case.
 int compareNames(String a, String b) =>
     a.toLowerCase().compareTo(b.toLowerCase());

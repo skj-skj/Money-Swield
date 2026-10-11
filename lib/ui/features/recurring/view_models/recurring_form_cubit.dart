@@ -8,6 +8,8 @@ import '../../../../data/repositories/payment_method_repository.dart';
 import '../../../../data/repositories/recurring_repository.dart';
 import '../../../../domain/models/category.dart';
 import '../../../../domain/models/event.dart';
+import '../../../../domain/models/expense.dart'
+    show maxExpenseDescriptionLength, maxTitleLength;
 import '../../../../domain/models/payment_method.dart';
 import '../../../../domain/models/recurring_item.dart';
 import '../../../../domain/periods.dart';
@@ -17,8 +19,7 @@ import '../../../../domain/repeat_input.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/builtin_names.dart';
 import '../../../core/emit_if_open.dart';
-import '../../expenses/view_models/expense_form_cubit.dart'
-    show maxExpenseDescriptionLength, maxTitleLength, TitleError;
+import '../../expenses/view_models/expense_form_cubit.dart' show TitleError;
 
 /// The Edit screen's fields (phase-7a.md §7.4), and how often
 /// (phase-7b.md §7.3).

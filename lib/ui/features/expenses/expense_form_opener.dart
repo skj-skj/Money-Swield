@@ -3,12 +3,15 @@ import 'package:material_ui/material_ui.dart';
 import '../../../app/app_dependencies.dart';
 import '../../../domain/models/expense_draft.dart';
 import '../../../domain/models/money.dart';
+import '../../../domain/models/sms_suggestion.dart';
+import '../../../domain/sms/sms_draft_rule.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../core/formatting_locale.dart';
 import '../../core/recurrence_text.dart';
 import '../../core/widgets/show_message.dart';
 import 'view_models/expense_form_cubit.dart';
 import 'views/expense_form_screen.dart';
+import 'views/sms_draft_dialog.dart';
 
 /// Opens the Add / Edit form the way every screen does (phase-6.md §8.9,
 /// P6-39): Home and the Photos screen share it.
@@ -20,17 +23,25 @@ import 'views/expense_form_screen.dart';
 /// - Reading the slot is async, and taps in that gap would open a second
 ///   form (R12): every open is ignored until the current one is pushed.
 ///
+/// - An SMS draft (phase-9a.md §7.3) is resumed only by its own card
+///   ([openSms]) or a plain Add: a chip or Recurring → New opens a fresh
+///   form instead, or a chip's amount or a Repeats Save would mark the SMS
+///   with values it never had (P9a-43).
+///
 /// The slot is read through [pendingDraft], the screen's cubit: a widget
-/// doesn't read a repository.
+/// doesn't read a repository; [dismissDraft] empties it ([openSms]'s
+/// Dismiss draft).
 class ExpenseFormOpener {
   ExpenseFormOpener({
     required this.dependencies,
     required this.pendingDraft,
+    this.dismissDraft,
     this.onOpenRecurring,
   });
 
   final AppDependencies dependencies;
   final Future<ExpenseDraft?> Function() pendingDraft;
+  final Future<void> Function()? dismissDraft;
 
   /// Opens a recurring item's page from a payment's Edit (phase-7a.md
   /// §8.1 E).
@@ -53,25 +64,79 @@ class ExpenseFormOpener {
     try {
       final slot = await pendingDraft();
       if (!context.mounted) return (opened: false, result: null);
-      final draft = slot?.editingExpenseId == expenseId ? slot : null;
-      closed = Navigator.push<ExpenseFormResult>(
+      final ownDraft = slot?.editingExpenseId == expenseId ? slot : null;
+      final fromSms = ownDraft?.sms != null;
+      final draft = fromSms && (chipAmount != null || startRepeating)
+          ? null
+          : ownDraft;
+      closed = _push(
         context,
-        MaterialPageRoute(
-          builder: (_) => ExpenseFormScreen(
-            dependencies: dependencies,
-            expenseId: expenseId,
-            draft: draft,
-            chipAmount: chipAmount,
-            startRepeating: startRepeating,
-            onOpenRecurring: onOpenRecurring,
-          ),
-        ),
+        expenseId: expenseId,
+        draft: draft,
+        chipAmount: chipAmount,
+        startRepeating: startRepeating,
       );
     } finally {
       _opening = false;
     }
     return (opened: true, result: await closed);
   }
+
+  /// Opens the Add form from the SMS suggestion [sms] (phase-9a.md §7.3,
+  /// §5.9, P9a-3): its own draft is resumed; with no draft a new form is
+  /// filled from it; **any other draft is asked about first** (Cancel /
+  /// Dismiss draft), so a draft is never replaced silently. Cancel (or
+  /// back) leaves everything as it was: `opened` false.
+  Future<({bool opened, ExpenseFormResult? result})> openSms(
+    BuildContext context,
+    SmsSuggestion sms,
+  ) async {
+    if (_opening) return (opened: false, result: null);
+    _opening = true;
+    final Future<ExpenseFormResult?> closed;
+    try {
+      final slot = await pendingDraft();
+      if (!context.mounted) return (opened: false, result: null);
+      switch (smsOpenRule(slot, sms.link)) {
+        case SmsOpen.resume:
+          closed = _push(context, draft: slot);
+        case SmsOpen.fresh:
+          closed = _push(context, sms: sms);
+        case SmsOpen.ask:
+          if (!await askDismissDraft(context, slot!) || !context.mounted) {
+            return (opened: false, result: null);
+          }
+          await dismissDraft?.call();
+          if (!context.mounted) return (opened: false, result: null);
+          closed = _push(context, sms: sms);
+      }
+    } finally {
+      _opening = false;
+    }
+    return (opened: true, result: await closed);
+  }
+
+  Future<ExpenseFormResult?> _push(
+    BuildContext context, {
+    int? expenseId,
+    ExpenseDraft? draft,
+    Money? chipAmount,
+    bool startRepeating = false,
+    SmsSuggestion? sms,
+  }) => Navigator.push<ExpenseFormResult>(
+    context,
+    MaterialPageRoute(
+      builder: (_) => ExpenseFormScreen(
+        dependencies: dependencies,
+        expenseId: expenseId,
+        draft: draft,
+        chipAmount: chipAmount,
+        startRepeating: startRepeating,
+        sms: sms,
+        onOpenRecurring: onOpenRecurring,
+      ),
+    ),
+  );
 }
 
 /// What a closed form says, on the screen that opened it (after the pop,

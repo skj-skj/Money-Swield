@@ -3,6 +3,7 @@ import 'package:sqflite/sqflite.dart';
 import '../../domain/expense_filter.dart';
 import '../../domain/models/expense.dart';
 import '../../domain/models/money.dart';
+import '../../domain/models/sms_suggestion.dart';
 import '../../domain/periods.dart';
 import '../../domain/photo_groups.dart';
 import '../../domain/photos.dart';
@@ -15,6 +16,7 @@ import '../services/database/sql_helpers.dart';
 import 'data_version.dart';
 import 'expense_filter_sql.dart';
 import 'recurring_repository.dart';
+import 'sms_suggestion_repository.dart';
 
 /// Thrown by [ExpenseRepository.update] and [ExpenseRepository.moveToBin]
 /// when the expense was deleted or moved to the bin meanwhile. An exception rather than a `StateError`, so
@@ -105,7 +107,16 @@ class ExpenseRepository {
   /// transaction (phase-4.md §6.3): killed after the commit, there is no
   /// draft left to save the same expense twice; killed before, nothing was
   /// saved and the draft is still there.
-  Future<Expense> add(ExpenseInput input, {bool clearDraft = false}) async {
+  ///
+  /// With [fromSms], the SMS suggestion is marked added in the same
+  /// transaction (phase-9a.md R8): a crash leaves both or neither, and a
+  /// second Save of the same suggestion throws [SmsAlreadyAdded] with
+  /// nothing written.
+  Future<Expense> add(
+    ExpenseInput input, {
+    bool clearDraft = false,
+    SmsLink? fromSms,
+  }) async {
     final now = _now().millisecondsSinceEpoch;
     final expense = await _db.transaction((txn) async {
       final id = await txn.insert('expenses', {
@@ -115,6 +126,7 @@ class ExpenseRepository {
       });
       await _insertEvents(txn, id, input.eventIds);
       await _linkPhotos(txn, id, input.photos, now);
+      await _markSms(txn, fromSms, id, input, now);
       if (clearDraft) await _deleteDraft(txn);
       return (await _read(txn, where: 'id = ?', whereArgs: [id])).single;
     });
@@ -135,11 +147,19 @@ class ExpenseRepository {
   /// save it twice ([clearDraft] as for [add]). The form's photos go to
   /// this expense only (P7a-4). Returns the expense and how many earlier
   /// payments were added.
+  /// [fromSms] as for [add].
   Future<({Expense expense, int pastAdded})> addRepeating(
     ExpenseInput input,
     RepeatChoice choice, {
     bool clearDraft = false,
-  }) => _saveRepeating(null, input, choice, clearDraft: clearDraft);
+    SmsLink? fromSms,
+  }) => _saveRepeating(
+    null,
+    input,
+    choice,
+    clearDraft: clearDraft,
+    fromSms: fromSms,
+  );
 
   /// **Make an existing expense repeat** (phase-7b.md §6.2): [input] is
   /// saved over the active expense [id], which becomes the first payment
@@ -160,6 +180,7 @@ class ExpenseRepository {
     ExpenseInput input,
     RepeatChoice choice, {
     required bool clearDraft,
+    SmsLink? fromSms,
   }) async {
     final now = _now();
     final nowMs = now.millisecondsSinceEpoch;
@@ -210,6 +231,7 @@ class ExpenseRepository {
         });
         await _insertEvents(txn, expenseId, input.eventIds);
         await _linkPhotos(txn, expenseId, input.photos, nowMs);
+        await _markSms(txn, fromSms, expenseId, input, nowMs);
       } else {
         expenseId = id;
         await _overwrite(txn, id, input, nowMs, extra: link);
@@ -733,9 +755,19 @@ class ExpenseRepository {
   /// `MAX()`: they come from the newest row, any one of them on a tie
   /// (sqlite.md §5.3). Display only; [prefillSource] is the exact query.
   /// The bin filter is in the `WHERE`, so a binned row is never that row.
-  Future<List<TitleHistoryRow>> titleHistory() async {
-    final (from, today) = _window(titleWindowDays);
-    final rows = await _db.rawQuery(
+  Future<List<TitleHistoryRow>> titleHistory() =>
+      titleHistoryOn(_db, now: _now());
+
+  /// [titleHistory] through [db], with "today" taken from [now]: the SMS
+  /// scan reads it inside its own transaction (phase-9a.md R12), where a
+  /// read through the database itself would never return (sqflite's
+  /// `transaction()` holds the lock, sqlite.md §5.15).
+  static Future<List<TitleHistoryRow>> titleHistoryOn(
+    DatabaseExecutor db, {
+    required DateTime now,
+  }) async {
+    final (from, today) = _windowAt(now, titleWindowDays);
+    final rows = await db.rawQuery(
       'SELECT title, amount_minor, currency_code, category_id, '
       'MAX(occurred_at) AS last_at, SUM(occurred_on >= ?) AS recent '
       'FROM expenses WHERE $_active AND occurred_on <= ? '
@@ -891,6 +923,33 @@ class ExpenseRepository {
     'category_id': input.categoryId,
     'payment_method_id': input.paymentMethodId,
   };
+
+  /// Marks the SMS suggestion [link] added as [expenseId] and teaches its
+  /// payee's pending suggestions the saved title and category (P9a-12),
+  /// inside the save's transaction. Nothing without a link.
+  static Future<void> _markSms(
+    Transaction txn,
+    SmsLink? link,
+    int expenseId,
+    ExpenseInput input,
+    int nowMs,
+  ) async {
+    if (link == null) return;
+    final (:marked, :payeeKey) = await SmsSuggestionRepository.markAddedOn(
+      txn,
+      link,
+      expenseId,
+      nowMs,
+    );
+    if (!marked) return;
+    await SmsSuggestionRepository.learnOn(
+      txn,
+      payeeKey,
+      input.title,
+      input.categoryId,
+      nowMs,
+    );
+  }
 
   /// The draft slot's row. The only place this class touches
   /// `expense_draft` (phase-4.md §6.3); `ExpenseDraftRepository` owns it.
@@ -1087,8 +1146,10 @@ class ExpenseRepository {
   );
 
   /// Today's `occurred_on` on the device and the one [days] before it.
-  (String from, String today) _window(int days) {
-    final local = _now().toLocal();
+  (String from, String today) _window(int days) => _windowAt(_now(), days);
+
+  static (String from, String today) _windowAt(DateTime now, int days) {
+    final local = now.toLocal();
     // Calendar arithmetic in UTC, so a DST change can't shift the date.
     final today = DateTime.utc(local.year, local.month, local.day);
     return (isoDay(today.subtract(Duration(days: days))), isoDay(today));

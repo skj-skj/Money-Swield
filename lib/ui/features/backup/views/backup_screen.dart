@@ -17,9 +17,17 @@ import 'restore_screen.dart';
 /// Back up now, Restore from a backup, and Undo last restore when a
 /// pre-restore copy exists.
 class BackupScreen extends StatefulWidget {
-  const BackupScreen({super.key, required this.dependencies});
+  const BackupScreen({
+    super.key,
+    required this.dependencies,
+    this.runningSmsScan,
+  });
 
   final AppDependencies dependencies;
+
+  /// The SMS scan running now, or null: a backup waits for it (phase-9a.md
+  /// §6.7).
+  final Future<void>? Function()? runningSmsScan;
 
   @override
   State<BackupScreen> createState() => _BackupScreenState();
@@ -38,6 +46,7 @@ class _BackupScreenState extends State<BackupScreen> {
       documents: _deps.restoreTools.documents,
       appDatabase: _deps.restoreTools.appDatabase,
       photoStats: _deps.expenses.photoStats,
+      runningSmsScan: widget.runningSmsScan,
     )..load();
   }
 
@@ -107,6 +116,7 @@ class _BackupScreenState extends State<BackupScreen> {
               state: state,
               now: _deps.now(),
               onBackUp: _backUp,
+              onCancelWait: _cubit.cancelWait,
               onIncludePhotos: _cubit.setIncludePhotos,
               onRestore: _restore,
               onUndo: (copy) => _restore(copy: copy),
@@ -151,6 +161,7 @@ class _BackupList extends StatelessWidget {
     required this.state,
     required this.now,
     required this.onBackUp,
+    required this.onCancelWait,
     required this.onIncludePhotos,
     required this.onRestore,
     required this.onUndo,
@@ -159,6 +170,9 @@ class _BackupList extends StatelessWidget {
   final BackupState state;
   final DateTime now;
   final VoidCallback onBackUp;
+
+  /// Cancel while the backup waits for an SMS scan.
+  final VoidCallback onCancelWait;
   final ValueChanged<bool> onIncludePhotos;
   final VoidCallback onRestore;
   final ValueChanged<PreRestoreCopy> onUndo;
@@ -192,6 +206,7 @@ class _BackupList extends StatelessWidget {
                   )
                 : const Icon(Icons.backup_outlined),
             label: Text(switch (state) {
+              BackupState(waitingForSms: true) => l10n.backupWaitingForSms,
               BackupState(
                 backingUp: true,
                 photosDone: final done?,
@@ -204,6 +219,18 @@ class _BackupList extends StatelessWidget {
             }),
           ),
         ),
+        if (state.waitingForSms)
+          Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: Padding(
+              padding: const EdgeInsetsDirectional.only(end: 16, bottom: 8),
+              child: TextButton(
+                key: const ValueKey('cancelSmsWait'),
+                onPressed: onCancelWait,
+                child: Text(l10n.cancel),
+              ),
+            ),
+          ),
         const Divider(),
         ListTile(
           leading: const Icon(Icons.restore),

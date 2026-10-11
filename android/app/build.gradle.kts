@@ -39,6 +39,43 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+    // foss: no closed-source code, what F-Droid builds (`gradle: [foss]`)
+    // and the FOSS APK on GitHub. play: Google Play's AAB and a second APK
+    // (phase-9a.md §6.6). Each its own applicationId, `.foss` / `.play`
+    // after the base one (owner, 2026-10-11; P9a-23): the two install side
+    // by side, each with its own data. The namespace (the Kotlin package)
+    // stays the base one.
+    flavorDimensions += "store"
+    productFlavors {
+        // The launcher name: foss says so, so the two can be told apart
+        // when both are installed (owner, 2026-10-11).
+        create("foss") {
+            dimension = "store"
+            applicationIdSuffix = ".foss"
+            manifestPlaceholders["appLabel"] = "Expense Tracker (FOSS)"
+        }
+        create("play") {
+            dimension = "store"
+            applicationIdSuffix = ".play"
+            manifestPlaceholders["appLabel"] = "Expense Tracker"
+        }
+    }
+
+    // `-PnoSms=true` builds play without READ_SMS (D11, P9a-25): its
+    // manifest is swapped for one that doesn't ask for it, and Dart reads
+    // the merged manifest (SmsChannel `status.built`), so the feature hides.
+    if (project.findProperty("noSms") == "true") {
+        sourceSets.getByName("play").manifest.srcFile("src/playNoSms/AndroidManifest.xml")
+    }
+
+    // AGP adds Google's encrypted "dependency metadata" block to APKs;
+    // F-Droid's build refuses it ("found extra signing block", phase-9a.md
+    // F8). Play reads it from the AAB, so it stays there (P9a-33).
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = true
+    }
 }
 
 kotlin {

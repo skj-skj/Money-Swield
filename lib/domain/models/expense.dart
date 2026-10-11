@@ -1,5 +1,13 @@
 import 'money.dart';
 
+/// The longest title, in characters (grapheme clusters). In the domain, not
+/// the form, because the SMS title rule cuts a payee to it too
+/// (phase-9a.md R2).
+const maxTitleLength = 100;
+
+/// The longest description, in characters.
+const maxExpenseDescriptionLength = 1000;
+
 /// Where `ExpenseRepository.page` continues from: the last loaded row's
 /// `occurred_on`, `occurred_at` and id (keyset pagination, database.md §4;
 /// phase-5.md §4.1).

@@ -1,0 +1,8 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- SMS suggestions (phase-9a.md §6.4): the app reads bank SMS from
+         the inbox, keeps only the amount, payee and time, and never sends
+         anything anywhere. Asked only when the user turns the feature on.
+         SmsChannel's `status.built` reads this from the merged manifest,
+         so a build without it (play with -PnoSms=true) hides the feature. -->
+    <uses-permission android:name="android.permission.READ_SMS"/>
+</manifest>

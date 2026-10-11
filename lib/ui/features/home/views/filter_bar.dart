@@ -26,6 +26,7 @@ class FilterBar extends StatelessWidget {
     this.onPhotos,
     this.upcomingIcon = FilteredScreenIcon.hidden,
     this.onUpcoming,
+    this.smsButton,
   });
 
   final ExpenseFilter filter;
@@ -53,6 +54,11 @@ class FilterBar extends StatelessWidget {
   /// (owner, 2026-10-10: Upcoming follows the filters).
   final FilteredScreenIcon upcomingIcon;
   final VoidCallback? onUpcoming;
+
+  /// The SMS icon, first of the icons (phase-9a.md §8.1, P9a-6): the icon
+  /// row reads SMS, Upcoming, Photos, Filter. It hides itself while
+  /// SMS is off, and Home's filters never grey it (P9a-7).
+  final Widget? smsButton;
 
   @override
   Widget build(BuildContext context) {
@@ -89,6 +95,7 @@ class FilterBar extends StatelessWidget {
                 ),
               ),
             ),
+            ?smsButton,
             ?_screenIcon(
               key: const ValueKey('upcomingButton'),
               state: upcomingIcon,

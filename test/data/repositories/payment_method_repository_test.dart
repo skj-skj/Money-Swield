@@ -39,7 +39,7 @@ void main() {
 
   group('add / update', () {
     test('add returns exactly what all() reads back', () async {
-      final added = await repository.add(name: 'HDFC credit card', emoji: '💳');
+      final added = await repository.add(name: 'Bank credit card', emoji: '💳');
       expect(added.createdAt, clock.now);
       expect(await byId(added.id), added);
     });

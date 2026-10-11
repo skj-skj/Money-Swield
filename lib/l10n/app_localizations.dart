@@ -4137,6 +4137,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Top event'**
   String get reportHiTopEvent;
+
+  /// No description provided for @smsSuggestions.
+  ///
+  /// In en, this message translates to:
+  /// **'SMS suggestions'**
+  String get smsSuggestions;
+
+  /// Tooltip of Home's SMS icon while suggestions wait.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 new SMS suggestion} other{{count} new SMS suggestions}}'**
+  String smsNewCount(int count);
+
+  /// No description provided for @smsNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No new bank SMS'**
+  String get smsNone;
+
+  /// Under the empty SMS screen and in Settings → SMS: when the inbox was last read.
+  ///
+  /// In en, this message translates to:
+  /// **'Checked {time}'**
+  String smsLastChecked(String time);
+
+  /// Tooltip of a suggestion card's dismiss icon.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get smsDismiss;
+
+  /// No description provided for @smsDismissed.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggestion dismissed'**
+  String get smsDismissed;
+
+  /// No description provided for @smsPermissionOff.
+  ///
+  /// In en, this message translates to:
+  /// **'SMS permission is off'**
+  String get smsPermissionOff;
+
+  /// No description provided for @smsAllow.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow'**
+  String get smsAllow;
+
+  /// No description provided for @smsOpenSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open settings'**
+  String get smsOpenSettings;
+
+  /// No description provided for @smsPermissionRefused.
+  ///
+  /// In en, this message translates to:
+  /// **'Without the SMS permission the app can\'t suggest expenses. You can turn it on in Settings → SMS.'**
+  String get smsPermissionRefused;
+
+  /// No description provided for @smsAlreadyAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'This SMS was already added'**
+  String get smsAlreadyAdded;
+
+  /// Banner above an Add form filled from an SMS: the sender ID and when it came.
+  ///
+  /// In en, this message translates to:
+  /// **'From SMS · {sender} · {time}'**
+  String smsFromBanner(String sender, String time);
+
+  /// No description provided for @smsDraftTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsaved draft'**
+  String get smsDraftTitle;
+
+  /// No description provided for @smsDraftMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You have an unsaved expense. Dismiss it to add this SMS? The draft can\'t be brought back.'**
+  String get smsDraftMessage;
+
+  /// No description provided for @smsEditDraftMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You have unsaved changes to \"{title}\". Dismiss them to add this SMS?'**
+  String smsEditDraftMessage(String title);
+
+  /// No description provided for @smsDismissDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss draft'**
+  String get smsDismissDraft;
+
+  /// No description provided for @smsOnboardingQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggest expenses from bank SMS?'**
+  String get smsOnboardingQuestion;
+
+  /// No description provided for @smsPrivacyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'The app reads bank SMS on this phone and keeps only the amount, payee and time. Suggestions not added are removed after 30 days.'**
+  String get smsPrivacyNote;
+
+  /// No description provided for @backupWaitingForSms.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for SMS reading to finish…'**
+  String get backupWaitingForSms;
+
+  /// Settings grid tile and screen title.
+  ///
+  /// In en, this message translates to:
+  /// **'SMS'**
+  String get smsTile;
+
+  /// No description provided for @smsTileOn.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{On} =1{On · 1 waiting} other{On · {count} waiting}}'**
+  String smsTileOn(int count);
+
+  /// No description provided for @smsTileOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get smsTileOff;
+
+  /// No description provided for @smsNotNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get smsNotNow;
+
+  /// No description provided for @smsYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get smsYes;
 }
 
 class _AppLocalizationsDelegate

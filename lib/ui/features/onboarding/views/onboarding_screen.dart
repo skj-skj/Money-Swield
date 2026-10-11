@@ -2,6 +2,7 @@ import 'package:bloc_signals_flutter/bloc_signals_flutter.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../data/repositories/payment_method_repository.dart';
+import '../../../../data/services/sms_service.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/builtin_names.dart';
 import '../../../core/languages.dart';
@@ -19,9 +20,15 @@ class OnboardingScreen extends StatefulWidget {
     super.key,
     required this.paymentMethods,
     this.onRestoreFromBackup,
+    this.sms,
+    this.setSmsEnabled,
   });
 
   final PaymentMethodRepository paymentMethods;
+
+  /// The SMS step (phase-9a.md §8.6), shown only in a build with SMS.
+  final SmsService? sms;
+  final Future<void> Function(bool enabled)? setSmsEnabled;
 
   /// "Restore from a backup" under the language list (phase-3.md §6.7).
   /// Hidden when null.
@@ -37,10 +44,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   void initState() {
     super.initState();
-    _cubit = OnboardingCubit(
-      settings: context.read<SettingsCubit>(),
-      paymentMethods: widget.paymentMethods,
-    )..loadPaymentMethods();
+    _cubit =
+        OnboardingCubit(
+            settings: context.read<SettingsCubit>(),
+            paymentMethods: widget.paymentMethods,
+            sms: widget.sms,
+            setSmsEnabled: widget.setSmsEnabled,
+          )
+          ..loadPaymentMethods()
+          ..loadSms();
   }
 
   @override
@@ -53,80 +65,128 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    const stepCount = 3;
     return BlocSignalBuilder<OnboardingCubit, OnboardingState>(
       bloc: _cubit,
-      builder: (context, state) => Scaffold(
-        body: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
-                child: Text(
-                  l10n.onboardingStep(state.step.index + 1, stepCount),
-                  style: theme.textTheme.labelLarge,
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: LinearProgressIndicator(
-                  value: (state.step.index + 1) / stepCount,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: switch (state.step) {
-                  OnboardingStep.language => _LanguageStep(
-                    state: state,
-                    cubit: _cubit,
-                    onRestoreFromBackup: widget.onRestoreFromBackup,
+      builder: (context, state) {
+        final stepCount = state.steps.length;
+        final stepNumber = state.steps.indexOf(state.step) + 1;
+        return Scaffold(
+          body: SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+                  child: Text(
+                    l10n.onboardingStep(stepNumber, stepCount),
+                    style: theme.textTheme.labelLarge,
                   ),
-                  OnboardingStep.currency => _StepPage(
-                    title: l10n.onboardingCurrencyTitle,
-                    subtitle: l10n.onboardingCurrencySubtitle,
-                    child: CurrencySearchList(
-                      selected: state.currency,
-                      onSelected: (code) => saveOrShowError(
-                        context,
-                        () => _cubit.selectCurrency(code),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: LinearProgressIndicator(value: stepNumber / stepCount),
+                ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: switch (state.step) {
+                    OnboardingStep.language => _LanguageStep(
+                      state: state,
+                      cubit: _cubit,
+                      onRestoreFromBackup: widget.onRestoreFromBackup,
+                    ),
+                    OnboardingStep.currency => _StepPage(
+                      title: l10n.onboardingCurrencyTitle,
+                      subtitle: l10n.onboardingCurrencySubtitle,
+                      child: CurrencySearchList(
+                        selected: state.currency,
+                        onSelected: (code) => saveOrShowError(
+                          context,
+                          () => _cubit.selectCurrency(code),
+                        ),
                       ),
                     ),
+                    OnboardingStep.paymentMethod => _PaymentMethodStep(
+                      state: state,
+                      cubit: _cubit,
+                    ),
+                    OnboardingStep.sms => _SmsStep(state: state, cubit: _cubit),
+                  },
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      if (!state.isFirstStep)
+                        TextButton(
+                          onPressed: _cubit.back,
+                          child: Text(l10n.back),
+                        ),
+                      const Spacer(),
+                      if (state.isLastStep)
+                        FilledButton(
+                          onPressed: state.busy
+                              ? null
+                              : () => saveOrShowError(context, _cubit.finish),
+                          child: Text(l10n.getStarted),
+                        )
+                      else
+                        FilledButton(
+                          onPressed: _cubit.next,
+                          child: Text(l10n.next),
+                        ),
+                    ],
                   ),
-                  OnboardingStep.paymentMethod => _PaymentMethodStep(
-                    state: state,
-                    cubit: _cubit,
-                  ),
-                },
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    if (!state.isFirstStep)
-                      TextButton(
-                        onPressed: _cubit.back,
-                        child: Text(l10n.back),
-                      ),
-                    const Spacer(),
-                    if (state.isLastStep)
-                      FilledButton(
-                        onPressed: state.busy
-                            ? null
-                            : () => saveOrShowError(context, _cubit.finish),
-                        child: Text(l10n.getStarted),
-                      )
-                    else
-                      FilledButton(
-                        onPressed: _cubit.next,
-                        child: Text(l10n.next),
-                      ),
-                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// "Suggest expenses from bank SMS?" (§8.6, P9a-28): Not now (the
+/// default, highlighted) or Yes, which asks for the permission. Refused:
+/// how to turn it on later; Get started works either way.
+class _SmsStep extends StatelessWidget {
+  const _SmsStep({required this.state, required this.cubit});
+
+  final OnboardingState state;
+  final OnboardingCubit cubit;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    return _StepPage(
+      title: l10n.smsOnboardingQuestion,
+      subtitle: l10n.smsPrivacyNote,
+      child: ListView(
+        children: [
+          _ChoiceTile(
+            key: const ValueKey('smsNotNow'),
+            title: Text(l10n.smsNotNow),
+            selected: !state.smsOn,
+            onTap: () => saveOrShowError(context, () => cubit.chooseSms(false)),
+          ),
+          _ChoiceTile(
+            key: const ValueKey('smsYes'),
+            title: Text(l10n.smsYes),
+            selected: state.smsOn,
+            onTap: () => saveOrShowError(context, () => cubit.chooseSms(true)),
+          ),
+          if (state.smsRefused)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+              child: Text(
+                l10n.smsPermissionRefused,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.error,
                 ),
               ),
-            ],
-          ),
-        ),
+            ),
+        ],
       ),
     );
   }
@@ -255,6 +315,7 @@ class _PaymentMethodStep extends StatelessWidget {
 /// A list row with a radio mark, like the migration screen's choices.
 class _ChoiceTile extends StatelessWidget {
   const _ChoiceTile({
+    super.key,
     this.leading,
     required this.title,
     required this.selected,

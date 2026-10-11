@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_signals/bloc_signals.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
 
@@ -21,6 +23,7 @@ class BackupState {
     this.photosDone,
     this.photosTotal,
     this.missingPhotos = 0,
+    this.waitingForSms = false,
   });
 
   /// Null: never backed up.
@@ -48,6 +51,10 @@ class BackupState {
   /// Photos the last saved backup had to leave out (missing files).
   final int missingPhotos;
 
+  /// The backup waits for an SMS scan to finish (phase-9a.md §6.7):
+  /// "Waiting for SMS reading to finish…" with Cancel.
+  final bool waitingForSms;
+
   BackupState copyWith({
     DateTime? lastBackupAt,
     PreRestoreCopy? newestCopy,
@@ -59,6 +66,7 @@ class BackupState {
     int? photoBytes,
     (int, int)? Function()? progress,
     int? missingPhotos,
+    bool? waitingForSms,
   }) {
     // A function, so null (no progress) can be told from "keep it".
     final current = photosDone == null ? null : (photosDone!, photosTotal!);
@@ -74,6 +82,7 @@ class BackupState {
       photosDone: shown?.$1,
       photosTotal: shown?.$2,
       missingPhotos: missingPhotos ?? this.missingPhotos,
+      waitingForSms: waitingForSms ?? this.waitingForSms,
     );
   }
 }
@@ -100,6 +109,7 @@ class BackupCubit extends CubitSignal<BackupState>
     required this._documents,
     required this._appDatabase,
     this._photoStats,
+    this._runningSmsScan,
   }) : super(initialState: const BackupState());
 
   final BackupRepository _backups;
@@ -108,6 +118,13 @@ class BackupCubit extends CubitSignal<BackupState>
 
   /// The photos' count and size, for "Include photos" (§8.7).
   final Future<({int count, int bytes})> Function()? _photoStats;
+
+  /// The SMS scan running now, or null (phase-9a.md §6.7, P9a-48): a
+  /// function, so this cubit doesn't know the scanner.
+  final Future<void>? Function()? _runningSmsScan;
+
+  /// Completed by [cancelWait].
+  Completer<void>? _cancelWait;
 
   /// Reads the last backup time and the newest pre-restore copy. A failure
   /// leaves them unknown (shown as "never" / no Undo) rather than blocking
@@ -147,6 +164,11 @@ class BackupCubit extends CubitSignal<BackupState>
   /// Builds the zip, lets the user save it, records the time. A second call
   /// while one runs is ignored (a double tap): there is one temp folder and
   /// one pending dialog. The temp files are deleted in every case.
+  ///
+  /// A running SMS scan is waited for first (P9a-48), so the backup holds
+  /// every suggestion that scan stores; Cancel meanwhile ([cancelWait])
+  /// ends it with nothing built. No SMS text is ever in the database, so
+  /// the wait is not what keeps text out of a backup.
   Future<BackupResult> backUp() async {
     if (value.backingUp) return BackupResult.ignored;
     emitIfOpen(
@@ -157,6 +179,10 @@ class BackupCubit extends CubitSignal<BackupState>
         missingPhotos: 0,
       ),
     );
+    if (!await _waitForSms()) {
+      emitIfOpen(value.copyWith(backingUp: false, waitingForSms: false));
+      return BackupResult.cancelled;
+    }
     try {
       final file = await _backups.createBackup(
         appVersion: await _documents.appVersion(),
@@ -206,6 +232,24 @@ class BackupCubit extends CubitSignal<BackupState>
       return BackupResult.failed;
     } finally {
       await _deleteFilesQuietly();
+    }
+  }
+
+  /// Stops waiting for the SMS scan: the backup is cancelled.
+  void cancelWait() => _cancelWait?.complete();
+
+  /// Waits for a running SMS scan, showing it; false when cancelled.
+  Future<bool> _waitForSms() async {
+    final scan = _runningSmsScan?.call();
+    if (scan == null) return true;
+    final cancel = _cancelWait = Completer<void>();
+    emitIfOpen(value.copyWith(waitingForSms: true));
+    try {
+      await Future.any([scan.catchError((_) {}), cancel.future]);
+      return !cancel.isCompleted;
+    } finally {
+      _cancelWait = null;
+      emitIfOpen(value.copyWith(waitingForSms: false));
     }
   }
 

@@ -11,6 +11,7 @@ import '../../../../data/repositories/expense_draft_repository.dart';
 import '../../../../data/repositories/expense_repository.dart';
 import '../../../../data/repositories/payment_method_repository.dart';
 import '../../../../data/repositories/recurring_repository.dart';
+import '../../../../data/repositories/sms_suggestion_repository.dart';
 import '../../../../data/services/photo_service.dart';
 import '../../../../data/services/photo_store.dart';
 import '../../../../domain/amount_expression.dart';
@@ -24,6 +25,7 @@ import '../../../../domain/models/expense_draft.dart';
 import '../../../../domain/models/money.dart';
 import '../../../../domain/models/payment_method.dart';
 import '../../../../domain/models/recurring_item.dart';
+import '../../../../domain/models/sms_suggestion.dart';
 import '../../../../domain/periods.dart';
 import '../../../../domain/photo_sizing.dart';
 import '../../../../domain/photos.dart';
@@ -37,9 +39,6 @@ import '../../../core/builtin_names.dart';
 import '../../../core/emit_if_open.dart';
 import '../../../core/picker_order.dart';
 import '../../../core/recent_currencies.dart';
-
-const maxTitleLength = 100;
-const maxExpenseDescriptionLength = 1000;
 
 enum TitleError { required, tooLong }
 
@@ -429,6 +428,8 @@ typedef _Snapshot = ({
   ExpenseFields? opening,
   bool suggestionsBlocked,
   bool titleChanged,
+  SmsLink? smsLink,
+  SmsSuggestion? smsSource,
 });
 
 /// The last prefill (phase-4.md §7.1): the form just before it, and the
@@ -452,6 +453,10 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
   /// (phase-4.md §8.1).
   /// [decimalSeparator] is the formatting locale's, for amounts the form
   /// writes into the field.
+  ///
+  /// `sms` is the SMS suggestion a new Add form is filled from (phase-9a.md
+  /// §7.3); `smsSuggestions` re-reads the suggestion a resumed SMS draft
+  /// names, for its banner (§8.4).
   ExpenseFormCubit({
     required this._expenses,
     required this._categories,
@@ -470,6 +475,8 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     this.expenseId,
     this._openingDraft,
     this._chipAmount,
+    this._sms,
+    this._smsSuggestions,
     DateTime Function()? now,
   }) : _now = now ?? DateTime.now,
        _photos = photos ?? PhotoStore.none,
@@ -500,6 +507,19 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
   final DateTime Function() _now;
   final ExpenseDraft? _openingDraft;
   final Money? _chipAmount;
+  final SmsSuggestion? _sms;
+  final SmsSuggestionRepository? _smsSuggestions;
+
+  /// The SMS suggestion this Add form saves (phase-9a.md §7.3): marked
+  /// added in Save's own transaction. Kept in the draft; Clear drops it.
+  SmsLink? _smsLink;
+  SmsLink? get smsLink => _smsLink;
+
+  /// The suggestion as stored, for the "From SMS" banner: the one the form
+  /// was filled from, or the resumed draft's, re-read (null when it is
+  /// gone: no banner, the Save still works, P9a-38).
+  SmsSuggestion? get smsSource => _smsSource;
+  SmsSuggestion? _smsSource;
   final String decimalSeparator;
   final int? expenseId;
 
@@ -613,6 +633,7 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
           : await _expenses.photosOf(original.id);
       _linkedItem = await _linkedItemOf(original);
       await _checkDraftPhotos();
+      await _loadSmsSource();
       _original = original;
       _allEvents = events;
       emitIfOpen(_opened(categories, paymentMethods));
@@ -622,6 +643,28 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     }
     await _offerPendingCapture();
     await _loadTitleHistory();
+  }
+
+  /// The SMS link and its row (§7.3, §8.4). Add only: an Edit never comes
+  /// from an SMS. A draft's row is re-read and must still be the same SMS
+  /// (its hash); a failed read only loses the banner.
+  Future<void> _loadSmsSource() async {
+    if (isEditing) return;
+    final sms = _sms;
+    if (sms != null) {
+      _smsLink = sms.link;
+      _smsSource = sms;
+      return;
+    }
+    final link = _openingDraft?.sms;
+    if (link == null) return;
+    _smsLink = link;
+    try {
+      final row = await _smsSuggestions?.byId(link.id);
+      _smsSource = row?.bodySha256 == link.bodySha256 ? row : null;
+    } catch (error) {
+      debugPrint('Reading the SMS suggestion of the draft failed: $error');
+    }
   }
 
   /// The item [original] is a payment of. A failed read only loses the
@@ -740,6 +783,12 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
       );
       touched = {...touched, DraftField.amount, DraftField.currency};
     }
+    final sms = _sms;
+    if (sms != null && draft == null && original == null) {
+      final filled = _smsFields(sms, fields, categories, paymentMethods);
+      fields = filled.fields;
+      touched = {...touched, ...filled.touched};
+    }
     _opening = draft == null ? fields : null;
     _suggestionsBlocked = draft?.suggestionsBlocked ?? false;
     return ExpenseFormReady(
@@ -752,6 +801,48 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
       textRevision: 1,
       restoredAt: draft?.updatedAt,
       droppedDraftPhotos: _droppedDraftPhotos,
+    );
+  }
+
+  /// [fields] (a new form) filled from [sms], applied like a chip (R7):
+  /// the form as it opened, so no draft until the user changes something
+  /// (P9a-21). Title if any; the amount in INR whatever the default
+  /// currency (P9a-31); the moment the SMS came, in this device's zone; the
+  /// payment method with its key's built-in row (renamed too; deleted:
+  /// the new form's default, §5.5); the category if it still exists.
+  ({ExpenseFields fields, Set<DraftField> touched}) _smsFields(
+    SmsSuggestion sms,
+    ExpenseFields fields,
+    List<Category> categories,
+    List<PaymentMethod> paymentMethods,
+  ) {
+    final local = sms.receivedAt.toLocal();
+    _pickedLocal = local;
+    final methodId = paymentMethods
+        .where((m) => m.builtinKey == sms.paymentMethodKey)
+        .firstOrNull
+        ?.id;
+    final categoryId = categories.any((c) => c.id == sms.categoryId)
+        ? sms.categoryId
+        : null;
+    final title = sms.title;
+    return (
+      fields: fields.copyWith(
+        title: title,
+        expression: _amountText(sms.amountMinor, sms.currencyCode),
+        currencyCode: sms.currencyCode,
+        wallClock: _wallClockOf(local),
+        paymentMethodId: methodId,
+        categoryId: categoryId,
+      ),
+      touched: {
+        DraftField.amount,
+        DraftField.currency,
+        DraftField.dateTime,
+        if (title != null) DraftField.title,
+        if (methodId != null) DraftField.paymentMethod,
+        if (categoryId != null) DraftField.category,
+      },
     );
   }
 
@@ -1436,6 +1527,9 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     final ready = _ready;
     if (ready == null || isEditing) return;
     _undo = _snapshotOf(ready);
+    // Back to a plain Add form: the SMS goes too (§7.3).
+    _smsLink = null;
+    _smsSource = null;
     _prefill = null;
     _suggestionsBlocked = false;
     _titleChanged = false;
@@ -1474,6 +1568,8 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     if (ready == null || undo == null) return;
     _undo = null;
     _pickedLocal = undo.pickedLocal;
+    _smsLink = undo.smsLink;
+    _smsSource = undo.smsSource;
     _prefill = undo.prefill;
     _opening = undo.opening;
     _suggestionsBlocked = undo.suggestionsBlocked;
@@ -1501,6 +1597,8 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     opening: _opening,
     suggestionsBlocked: _suggestionsBlocked,
     titleChanged: _titleChanged,
+    smsLink: _smsLink,
+    smsSource: _smsSource,
   );
 
   Future<void> _resetTo(
@@ -1568,6 +1666,9 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
       suggestionsBlocked: !_maySuggest(fields),
       photos: fields.photos,
       repeat: fields.repeat,
+      // An Edit's changes kept as an Add draft (P4-12) never came from an
+      // SMS.
+      sms: asAdd || isEditing ? null : _smsLink,
     );
   }
 
@@ -1749,7 +1850,8 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
   /// Emits [ExpenseFormGone] and returns null if the edited expense was
   /// binned or deleted meanwhile; the edits are then kept as an Add draft
   /// (P4-12). Rethrows other database errors (the draft is kept); the
-  /// screen tells the user.
+  /// screen tells the user. [SmsAlreadyAdded] too: nothing was saved, the
+  /// form and its draft stay (P9a-22).
   Future<Expense?> save() async {
     final ready = _ready;
     if (ready == null || ready.saving) return null;
@@ -1796,7 +1898,12 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
       final Expense expense;
       if (repeat != null) {
         final result = id == null
-            ? await _expenses.addRepeating(input, repeat, clearDraft: owns)
+            ? await _expenses.addRepeating(
+                input,
+                repeat,
+                clearDraft: owns,
+                fromSms: _smsLink,
+              )
             : await _expenses.updateRepeating(
                 id,
                 input,
@@ -1808,7 +1915,7 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
         _lastSavedSchedule = scheduleFor(repeat, expense.occurredOn);
       } else {
         expense = id == null
-            ? await _expenses.add(input, clearDraft: owns)
+            ? await _expenses.add(input, clearDraft: owns, fromSms: _smsLink)
             : await _expenses.update(id, input, clearDraft: owns);
         _lastPastAdded = 0;
         _lastSavedSchedule = null;

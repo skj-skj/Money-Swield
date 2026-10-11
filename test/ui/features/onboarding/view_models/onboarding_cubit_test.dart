@@ -7,6 +7,7 @@ import 'package:my_expense_tracker_app/ui/features/onboarding/view_models/onboar
 import 'package:my_expense_tracker_app/ui/features/settings/view_models/settings_cubit.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+import '../../../../helpers/fake_sms_service.dart';
 import '../../../../helpers/test_database.dart';
 
 void main() {
@@ -248,6 +249,62 @@ void main() {
       reason: 'screen and settings agree',
     );
     expect((await deps.settings.load()).defaultCurrency, cubit.value.currency);
+  });
+
+  group('the SMS step (phase-9a.md §8.6)', () {
+    OnboardingCubit withSms(FakeSmsService sms) {
+      final cubit = OnboardingCubit(
+        settings: settings,
+        paymentMethods: deps.paymentMethods,
+        sms: sms,
+        setSmsEnabled: deps.settings.setSmsEnabled,
+      );
+      addTearDown(cubit.close);
+      return cubit;
+    }
+
+    test('only when built: four steps, Not now by default', () async {
+      final built = withSms(FakeSmsService(granted: false))
+        ..next()
+        ..next();
+      await built.loadSms();
+      expect(built.value.isLastStep, isFalse);
+      built.next();
+      expect(built.value.step, OnboardingStep.sms);
+      expect(built.value.isLastStep, isTrue);
+      expect(built.value.smsOn, isFalse);
+      built.back();
+      expect(built.value.step, OnboardingStep.paymentMethod);
+
+      final notBuilt = withSms(FakeSmsService(built: false))
+        ..next()
+        ..next();
+      await notBuilt.loadSms();
+      expect(notBuilt.value.isLastStep, isTrue);
+      expect(notBuilt.value.steps, hasLength(3));
+      expect(newOnboarding().value.steps, hasLength(3));
+    });
+
+    test('Yes → the permission; granted → on; refused → off and the '
+        'message; Get started works either way', () async {
+      final sms = FakeSmsService(granted: false);
+      final cubit = withSms(sms);
+      await cubit.loadSms();
+      sms.grantOnRequest = false;
+      await cubit.chooseSms(true);
+      expect(cubit.value.smsOn, isFalse);
+      expect(cubit.value.smsRefused, isTrue);
+      expect(await deps.settings.smsEnabled(), isFalse);
+      sms.grantOnRequest = true;
+      await cubit.chooseSms(true);
+      expect(cubit.value.smsOn, isTrue);
+      expect(cubit.value.smsRefused, isFalse);
+      expect(await deps.settings.smsEnabled(), isTrue);
+      await cubit.chooseSms(false);
+      expect(await deps.settings.smsEnabled(), isFalse);
+      await cubit.finish();
+      expect(settings.value.onboardingCompleted, isTrue);
+    });
   });
 }
 

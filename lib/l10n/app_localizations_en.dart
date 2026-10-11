@@ -3400,4 +3400,110 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reportHiTopEvent => 'Top event';
+
+  @override
+  String get smsSuggestions => 'SMS suggestions';
+
+  @override
+  String smsNewCount(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString new SMS suggestions',
+      one: '1 new SMS suggestion',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get smsNone => 'No new bank SMS';
+
+  @override
+  String smsLastChecked(String time) {
+    return 'Checked $time';
+  }
+
+  @override
+  String get smsDismiss => 'Dismiss';
+
+  @override
+  String get smsDismissed => 'Suggestion dismissed';
+
+  @override
+  String get smsPermissionOff => 'SMS permission is off';
+
+  @override
+  String get smsAllow => 'Allow';
+
+  @override
+  String get smsOpenSettings => 'Open settings';
+
+  @override
+  String get smsPermissionRefused =>
+      'Without the SMS permission the app can\'t suggest expenses. You can turn it on in Settings → SMS.';
+
+  @override
+  String get smsAlreadyAdded => 'This SMS was already added';
+
+  @override
+  String smsFromBanner(String sender, String time) {
+    return 'From SMS · $sender · $time';
+  }
+
+  @override
+  String get smsDraftTitle => 'Unsaved draft';
+
+  @override
+  String get smsDraftMessage =>
+      'You have an unsaved expense. Dismiss it to add this SMS? The draft can\'t be brought back.';
+
+  @override
+  String smsEditDraftMessage(String title) {
+    return 'You have unsaved changes to \"$title\". Dismiss them to add this SMS?';
+  }
+
+  @override
+  String get smsDismissDraft => 'Dismiss draft';
+
+  @override
+  String get smsOnboardingQuestion => 'Suggest expenses from bank SMS?';
+
+  @override
+  String get smsPrivacyNote =>
+      'The app reads bank SMS on this phone and keeps only the amount, payee and time. Suggestions not added are removed after 30 days.';
+
+  @override
+  String get backupWaitingForSms => 'Waiting for SMS reading to finish…';
+
+  @override
+  String get smsTile => 'SMS';
+
+  @override
+  String smsTileOn(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'On · $countString waiting',
+      one: 'On · 1 waiting',
+      zero: 'On',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get smsTileOff => 'Off';
+
+  @override
+  String get smsNotNow => 'Not now';
+
+  @override
+  String get smsYes => 'Yes';
 }

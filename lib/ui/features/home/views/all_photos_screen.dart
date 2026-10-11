@@ -13,12 +13,13 @@ import '../../../core/widgets/async_body.dart';
 import '../../../core/widgets/back_guard.dart';
 import '../../../core/widgets/empty_state_view.dart';
 import '../../../core/widgets/filtered_chip.dart';
-import '../../../core/widgets/list_frames.dart';
+import '../../../core/widgets/framed_months.dart';
+import '../../../core/widgets/list_frames.dart' show frameInset, frameMargin;
+import '../../../core/widgets/load_more_footer.dart';
 import '../../../core/widgets/photos/photo_grid.dart';
 import '../../../core/widgets/photos/photo_selection_bar.dart';
 import '../../../core/widgets/photos/photo_thumb.dart';
 import '../../../core/widgets/photos/saved_to_pictures_message.dart';
-import '../../../core/widgets/retry_row.dart';
 import '../../../core/widgets/save_error.dart';
 import '../../../core/widgets/show_message.dart';
 import '../../expenses/expense_form_opener.dart';
@@ -210,7 +211,6 @@ class _AllPhotosScreenState extends State<AllPhotosScreen>
   Widget _grid(BuildContext context, AllPhotosLoaded state) {
     final settings = context.read<SettingsCubit>().value;
     final names = _names(context, settings);
-    final outline = Theme.of(context).colorScheme.outlineVariant;
     final footer = state.loadingMore || state.loadMoreFailed;
     // A short first page may not fill the screen: no scroll would ever
     // ask for the next one.
@@ -220,55 +220,22 @@ class _AllPhotosScreenState extends State<AllPhotosScreen>
     return CustomScrollView(
       controller: pagingScroll,
       slivers: [
-        for (final month in state.months)
-          DecoratedSliver(
-            key: ValueKey('month ${month.range.from}'),
-            decoration: FrameDecoration(color: outline, open: month.open),
-            sliver: SliverMainAxisGroup(
-              slivers: [
-                PinnedHeaderSliver(
-                  child: FrameTop(name: names.monthWithYear(month.range.from)),
-                ),
-                for (final day in month.days)
-                  SliverMainAxisGroup(
-                    slivers: [
-                      PinnedHeaderSliver(
-                        child: DayHeaderBar(
-                          child: Text(
-                            names.day(day.day),
-                            semanticsLabel: names.spokenDay(day.day),
-                            style: DayHeaderBar.dateStyle(context),
-                          ),
-                        ),
-                      ),
-                      SliverPadding(
-                        padding: const EdgeInsets.fromLTRB(
-                          frameMargin + frameInset,
-                          4,
-                          frameMargin + frameInset,
-                          8,
-                        ),
-                        sliver: _dayGrid(context, state, day, names),
-                      ),
-                    ],
-                  ),
-                if (month.open && footer)
-                  SliverToBoxAdapter(
-                    child: state.loadMoreFailed
-                        ? RetryRow(
-                            message: AppLocalizations.of(context)
-                                .loadMoreFailed,
-                            onRetry: _cubit.loadMore,
-                          )
-                        : const Padding(
-                            padding: EdgeInsets.all(16),
-                            child: Center(child: CircularProgressIndicator()),
-                          ),
-                  ),
-                const SliverToBoxAdapter(child: SizedBox(height: 16)),
-              ],
-            ),
-          ),
+        ...framedMonthSlivers<PhotoMonth, PhotoDay>(
+          context,
+          months: state.months,
+          monthStart: (month) => month.range.from,
+          isOpen: (month) => month.open,
+          daysOf: (month) => month.days,
+          dayOf: (day) => day.day,
+          dayBody: (context, day) => _dayGrid(context, state, day, names),
+          names: names,
+          openFooter: footer
+              ? LoadMoreFooter(
+                  failed: state.loadMoreFailed,
+                  onRetry: _cubit.loadMore,
+                )
+              : null,
+        ),
         const SliverToBoxAdapter(child: SizedBox(height: 24)),
       ],
     );

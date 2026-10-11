@@ -28,9 +28,9 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
-  archive: ^4.3.0
-  bloc_signals: ^1.5.0
-  bloc_signals_flutter: ^1.3.2
+  archive: ^4.5.1
+  bloc_signals: ^1.7.0
+  bloc_signals_flutter: ^1.5.0
   characters: ^1.4.1
   crypto: ^3.0.7
   flutter:
@@ -42,10 +42,10 @@ dependencies:
   # HCT for the report's slice colours (phase-8.md F11); the version
   # Flutter itself pins, so it adds no code.
   material_color_utilities: ^0.13.0
-  material_ui: ^1.5.0
+  material_ui: ^1.6.0
   path: ^1.9.1
   path_provider: ^2.1.6
-  sqflite: ^2.4.4
+  sqflite: ^2.4.4+1
 
 dev_dependencies:
   # The "flutter_lints" package below contains a set of recommended lints to
@@ -101,6 +101,11 @@ hooks:
 flutter:
   # Generates AppLocalizations from lib/l10n/*.arb (see l10n.yaml).
   generate: true
+
+  # The build when --flavor is left out, so `flutter run` and the IDE's
+  # debug launch work as before flavors (phase-9a.md §6.6). The other one
+  # is `play`; Dart reads it as `appFlavor` (`currentAppFlavor`).
+  default-flavor: foss
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

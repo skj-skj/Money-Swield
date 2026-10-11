@@ -1,0 +1,28 @@
+{
+  // Debug launches per build flavor (phase-9a.md §6.6). `flutter run`
+  // without --flavor builds foss (pubspec `default-flavor`).
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "foss (debug)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": ["--flavor", "foss"]
+    },
+    {
+      "name": "play (debug)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": ["--flavor", "play"]
+    },
+    {
+      "name": "foss (debug, SMS 75 days back)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": ["--flavor", "foss", "--dart-define=SMS_LOOKBACK_DAYS=75"]
+    }
+  ]
+}

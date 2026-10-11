@@ -4,12 +4,14 @@ import 'package:bloc_signals/bloc_signals.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
 
 import '../../../../data/repositories/payment_method_repository.dart';
+import '../../../../data/services/sms_service.dart';
 import '../../../../domain/models/payment_method.dart';
 import '../../../core/emit_if_open.dart';
 import '../../settings/view_models/settings_cubit.dart';
 
-/// The onboarding steps, in order.
-enum OnboardingStep { language, currency, paymentMethod }
+/// The onboarding steps, in order. [sms] only in a build with SMS
+/// (phase-9a.md §8.6).
+enum OnboardingStep { language, currency, paymentMethod, sms }
 
 class OnboardingState {
   const OnboardingState({
@@ -20,6 +22,9 @@ class OnboardingState {
     required this.paymentMethods,
     this.paymentMethodsFailed = false,
     this.busy = false,
+    this.smsBuilt = false,
+    this.smsOn = false,
+    this.smsRefused = false,
   });
 
   final OnboardingStep step;
@@ -43,8 +48,26 @@ class OnboardingState {
   /// A choice is being saved, or "Get started" is running.
   final bool busy;
 
-  bool get isFirstStep => step == OnboardingStep.values.first;
-  bool get isLastStep => step == OnboardingStep.values.last;
+  /// The build can read SMS: the fourth step shows (§8.6, P9a-28).
+  final bool smsBuilt;
+
+  /// "Yes" was picked and the permission granted; "Not now" (the
+  /// default) otherwise.
+  final bool smsOn;
+
+  /// The permission was refused: the step says how to turn it on later.
+  final bool smsRefused;
+
+  /// The steps this build shows, in order.
+  List<OnboardingStep> get steps => [
+    OnboardingStep.language,
+    OnboardingStep.currency,
+    OnboardingStep.paymentMethod,
+    if (smsBuilt) OnboardingStep.sms,
+  ];
+
+  bool get isFirstStep => step == steps.first;
+  bool get isLastStep => step == steps.last;
 
   OnboardingState copyWith({
     OnboardingStep? step,
@@ -53,6 +76,9 @@ class OnboardingState {
     List<PaymentMethod>? paymentMethods,
     bool? paymentMethodsFailed,
     bool? busy,
+    bool? smsBuilt,
+    bool? smsOn,
+    bool? smsRefused,
   }) => OnboardingState(
     step: step ?? this.step,
     locale: locale,
@@ -61,6 +87,9 @@ class OnboardingState {
     paymentMethods: paymentMethods ?? this.paymentMethods,
     paymentMethodsFailed: paymentMethodsFailed ?? this.paymentMethodsFailed,
     busy: busy ?? this.busy,
+    smsBuilt: smsBuilt ?? this.smsBuilt,
+    smsOn: smsOn ?? this.smsOn,
+    smsRefused: smsRefused ?? this.smsRefused,
   );
 
   /// A copy with the language set to [locale] (null = the device's). Apart
@@ -73,6 +102,9 @@ class OnboardingState {
     paymentMethods: paymentMethods,
     paymentMethodsFailed: paymentMethodsFailed,
     busy: busy,
+    smsBuilt: smsBuilt,
+    smsOn: smsOn,
+    smsRefused: smsRefused,
   );
 }
 
@@ -89,19 +121,62 @@ class OnboardingState {
 /// once.
 class OnboardingCubit extends CubitSignal<OnboardingState>
     with EmitIfOpen<OnboardingState> {
-  OnboardingCubit({required this._settings, required this._paymentMethods})
-    : super(
-        initialState: OnboardingState(
-          step: OnboardingStep.language,
-          locale: _settings.value.locale,
-          currency: _settings.value.defaultCurrency,
-          paymentMethodId: _settings.value.defaultPaymentMethodId,
-          paymentMethods: null,
-        ),
-      );
+  OnboardingCubit({
+    required this._settings,
+    required this._paymentMethods,
+    this._sms,
+    this._setSmsEnabled,
+  }) : super(
+         initialState: OnboardingState(
+           step: OnboardingStep.language,
+           locale: _settings.value.locale,
+           currency: _settings.value.defaultCurrency,
+           paymentMethodId: _settings.value.defaultPaymentMethodId,
+           paymentMethods: null,
+         ),
+       );
 
   final SettingsCubit _settings;
   final PaymentMethodRepository _paymentMethods;
+
+  /// The SMS permission (phase-9a.md §8.6); null: no SMS step.
+  final SmsService? _sms;
+
+  /// Writes `sms_enabled` (`SettingsRepository.setSmsEnabled`).
+  final Future<void> Function(bool enabled)? _setSmsEnabled;
+
+  /// Whether the build has SMS: adds the fourth step. A failure leaves it
+  /// out (Settings → SMS still offers it if the build has it).
+  Future<void> loadSms() async {
+    try {
+      final built = (await _sms?.status())?.built ?? false;
+      emitIfOpen(value.copyWith(smsBuilt: built));
+    } catch (error) {
+      debugPrint('Reading the SMS status failed: $error');
+    }
+  }
+
+  /// "Yes": asks for the permission; granted → on. Refused → stays "Not
+  /// now" and the step says how to turn it on later; Get started works
+  /// either way (P9a-28). Rethrows a failed write.
+  Future<void> chooseSms(bool on) async {
+    final sms = _sms;
+    final setEnabled = _setSmsEnabled;
+    if (sms == null || setEnabled == null || value.busy) return;
+    if (!on) {
+      if (value.smsOn) await setEnabled(false);
+      emitIfOpen(value.copyWith(smsOn: false, smsRefused: false));
+      return;
+    }
+    emitIfOpen(value.copyWith(busy: true));
+    try {
+      final granted = await sms.request();
+      if (granted) await setEnabled(true);
+      emitIfOpen(value.copyWith(smsOn: granted, smsRefused: !granted));
+    } finally {
+      emitIfOpen(value.copyWith(busy: false));
+    }
+  }
 
   /// Loads the payment methods for the last step. A failure sets
   /// [OnboardingState.paymentMethodsFailed]; calling this again retries.
@@ -136,16 +211,14 @@ class OnboardingCubit extends CubitSignal<OnboardingState>
 
   void next() {
     if (value.isLastStep) return;
-    emitIfOpen(
-      value.copyWith(step: OnboardingStep.values[value.step.index + 1]),
-    );
+    final steps = value.steps;
+    emitIfOpen(value.copyWith(step: steps[steps.indexOf(value.step) + 1]));
   }
 
   void back() {
     if (value.isFirstStep) return;
-    emitIfOpen(
-      value.copyWith(step: OnboardingStep.values[value.step.index - 1]),
-    );
+    final steps = value.steps;
+    emitIfOpen(value.copyWith(step: steps[steps.indexOf(value.step) - 1]));
   }
 
   /// "Get started": writes the preselected choices the user didn't touch,

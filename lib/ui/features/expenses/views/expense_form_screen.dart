@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../app/app_dependencies.dart';
+import '../../../../data/repositories/sms_suggestion_repository.dart';
 import '../../../../data/services/photo_service.dart';
 import '../../../../domain/amount_expression.dart';
 import '../../../../domain/amount_field_input.dart';
@@ -15,6 +16,7 @@ import '../../../../domain/models/expense.dart';
 import '../../../../domain/models/expense_draft.dart';
 import '../../../../domain/models/money.dart';
 import '../../../../domain/models/recurring_item.dart';
+import '../../../../domain/models/sms_suggestion.dart';
 import '../../../../domain/periods.dart';
 import '../../../../domain/photos.dart';
 import '../../../../domain/repeat_input.dart';
@@ -43,6 +45,7 @@ import '../../../core/widgets/tile_picker.dart';
 import '../../categories/views/category_form_screen.dart';
 import '../../events/views/event_form_screen.dart';
 import '../../settings/view_models/settings_cubit.dart';
+import '../../sms/views/sms_banner.dart';
 import '../view_models/expense_form_cubit.dart';
 import 'draft_banner.dart';
 import 'itemize_sheet.dart';
@@ -67,6 +70,7 @@ class ExpenseFormScreen extends StatefulWidget {
     this.draft,
     this.chipAmount,
     this.startRepeating = false,
+    this.sms,
     this.onOpenRecurring,
   });
 
@@ -85,6 +89,9 @@ class ExpenseFormScreen extends StatefulWidget {
 
   /// A Home chip's amount (phase-4.md §8.1).
   final Money? chipAmount;
+
+  /// The SMS suggestion a new Add form is filled from (phase-9a.md §7.3).
+  final SmsSuggestion? sms;
 
   @override
   State<ExpenseFormScreen> createState() => _ExpenseFormScreenState();
@@ -180,6 +187,8 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
       expenseId: widget.expenseId,
       openingDraft: widget.draft,
       chipAmount: widget.chipAmount,
+      sms: widget.sms,
+      smsSuggestions: deps.smsSuggestions,
       now: deps.now,
     );
     _form.load();
@@ -256,7 +265,12 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
         _setText(_amount, fields.expression);
         _setText(_description, fields.description);
         _syncInterval(fields);
-        if (first && !_form.isEditing) {
+        // Not an SMS form that came with its title: everything but the
+        // category is filled, and the keyboard would hide the category
+        // tiles, the one thing left to pick (found on the Oppo,
+        // phase-9a.md §12a).
+        final smsFilled = _form.smsLink != null && fields.title.isNotEmpty;
+        if (first && !_form.isEditing && !smsFilled) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) _titleFocus.requestFocus();
           });
@@ -368,6 +382,11 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
     await saveOrShowError(_messengerContext, () async {
       try {
         saved = await _form.save();
+      } on SmsAlreadyAdded {
+        // Nothing was saved; the form and its draft stay (P9a-22).
+        if (mounted) {
+          _showMessage(AppLocalizations.of(context).smsAlreadyAdded);
+        }
       } on PhotoSaveFailed catch (error) {
         // Nothing was saved and the draft is as it was; said apart from
         // "Couldn't save", which suggests trying again at once.
@@ -859,9 +878,11 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   /// already shrinks the body above it).
   Widget _body(ExpenseFormReady state) {
     final restoredAt = state.restoredAt;
+    final smsSource = _form.smsSource;
     final keyboardUp = MediaQuery.viewInsetsOf(context).bottom > 0;
     return Column(
       children: [
+        if (smsSource != null) SmsBanner(sms: smsSource),
         if (restoredAt != null)
           DraftBanner(
             isEditing: _form.isEditing,

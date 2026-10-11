@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import '../photos.dart';
 import '../repeat_input.dart';
+import 'sms_suggestion.dart';
 
 /// A field of the Add/Edit form, for the touched set: prefill fills only
 /// fields the user hasn't touched (D13, phase-4.md §7.1).
@@ -37,6 +38,7 @@ class ExpenseDraft {
     this.suggestionsBlocked = false,
     this.photos = const [],
     this.repeat,
+    this.sms,
   });
 
   /// The expense being edited; null for an Add draft.
@@ -86,9 +88,14 @@ class ExpenseDraft {
   /// Repeats is off.
   final RepeatChoice? repeat;
 
-  /// The newest `form_json` version this app reads. Adding `repeat` kept
-  /// it at 1: an older draft simply has no `repeat` (Repeats off), and
-  /// unknown keys are ignored.
+  /// The SMS suggestion this Add form came from (phase-9a.md §7.3), or
+  /// null. Save marks it added; only its own card or the FAB resumes the
+  /// draft (P9a-43).
+  final SmsLink? sms;
+
+  /// The newest `form_json` version this app reads. Adding `repeat` and
+  /// `sms` kept it at 1: an older draft simply lacks them (Repeats off, no
+  /// SMS), and unknown keys are ignored.
   static const version = 1;
 
   bool get isAdd => editingExpenseId == null;
@@ -112,6 +119,7 @@ class ExpenseDraft {
     suggestionsBlocked: suggestionsBlocked,
     photos: photos,
     repeat: repeat,
+    sms: sms,
   );
 
   /// `form_json`: every field but [editingExpenseId] and [updatedAt], which
@@ -135,6 +143,7 @@ class ExpenseDraft {
     'suggestions_blocked': suggestionsBlocked,
     'photos': [for (final photo in photos) _photoToJson(photo)],
     if (repeat case final repeat?) 'repeat': _repeatToJson(repeat),
+    if (sms case final sms?) 'sms': {'id': sms.id, 'sha256': sms.bodySha256},
   });
 
   /// Reads `form_json` forgivingly (database.md §3.9): unknown keys are
@@ -191,8 +200,17 @@ class ExpenseDraft {
       suggestionsBlocked: json['suggestions_blocked'] == true,
       photos: _readPhotos(json['photos']),
       repeat: _readRepeat(json['repeat']),
+      sms: _readSms(json['sms']),
     );
   }
+
+  /// The SMS link, read forgivingly: anything but an id and a valid
+  /// SHA-256 is no link (the draft stays a plain Add draft).
+  static SmsLink? _readSms(Object? value) => switch (value) {
+    {'id': final int id, 'sha256': final String sha} when isValidSha256(sha) =>
+      (id: id, bodySha256: sha),
+    _ => null,
+  };
 
   static Map<String, Object?> _repeatToJson(RepeatChoice repeat) => {
     'frequency': repeat.frequency.name,
@@ -342,7 +360,8 @@ class ExpenseDraft {
       other.updatedAt == updatedAt &&
       other.suggestionsBlocked == suggestionsBlocked &&
       _sameList(other.photos, photos) &&
-      other.repeat == repeat;
+      other.repeat == repeat &&
+      other.sms == sms;
 
   @override
   int get hashCode => Object.hash(
@@ -356,6 +375,7 @@ class ExpenseDraft {
     pickedWallClock,
     updatedAt,
     repeat,
+    sms,
   );
 
   @override

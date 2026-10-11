@@ -63,6 +63,17 @@ class ExpenseDraftRepository {
 
   bool _closed = false;
 
+  /// [read] for a screen opening the form: a SQL error is logged and reads
+  /// as no draft, so the form still opens.
+  Future<ExpenseDraft?> readOrNull() async {
+    try {
+      return await read();
+    } catch (error) {
+      debugPrint('Reading the expense draft failed: $error');
+      return null;
+    }
+  }
+
   /// The draft in the slot, or null. The first call reads the row; a row
   /// that can't be read as a draft is deleted then (logged). SQL errors
   /// throw: the caller logs them and goes on without a draft.

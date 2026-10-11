@@ -102,6 +102,8 @@ class _StartupGateState extends State<StartupGate> {
                     paymentMethods: dependencies.paymentMethods,
                     onRestoreFromBackup: () =>
                         _restoreFromOnboarding(dependencies),
+                    sms: dependencies.sms,
+                    setSmsEnabled: dependencies.settings.setSmsEnabled,
                   ),
           ),
       },

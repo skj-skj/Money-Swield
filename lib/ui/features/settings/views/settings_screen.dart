@@ -16,12 +16,14 @@ import '../../backup/views/backup_screen.dart';
 import '../../backup/views/backup_texts.dart';
 import '../../bin/views/bin_screen.dart';
 import '../../payment_methods/view_models/payment_method_list_cubit.dart';
+import '../../sms/view_models/sms_cubit.dart';
 import '../view_models/settings_cubit.dart';
 import '../view_models/settings_summary_cubit.dart';
 import 'defaults_settings_screen.dart';
 import 'home_settings_screen.dart';
 import 'look_settings_screen.dart';
 import 'photo_settings_screen.dart';
+import 'sms_settings_screen.dart';
 import 'theme_color_dialog.dart';
 
 /// The Settings tab (phase-5.md §8.5, P5-16): a two-column grid of tiles,
@@ -32,9 +34,14 @@ class SettingsScreen extends StatefulWidget {
     super.key,
     required this.dependencies,
     required this.isVisible,
+    this.sms,
   });
 
   final AppDependencies dependencies;
+
+  /// The app-level SMS state (phase-9a.md §8.5): the SMS tile shows only in
+  /// a build with SMS. Null: no tile.
+  final SmsCubit? sms;
 
   /// Whether this tab is the one shown. The shell keeps the tab alive while
   /// hidden, and payment methods may be renamed meanwhile on the Manage tab,
@@ -161,7 +168,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     PaymentMethodListState
                   >(
                     bloc: _paymentMethodList!,
-                    builder: (context, methods) {
+                    builder: (context, methods) => _withSms((sms) {
                       final tiles = [
                         _SettingsTile(
                           key: const ValueKey('settingsLanguage'),
@@ -225,8 +232,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             summary.lastBackupAt,
                             dependencies.now(),
                           ),
-                          onTap: () =>
-                              _open(BackupScreen(dependencies: dependencies)),
+                          onTap: () => _open(
+                            BackupScreen(
+                              dependencies: dependencies,
+                              runningSmsScan: widget.sms?.runningScan,
+                            ),
+                          ),
                         ),
                         _SettingsTile(
                           key: const ValueKey('settingsPhotos'),
@@ -244,6 +255,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           onTap: () =>
                               _open(BinScreen(dependencies: dependencies)),
                         ),
+                        ?_smsTile(l10n, sms),
                       ];
                       return ListView(
                         padding: const EdgeInsets.all(16),
@@ -271,10 +283,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                         ],
                       );
-                    },
+                    }),
                   ),
             ),
       ),
+    );
+  }
+
+  /// [build] with what the SMS tile shows, rebuilt only when that changes
+  /// (a scan starting or ending doesn't); null without SMS or in a build
+  /// without it.
+  Widget _withSms(Widget Function(_SmsTileData? sms) build) =>
+      switch (widget.sms) {
+        final sms? => BlocSignalSelector<SmsCubit, SmsState, _SmsTileData?>(
+          bloc: sms,
+          selector: (state) => state.isBuilt
+              ? (
+                  on: state.availability != SmsAvailability.off,
+                  count: state.pendingCount,
+                )
+              : null,
+          builder: (context, data) => build(data),
+        ),
+        null => build(null),
+      };
+
+  /// The SMS tile when the build has SMS (§8.5): "On · 3 waiting" /
+  /// "Off".
+  Widget? _smsTile(AppLocalizations l10n, _SmsTileData? data) {
+    final sms = widget.sms;
+    if (sms == null || data == null) return null;
+    return _SettingsTile(
+      key: const ValueKey('settingsSms'),
+      icon: Icons.sms_outlined,
+      title: l10n.smsTile,
+      summary: data.on ? l10n.smsTileOn(data.count) : l10n.smsTileOff,
+      onTap: () => _open(SmsSettingsScreen(sms: sms)),
     );
   }
 
@@ -378,3 +422,7 @@ class _SettingsTile extends StatelessWidget {
     );
   }
 }
+
+/// What the SMS tile shows: on (or waiting for the permission) or off, and
+/// how many suggestions wait.
+typedef _SmsTileData = ({bool on, int count});

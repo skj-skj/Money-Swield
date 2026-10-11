@@ -334,14 +334,7 @@ class AllPhotosCubit extends CubitSignal<AllPhotosState>
   }
 
   /// The draft slot, for opening the form (phase-4.md §7.4).
-  Future<ExpenseDraft?> pendingDraft() async {
-    try {
-      return await _drafts.read();
-    } catch (error) {
-      debugPrint('Reading the expense draft failed: $error');
-      return null;
-    }
-  }
+  Future<ExpenseDraft?> pendingDraft() => _drafts.readOrNull();
 
   /// The selected keys that are still on screen after a reload.
   static Set<PhotoTileKey>? _stillThere(

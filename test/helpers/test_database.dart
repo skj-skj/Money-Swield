@@ -4,6 +4,8 @@ import 'package:my_expense_tracker_app/app/app_dependencies.dart';
 import 'package:my_expense_tracker_app/data/services/database/migrations/all_migrations.dart';
 import 'package:my_expense_tracker_app/data/services/photo_store.dart';
 import 'package:my_expense_tracker_app/data/services/report_export_service.dart';
+import 'package:my_expense_tracker_app/data/services/sms_scanner.dart';
+import 'package:my_expense_tracker_app/data/services/sms_service.dart';
 import 'package:my_expense_tracker_app/l10n/app_localizations.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -49,6 +51,7 @@ Future<AppDependencies> openTestDependencies({
   int? wallpaperSeed,
   PhotoStore? photos,
   ReportExportService? reportExports,
+  SmsService sms = const NoSmsService(),
 }) async => AppDependencies.forDatabase(
   await openMigratedDatabase(),
   deviceCurrency: deviceCurrency,
@@ -59,6 +62,16 @@ Future<AppDependencies> openTestDependencies({
   reportExports: reportExports ?? FakeReportExportService(),
   // The sweeper has its own tests; its file I/O would hang a widget test.
   sweepPhotos: false,
+  sms: sms,
+  // Parsing on this isolate: `Isolate.run` never completes inside a
+  // widget test's fake async (the scanner's own tests cover it).
+  smsScanner: (repository, settings) => SmsScanner(
+    service: sms,
+    repository: repository,
+    settings: settings,
+    now: clock?.call,
+    parseAll: (messages) async => parseAllNow(messages),
+  ),
 );
 
 /// A clock the test moves by hand, for `created_at` / `updated_at`.

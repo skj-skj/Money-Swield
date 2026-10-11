@@ -11,11 +11,14 @@ import '../data/repositories/payment_method_repository.dart';
 import '../data/repositories/recurring_repository.dart';
 import '../data/repositories/report_repository.dart';
 import '../data/repositories/settings_repository.dart';
+import '../data/repositories/sms_suggestion_repository.dart';
 import '../data/services/database/app_database.dart';
 import '../data/services/document_service.dart';
 import '../data/services/photo_store.dart';
 import '../data/services/photo_sweeper.dart';
 import '../data/services/report_export_service.dart';
+import '../data/services/sms_scanner.dart';
+import '../data/services/sms_service.dart';
 import '../domain/periods.dart';
 import 'restore_tools.dart';
 
@@ -31,6 +34,9 @@ class AppDependencies {
     required this.paymentMethods,
     required this.expenses,
     required this.recurring,
+    required this.smsSuggestions,
+    required this.sms,
+    required this.smsScanner,
     required this.reports,
     required this.reportExports,
     required this.drafts,
@@ -62,6 +68,9 @@ class AppDependencies {
     PhotoStore? photos,
     bool sweepPhotos = true,
     ReportExportService? reportExports,
+    SmsService sms = const NoSmsService(),
+    SmsScanner Function(SmsSuggestionRepository, SettingsRepository)?
+    smsScanner,
   }) {
     final settings = SettingsRepository(
       database,
@@ -80,6 +89,7 @@ class AppDependencies {
         photos ??
         PhotoStore(root: photoRoot, service: tools.photoService, now: now);
     final appDatabase = tools.appDatabase;
+    final smsSuggestions = SmsSuggestionRepository(database, now: now);
     return AppDependencies._(
       database: database,
       settings: settings,
@@ -101,6 +111,16 @@ class AppDependencies {
         dataVersion: dataVersion,
         now: now,
       ),
+      smsSuggestions: smsSuggestions,
+      sms: sms,
+      smsScanner:
+          smsScanner?.call(smsSuggestions, settings) ??
+          SmsScanner.forApp(
+            service: sms,
+            repository: smsSuggestions,
+            settings: settings,
+            now: now,
+          ),
       reports: ReportRepository(database),
       reportExports:
           reportExports ??
@@ -154,6 +174,7 @@ class AppDependencies {
     wallpaperSeed: wallpaperSeed,
     restoreTools: tools,
     photoRoot: await tools.appDatabase.filesFolder(),
+    sms: const ChannelSmsService(),
   );
 
   /// Runs one small query per repository on [db], the way the app does on
@@ -191,6 +212,9 @@ class AppDependencies {
     // create_expenses applied but none of this schema, so it is refused
     // here instead of failing at the generator after the swap.
     await RecurringRepository.probe(db);
+    // A new table must be named here too (phase-9a.md R6): a backup
+    // without it would pass and fail at the first scan.
+    await SmsSuggestionRepository.probe(db);
   }
 
   /// Closes the database for a restore's swap (phase-3.md §6.4): first
@@ -198,6 +222,10 @@ class AppDependencies {
   /// nothing of this database is written after it closes, nor into the
   /// restored one (phase-4.md §6.4).
   Future<void> closeForRestore() async {
+    // A running scan writes nothing more, and its write in flight (if any)
+    // ends before the database closes (R14).
+    smsScanner.close();
+    await smsScanner.idle;
     await drafts.close();
     await database.close();
   }
@@ -214,6 +242,17 @@ class AppDependencies {
 
   /// Recurring items and the generator (phase-7a.md §6.1).
   final RecurringRepository recurring;
+
+  /// Suggestions from bank SMS (phase-9a.md §6.1). Not part of
+  /// [dataVersion]: a suggestion changes nothing Home lists; Save bumps it
+  /// through [expenses].
+  final SmsSuggestionRepository smsSuggestions;
+
+  /// The phone's SMS inbox and permission (§6.4).
+  final SmsService sms;
+
+  /// Reads new bank SMS into [smsSuggestions] (§6.3).
+  final SmsScanner smsScanner;
 
   /// Reads reports (phase-8.md §6.1); writes nothing.
   final ReportRepository reports;

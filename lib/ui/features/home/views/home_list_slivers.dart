@@ -9,7 +9,7 @@ import '../../../core/formatting_locale.dart';
 import '../../../core/period_names.dart';
 import '../../../core/widgets/expense_tile.dart';
 import '../../../core/widgets/list_frames.dart';
-import '../../../core/widgets/retry_row.dart';
+import '../../../core/widgets/load_more_footer.dart';
 import '../view_models/expense_list_cubit.dart';
 import 'day_header.dart';
 import 'group_frame.dart';
@@ -70,15 +70,10 @@ List<Widget> homeListSlivers({
             // The loading / retry row sits inside the last, open frame.
             if (group.open && footer)
               SliverToBoxAdapter(
-                child: state.loadMoreFailed
-                    ? RetryRow(
-                        message: AppLocalizations.of(context).loadMoreFailed,
-                        onRetry: cubit.loadMore,
-                      )
-                    : const Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Center(child: CircularProgressIndicator()),
-                      ),
+                child: LoadMoreFooter(
+                  failed: state.loadMoreFailed,
+                  onRetry: cubit.loadMore,
+                ),
               ),
             // Lets a week's last day header leave before the frame top
             // (probe, phase-5.md §8.3).

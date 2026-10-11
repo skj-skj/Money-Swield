@@ -542,14 +542,7 @@ class ExpenseListCubit extends CubitSignal<ExpenseListState>
   /// The draft slot, for opening the form (phase-4.md §7.4). Null when
   /// empty or when it can't be read (logged): the form then opens without
   /// a draft.
-  Future<ExpenseDraft?> pendingDraft() async {
-    try {
-      return await _drafts.read();
-    } catch (error) {
-      debugPrint('Reading the expense draft failed: $error');
-      return null;
-    }
-  }
+  Future<ExpenseDraft?> pendingDraft() => _drafts.readOrNull();
 
   /// Re-reads which expense has unsaved changes, after a form closed:
   /// draft writes don't bump `DataVersion` (phase-4.md §8.2).
