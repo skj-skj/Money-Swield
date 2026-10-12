@@ -3,9 +3,9 @@
 
 import '../migration/migration.dart';
 
-/// Which events an expense belongs to (database.md §3.6). Both sides
-/// cascade: deleting an event unlinks it and the expenses stay; deleting
-/// an expense for good removes its links.
+/// Which events an expense belongs to. Both sides cascade: deleting an event
+/// unlinks it and the expenses stay; deleting an expense for good removes its
+/// links.
 class CreateExpenseEvents extends Migration {
   const CreateExpenseEvents()
     : super(version: 1790960267, name: 'create_expense_events');

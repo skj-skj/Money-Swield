@@ -1,20 +1,18 @@
 import 'package:material_color_utilities/material_color_utilities.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// The report card's slice colours (phase-8.md §5.3, P8-7, F11): the
-/// exception to "colours only from the theme" (phase-5.md P5-28), still
-/// fitted to it.
+/// The report card's slice colours: the exception to "colours only from the
+/// theme", still fitted to it.
 ///
-/// Five fixed hues (a light set and a dark set, by the theme's
-/// brightness), each with its **tone** moved, in HCT, until it has at
-/// least 3:1 contrast on the card's colour of the current theme (the
-/// user's theme colour or the wallpaper's), so every slice stays visible
-/// on any theme. Rotating hues from the theme colour was tried and fails
-/// colour-blind separation (F11: protan ΔE fell to 1.0); fixed hues keep
-/// adjacent slices apart for normal, protan and deutan vision
-/// (`group_palette_test`). A colour follows a slice's rank, not a group:
-/// with 20+ categories no fixed hue per category can stay distinct; each
-/// slice is named beside it, so colour is never the only cue.
+/// Five fixed hues (a light set and a dark set, by the theme's brightness),
+/// each with its **tone** moved, in HCT, until it has at least 3:1 contrast on
+/// the card's colour of the current theme (the user's theme colour or the
+/// wallpaper's), so every slice stays visible on any theme. Rotating hues from
+/// the theme colour was tried and fails colour-blind separation (protan ΔE fell
+/// to 1.0); fixed hues keep adjacent slices apart for normal, protan and deutan
+/// vision (`group_palette_test`). A colour follows a slice's rank, not a group:
+/// with 20+ categories no fixed hue per category can stay distinct; each slice
+/// is named beside it, so colour is never the only cue.
 class GroupPalette {
   const GroupPalette._(this.colors, this.other);
 
@@ -27,8 +25,8 @@ class GroupPalette {
     ], scheme.outline);
   }
 
-  /// The light set fitted to white paper, for the PDF's donuts (§6.4):
-  /// the same hues as the card's in a light theme.
+  /// The light set fitted to white paper, for the PDF's donuts: the same hues
+  /// as the card's in a light theme.
   factory GroupPalette.onWhite() => GroupPalette._([
     for (final hue in _light) fitToBackground(Color(hue), Colors.white),
   ], const Color(0xFF79747E));
@@ -43,7 +41,7 @@ class GroupPalette {
   Color slice(int index, {bool isOther = false}) =>
       isOther ? other : colors[index % colors.length];
 
-  /// The dataviz reference palette's five hues (F11).
+  /// The dataviz reference palette's five hues.
   static const _light = [
     0xFF2A78D6,
     0xFFEB6834,

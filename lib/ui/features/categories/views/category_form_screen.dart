@@ -57,9 +57,9 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
     super.dispose();
   }
 
-  /// Delete: a plain confirm when no expense uses it; otherwise ask where
-  /// to move its expenses, binned ones included, then move and delete in
-  /// one transaction (D7, phase-2.md §10.1).
+  /// Delete: a plain confirm when no expense uses it; otherwise ask where to
+  /// move its expenses, binned ones included, then move and delete in one
+  /// transaction.
   Future<void> _delete(String name) async {
     final l10n = AppLocalizations.of(context);
     final original = widget.original!;

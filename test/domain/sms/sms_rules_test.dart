@@ -8,7 +8,6 @@ import 'package:my_expense_tracker_app/domain/sms/sms_title.dart';
 import 'package:my_expense_tracker_app/domain/sms/sms_window.dart';
 import 'package:my_expense_tracker_app/domain/title_suggestions.dart';
 
-/// phase-9a.md §5.3, §5.4, §5.7 – §5.9.
 void main() {
   group('cleanPayee / suggestedTitle', () {
     for (final (payee, expected) in [
@@ -109,7 +108,7 @@ void main() {
     const day = Duration.millisecondsPerDay;
     const now = 100 * day;
 
-    test('§5.8\'s table', () {
+    test('every scan window case', () {
       expect(scanSince(nowMs: now, cursorMs: null), now - 7 * day);
       expect(scanSince(nowMs: now, cursorMs: now - day), now - day);
       expect(scanSince(nowMs: now, cursorMs: now - 40 * day), now - 30 * day);
@@ -216,7 +215,7 @@ void main() {
       sms: sms,
     );
 
-    test('§5.9\'s table', () {
+    test('every open rule case', () {
       expect(smsOpenRule(null, link), SmsOpen.fresh);
       expect(smsOpenRule(draft(sms: link), link), SmsOpen.resume);
       expect(smsOpenRule(draft(), link), SmsOpen.ask);

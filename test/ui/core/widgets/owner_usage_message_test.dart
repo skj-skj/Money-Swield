@@ -6,7 +6,7 @@ import '../../../helpers/test_database.dart';
 void main() {
   final en = l10nFor('en');
 
-  test('expenses only: as before Phase 7', () {
+  test('expenses only', () {
     expect(
       ownerUsageMessage(en, 'Food', (active: 3, binned: 1, templates: 0)),
       '"Food" is used by 4 expenses (1 in the bin).',

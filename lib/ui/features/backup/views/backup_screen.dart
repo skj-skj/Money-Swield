@@ -15,9 +15,8 @@ import '../view_models/backup_cubit.dart';
 import 'backup_texts.dart';
 import 'restore_screen.dart';
 
-/// Settings → Backup & restore (phase-3.md §10): when the last backup was,
-/// Back up now, Restore from a backup, and Undo last restore when a
-/// pre-restore copy exists.
+/// Settings → Backup & restore: when the last backup was, Back up now, Restore
+/// from a backup, and Undo last restore when a pre-restore copy exists.
 class BackupScreen extends StatefulWidget {
   const BackupScreen({
     super.key,
@@ -28,11 +27,10 @@ class BackupScreen extends StatefulWidget {
 
   final AppDependencies dependencies;
 
-  /// The SMS scan running now, or null: a backup waits for it (phase-9a.md
-  /// §6.7).
+  /// The SMS scan running now, or null: a backup waits for it.
   final Future<void>? Function()? runningSmsScan;
 
-  /// That scan's count while the on-device model reads (phase-9b.md §6.2).
+  /// That scan's count while the on-device model reads.
   final ValueListenable<ScanProgress?>? smsProgress;
 
   @override
@@ -136,8 +134,8 @@ class _BackupScreenState extends State<BackupScreen> {
 }
 
 class _BackupList extends StatelessWidget {
-  /// "Include photos" (ticked each time, P6-16) with what they are; when
-  /// unticked, what that means after a reinstall (§8.7).
+  /// "Include photos" (ticked each time) with what they are; when unticked,
+  /// what that means after a reinstall.
   Widget _includePhotos(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final count = state.photoCount;

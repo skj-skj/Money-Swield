@@ -1,5 +1,5 @@
-/// Days, weeks, months and years over the stored `occurred_on` dates
-/// (phase-5.md §5.1). Pure Dart.
+/// Days, weeks, months and years over the stored `occurred_on` dates. Pure
+/// Dart.
 ///
 /// Dates are `YYYY-MM-DD` strings. Arithmetic is on `DateTime.utc`
 /// midnights, so a DST change can't move a date. The device's current zone
@@ -12,13 +12,13 @@ enum Period { day, week, month, year }
 
 enum WeekStart { monday, sunday }
 
-/// The earliest and latest dates an expense can have: the form's date
-/// picker and a report's Range stop there (phase-8.md R12). Far from any
-/// real date on purpose (P2-4: no real limit either way).
+/// The earliest and latest dates an expense can have: the form's date picker
+/// and a report's Range stop there. Far from any real date on purpose (no real
+/// limit either way).
 const firstExpenseDay = '1900-01-01';
 const lastExpenseDay = '2200-01-01';
 
-/// How weeks are named: "Oct Week 3" or "Week 41" (phase-5.md P5-10).
+/// How weeks are named: "Oct Week 3" or "Week 41".
 enum WeekLabel { month, number }
 
 /// A period as inclusive local dates, `YYYY-MM-DD`. Its `from` is its key.
@@ -46,8 +46,8 @@ PeriodRange periodOf(String day, Period period, WeekStart weekStart) {
 PeriodRange previousPeriod(PeriodRange range, WeekStart weekStart) =>
     periodOf(addDays(range.from, -1), range.period, weekStart);
 
-/// The card's next period when swiped up: week → month → year → week
-/// (phase-5.md P5-29). Never [Period.day].
+/// The card's next period when swiped up: week → month → year → week. Never
+/// [Period.day].
 Period nextCardPeriod(Period p) => switch (p) {
   Period.day || Period.year => Period.week,
   Period.week => Period.month,
@@ -79,8 +79,8 @@ String todayOn(DateTime now) {
 }
 
 /// The local date `YYYY-MM-DD` of the moment [utc] on a clock
-/// [utcOffsetMinutes] from UTC: how `occurred_on` is derived (database.md
-/// §1), and how a recurring payment's moment is checked (phase-7a.md §5.6).
+/// [utcOffsetMinutes] from UTC: how `occurred_on` is derived, and how a
+/// recurring payment's moment is checked.
 String localDayOf(DateTime utc, int utcOffsetMinutes) =>
     isoDay(utc.toUtc().add(Duration(minutes: utcOffsetMinutes)));
 
@@ -91,10 +91,9 @@ List<String> daysIn(PeriodRange range) {
   return [for (var i = 0; i < count; i++) isoDay(from.add(Duration(days: i)))];
 }
 
-/// The year and month a week belongs to, its number in that year and in
-/// that month. A week belongs to the year and month of its **4th day** (the
-/// one that holds most of its days); with a Monday start this is ISO 8601
-/// (phase-5.md §5.1).
+/// The year and month a week belongs to, its number in that year and in that
+/// month. A week belongs to the year and month of its **4th day** (the one that
+/// holds most of its days); with a Monday start this is ISO 8601.
 ({int year, int month, int number, int numberInMonth}) weekIdOf(
   PeriodRange week,
 ) {

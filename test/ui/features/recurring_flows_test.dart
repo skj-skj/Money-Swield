@@ -12,8 +12,7 @@ import 'package:my_expense_tracker_app/ui/features/recurring/views/recurring_lis
 import '../../helpers/pump_app.dart';
 import '../../helpers/test_database.dart';
 
-/// The Recurring flows through the real app (phase-7a.md §8.1 A–I, §12
-/// "Widgets"). Today is Fri 9 Oct 2026, noon.
+/// The Recurring flows through the real app. Today is Fri 9 Oct 2026, noon.
 void main() {
   late AppDependencies deps;
   late TestClock clock;
@@ -619,7 +618,7 @@ void main() {
     await deps.settings.setLocale(const Locale('es'));
     await pumpApp(tester, dependencies: deps);
     noException(tester);
-    // Reports first (index 1 since phase 8): it must lay out too.
+    // Reports first (index 1): it must lay out too.
     await tester.tap(find.byType(NavigationDestination).at(1));
     await tester.pumpAndSettle();
     noException(tester);

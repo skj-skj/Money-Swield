@@ -20,8 +20,8 @@ import '../../helpers/fake_on_device_ai.dart';
 import '../../helpers/fake_sms_service.dart';
 import '../../helpers/test_database.dart';
 
-/// The scanner's on-device model path (phase-9b.md §6.2, §11 "Scanner"),
-/// with a fake model and inbox, on SQLite 3.22.
+/// The scanner's on-device model path, with a fake model and inbox, on SQLite
+/// 3.22.
 void main() {
   late Database db;
   late TestClock clock;
@@ -118,7 +118,7 @@ void main() {
     });
 
     test(
-      'payment none / invalid → 9a\'s text rule on the whole text',
+      'payment none / invalid → the regex text rule on the whole text',
       () async {
         sms.add(bank, nowMs() - day, bankSent1); // UPI only in its footer
         ai.reply = (_) => AiAnswer(

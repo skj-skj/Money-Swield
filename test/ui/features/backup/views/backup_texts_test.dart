@@ -82,7 +82,7 @@ void main() {
           currentExpenses: current,
         );
 
-    test('running recurring items after the bin part (phase-7a.md R14); '
+    test('running recurring items after the bin part; '
         '0 and none left out; grouped', () {
       String line(int? recurring, {int binned = 3}) => summary(
         candidate(
@@ -118,7 +118,7 @@ void main() {
       expect(lines, [
         'Backup from Oct 3, 2026 2:05 PM',
         '121 expenses, plus 3 in the bin. Latest on Oct 2, 2026',
-        // A database-only backup says so since Phase 6 (§8.8).
+        // A database-only backup says so.
         // ignore: no_adjacent_strings_in_list, one line of the dialog.
         "This backup has no photos. Photos this phone doesn't have will show "
             'as missing.',
@@ -146,7 +146,7 @@ void main() {
 
     test('from onboarding, the "All data on this phone" paragraph is left '
         'out', () {
-      // Date, counts and (Phase 6) the no-photos line.
+      // Date, counts and the no-photos line.
       expect(summary(candidate(), current: null), hasLength(3));
     });
 

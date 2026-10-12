@@ -1,6 +1,5 @@
-/// How much a category or event has been used, for the picker order
-/// (application-design.md A3, phase-2.md §6.2). Computed from expenses,
-/// never stored.
+/// How much a category or event has been used, for the picker order. Computed
+/// from expenses, never stored.
 typedef ItemUsage = ({int recentCount, DateTime? lastUsedAt});
 
 /// An item no active expense uses yet.

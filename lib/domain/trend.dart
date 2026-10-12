@@ -1,5 +1,5 @@
-/// The trend card's points (phase-5.md §5.3): the **current** week (7
-/// days), month (one point per day) or year (12 months).
+/// The trend card's points: the **current** week (7 days), month (one point per
+/// day) or year (12 months).
 library;
 
 import 'periods.dart';
@@ -43,14 +43,13 @@ List<TrendPoint> runningTotals(List<TrendPoint> points) {
   ];
 }
 
-/// The whole period's total per currency: every point added, future-dated
-/// rows included (P5-13).
+/// The whole period's total per currency: every point added, future-dated rows
+/// included.
 CurrencyTotals periodTotals(PeriodRange range, Iterable<AmountRow> rows) =>
     sumRowsIn(rows, range.from, range.to);
 
 /// The currency carousel's pages: the currencies with rows in the period,
-/// [defaultCurrency] first, then by code (P5-9). Empty when the period
-/// has no rows.
+/// [defaultCurrency] first, then by code. Empty when the period has no rows.
 List<String> chartCurrencies(CurrencyTotals totals, String defaultCurrency) =>
     orderedCodes(totals.keys, defaultCurrency);
 
@@ -61,9 +60,9 @@ String initialChartCurrency(List<String> currencies, String defaultCurrency) =>
     ? defaultCurrency
     : currencies.firstOrNull ?? defaultCurrency;
 
-/// Each point's amount ÷ the largest, in 0..1. Geometry, not money: it
-/// sets a height in pixels and is never shown, stored or added (§9). All 0
-/// when the largest is 0.
+/// Each point's amount ÷ the largest, in 0..1. Geometry, not money: it sets a
+/// height in pixels and is never shown, stored or added. All 0 when the largest
+/// is 0.
 List<double> pointFractions(List<TrendPoint> points) {
   var largest = BigInt.zero;
   for (final p in points) {

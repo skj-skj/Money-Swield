@@ -271,16 +271,13 @@ void main() {
   });
 
   group('refused', () {
-    test(
-      'a file larger than the free space can\'t be opened: "not enough '
-      'space" (R2; was "not a backup" under Phase 3\'s 100 MB cap)',
-      () async {
-        documents.pickedTooLarge = true;
-        final cubit = cubitFor(tools);
-        await cubit.startFromZip();
-        expect(cubit.value, isA<RestoreFailedNoSpace>());
-      },
-    );
+    test('a file larger than the free space can\'t be opened: "not enough '
+        'space" (not "not a backup")', () async {
+      documents.pickedTooLarge = true;
+      final cubit = cubitFor(tools);
+      await cubit.startFromZip();
+      expect(cubit.value, isA<RestoreFailedNoSpace>());
+    });
 
     test(
       'a file that isn\'t a zip is "not a backup", and leaves nothing',
@@ -303,7 +300,7 @@ void main() {
       'a backup that can\'t start the app is refused before the swap',
       () async {
         await live.execute('DROP TABLE expense_events');
-        // Phase 6's links point at expenses too, and so do phase 9a's SMS
+        // Photo links point at expenses too, and so do the SMS
         // suggestions (`expense_id`).
         await live.execute('DROP TABLE expense_photos');
         await live.execute('DROP TABLE sms_suggestions');
@@ -373,7 +370,7 @@ void main() {
   });
 
   test('a close() of the live connection that throws: failed, the app '
-      'restarts (§6.4 step 4.1), nothing swapped', () async {
+      'restarts, nothing swapped', () async {
     await backUpLive();
     final before = await File(files.livePath).readAsBytes();
     final cubit = cubitFor(

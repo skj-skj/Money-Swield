@@ -39,8 +39,8 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   intl: ^0.20.3
-  # HCT for the report's slice colours (phase-8.md F11); the version
-  # Flutter itself pins, so it adds no code.
+  # HCT for the report's slice colours; the version Flutter itself pins, so it
+  # adds no code.
   material_color_utilities: ^0.13.0
   material_ui: ^1.6.0
   path: ^1.9.1
@@ -62,8 +62,9 @@ dev_dependencies:
 # from Android's own source with Android's flags, so SQL that only a newer
 # SQLite accepts fails in tests, not on a phone. Only the `sqlite3` package
 # (via sqflite_common_ffi, a dev dependency) reads this; the app on a phone
-# uses Android's SQLite through sqflite. Why each flag and what still
-# differs from a phone: notes/spec/sqlite.md.
+# uses Android's SQLite through sqflite. What still differs from a phone
+# (no ICU: SQL case folding is ASCII-only here, Unicode on a phone; the
+# Windows file system; the journal mode): see AGENTS.md.
 hooks:
   user_defines:
     sqlite3:
@@ -102,9 +103,9 @@ flutter:
   # Generates AppLocalizations from lib/l10n/*.arb (see l10n.yaml).
   generate: true
 
-  # The build when --flavor is left out, so `flutter run` and the IDE's
-  # debug launch work as before flavors (phase-9a.md §6.6). The other one
-  # is `play`; Dart reads it as `appFlavor` (`currentAppFlavor`).
+  # The build when --flavor is left out, so `flutter run` and the IDE's debug
+  # launch work as before flavors. The other one is `play`; Dart reads it as
+  # `appFlavor` (`currentAppFlavor`).
   default-flavor: foss
 
   # The following line ensures that the Material Icons font is

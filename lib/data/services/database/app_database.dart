@@ -59,7 +59,7 @@ class AppDatabase {
 
   static const fileName = 'expense_tracker.db';
 
-  /// How many pre-restore copies are kept (P3-6).
+  /// How many pre-restore copies are kept.
   static const keptPreRestoreCopies = 3;
 
   /// Opens this and every other database file of the app (restore
@@ -101,8 +101,8 @@ class AppDatabase {
     cacheFolder: await _cacheFolder(),
   );
 
-  /// The app's external files folder, which holds `databases/` and the
-  /// photo folders (phase-6.md §4.3, F10).
+  /// The app's external files folder, which holds `databases/` and the photo
+  /// folders.
   Future<String> filesFolder() async =>
       p.dirname(p.dirname(await _databasePath()));
 
@@ -128,9 +128,9 @@ class AppDatabase {
         : outcome;
   }
 
-  /// Forgets that this run started without a file. Called when the app
-  /// restarts after a restore: otherwise a fresh install that restored a
-  /// backup would say "Database initialized" (phase-3.md §6.6).
+  /// Forgets that this run started without a file. Called when the app restarts
+  /// after a restore: otherwise a fresh install that restored a backup would
+  /// say "Database initialized".
   void resetRunHistory() => _startedWithoutFile = null;
 
   /// Opens the database for normal use, with foreign keys enforced. Call
@@ -155,13 +155,12 @@ class AppDatabase {
   }
 
   /// Replaces the live database with the (migrated, checked) database at
-  /// [candidatePath] (phase-3.md §6.4 step 4). Until the rename in step 4
-  /// nothing the user has is changed; after it, the old data still exists
-  /// as a pre-restore copy.
+  /// [candidatePath]. Until the rename in step 4 nothing the user has is
+  /// changed; after it, the old data still exists as a pre-restore copy.
   ///
   /// 1. [closeConnection] closes the app's connection. If it throws, this
   ///    stops: nothing is copied, deleted or renamed. The app still
-  ///    restarts (§6.4 step 4.1): a close that failed half way may have
+  ///    restarts: a close that failed half way may have
   ///    left the connection unusable. (sqflite's own `close()` marks the
   ///    database closed first and never throws, so this is a safety net.)
   /// 2. The live file and its journals are copied to a new pre-restore
@@ -216,7 +215,7 @@ class AppDatabase {
   /// Deletes what a copy cut short left in the pre-restore folder: `.partial`
   /// files, and journals whose copy was never completed (they are renamed
   /// before the `.db`, so they can be left without it). Part of the startup
-  /// cleanup (§6.6).
+  /// cleanup.
   Future<void> cleanUpPreRestoreFolder() async {
     final folder = Directory((await paths()).preRestoreFolder);
     if (!await folder.exists()) return;
@@ -251,7 +250,7 @@ class AppDatabase {
     }
   }
 
-  /// §6.4 step 4.2. Journals first, the `.db` last: a copy whose `.db`
+  /// Step 2 of [replaceWith]. Journals first, the `.db` last: a copy whose `.db`
   /// exists is complete. A missing live file has nothing to keep.
   Future<void> _copyLiveAside(BackupPaths paths, DateTime now) async {
     final live = paths.databaseFile;

@@ -1,13 +1,13 @@
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// A small digits-only box inside a sentence: "Every [ 1 ] month", "After
-/// [ 12 ] payments" (phase-7a.md §8.2, phase-7b.md §8.2). The words around
-/// it say what it is; [label] is for TalkBack only.
+/// A small digits-only box inside a sentence: "Every [ 1 ] month", "After [ 12
+/// ] payments". The words around it say what it is; [label] is for TalkBack
+/// only.
 ///
-/// Not an `InputDecoration.labelText`: an empty field shows its label in
-/// place of the hint, so an emptied box read "Numb…" on the Oppo
-/// (phase-7b.md §12a). The [hint] shows instead.
+/// Not an `InputDecoration.labelText`: an empty field shows its label in place
+/// of the hint, so an emptied box read "Numb…" on the Oppo. The [hint] shows
+/// instead.
 class RepeatNumberField extends StatelessWidget {
   const RepeatNumberField({
     super.key,

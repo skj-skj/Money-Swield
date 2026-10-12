@@ -116,7 +116,7 @@ void main() {
       await cubit.load();
 
       final loaded = cubit.value as EventListLoaded;
-      // Seven seeded events (database.md §3.4), sorted by English name.
+      // Seven seeded events, sorted by English name.
       expect(loaded.active.map((e) => e.builtinKey), [
         'anniversary',
         'dining_out',
@@ -129,7 +129,7 @@ void main() {
     });
   });
 
-  group('initialName (phase-2.md §6.4)', () {
+  group('initialName', () {
     EventFormCubit formWith({Event? original, required String name}) {
       final cubit = EventFormCubit(
         repository: repository,

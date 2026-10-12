@@ -1,6 +1,6 @@
-/// The dates a report covers (phase-8.md §5.1): a week, month or year
-/// stepped with ‹ ›, or a custom Range (From, To, or All time). Pure Dart,
-/// on `YYYY-MM-DD` strings like the rest of the domain (`periods.dart`).
+/// The dates a report covers: a week, month or year stepped with ‹ ›, or a
+/// custom Range (From, To, or All time). Pure Dart, on `YYYY-MM-DD` strings
+/// like the rest of the domain (`periods.dart`).
 library;
 
 import 'periods.dart';
@@ -48,8 +48,8 @@ final class ReportRange {
       : 'ReportRange(${period.name} $from..$to)';
 }
 
-/// The current week, month or year: the one that holds [today]. Future
-/// days in it count (phase-5.md P5-13). Not for [ReportPeriod.range].
+/// The current week, month or year: the one that holds [today]. Future days in
+/// it count. Not for [ReportPeriod.range].
 ReportRange currentRange(ReportPeriod period, String today, WeekStart ws) {
   final range = periodOf(today, _calendarPeriod(period), ws);
   return ReportRange(period, range.from, range.to);
@@ -69,9 +69,9 @@ ReportRange stepRange(ReportRange range, int steps, WeekStart ws) {
   return currentRange(range.period, isoDay(day), ws);
 }
 
-/// Whether ‹ (negative) or › (positive) can move [range]: the stepped
-/// range must still touch the days an expense can have
-/// ([firstExpenseDay] … [lastExpenseDay], R12). False for a custom range.
+/// Whether ‹ (negative) or › (positive) can move [range]: the stepped range
+/// must still touch the days an expense can have ([firstExpenseDay] …
+/// [lastExpenseDay]). False for a custom range.
 bool canStep(ReportRange range, int steps, WeekStart ws) {
   if (range.period == ReportPeriod.range || steps == 0) return false;
   final next = stepRange(range, steps, ws);
@@ -80,7 +80,7 @@ bool canStep(ReportRange range, int steps, WeekStart ws) {
 }
 
 /// The Range dialog's first From / To: the last 12 whole months, this one
-/// included (P8-4): on 10 Oct 2026, 1 Nov 2025 – 31 Oct 2026.
+/// included: on 10 Oct 2026, 1 Nov 2025 – 31 Oct 2026.
 ReportRange defaultCustomRange(String today) {
   final date = parseDay(today);
   return ReportRange(
@@ -101,12 +101,12 @@ CustomRangeProblem? checkCustomRange(String from, String to) {
   return null;
 }
 
-/// Whether [range] holds [today]: a current week, month or year, which
-/// follows today when the day changes (P8-25). Never All time.
+/// Whether [range] holds [today]: a current week, month or year, which follows
+/// today when the day changes. Never All time.
 bool holdsToday(ReportRange range, String today) =>
     !range.isAllTime && range.contains(today);
 
-/// [range] as stored in `report_range` (§4): `all`, or `from..to`.
+/// [range] as stored in `report_range`: `all`, or `from..to`.
 String encodeCustomRange(ReportRange range) =>
     range.isAllTime ? 'all' : '${range.from}..${range.to}';
 

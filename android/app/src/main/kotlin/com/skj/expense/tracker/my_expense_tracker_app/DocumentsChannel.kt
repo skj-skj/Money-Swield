@@ -24,14 +24,13 @@ import java.io.InputStream
 import java.util.concurrent.Executors
 
 /**
- * `expense_tracker/documents`: the system save and open dialogs (Storage
- * Access Framework) and the app version, for backup and restore
- * (phase-3.md §7). Own code instead of a file-picker plugin (P3-1). Also
- * a report's Save to `Download/<AppName>/`, Share and Open (phase-8.md
- * §6.6).
+ * `expense_tracker/documents`: the system save and open dialogs (Storage Access
+ * Framework) and the app version, for backup and restore. Own code instead of a
+ * file-picker plugin. Also a report's Save to `Download/<AppName>/`, Share and
+ * Open.
  *
- * Created once, with the cached engine, so it outlives any one activity;
- * the one open dialog is a [PendingActivityCall] (phase-6.md R8).
+ * Created once, with the cached engine, so it outlives any one activity; the
+ * one open dialog is a [PendingActivityCall].
  */
 class DocumentsChannel(messenger: BinaryMessenger, context: Context) :
     MethodChannel.MethodCallHandler {
@@ -136,12 +135,12 @@ class DocumentsChannel(messenger: BinaryMessenger, context: Context) :
 
     /**
      * Copies [sourcePath] into `Download/<folder>/` as a new file named
-     * [displayName] (phase-8.md §6.6, the Save to Pictures pattern). Only
-     * ever **inserts**: a file of the user's is never opened, changed or
-     * deleted; a name already there is renamed by MediaStore ("name
-     * (1).pdf", probed on the Oppo). `IS_PENDING` until fully written; if
-     * the copy fails, the one item inserted here is deleted. Returns the
-     * item's URI and the name MediaStore gave it.
+     * [displayName] (the Save to Pictures pattern). Only ever **inserts**: a
+     * file of the user's is never opened, changed or deleted; a name already
+     * there is renamed by MediaStore ("name (1).pdf", probed on the Oppo).
+     * `IS_PENDING` until fully written; if the copy fails, the one item
+     * inserted here is deleted. Returns the item's URI and the name MediaStore
+     * gave it.
      */
     private fun saveToDownloads(
         sourcePath: String,

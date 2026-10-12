@@ -38,7 +38,7 @@ class MainActivity : FlutterActivity() {
         photos = PhotosChannel(engine.dartExecutor.binaryMessenger, appContext)
         reportPdf = ReportPdfChannel(engine.dartExecutor.binaryMessenger, appContext)
         sms = SmsChannel(engine.dartExecutor.binaryMessenger, appContext)
-        // play: ML Kit's on-device model; foss: a stub (phase-9b.md §6.1).
+        // play: ML Kit's on-device model; foss: a stub.
         onDeviceAi = OnDeviceAi(engine.dartExecutor.binaryMessenger, appContext)
         engine.dartExecutor.executeDartEntrypoint(
             DartExecutor.DartEntrypoint.createDefault(),
@@ -76,7 +76,7 @@ class MainActivity : FlutterActivity() {
         photos?.dialog?.onActivityResult(requestCode, resultCode, data)
     }
 
-    // The SMS permission's answer (phase-9a.md R5). super first, as above.
+    // The SMS permission's answer. super first, as above.
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,

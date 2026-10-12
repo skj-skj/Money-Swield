@@ -16,10 +16,10 @@ import '../view_models/recurring_list_cubit.dart';
 import 'recurring_navigation.dart';
 import 'recurring_texts.dart';
 
-/// Manage → Recurring (phase-7a.md §8.3): three tiles, Waiting · Active ·
-/// Archive, each with its count; the chosen one's items are listed under
-/// them (owner, 2026-10-09: the Archive as a row under a long list was hard
-/// to reach). **New** opens the Add form with Repeats on.
+/// Manage → Recurring: three tiles, Waiting · Active · Archive, each with its
+/// count; the chosen one's items are listed under them (owner, 2026-10-09: the
+/// Archive as a row under a long list was hard to reach). **New** opens the Add
+/// form with Repeats on.
 class RecurringListScreen extends StatefulWidget {
   const RecurringListScreen({super.key, required this.dependencies});
 
@@ -37,9 +37,8 @@ class _RecurringListScreenState extends State<RecurringListScreen> {
     dataVersion: widget.dependencies.dataVersion,
   )..load();
 
-  /// New goes through the form opener: an Add draft in the slot opens as
-  /// it is (Repeats on only if it has none), and a double tap opens one
-  /// form (§8.3).
+  /// New goes through the form opener: an Add draft in the slot opens as it is
+  /// (Repeats on only if it has none), and a double tap opens one form.
   late final _opener = ExpenseFormOpener(
     dependencies: widget.dependencies,
     pendingDraft: _cubit.pendingDraft,
@@ -229,8 +228,8 @@ class _RecurringListScreenState extends State<RecurringListScreen> {
       categories[item.categoryId]?.emoji ?? ExpenseTile.missingEmoji;
 }
 
-/// A recurring item's row (§8.3, §8.8): an `ExpenseTile` with its
-/// category's emoji, title, second line and current price.
+/// A recurring item's row: an `ExpenseTile` with its category's emoji, title,
+/// second line and current price.
 class RecurringTile extends StatelessWidget {
   const RecurringTile({
     super.key,

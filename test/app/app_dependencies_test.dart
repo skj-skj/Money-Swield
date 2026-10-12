@@ -22,7 +22,7 @@ ExpenseDraft _draft(String title) => ExpenseDraft(
   updatedAt: DateTime.utc(2026),
 );
 
-/// The draft parts of AppDependencies (phase-4.md §6.4, R10).
+/// The draft parts of AppDependencies.
 void main() {
   test('probe reads the draft slot and leaves a malformed row alone', () async {
     final db = await openMigratedDatabase();
@@ -44,7 +44,7 @@ void main() {
     );
   });
 
-  test('probe refuses a database without either photo table (R12)', () async {
+  test('probe refuses a database without either photo table', () async {
     for (final table in ['expense_photos', 'photos']) {
       final db = await openMigratedDatabase();
       await db.execute('DROP TABLE expense_photos');
@@ -65,8 +65,8 @@ void main() {
     }
   });
 
-  group('probe and the recurring schema (phase-7a.md R4)', () {
-    /// `expenses` without the two recurring columns, rows kept: a Phase 6
+  group('probe and the recurring schema', () {
+    /// `expenses` without the two recurring columns, rows kept: an older
     /// build's table, which `SELECT *` reads without complaint.
     Future<void> dropRecurringColumns(Database db) async {
       await db.execute('PRAGMA foreign_keys = OFF');
@@ -80,7 +80,7 @@ void main() {
       await db.execute('ALTER TABLE old_expenses RENAME TO expenses');
     }
 
-    test('a Phase 6 database (no columns, no tables) is refused', () async {
+    test('an older database (no columns, no tables) is refused', () async {
       final db = await openMigratedDatabase();
       await insertExpenseRow(db);
       await dropRecurringColumns(db);
@@ -126,9 +126,9 @@ void main() {
       }
     });
 
-    test('a phase 7a database (no replaces_id, no recurring_skips) is '
-        'refused (phase-7b.md §6.6)', () async {
-      // Either part missing alone is refused, so a 7a backup is too.
+    test('a database without replaces_id or recurring_skips is '
+        'refused', () async {
+      // Either part missing alone is refused, so an older backup is too.
       final noSkips = await openMigratedDatabase();
       await noSkips.execute('DROP TABLE recurring_skips');
       await expectLater(

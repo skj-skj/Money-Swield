@@ -1,10 +1,9 @@
-/// A minimal `.xlsx` writer (phase-8.md §6.5, P8-12): own code on
-/// `archive`, no package. Six kinds of part: `[Content_Types].xml`,
-/// `_rels/.rels`, `xl/workbook.xml`, `xl/_rels/workbook.xml.rels`,
-/// `xl/styles.xml` (with `<cellStyles>`: without it openpyxl warns, F6),
-/// one `xl/worksheets/sheetN.xml` per sheet. Strings are inline
-/// (`t="inlineStr"`), no shared-strings part. No formulas: every number is
-/// computed in Dart, so the file shows the screen's numbers.
+/// A minimal `.xlsx` writer: own code on `archive`, no package. Six kinds of
+/// part: `[Content_Types].xml`, `_rels/.rels`, `xl/workbook.xml`,
+/// `xl/_rels/workbook.xml.rels`, `xl/styles.xml` (with `<cellStyles>`: without
+/// it openpyxl warns), one `xl/worksheets/sheetN.xml` per sheet. Strings are
+/// inline (`t="inlineStr"`), no shared-strings part. No formulas: every number
+/// is computed in Dart, so the file shows the screen's numbers.
 ///
 /// Pure Dart: tested by unzipping and parsing the XML, without a phone.
 library;
@@ -52,7 +51,7 @@ final class DateCell extends XlsxCell {
   final String day;
 }
 
-/// A share in tenths of a percent (P8-11).
+/// A share in tenths of a percent.
 final class ShareCell extends XlsxCell {
   const ShareCell(this.permille);
 
@@ -62,8 +61,8 @@ final class ShareCell extends XlsxCell {
 final class XlsxSheet {
   const XlsxSheet(this.name, this.rows, {this.widths = const []});
 
-  /// At most 31 characters, none of `\ / ? * [ ] :` (F9): the app's sheet
-  /// names are fixed ARB strings, checked by a test.
+  /// At most 31 characters, none of `\ / ? * [ ] :`: the app's sheet names are
+  /// fixed ARB strings, checked by a test.
   final String name;
   final List<List<XlsxCell?>> rows;
 
@@ -77,7 +76,7 @@ final class XlsxWorkbook {
   final List<XlsxSheet> sheets;
 }
 
-/// A sheet has more rows than Excel allows (1,048,576, F7).
+/// A sheet has more rows than Excel allows (1,048,576).
 class TooManyRows implements Exception {
   const TooManyRows(this.sheet, this.rows);
 
@@ -88,14 +87,14 @@ class TooManyRows implements Exception {
   String toString() => 'TooManyRows: $sheet has $rows rows';
 }
 
-/// The most rows a sheet can hold (F7).
+/// The most rows a sheet can hold.
 const maxSheetRows = 1048576;
 
-/// The most UTF-16 units a cell holds (F7).
+/// The most UTF-16 units a cell holds.
 const maxCellLength = 32767;
 
-/// The most significant digits Excel keeps in a number (F7); an amount
-/// with more is written as text, every digit kept.
+/// The most significant digits Excel keeps in a number; an amount with more is
+/// written as text, every digit kept.
 const maxExactDigits = 15;
 
 /// The workbook as `.xlsx` bytes. Throws [TooManyRows] when a sheet is
@@ -147,8 +146,8 @@ abstract final class _Style {
 }
 
 /// [minor] as a decimal written from the integer itself (`11050`, 2 →
-/// `110.50`), never through a `double`: exact, with `.` in every app
-/// language (the file's syntax, not its display, §6.5).
+/// `110.50`), never through a `double`: exact, with `.` in every app language
+/// (the file's syntax, not its display).
 String decimalOf(BigInt minor, int digits) {
   final negative = minor.isNegative;
   final text = minor.abs().toString().padLeft(digits + 1, '0');
@@ -165,10 +164,10 @@ bool tooPreciseForExcel(BigInt minor) {
   return digits.length > maxExactDigits;
 }
 
-/// Excel's serial for [day] (days since 1899-12-30), or null before
-/// 1900-03-01: Excel counts a 29 Feb 1900 that never was, LibreOffice and
-/// Google Sheets don't, so earlier serials disagree (F8). Integer date
-/// arithmetic on UTC midnights.
+/// Excel's serial for [day] (days since 1899-12-30), or null before 1900-03-01:
+/// Excel counts a 29 Feb 1900 that never was, LibreOffice and Google Sheets
+/// don't, so earlier serials disagree. Integer date arithmetic on UTC
+/// midnights.
 int? excelSerial(String day) {
   if (day.compareTo('1900-03-01') < 0) return null;
   final date = DateTime.utc(
@@ -227,7 +226,7 @@ void _cell(StringBuffer xml, String ref, XlsxCell cell) {
       _text(xml, ref, text, bold ? _Style.bold : _Style.normal);
     case AmountCell(:final minor, :final digits, :final bold):
       if (tooPreciseForExcel(minor)) {
-        // Every digit, as text (F7): a number would lose the last ones.
+        // Every digit, as text: a number would lose the last ones.
         _text(xml, ref, decimalOf(minor, digits), bold ? _Style.bold : 0);
       } else {
         xml.write(

@@ -2,9 +2,9 @@ import 'package:characters/characters.dart';
 
 import '../../l10n/app_localizations.dart';
 
-// Validation shared by the category, event and payment method forms
-// (phase-1.md §8). Lengths count graphemes (what the user sees as one
-// character), so an emoji or a Hindi conjunct counts once.
+// Validation shared by the category, event and payment method forms. Lengths
+// count graphemes (what the user sees as one character), so an emoji or a Hindi
+// conjunct counts once.
 
 const maxNameLength = 40;
 const maxDescriptionLength = 200;

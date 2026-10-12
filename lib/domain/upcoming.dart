@@ -1,6 +1,5 @@
-/// Upcoming payments (phase-7b.md §5.3): every payment of the running
-/// items over the next 12 months, nearest first, computed, never stored.
-/// Pure Dart.
+/// Upcoming payments: every payment of the running items over the next 12
+/// months, nearest first, computed, never stored. Pure Dart.
 library;
 
 import 'expense_filter.dart';
@@ -9,10 +8,10 @@ import 'periods.dart';
 import 'recurrence.dart';
 import 'recurring_price.dart';
 
-/// An upcoming payment skipped once (`recurring_skips`, §4.1).
+/// An upcoming payment skipped once (`recurring_skips`).
 typedef SkipKey = ({int itemId, String day});
 
-/// How far Upcoming looks: the next 12 months (P7b-10).
+/// How far Upcoming looks: the next 12 months.
 const upcomingMonths = 12;
 
 /// One payment to come.
@@ -38,7 +37,7 @@ final class UpcomingPayment {
   final String currencyCode;
   final int categoryId;
 
-  /// Skipped once: listed greyed, with Bring back (P7b-8).
+  /// Skipped once: listed greyed, with Bring back.
   final bool skipped;
 
   SkipKey get key => (itemId: itemId, day: day);
@@ -71,12 +70,11 @@ final class UpcomingPayment {
       '${skipped ? ', skipped' : ''})';
 }
 
-/// Whether [item]'s payments pass Home's [filter] (owner, 2026-10-10:
-/// Upcoming follows the filters, like the Photos screen): its category is
-/// one chosen, it has one of the chosen events, and every word of the
-/// text is in its title or description, as an expense it adds would be
-/// matched (phase-5.md §5.6, P5-32). Only recurring lets every item
-/// through: they all repeat.
+/// Whether [item]'s payments pass Home's [filter] (owner, 2026-10-10: Upcoming
+/// follows the filters, like the Photos screen): its category is one chosen, it
+/// has one of the chosen events, and every word of the text is in its title or
+/// description, as an expense it adds would be matched. Only recurring lets
+/// every item through: they all repeat.
 bool upcomingItemMatches(RecurringItem item, ExpenseFilter filter) {
   if (filter.categoryIds.isNotEmpty &&
       !filter.categoryIds.contains(item.categoryId)) {
@@ -198,7 +196,7 @@ final class UpcomingDay {
 }
 
 /// [payments] (in [upcomingPayments]' order) as month frames holding days,
-/// nearest first: the other way round from `photoGroups` (R4).
+/// nearest first: the other way round from `photoGroups`.
 List<UpcomingMonth> upcomingGroups(List<UpcomingPayment> payments) {
   final months = <UpcomingMonth>[];
   for (final payment in payments) {
@@ -215,10 +213,10 @@ List<UpcomingMonth> upcomingGroups(List<UpcomingPayment> payments) {
   return months;
 }
 
-/// The calendar months Upcoming pages through on [today], a page each
-/// (P7b-10): the rest of this month (tomorrow on), then each month up to
-/// [upcomingThrough]'s. 13 of them: the first and last are part months.
-/// Today the last day of a month: the first page is next month.
+/// The calendar months Upcoming pages through on [today], a page each: the rest
+/// of this month (tomorrow on), then each month up to [upcomingThrough]'s. 13
+/// of them: the first and last are part months. Today the last day of a month:
+/// the first page is next month.
 List<PeriodRange> upcomingPages(String today) {
   final start = addDays(today, 1);
   final through = upcomingThrough(today);

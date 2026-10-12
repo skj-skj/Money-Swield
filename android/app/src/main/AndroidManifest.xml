@@ -26,11 +26,11 @@
             </intent-filter>
         </activity>
         <!-- The camera app writes a photo into photos_staging/ through this
-             (phase-6.md §6.1); res/xml/photo_paths.xml shares nothing else.
+            ; res/xml/photo_paths.xml shares nothing else.
              No CAMERA permission on purpose: declared but not granted, it
-             makes the camera intent throw (F8). No storage permission
+             makes the camera intent throw. No storage permission
              either: the app's photos are in its own folder, and saving a
-             copy to Pictures/ through MediaStore needs none (F3, P6-30). -->
+             copy to Pictures/ through MediaStore needs none. -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.photos"
@@ -40,10 +40,10 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/photo_paths" />
         </provider>
-        <!-- Share hands a report to another app through this (phase-8.md
-             §6.6); res/xml/report_paths.xml shares cache/reports/ only.
+        <!-- Share hands a report to another app through this;
+             res/xml/report_paths.xml shares cache/reports/ only.
              Saving to Download/ goes through MediaStore and needs no
-             permission (Android 10+, F14). -->
+             permission (Android 10+). -->
         <provider
             android:name=".ReportsFileProvider"
             android:authorities="${applicationId}.reports"
@@ -69,8 +69,8 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
-        <!-- Share of a report says when no app can receive it (phase-8.md
-             §6.6): without this, Android 11+ hides every share target. -->
+        <!-- Share of a report says when no app can receive it:
+             without this, Android 11+ hides every share target. -->
         <intent>
             <action android:name="android.intent.action.SEND"/>
             <data android:mimeType="*/*"/>

@@ -1,17 +1,15 @@
 import 'package:flutter/services.dart';
 
-/// Whether SMS can be read: `built` (the merged manifest asks for
-/// READ_SMS; false in play built with `-PnoSms`, D11), `granted`, and
-/// `canAsk` (false after "Don't allow" twice: only the app's system
-/// settings can grant it then, P9a-30).
+/// Whether SMS can be read: `built` (the merged manifest asks for READ_SMS;
+/// false in play built with `-PnoSms`), `granted`, and `canAsk` (false after
+/// "Don't allow" twice: only the app's system settings can grant it then).
 typedef SmsPermission = ({bool built, bool granted, bool canAsk});
 
-/// One inbox row. Its `body` lives only in the scan's memory (P9a-19).
+/// One inbox row. Its `body` lives only in the scan's memory.
 typedef InboxSms = ({String sender, int receivedAtMs, String body});
 
-/// The phone's SMS inbox and the READ_SMS permission (phase-9a.md §6.4),
-/// behind an interface so tests use a fake. Own Kotlin, no plugin
-/// (P9a-26).
+/// The phone's SMS inbox and the READ_SMS permission, behind an interface so
+/// tests use a fake. Own Kotlin, no plugin.
 abstract interface class SmsService {
   Future<SmsPermission> status();
 

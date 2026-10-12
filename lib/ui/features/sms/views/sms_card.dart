@@ -9,10 +9,10 @@ import '../../../core/date_texts.dart';
 import '../../../core/formatting_locale.dart';
 import '../../../core/money_formatter.dart';
 
-/// One suggestion on the SMS screen (phase-9a.md §8.2, P9a-9): the amount,
-/// the payee as the SMS has it (up to 2 lines), the payment method and the
-/// time it came, and a dismiss icon in the top right. Its height follows
-/// its content (a large font grows it; only the payee is cut).
+/// One suggestion on the SMS screen: the amount, the payee as the SMS has it
+/// (up to 2 lines), the payment method and the time it came, and a dismiss icon
+/// in the top right. Its height follows its content (a large font grows it;
+/// only the payee is cut).
 class SmsCard extends StatelessWidget {
   const SmsCard({
     super.key,
@@ -69,8 +69,8 @@ class SmsCard extends StatelessWidget {
                         padding: const EdgeInsets.only(top: 8),
                         child: Semantics(
                           // The parts there are, so a card without a payee
-                          // isn't read as "₹110, , Debit card" (found with
-                          // the Oppo's UI dump, phase-9a.md §12a).
+                          // isn't read as "₹110, , Debit card" (found with the
+                          // Oppo's UI dump).
                           label: smsCardLabel(
                             amount: amount,
                             payee: payee,

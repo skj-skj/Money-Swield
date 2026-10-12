@@ -16,14 +16,13 @@ import io.flutter.plugin.common.MethodChannel
 import java.util.concurrent.Executors
 
 /**
- * `expense_tracker/sms` (phase-9a.md §6.4): reads bank SMS from the inbox
- * and asks for READ_SMS. Own code, no plugin (P9a-26), in both flavors;
- * the permission itself is declared only in the flavor manifests, and
- * `status.built` reads the merged manifest, so play built with `-PnoSms`
- * hides the feature without a BuildConfig flag.
+ * `expense_tracker/sms`: reads bank SMS from the inbox and asks for READ_SMS.
+ * Own code, no plugin, in both flavors; the permission itself is declared only
+ * in the flavor manifests, and `status.built` reads the merged manifest, so
+ * play built with `-PnoSms` hides the feature without a BuildConfig flag.
  *
  * The app only reads: rows go to Dart for one scan and are never written
- * anywhere (phase-9a.md P9a-19).
+ * anywhere.
  */
 class SmsChannel(messenger: BinaryMessenger, context: Context) :
     MethodChannel.MethodCallHandler {
@@ -117,7 +116,7 @@ class SmsChannel(messenger: BinaryMessenger, context: Context) :
         }
         pending = result
         // Device-local, not in the database: a backup must not carry it to
-        // another phone (phase-9a.md §6.4).
+        // another phone.
         prefs().edit().putBoolean(ASKED_KEY, true).apply()
         activity.requestPermissions(arrayOf(Manifest.permission.READ_SMS), REQUEST_CODE)
     }
@@ -208,10 +207,10 @@ object SmsRows {
 
 object SmsPermissionRule {
     /**
-     * Whether Android will still show its dialog: always before the first
-     * ask; after a refusal only while it wants a rationale. Refused with
-     * "Don't allow" twice, it shows nothing and only the app's settings
-     * page can grant it (phase-9a.md P9a-30).
+     * Whether Android will still show its dialog: always before the first ask;
+     * after a refusal only while it wants a rationale. Refused with "Don't
+     * allow" twice, it shows nothing and only the app's settings page can grant
+     * it.
      */
     fun canAsk(granted: Boolean, askedBefore: Boolean, showRationale: Boolean): Boolean =
         granted || !askedBefore || showRationale

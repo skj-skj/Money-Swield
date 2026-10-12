@@ -15,7 +15,7 @@ import '../views/report_texts.dart';
 /// (PDF pages), or handing it on.
 enum ExportStep { building, writing, saving }
 
-/// Why an export failed (§8.9 says each in words).
+/// Why an export failed (the screen says each in words).
 enum ExportFailure { pdf, excel, tooManyRows, save, noShareTarget }
 
 sealed class ExportState {
@@ -76,12 +76,12 @@ final class ExportDone extends ExportState {
   final ExportOutcome outcome;
 }
 
-/// Makes a report's file from the report on screen (phase-8.md §7.2; no
-/// new read, so the file shows the screen's numbers, §9), then saves or
-/// shares it. One export at a time: a second tap while one runs is
-/// ignored (a double tap makes one file). [cancel] stops the document
-/// build (between chunks) and the PDF (between pages) and deletes the
-/// partial file; during the Excel write it drops the result.
+/// Makes a report's file from the report on screen (no new read, so the file
+/// shows the screen's numbers), then saves or shares it. One export at a time:
+/// a second tap while one runs is ignored (a double tap makes one file).
+/// [cancel] stops the document build (between chunks) and the PDF (between
+/// pages) and deletes the partial file; during the Excel write it drops the
+/// result.
 class ReportExportCubit extends CubitSignal<ExportState>
     with EmitIfOpen<ExportState> {
   ReportExportCubit({required this._service, required this._now})

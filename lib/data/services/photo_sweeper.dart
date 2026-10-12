@@ -13,9 +13,9 @@ import 'photo_store.dart';
 /// What one sweep did, for the log and tests.
 typedef SweepResult = ({int rows, int files, bool filesSkipped});
 
-/// The only code that deletes photo rows and files (phase-6.md §6.5,
-/// P6-13). Runs once at startup, after the bin purge, before any form can
-/// save, so nothing is half-saved while it looks.
+/// The only code that deletes photo rows and files. Runs once at startup, after
+/// the bin purge, before any form can save, so nothing is half-saved while it
+/// looks.
 ///
 /// A file is deleted only when nothing can still need it: the live
 /// database's rows, the live draft, the camera's pending shot, and every
@@ -25,10 +25,10 @@ typedef SweepResult = ({int rows, int files, bool filesSkipped});
 /// until it is pruned: leaving a file costs space, deleting a needed one
 /// loses a photo.
 ///
-/// Deliberately stricter than phase-6.md §6.5 step 2 (§12a): when the live
-/// draft can't be read, unlinked **rows** stay too. Its saved photos are
-/// known only from it, and deleting such a row would drop that photo from
-/// the draft when it is opened.
+/// Deliberately stricter than the plain rule: when the live draft can't
+/// be read, unlinked **rows** stay too. Its saved photos are known only from
+/// it, and deleting such a row would drop that photo from the draft when it is
+/// opened.
 class PhotoSweeper {
   PhotoSweeper({
     required this._db,
@@ -51,7 +51,7 @@ class PhotoSweeper {
 
   final DateTime Function() _now;
 
-  /// A camera shot older than this is given up (§6.5 step 4).
+  /// A camera shot older than this is given up.
   static const captureLifetime = Duration(days: 30);
 
   Future<SweepResult> sweep() async {
@@ -134,14 +134,14 @@ class PhotoSweeper {
     return (rows: rows, files: files, filesSkipped: false);
   }
 
-  /// Every `relative_path` of [db]'s `photos`, read as one text per block
-  /// of 2,000 ids rather than one row per photo: with 10,000 photos the
-  /// row-per-photo read took ~315 ms of a ~470 ms sweep on the Oppo
-  /// (profile build), every row a map through sqflite's channel
-  /// (phase-6.md §12a). A block stays far below Android's 2 MB cursor
-  /// window (2,000 × ~76 bytes). The live rows and the pre-restore copies'.
-  /// A valid path never holds a newline (`isValidPhotoPath`); one that did
-  /// would split into more paths to keep, never fewer.
+  /// Every `relative_path` of [db]'s `photos`, read as one text per block of
+  /// 2,000 ids rather than one row per photo: with 10,000 photos the
+  /// row-per-photo read took ~315 ms of a ~470 ms sweep on the Oppo (profile
+  /// build), every row a map through sqflite's channel. A block stays far below
+  /// Android's 2 MB cursor window (2,000 × ~76 bytes). The live rows and the
+  /// pre-restore copies'. A valid path never holds a newline
+  /// (`isValidPhotoPath`); one that did would split into more paths to keep,
+  /// never fewer.
   static Future<List<String>> photoPathsOf(DatabaseExecutor db) async {
     final blocks = await db.rawQuery(
       'SELECT group_concat(relative_path, char(10)) AS paths FROM photos '
@@ -168,7 +168,7 @@ class PhotoSweeper {
   }
 
   /// A pre-restore copy's photo paths (if it has the table: a copy from
-  /// before Phase 6 has none) and its draft's photos. Throws when the copy
+  /// before photos existed has none) and its draft's photos. Throws when the copy
   /// can't be read.
   Future<void> _addCopy(
     String path,
@@ -190,10 +190,9 @@ class PhotoSweeper {
     }
   }
 
-  /// The file names in [folder]; none when it doesn't exist yet. Listed
-  /// here: on another isolate (`listSync`) the sweep was slower with
-  /// 10,000 files, ~290 ms against ~250, the names being sent back
-  /// (phase-6.md §12a).
+  /// The file names in [folder]; none when it doesn't exist yet. Listed here:
+  /// on another isolate (`listSync`) the sweep was slower with 10,000 files,
+  /// ~290 ms against ~250, the names being sent back.
   static Future<List<String>> _names(String folder) async {
     final directory = Directory(folder);
     if (!await directory.exists()) return const [];

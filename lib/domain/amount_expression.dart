@@ -1,4 +1,4 @@
-/// Amounts typed as sums: `50+60*2` (phase-4.md §5.1, D8).
+/// Amounts typed as sums: `50+60*2`.
 ///
 /// Three forms of the same text, one character each, so a cursor offset
 /// means the same position in all three:
@@ -16,7 +16,7 @@ library;
 import 'amount_input.dart';
 
 /// Why an expression was refused. When several apply, the first in this
-/// order wins (phase-4.md §5.1 error table).
+/// order wins.
 enum ExpressionError {
   empty,
   invalid,
@@ -87,11 +87,11 @@ final class ExpressionRejected extends ExpressionResult {
   String toString() => 'ExpressionRejected(${error.name})';
 }
 
-/// The longest expression accepted, typed or stored (P4-7).
+/// The longest expression accepted, typed or stored.
 const maxExpressionLength = 100;
 
-/// Decimals an operand of `×` or `÷` may have (a quantity like `1.5 × 400`),
-/// or the currency's minor digits if more (P4-15).
+/// Decimals an operand of `×` or `÷` may have (a quantity like `1.5 × 400`), or
+/// the currency's minor digits if more.
 const maxOperandDecimals = 3;
 
 const _operators = '+-*/';
@@ -116,12 +116,12 @@ ExpressionResult evaluateExpression(
 }) => _evaluateText(canonical, minorDigits: minorDigits);
 
 /// Evaluates the amount field's text ([field], field form), like
-/// [evaluateExpression] on its canonical form, with one more rule: an
-/// operand of × or ÷ gets the extra quantity decimals (P4-15) only when it
-/// is written with the locale's [decimalSeparator]. With the other one it
-/// is probably grouping: `1,000 × 2` typed for INR in English means 2000,
-/// not 2.00, so it is `tooManyDecimals`, as `1,000` alone already is.
-/// `1.000 × 2` (the locale's separator) is still a quantity.
+/// [evaluateExpression] on its canonical form, with one more rule: an operand
+/// of × or ÷ gets the extra quantity decimals only when it is written with the
+/// locale's [decimalSeparator]. With the other one it is probably grouping:
+/// `1,000 × 2` typed for INR in English means 2000, not 2.00, so it is
+/// `tooManyDecimals`, as `1,000` alone already is. `1.000 × 2` (the locale's
+/// separator) is still a quantity.
 ExpressionResult evaluateField(
   String field, {
   required int minorDigits,
@@ -142,7 +142,7 @@ ExpressionResult _evaluateText(
   String? field,
   String decimalSeparator = '.',
 }) {
-  // A trailing operator is ignored, like a trailing `.` (P4-4).
+  // A trailing operator is ignored, like a trailing `.`.
   var text = canonical;
   if (text.isNotEmpty && isOperator(text[text.length - 1])) {
     text = text.substring(0, text.length - 1);
@@ -228,8 +228,8 @@ String fieldToCanonical(String field) {
   return out.toString();
 }
 
-/// [canonical] as the field shows it, with [decimalSeparator] (`.` or
-/// `,`, the formatting locale's, P4-5).
+/// [canonical] as the field shows it, with [decimalSeparator] (`.` or `,`, the
+/// formatting locale's).
 String canonicalToField(String canonical, String decimalSeparator) {
   final out = StringBuffer();
   for (final rune in canonical.runes) {
@@ -257,8 +257,8 @@ String displayExpression(String canonical, String decimalSeparator) {
 /// Whether the field text holds an operator symbol (field or canonical).
 bool hasOperator(String text) => _anyOperator.hasMatch(text);
 
-/// Whether the result line shows under the amount: an operator, a `,`, or
-/// two separators (R8). A plain `110.50` needs no line.
+/// Whether the result line shows under the amount: an operator, a `,`, or two
+/// separators. A plain `110.50` needs no line.
 bool needsResultLine(String fieldText) =>
     hasOperator(fieldText) || amountNeedsPreview(fieldText);
 
@@ -329,8 +329,8 @@ class _Number {
       decimals = text.contains('.') ? text.split('.')[1].length : 0,
       value = _Fraction.parse(text);
 
-  /// May have up to [maxOperandDecimals] decimals: an operand of × or ÷
-  /// typed with the locale's separator (P4-15).
+  /// May have up to [maxOperandDecimals] decimals: an operand of × or ÷ typed
+  /// with the locale's separator.
   final bool quantity;
   final int integerDigits;
   final int decimals;

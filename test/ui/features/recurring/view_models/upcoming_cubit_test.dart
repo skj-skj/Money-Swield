@@ -9,7 +9,7 @@ import 'package:my_expense_tracker_app/ui/features/recurring/view_models/upcomin
 
 import '../../../../helpers/test_database.dart';
 
-/// `UpcomingCubit` (phase-7b.md §7.4). Today is 2026-10-09, noon.
+/// `UpcomingCubit`. Today is 2026-10-09, noon.
 void main() {
   late AppDependencies deps;
   late TestClock clock;

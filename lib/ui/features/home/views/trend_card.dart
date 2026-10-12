@@ -12,8 +12,8 @@ import '../../../core/period_names.dart';
 import '../../../core/widgets/reel_card.dart';
 import '../view_models/trend_cubit.dart';
 
-/// Home's trend card (phase-5.md §8.2): the current week, month or year
-/// as a chart, headed by the whole period's total in one currency.
+/// Home's trend card: the current week, month or year as a chart, headed by the
+/// whole period's total in one currency.
 ///
 /// **Swipe up / down** turns it Week → Month → Year like a slot-machine
 /// reel: while the finger drags, the current face tilts away and the next
@@ -256,8 +256,8 @@ class _TrendCardState extends State<TrendCard> {
       ? widget.names.month(point.from)
       : widget.names.day(point.from);
 
-  /// Week: narrow weekdays from the week start; Month: 1, 8, 15, 22, 29;
-  /// Year: narrow months (P5-23).
+  /// Week: narrow weekdays from the week start; Month: 1, 8, 15, 22, 29; Year:
+  /// narrow months.
   Map<int, String> _labels(Period period, PeriodRange range) {
     final locale = widget.names.locale;
     return switch (period) {

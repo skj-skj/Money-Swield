@@ -1,5 +1,4 @@
-/// What the generator does for one recurring item (phase-7a.md §5.3).
-/// Pure Dart.
+/// What the generator does for one recurring item. Pure Dart.
 library;
 
 import 'dart:math' as math;
@@ -9,7 +8,7 @@ import 'recurrence.dart';
 import 'repeat_input.dart' show maxPastPayments;
 
 /// A backlog whose oldest payment is more than this many days old is held:
-/// nothing is added until the user chooses Add all or Skip them (P7a-3).
+/// nothing is added until the user chooses Add all or Skip them.
 const holdAfterDays = 31;
 
 sealed class TemplatePlan {
@@ -29,9 +28,9 @@ final class AddPayments extends TemplatePlan {
   final String? next;
 }
 
-/// The oldest payment due is more than [holdAfterDays] old: nothing is
-/// added until the user chooses (§8.6). [count] payments are due, [from]
-/// (the cursor) to [to].
+/// The oldest payment due is more than [holdAfterDays] old: nothing is added
+/// until the user chooses. [count] payments are due, [from] (the cursor) to
+/// [to].
 final class HoldPayments extends TemplatePlan {
   const HoldPayments({
     required this.count,
@@ -45,11 +44,10 @@ final class HoldPayments extends TemplatePlan {
 }
 
 /// The plan for an item with [s] and [cursor] (`next_due_on`) on [today].
-/// [confirmed]: the user already said yes (Save with Repeats, Add all), so
-/// no hold. [skipped]: dates skipped once from Upcoming (phase-7b.md §5.2):
-/// neither added nor counted, so "Add all 10" adds 10, and the hold looks
-/// at the oldest date it would really add. The cursor still moves past
-/// them.
+/// [confirmed]: the user already said yes (Save with Repeats, Add all), so no
+/// hold. [skipped]: dates skipped once from Upcoming: neither added nor
+/// counted, so "Add all 10" adds 10, and the hold looks at the oldest date it
+/// would really add. The cursor still moves past them.
 TemplatePlan planTemplate(
   Schedule s, {
   required String? cursor,
@@ -106,14 +104,13 @@ TemplatePlan planTemplate(
   return (due: due, next: next);
 }
 
-/// **Add selected** (phase-7b.md §5.2, P7b-6): the dates to add are the
-/// [ticked] ones that are really due (the held dates: from [cursor]
-/// through [today], [skipped] left out, at most [maxPastPayments]);
-/// anything else ticked is ignored, so a stale list can't add a wrong
-/// date. `listed`: how many dates the sheet listed. The cursor goes after
-/// them: after [today], so the unticked ones are skipped for good; with
-/// more than 1,000 waiting, to the first one not listed, which is asked
-/// about again (phase-7b.md §12a: never skipped unseen).
+/// **Add selected**: the dates to add are the
+/// [ticked] ones that are really due (the held dates: from [cursor] through
+/// [today], [skipped] left out, at most [maxPastPayments]); anything else
+/// ticked is ignored, so a stale list can't add a wrong date. `listed`: how
+/// many dates the sheet listed. The cursor goes after them: after [today], so
+/// the unticked ones are skipped for good; with more than 1,000 waiting, to the
+/// first one not listed, which is asked about again (never skipped unseen).
 ///
 /// [today] is the day the sheet was read on, not the day of the tap: past
 /// midnight, the new day's payment wasn't listed and must not be skipped
@@ -176,15 +173,14 @@ int skippedBetween(Schedule s, Set<String> skipped, String from, String to) =>
         )
         .length;
 
-/// The cursor after an Edit changed the end (the schedule [s] has the new
-/// one). Every date up to the old cursor, or up to [oldEnd] when no
-/// payment was left ([cursor] null), was handled: the cursor never moves
-/// back onto one of them (§6.7, P7a-17).
+/// The cursor after an Edit changed the end (the schedule [s] has the new one).
+/// Every date up to the old cursor, or up to [oldEnd] when no payment was left
+/// ([cursor] null), was handled: the cursor never moves back onto one of them.
 ///
 /// - A cursor past the new end: null (no payment left).
 /// - No payment was left and the end moves later (or goes): the first
 ///   payment after the old end. Without this an item whose end was
-///   extended would never add a payment again (phase-7a.md §12a).
+///   extended would never add a payment again.
 String? cursorAfterEndChange(
   Schedule s, {
   required String? cursor,
@@ -196,8 +192,8 @@ String? cursorAfterEndChange(
 
 /// The cursor when an archived item is restored on [today]: payments start
 /// again from today, the archived gap isn't caught up, and no date already
-/// handled is looked at again (§6.7). [s] is the schedule as restored (an
-/// end that passed is cleared: [endCleared]).
+/// handled is looked at again. [s] is the schedule as restored (an end that
+/// passed is cleared: [endCleared]).
 ///
 /// - A kept cursor: the later of it and the first payment from today; null
 ///   when none is left before the end.
@@ -205,7 +201,7 @@ String? cursorAfterEndChange(
 ///   payment from today.
 /// - No cursor and the end still ahead (stopped with no payment left):
 ///   stays null. Taking "the first payment from today" here could hand
-///   back a payment already added and since deleted (phase-7a.md §12a).
+///   back a payment already added and since deleted.
 String? cursorAfterRestore(
   Schedule s, {
   required String? cursor,
@@ -216,11 +212,10 @@ String? cursorAfterRestore(
   return occurrenceOnOrAfter(s, cursor.compareTo(today) > 0 ? cursor : today);
 }
 
-/// What Restore does to an archived item with [s] and [cursor] on [today]
-/// (§6.1): the schedule it restores with (an end before today cleared,
-/// `endPassed` says which), and its cursor ([cursorAfterRestore]). The
-/// Restore dialog shows it and the repository writes it, so they can't
-/// disagree.
+/// What Restore does to an archived item with [s] and [cursor] on [today]: the
+/// schedule it restores with (an end before today cleared, `endPassed` says
+/// which), and its cursor ([cursorAfterRestore]). The Restore dialog shows it
+/// and the repository writes it, so they can't disagree.
 ({Schedule schedule, String? endPassed, String? next}) planRestore(
   Schedule s, {
   required String? cursor,
@@ -247,8 +242,8 @@ String? cursorAfterRestore(
   );
 }
 
-/// The earliest end an Edit may set (P7a-27): not before today, the start,
-/// or a payment already added ([newestPayment], binned ones included).
+/// The earliest end an Edit may set: not before today, the start, or a payment
+/// already added ([newestPayment], binned ones included).
 String earliestEndFor({
   required String startOn,
   required String? newestPayment,
@@ -277,9 +272,9 @@ String? lastHandledOn(Schedule s, {required String? cursor}) {
   return before == 0 ? null : occurrenceAt(s, before - 1);
 }
 
-/// The earliest First payment a new schedule may start on (phase-7b.md
-/// §7.3, P7b-4): after the old item's last handled date, so no date it
-/// added, deleted or skipped is paid again (§6.5), and not before [today].
+/// The earliest First payment a new schedule may start on: after the old item's
+/// last handled date, so no date it added, deleted or skipped is paid again,
+/// and not before [today].
 String earliestFirstPayment(
   Schedule old, {
   required String? cursor,
@@ -294,11 +289,11 @@ String earliestFirstPayment(
 /// whether it runs.
 typedef FamilyLink = ({int? replacesId, bool running});
 
-/// The running items of [id]'s family, itself left out: every item joined
-/// to it through `replaces_id`, up or down, any number of steps (A → B →
-/// C: restoring A finds C; restoring B, swapped out for A, finds A).
-/// Restoring one of them swaps these out (P7b-3), so one bill never has two
-/// items running. Newest first. [items] is every item, by id.
+/// The running items of [id]'s family, itself left out: every item joined to it
+/// through `replaces_id`, up or down, any number of steps (A → B → C: restoring
+/// A finds C; restoring B, swapped out for A, finds A). Restoring one of them
+/// swaps these out, so one bill never has two items running. Newest first.
+/// [items] is every item, by id.
 List<int> runningRelatives(int id, Map<int, FamilyLink> items) {
   final children = <int, List<int>>{};
   for (final MapEntry(key: child, value: link) in items.entries) {
@@ -329,10 +324,9 @@ List<int> runningRelatives(int id, Map<int, FamilyLink> items) {
   ]..sort((a, b) => b.compareTo(a));
 }
 
-/// Whether an item's payments are waiting to be added ([cursor] on or
-/// before [today]: held, or a run that failed): changing how often would
-/// drop them, so the Edit screen asks to add or skip them first
-/// (phase-7b.md §12a).
+/// Whether an item's payments are waiting to be added ([cursor] on or before
+/// [today]: held, or a run that failed): changing how often would drop them, so
+/// the Edit screen asks to add or skip them first.
 bool paymentsWaiting({required String? cursor, required String today}) =>
     cursor != null && cursor.compareTo(today) <= 0;
 

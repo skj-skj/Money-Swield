@@ -11,10 +11,9 @@ import 'event_repository.dart';
 import 'expense_filter_sql.dart';
 import 'payment_method_repository.dart';
 
-/// What a report is built from: the rows, and the categories, events
-/// (archived too, A10) and payment methods they point at, read in one
-/// snapshot. Models, not names: names are made in the UI layer, so a
-/// language switch needs no read.
+/// What a report is built from: the rows, and the categories, events (archived
+/// too) and payment methods they point at, read in one snapshot. Models, not
+/// names: names are made in the UI layer, so a language switch needs no read.
 final class ReportData {
   const ReportData({
     required this.rows,
@@ -29,25 +28,23 @@ final class ReportData {
   final Map<int, PaymentMethod> paymentMethods;
 }
 
-/// Reads a report's rows (phase-8.md §6.1). Writes nothing.
+/// Reads a report's rows. Writes nothing.
 class ReportRepository {
   ReportRepository(this._db);
 
   final Database _db;
 
-  /// The active expenses of [range] that pass [filter]'s SQL part (all of
-  /// it but the text, which `buildReport` matches in Dart), in report
-  /// order, with the three name maps, in **one transaction** so names and
-  /// rows come from one moment (§4.1). Everything inside goes through the
-  /// transaction's executor: a call to the database itself there would
-  /// wait for the transaction and never return (R13). The transaction
-  /// holds the write lock while it reads: a Save meanwhile waits, it
-  /// doesn't fail (F12).
+  /// The active expenses of [range] that pass [filter]'s SQL part (all of it
+  /// but the text, which `buildReport` matches in Dart), in report order, with
+  /// the three name maps, in **one transaction** so names and rows come from
+  /// one moment. Everything inside goes through the transaction's executor: a
+  /// call to the database itself there would wait for the transaction and never
+  /// return. The transaction holds the write lock while it reads: a Save
+  /// meanwhile waits, it doesn't fail.
   ///
-  /// Descriptions only with [withDescriptions] (a text filter matches
-  /// them; nothing else shows them): at 10,000 rows with 1,000-character
-  /// descriptions the read took 1.2 s on the Oppo, holding the write lock
-  /// meanwhile (phase-8.md §12a).
+  /// Descriptions only with [withDescriptions] (a text filter matches them;
+  /// nothing else shows them): at 10,000 rows with 1,000-character descriptions
+  /// the read took 1.2 s on the Oppo, holding the write lock meanwhile.
   Future<ReportData> read(
     ReportRange range,
     ReportFilter filter, {
@@ -70,11 +67,10 @@ class ReportRepository {
     );
   });
 
-  /// §4.1's query. The date range searches the date index; All time scans
-  /// it in index order (F1). Payment methods are written
-  /// `+payment_method_id`, so 3.22 keeps the date index instead of the
-  /// payment-method index and a temp B-tree (F13). At most two bound
-  /// variables; ids as literals (R10).
+  /// The report's query. The date range searches the date index; All time scans it in
+  /// index order. Payment methods are written `+payment_method_id`, so 3.22
+  /// keeps the date index instead of the payment-method index and a temp
+  /// B-tree. At most two bound variables; ids as literals.
   static String reportSql(
     ReportRange range,
     ReportFilter filter, {
@@ -114,8 +110,8 @@ class ReportRepository {
     recurring: row['recurring_expense_id'] != null,
   );
 
-  /// `group_concat`'s comma-separated ids as a set: its order is
-  /// unspecified (sqlite.md §5.10, F3). NULL (no events) is empty.
+  /// `group_concat`'s comma-separated ids as a set: its order is unspecified.
+  /// NULL (no events) is empty.
   static Set<int> parseIdSet(String? joined) =>
       joined == null ? {} : {for (final id in joined.split(',')) int.parse(id)};
 }

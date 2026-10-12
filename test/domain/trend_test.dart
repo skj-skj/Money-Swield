@@ -6,7 +6,6 @@ import 'package:my_expense_tracker_app/domain/smooth_line.dart';
 import 'package:my_expense_tracker_app/domain/totals.dart';
 import 'package:my_expense_tracker_app/domain/trend.dart';
 
-/// phase-5.md §5.2–§5.4 and §12 "Domain".
 void main() {
   final maxInt = BigInt.from(9223372036854775807);
 
@@ -165,7 +164,7 @@ void main() {
 
   group('monotoneTangents', () {
     /// Samples each segment at 20 steps and checks it stays within its two
-    /// ends (§5.4): never below the lower, never above the higher.
+    /// ends: never below the lower, never above the higher.
     void expectNoOvershoot(List<double> ys) {
       final m = monotoneTangents(ys);
       for (var i = 0; i < ys.length - 1; i++) {

@@ -7,8 +7,6 @@ import 'package:my_expense_tracker_app/domain/models/money.dart';
 import 'package:my_expense_tracker_app/ui/core/formatting_locale.dart';
 import 'package:my_expense_tracker_app/ui/core/money_formatter.dart';
 
-/// phase-2.md §4.4 and the "Formatting" tests of §13; phase-5.md §5.7
-/// (R2, R3).
 void main() {
   String format(Money money, {required String locale}) =>
       MoneyFormatter.forLocale(locale).format(money);
@@ -115,7 +113,7 @@ void main() {
     });
   });
 
-  group('exact for any amount (phase-5.md R2)', () {
+  group('exact for any amount', () {
     test('the same text as the old double path, 420 cases', () {
       // Captured from the old `amountMinor / 10^digits` path before the
       // change: 7 locales × 6 currencies × 10 amounts, all within the
@@ -168,7 +166,7 @@ void main() {
     });
   });
 
-  group('formatTotal (phase-5.md R3)', () {
+  group('formatTotal', () {
     final formatter = MoneyFormatter.forLocale('en_IN');
     final max = BigInt.from(9223372036854775807);
 

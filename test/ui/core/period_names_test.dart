@@ -6,7 +6,7 @@ import 'package:my_expense_tracker_app/ui/core/period_names.dart';
 
 import '../../helpers/test_database.dart';
 
-/// phase-5.md §8.3 names, with a fixed today of Mon 5 Oct 2026.
+/// Period names, with a fixed today of Mon 5 Oct 2026.
 void main() {
   setUpAll(initializeDateFormatting);
 
@@ -61,7 +61,7 @@ void main() {
     );
   });
 
-  test('Spanish starts with a capital letter (R13)', () {
+  test('Spanish starts with a capital letter', () {
     final es = names(language: 'es', locale: 'es');
     expect(es.day('2026-10-05'), 'Lun, 5 oct');
     expect(es.month('2026-10-05'), 'Oct');
@@ -98,7 +98,7 @@ void main() {
     expect(totalsText(l10n, formatter, {'INR': tooLarge}, 'INR'), 'Too large');
   });
 
-  test('monthWithYear always has the year (phase-6.md §8.9)', () {
+  test('monthWithYear always has the year', () {
     expect(names().monthWithYear('2026-10-05'), 'Oct 2026');
     expect(names().monthWithYear('2025-09-01'), 'Sept 2025');
     expect(names(locale: 'en_US').monthWithYear('2025-09-01'), 'Sep 2025');

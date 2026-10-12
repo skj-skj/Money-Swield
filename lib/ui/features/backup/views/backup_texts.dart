@@ -17,7 +17,7 @@ String lastBackupText(AppLocalizations l10n, DateTime? at, DateTime now) {
   return l10n.lastBackupSubtitle(daysAgoText(l10n, at, now));
 }
 
-/// The confirm dialog's lines (§6.3), without the title and buttons.
+/// The confirm dialog's lines, without the title and buttons.
 List<String> restoreSummary(
   AppLocalizations l10n, {
   required String locale,
@@ -43,9 +43,9 @@ List<String> restoreSummary(
   ];
 }
 
-/// The photos of a zip restore (phase-6.md §8.8): how many and their size,
-/// and that they don't fit; or that the backup has none. Nothing for
-/// Undo's copy (its photos are on the phone).
+/// The photos of a zip restore: how many and their size, and that they don't
+/// fit; or that the backup has none. Nothing for Undo's copy (its photos are on
+/// the phone).
 List<String> photoLines(
   AppLocalizations l10n,
   String locale,
@@ -66,10 +66,9 @@ List<String> photoLines(
   ];
 }
 
-/// "121 expenses, plus 3 in the bin, 4 recurring items. Latest on 2 Oct
-/// 2026". The bin part and the recurring part (running items, phase-7a.md
-/// R14) are left out when they're 0, "Latest on" when there are no
-/// expenses.
+/// "121 expenses, plus 3 in the bin, 4 recurring items. Latest on 2 Oct 2026".
+/// The bin part and the recurring part (running items) are left out when
+/// they're 0, "Latest on" when there are no expenses.
 String _countsLine(
   AppLocalizations l10n,
   String locale,

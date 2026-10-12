@@ -1,6 +1,6 @@
-/// The Highlights strip under the report card (owner, 2026-10-11): a few
-/// facts of the report in the card's currency. No comparisons with other
-/// periods (P8-23). Pure Dart, `BigInt` sums of `int` minor units.
+/// The Highlights strip under the report card (owner, 2026-10-11): a few facts
+/// of the report in the card's currency. No comparisons with other periods.
+/// Pure Dart, `BigInt` sums of `int` minor units.
 library;
 
 import 'periods.dart';

@@ -10,9 +10,9 @@ import '../../../core/recurrence_text.dart';
 import '../../../core/widgets/repeat_every_row.dart';
 import '../../../core/widgets/repeat_number_field.dart';
 
-/// The Repeats section at the end of the Add form (phase-7a.md §8.2): a
-/// switch, then every N days / weeks / months / years, the rule in words,
-/// the end (never or on a date), and what a Save adds.
+/// The Repeats section at the end of the Add form: a switch, then every N days
+/// / weeks / months / years, the rule in words, the end (never or on a date),
+/// and what a Save adds.
 ///
 /// Stateless: the form's cubit holds the settings; the screen owns the
 /// Every field's controller like the form's other text fields, so typing
@@ -49,15 +49,13 @@ class RepeatSection extends StatelessWidget {
   final String startOn;
   final String today;
 
-  /// The date "On" ends on while none is picked (six months on): shown in
-  /// its box, so the row says what choosing it means (it showed "—" on the
-  /// Oppo; phase-7a.md §12a).
+  /// The date "On" ends on while none is picked (six months on): shown in its
+  /// box, so the row says what choosing it means (it showed "—" on the Oppo).
   final String defaultEndOn;
 
   final TextEditingController intervalController;
 
-  /// The "After N payments" field (phase-7b.md §8.2), owned by the screen
-  /// like Every's.
+  /// The "After N payments" field, owned by the screen like Every's.
   final TextEditingController countController;
 
   /// Picking "After" focuses it, so the count can be typed at once.
@@ -121,13 +119,13 @@ class RepeatSection extends StatelessWidget {
       ),
       if (interval != null) ...[
         const SizedBox(height: 4),
-        // Each line its own node: merged, TalkBack read the rule, "Ends"
-        // and "Next" as one, before the radio buttons (Oppo, §12a).
+        // Each line its own node: merged, TalkBack read the rule, "Ends" and
+        // "Next" as one, before the radio buttons (Oppo).
         Semantics(
           container: true,
           child: Text(
-            // The rule only: not scheduleFor, which throws while After N
-            // isn't valid yet ("After 1" typed; phase-7b.md §12a).
+            // The rule only: not scheduleFor, which throws while After N isn't
+            // valid yet ("After 1" typed).
             scheduleText(
               l10n,
               locale,
@@ -154,11 +152,11 @@ class RepeatSection extends StatelessWidget {
           if (end == null) return;
           onEnd(end);
           switch (end) {
-            // Picking "On" asks for the date at once (§8.2).
+            // Picking "On" asks for the date at once.
             case RepeatEnd.onDate:
               onPickEndDate();
-            // Picking "After" puts the cursor in its field, the count
-            // selected, so typing replaces it (phase-7b.md §8.2).
+            // Picking "After" puts the cursor in its field, the count selected,
+            // so typing replaces it.
             case RepeatEnd.afterCount:
               countFocus.requestFocus();
               // After the frame: the default count reaches the field
@@ -243,9 +241,9 @@ class RepeatSection extends StatelessWidget {
     );
   }
 
-  /// "After [ 12 ] payments" (phase-7b.md §8.2): the field takes three
-  /// digits; its error ("2 to 999") shows under it after a Save attempt.
-  /// A Wrap, so a large font puts the words under the field.
+  /// "After [ 12 ] payments": the field takes three digits; its error ("2 to
+  /// 999") shows under it after a Save attempt. A Wrap, so a large font puts
+  /// the words under the field.
   Widget _afterRow(AppLocalizations l10n, RepeatChoice repeat) {
     final showError = error == RepeatError.countRange;
     return Wrap(
@@ -340,7 +338,7 @@ class RepeatSection extends StatelessWidget {
             child: Text(
               [
                 nextText(l10n, locale, summary.next, today: today),
-                // With an end, its last payment too (phase-7b.md §8.2).
+                // With an end, its last payment too.
                 if (summary.last case final last? when summary.next != null)
                   l10n.repeatLast(dayText(locale, last, today: today)),
               ].join(' · '),

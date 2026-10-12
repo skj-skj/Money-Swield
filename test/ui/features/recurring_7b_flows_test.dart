@@ -14,8 +14,7 @@ import 'package:my_expense_tracker_app/ui/features/recurring/views/upcoming_scre
 import '../../helpers/pump_app.dart';
 import '../../helpers/test_database.dart';
 
-/// Phase 7b's flows through the real app (phase-7b.md §8.1 A–G, §12
-/// "Widgets"). Today is Fri 9 Oct 2026, noon.
+/// More Recurring flows through the real app. Today is Fri 9 Oct 2026, noon.
 void main() {
   late AppDependencies deps;
   late TestClock clock;

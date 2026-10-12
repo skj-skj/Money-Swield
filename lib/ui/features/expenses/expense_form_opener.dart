@@ -13,20 +13,19 @@ import 'view_models/expense_form_cubit.dart';
 import 'views/expense_form_screen.dart';
 import 'views/sms_draft_dialog.dart';
 
-/// Opens the Add / Edit form the way every screen does (phase-6.md §8.9,
-/// P6-39): Home and the Photos screen share it.
+/// Opens the Add / Edit form the way every screen does: Home and the Photos
+/// screen share it.
 ///
 /// - The form starts from the draft slot when the slot holds a draft for
 ///   it (an Add draft for Add, this expense's Edit draft for Edit);
-///   otherwise the slot is left alone until the form gets a change
-///   (phase-4.md §7.4).
+///   otherwise the slot is left alone until the form gets a change.
 /// - Reading the slot is async, and taps in that gap would open a second
-///   form (R12): every open is ignored until the current one is pushed.
+///   form: every open is ignored until the current one is pushed.
 ///
-/// - An SMS draft (phase-9a.md §7.3) is resumed only by its own card
+/// - An SMS draft is resumed only by its own card
 ///   ([openSms]) or a plain Add: a chip or Recurring → New opens a fresh
 ///   form instead, or a chip's amount or a Repeats Save would mark the SMS
-///   with values it never had (P9a-43).
+///   with values it never had.
 ///
 /// The slot is read through [pendingDraft], the screen's cubit: a widget
 /// doesn't read a repository; [dismissDraft] empties it ([openSms]'s
@@ -43,8 +42,7 @@ class ExpenseFormOpener {
   final Future<ExpenseDraft?> Function() pendingDraft;
   final Future<void> Function()? dismissDraft;
 
-  /// Opens a recurring item's page from a payment's Edit (phase-7a.md
-  /// §8.1 E).
+  /// Opens a recurring item's page from a payment's Edit.
   final void Function(BuildContext context, int itemId)? onOpenRecurring;
 
   bool _opening = false;
@@ -82,11 +80,10 @@ class ExpenseFormOpener {
     return (opened: true, result: await closed);
   }
 
-  /// Opens the Add form from the SMS suggestion [sms] (phase-9a.md §7.3,
-  /// §5.9, P9a-3): its own draft is resumed; with no draft a new form is
-  /// filled from it; **any other draft is asked about first** (Cancel /
-  /// Dismiss draft), so a draft is never replaced silently. Cancel (or
-  /// back) leaves everything as it was: `opened` false.
+  /// Opens the Add form from the SMS suggestion [sms]: its own draft is
+  /// resumed; with no draft a new form is filled from it; **any other draft is
+  /// asked about first** (Cancel / Dismiss draft), so a draft is never replaced
+  /// silently. Cancel (or back) leaves everything as it was: `opened` false.
   Future<({bool opened, ExpenseFormResult? result})> openSms(
     BuildContext context,
     SmsSuggestion sms,
@@ -139,11 +136,11 @@ class ExpenseFormOpener {
   );
 }
 
-/// What a closed form says, on the screen that opened it (after the pop,
-/// on that screen's own messenger: phase-2.md §9.1): "Moved to bin" with
-/// [onUndoBin], "This expense no longer exists", "Draft saved", that a
-/// save couldn't keep a photo, or what a Save with Repeats did
-/// (phase-7a.md §8.9). Nothing for a plain save or back.
+/// What a closed form says, on the screen that opened it (after the pop, on
+/// that screen's own messenger): "Moved to bin" with
+/// [onUndoBin], "This expense no longer exists", "Draft saved", that a save
+/// couldn't keep a photo, or what a Save with Repeats did. Nothing for a plain
+/// save or back.
 void showExpenseFormResult(
   ScaffoldMessengerState? messenger,
   AppLocalizations l10n,

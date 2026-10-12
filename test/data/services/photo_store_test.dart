@@ -12,7 +12,7 @@ import 'package:path/path.dart' as p;
 import '../../helpers/fake_photo_service.dart';
 import '../../helpers/test_folders.dart';
 
-/// `PhotoStore` on real files (phase-6.md §6.2, §6.6).
+/// `PhotoStore` on real files.
 void main() {
   late Directory root;
   late FakePhotoService service;
@@ -273,7 +273,7 @@ void main() {
     });
   });
 
-  group('Save to Pictures (§6.6)', () {
+  group('Save to Pictures', () {
     Future<PictureToSave> item(String uri, String title, String day) async {
       final photo = await store.stageFromGallery(service.addPicked(uri), p1080);
       return (
@@ -286,7 +286,7 @@ void main() {
       );
     }
 
-    test('three photos: three inserts, in order, named per §5.9, dated on '
+    test('three photos: three inserts, in order, named by date, dated on '
         'each expense', () async {
       final items = [
         await item('c://a', 'Lunch', '2026-10-05'),

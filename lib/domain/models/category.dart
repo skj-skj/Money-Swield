@@ -1,4 +1,4 @@
-/// An expense category (database.md §3.2).
+/// An expense category.
 class Category {
   const Category({
     required this.id,

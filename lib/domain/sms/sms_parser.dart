@@ -1,6 +1,5 @@
-/// Bank SMS parsers (phase-9a.md §5.1, §5.2, P9a-27): one class per
-/// country's banks. Pure Dart, so the scan runs a parser in
-/// `Isolate.run`.
+/// Bank SMS parsers: one class per country's banks. Pure Dart, so the scan runs
+/// a parser in `Isolate.run`.
 library;
 
 import 'package:characters/characters.dart';
@@ -25,13 +24,13 @@ abstract interface class SmsParser {
   bool isDebitCandidate(String sender, String body);
 
   /// [body] parsed as a debit, or null when it has no clear amount (never
-  /// guessed, application-design §8.1). Call it only on a candidate.
+  /// guessed). Call it only on a candidate.
   SmsParse? parse(String body);
 
-  /// Everything [parse] reads but the amount. The on-device model's path
-  /// takes the amount from the model and these from here (phase-9b.md
-  /// §12a): the reference keeps the duplicate check (P9a-18), and the
-  /// payee keeps one payee key per payee for the learning.
+  /// Everything [parse] reads but the amount. The on-device model's path takes
+  /// the amount from the model and these from here: the reference keeps the
+  /// duplicate check, and the payee keeps one payee key per payee for the
+  /// learning.
   SmsDetails details(String body);
 }
 
@@ -42,7 +41,7 @@ typedef SmsDetails = ({
   String? reference,
 });
 
-/// Indian bank debits (India only for now, phase-9a.md §2).
+/// Indian bank debits (India only for now).
 class IndiaSmsParser implements SmsParser {
   const IndiaSmsParser();
 
@@ -84,7 +83,7 @@ class IndiaSmsParser implements SmsParser {
     'received',
   ];
 
-  /// §5.1's table, in order. Reads the body with its footer cut off
+  /// The pre-filter rules, in order. Reads the body with its footer cut off
   /// ([withoutFooter]): footers say "if not requested by you".
   @override
   bool isDebitCandidate(String sender, String body) {
@@ -104,8 +103,8 @@ class IndiaSmsParser implements SmsParser {
     return true;
   }
 
-  /// The body's own date ("On 14/03/26") is not read: the expense gets the
-  /// time the SMS came (P9a-4).
+  /// The body's own date ("On 14/03/26") is not read: the expense gets the time
+  /// the SMS came.
   @override
   SmsParse? parse(String body) {
     final amount = findAmountMinor(withoutFooter(smsText(body)));
@@ -139,9 +138,8 @@ RegExp _anyWord(List<String> words) => RegExp(
 final _debit = _anyWord(IndiaSmsParser.debitWords);
 final _notPayment = _anyWord(IndiaSmsParser.notPaymentWords);
 
-/// ATM withdrawals are never suggested (P9a-35, owner rev 3): the cash is
-/// entered by hand when it is spent, so suggesting the withdrawal would
-/// count it twice.
+/// ATM withdrawals are never suggested (owner rev 3): the cash is entered by
+/// hand when it is spent, so suggesting the withdrawal would count it twice.
 final _atm = RegExp(r'\batm\b', caseSensitive: false);
 final _withdraw = RegExp(
   r'\b(?:withdraw|withdrawal|withdrawn)\b',
@@ -149,16 +147,16 @@ final _withdraw = RegExp(
 );
 final _cashWithdrawal = RegExp(r'\bcash\s+withdrawal\b', caseSensitive: false);
 
-/// Cash taken out with a card, at an ATM or a bank branch: some banks
-/// write `Withdrawn Rs.AMOUNT From BANK Card xNNNN At PLACE` without the
-/// word ATM (found on a test phone, phase-9a.md §12a).
+/// Cash taken out with a card, at an ATM or a bank branch: some banks write
+/// `Withdrawn Rs.AMOUNT From BANK Card xNNNN At PLACE` without the word ATM
+/// (found on a test phone).
 final _card = RegExp(r'\bcard\b', caseSensitive: false);
 
 /// A phone number: `+` first, or only digits. Banks send from IDs; a
 /// person's "sent you Rs 500" is not the user's debit.
 final _phoneNumber = RegExp(r'^(?:\+.*|[0-9]+)$');
 
-/// Indian sender IDs end in `-P` for promotions (F3).
+/// Indian sender IDs end in `-P` for promotions.
 final _promotional = RegExp(r'-P$', caseSensitive: false);
 
 /// `to X`, `at X`, `towards X` (an optional `:`). X runs to the end of the
@@ -190,9 +188,9 @@ final _honorific = RegExp(
 
 final _hasLetter = RegExp(r'\p{L}', unicode: true);
 
-/// Ref / RRN / UTR / Txn ID, then a code of 6+ letters and digits that
-/// holds a digit: "Reference Number 1234…" must not give `NUMBER`, which
-/// would make every later SMS with that wording a duplicate (P9a-18).
+/// Ref / RRN / UTR / Txn ID, then a code of 6+ letters and digits that holds a
+/// digit: "Reference Number 1234…" must not give `NUMBER`, which would make
+/// every later SMS with that wording a duplicate.
 final _reference = RegExp(
   r'\b(?:ref(?:erence)?(?:\s+no|\s+number)?|rrn|utr(?:\s+no|\s+number)?|'
   r'txn\s+id)\s*[:.]?\s*((?=[a-z]*[0-9])[a-z0-9]{6,})',
@@ -203,7 +201,7 @@ final _reference = RegExp(
 /// has a letter ("at 14:05" doesn't; "9876543210@ybl" does), spaces
 /// collapsed, cut to [maxTitleLength]
 /// characters. The doc says "the earliest match"; taking the earliest
-/// *usable* one keeps "on 01-10 at 14:05 to AMAZON" (phase-9a.md §12a).
+/// *usable* one keeps "on 01-10 at 14:05 to AMAZON".
 String? _payee(String text) {
   for (final start in _payeeStart.allMatches(text)) {
     final payee = _payeeAfter(text.substring(start.end));

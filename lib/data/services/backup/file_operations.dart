@@ -1,9 +1,9 @@
 import 'dart:io';
 
-/// The file operations that replace the live database (phase-3.md §6.4).
-/// Behind an interface so tests can make any one of them fail, or "run out
-/// of space", and check that the user's data survives. Production uses
-/// `dart:io` directly ([IoFileOperations]).
+/// The file operations that replace the live database. Behind an interface so
+/// tests can make any one of them fail, or "run out of space", and check that
+/// the user's data survives. Production uses `dart:io` directly
+/// ([IoFileOperations]).
 abstract interface class FileOperations {
   Future<bool> exists(String path);
   Future<int> length(String path);
@@ -46,9 +46,9 @@ class IoFileOperations implements FileOperations {
 
 /// Deletes [path] if it is there.
 ///
-/// Gone meanwhile counts as deleted: two deleters can meet (after a
-/// restore, the restarted app's cleanup and the closing restore screen
-/// both delete its folder; seen on the Oppo, phase-6.md §12a).
+/// Gone meanwhile counts as deleted: two deleters can meet (after a restore,
+/// the restarted app's cleanup and the closing restore screen both delete its
+/// folder; seen on the Oppo).
 Future<void> deleteFileIfExists(String path) async {
   try {
     await File(path).delete();

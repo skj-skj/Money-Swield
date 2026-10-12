@@ -16,19 +16,18 @@ import 'backup_manifest.dart';
 /// A photo file to put in a backup under its `name` (its relative path).
 typedef PhotoEntry = ({String name, String path});
 
-/// What writing a backup's photos back did (phase-6.md §6.8 step 5):
-/// `written` new or repaired, `skipped` already there with the right hash,
-/// `failed` entries that were damaged (size, CRC, hash, bad data).
+/// What writing a backup's photos back did: `written` new or repaired,
+/// `skipped` already there with the right hash, `failed` entries that were
+/// damaged (size, CRC, hash, bad data).
 typedef PhotosRestored = ({int written, int skipped, int failed});
 
-/// Writes and reads backup zips (phase-3.md §5.1). No SQL here.
+/// Writes and reads backup zips. No SQL here.
 ///
-/// A backup holds `manifest.json`, `expense_tracker.db` and, with photos,
-/// one entry per photo named by its relative path (`photos/<sha256>.jpg`,
-/// phase-6.md §5.7), stored, not deflated (JPEGs don't shrink). Reading
-/// looks only at the names the manifest lists, after they passed
-/// [isValidPhotoPath], so a crafted entry name (`../../x`) is never
-/// written anywhere.
+/// A backup holds `manifest.json`, `expense_tracker.db` and, with photos, one
+/// entry per photo named by its relative path (`photos/<sha256>.jpg`), stored,
+/// not deflated (JPEGs don't shrink). Reading looks only at the names the
+/// manifest lists, after they passed [isValidPhotoPath], so a crafted entry
+/// name (`../../x`) is never written anywhere.
 ///
 /// Extraction is done here rather than with `archive`'s own helpers, on
 /// purpose (checked in `archive` 4.3.0):
@@ -46,8 +45,8 @@ class BackupArchive {
   static const manifestName = 'manifest.json';
   static const databaseName = 'expense_tracker.db';
 
-  /// A manifest is a few hundred bytes plus ~230 per photo: 16 MB holds
-  /// about 70,000 photos (P6-18; 64 KB held only ~280, R4).
+  /// A manifest is a few hundred bytes plus ~230 per photo: 16 MB holds about
+  /// 70,000 photos (64 KB held only ~280).
   static const maxManifestBytes = 16 * 1024 * 1024;
 
   /// A real database is a few MB.
@@ -59,10 +58,10 @@ class BackupArchive {
   /// [zipPath]. Runs on another isolate: deflating a few MB would drop
   /// frames on the UI thread.
   ///
-  /// [photos] follow the database, each stored under its name, its file
-  /// read as a stream and closed after its entry (no thousands of open
-  /// files). [onProgress] gets the photos done so far. Zip64 records are
-  /// written when needed (F14).
+  /// [photos] follow the database, each stored under its name, its file read as
+  /// a stream and closed after its entry (no thousands of open files).
+  /// [onProgress] gets the photos done so far. Zip64 records are written when
+  /// needed.
   static Future<void> write(
     BackupManifest manifest,
     String databasePath,
@@ -94,12 +93,12 @@ class BackupArchive {
     }
   }
 
-  /// [work] on another isolate, reporting through [send]. Its own function
-  /// on purpose: a closure made in [_runWithProgress] shares its context
-  /// with the listener there, and so would carry [_runWithProgress]'s
-  /// `onProgress` (a cubit's callback, which can't be sent to an isolate)
-  /// into the message; every backup failed with "Illegal argument in
-  /// isolate message" (found by the tests, phase-6.md §12a).
+  /// [work] on another isolate, reporting through [send]. Its own function on
+  /// purpose: a closure made in [_runWithProgress] shares its context with the
+  /// listener there, and so would carry [_runWithProgress]'s `onProgress` (a
+  /// cubit's callback, which can't be sent to an isolate) into the message;
+  /// every backup failed with "Illegal argument in isolate message" (found by
+  /// the tests).
   static Future<T> _runIsolated<T>(
     T Function(void Function(int done) report) work,
     SendPort send,
@@ -164,8 +163,8 @@ class BackupArchive {
         );
       }
       final databaseEntry = _single(entries, databaseName);
-      // Every listed photo has exactly one entry under its own name
-      // (§6.8 step 2); its bytes are only read when it is written back.
+      // Every listed photo has exactly one entry under its own name; its bytes
+      // are only read when it is written back.
       for (final photo in manifest.photos) {
         _single(entries, photo.relativePath);
       }
@@ -207,9 +206,9 @@ class BackupArchive {
     return found.single;
   }
 
-  /// Writes the [photos] of the (already checked) zip at [zipPath] into
-  /// [root], before a restore's swap (§6.8 step 5), on another isolate.
-  /// [onProgress] gets the photos done so far.
+  /// Writes the [photos] of the (already checked) zip at [zipPath] into [root],
+  /// before a restore's swap, on another isolate. [onProgress] gets the photos
+  /// done so far.
   ///
   /// For each photo: a file at its path with the same size and SHA-256 is
   /// left alone; otherwise its entry is streamed to `<path>.partial`

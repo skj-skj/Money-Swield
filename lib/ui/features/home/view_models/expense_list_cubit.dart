@@ -38,7 +38,7 @@ final class ExpenseListLoading extends ExpenseListState {
   const ExpenseListLoading();
 }
 
-/// A group's or a day's subtotal key: its range (phase-5.md §7.1).
+/// A group's or a day's subtotal key: its range.
 typedef SubtotalKey = PeriodRange;
 
 /// A subtotal of a group or a day. A key with no entry hasn't been asked
@@ -85,7 +85,7 @@ final class ExpenseListLoaded extends ExpenseListState {
     this.upcomingIcon = FilteredScreenIcon.hidden,
   });
 
-  /// In list order: by local date, then moment (phase-5.md §4.1).
+  /// In list order: by local date, then moment.
   final List<Expense> expenses;
 
   /// [expenses] as frames and days (`homeGroups`).
@@ -101,7 +101,7 @@ final class ExpenseListLoaded extends ExpenseListState {
   /// Whether another page may follow.
   final bool hasMore;
 
-  /// What the list (and its subtotals) show. Not saved (P5-18).
+  /// What the list (and its subtotals) show. Not saved.
   final ExpenseFilter filter;
 
   final Period grouping;
@@ -114,23 +114,23 @@ final class ExpenseListLoaded extends ExpenseListState {
   /// The last page failed: the list keeps its rows and shows a retry row.
   final bool loadMoreFailed;
 
-  /// The amount chips, ascending; empty hides the row (phase-4.md §8.1).
+  /// The amount chips, ascending; empty hides the row.
   final List<Money> chips;
 
-  /// The expense with unsaved changes in the draft slot, or null; its row
-  /// shows a mark (phase-4.md §8.2).
+  /// The expense with unsaved changes in the draft slot, or null; its row shows
+  /// a mark.
   final int? draftExpenseId;
 
   /// Read lazily, per group and per day, for exactly what [filter] lets
-  /// through (P5-26).
+  /// through.
   final Map<SubtotalKey, SubtotalState> subtotals;
 
   /// Read with every load and filter change.
   final FilteredScreenIcon photosIcon;
 
-  /// The Upcoming payments icon (phase-7b.md §7.5): hidden while no item
-  /// runs, greyed when the filters hide every upcoming payment (owner,
-  /// 2026-10-10: Upcoming follows the filters, like the Photos screen).
+  /// The Upcoming payments icon: hidden while no item runs, greyed when the
+  /// filters hide every upcoming payment (owner, 2026-10-10: Upcoming follows
+  /// the filters, like the Photos screen).
   final FilteredScreenIcon upcomingIcon;
 
   /// Whether this state differs from [other] only in its subtotals, so the
@@ -200,9 +200,8 @@ final class ExpenseListLoaded extends ExpenseListState {
   }
 }
 
-/// An icon on Home's filter bar that opens a screen following Home's
-/// filters: the photos icon (phase-6.md §8.9, P6-36, P6-45) and the
-/// Upcoming payments icon (phase-7b.md §8.3, owner 2026-10-10).
+/// An icon on Home's filter bar that opens a screen following Home's filters:
+/// the photos icon and the Upcoming payments icon (owner 2026-10-10).
 enum FilteredScreenIcon {
   /// Nothing to show at all (no photo; no running item), or it couldn't
   /// be counted.
@@ -221,10 +220,9 @@ final class ExpenseListFailed extends ExpenseListState {
   final Object error;
 }
 
-/// The Home tab's expense list: keyset pages of [pageSize] in list order
-/// (phase-2.md §7.2, phase-5.md §4.1), grouped and filtered, with lazy
-/// subtotals (phase-5.md §7.1), the amount chips and the unsaved mark
-/// (phase-4.md §8).
+/// The Home tab's expense list: keyset pages of [pageSize] in list order,
+/// grouped and filtered, with lazy subtotals, the amount chips and the unsaved
+/// mark.
 class ExpenseListCubit extends CubitSignal<ExpenseListState>
     with EmitIfOpen<ExpenseListState> {
   /// Chips are for `defaultCurrency`; Home keeps it, the grouping and the
@@ -249,8 +247,8 @@ class ExpenseListCubit extends CubitSignal<ExpenseListState>
     _lastRunDay = todayOn(_now());
   }
 
-  /// Runs the recurring generator when a new day is noticed while the app
-  /// runs (phase-7a.md R12). Null in tests that don't need it.
+  /// Runs the recurring generator when a new day is noticed while the app runs.
+  /// Null in tests that don't need it.
   final RecurringRepository? _recurring;
   final DateTime Function() _now;
 
@@ -261,10 +259,10 @@ class ExpenseListCubit extends CubitSignal<ExpenseListState>
   /// A run in flight: an overlapping call doesn't start another.
   bool _catchingUp = false;
 
-  /// Resume or local midnight on a new day (§7.5): adds what came due
-  /// since the last run, then reloads if anything changed. Once per day,
-  /// one run at a time; a failure is logged and the next new-day signal
-  /// tries again. Returns what the run did, for Home's messages.
+  /// Resume or local midnight on a new day: adds what came due since the last
+  /// run, then reloads if anything changed. Once per day, one run at a time; a
+  /// failure is logged and the next new-day signal tries again. Returns what
+  /// the run did, for Home's messages.
   Future<GenerateReport> catchUpRecurring() async {
     final recurring = _recurring;
     final today = todayOn(_now());
@@ -315,8 +313,8 @@ class ExpenseListCubit extends CubitSignal<ExpenseListState>
   /// reload was running.
   int _generation = 0;
 
-  /// With a text filter: every matching entry, in list order, and how many
-  /// of them the loaded rows cover (phase-5.md §6.3). Null without one.
+  /// With a text filter: every matching entry, in list order, and how many of
+  /// them the loaded rows cover. Null without one.
   List<SearchEntry>? _matches;
   int _matchesUsed = 0;
 
@@ -342,20 +340,19 @@ class ExpenseListCubit extends CubitSignal<ExpenseListState>
     return _loadTop(math.max(pageSize, loaded));
   }
 
-  /// Called when the Home tab becomes visible again. Reloads only if
-  /// something was written since the last load (P2-14): Manage may have
-  /// renamed a category, Settings → Bin may have restored an expense.
-  /// Returns whether it reloaded, so Home reloads the trend card too.
+  /// Called when the Home tab becomes visible again. Reloads only if something
+  /// was written since the last load: Manage may have renamed a category,
+  /// Settings → Bin may have restored an expense. Returns whether it reloaded,
+  /// so Home reloads the trend card too.
   Future<bool> reloadIfChanged() async {
     if (_dataVersion.value == _loadedVersion) return false;
     await reload();
     return true;
   }
 
-  /// Shows what [filter] lets through, from the top (phase-5.md §7.1). A
-  /// page in flight is dropped. Returns false when the rows couldn't be
-  /// read: the list then keeps the old filter and its rows, and the screen
-  /// says so.
+  /// Shows what [filter] lets through, from the top. A page in flight is
+  /// dropped. Returns false when the rows couldn't be read: the list then keeps
+  /// the old filter and its rows, and the screen says so.
   Future<bool> setFilter(ExpenseFilter filter) {
     _requested = filter;
     return _loadTop(pageSize);
@@ -438,9 +435,9 @@ class ExpenseListCubit extends CubitSignal<ExpenseListState>
     }
   }
 
-  /// Reads the subtotal of [key] (a group's or a day's range) unless it is
-  /// read or being read (phase-5.md §7.1, P5-26). Called by a frame top or
-  /// day header when it shows. One read at a time, in request order.
+  /// Reads the subtotal of [key] (a group's or a day's range) unless it is read
+  /// or being read. Called by a frame top or day header when it shows. One read
+  /// at a time, in request order.
   void requestSubtotal(SubtotalKey key) {
     final state = value;
     if (state is! ExpenseListLoaded || state.subtotals.containsKey(key)) {
@@ -456,7 +453,7 @@ class ExpenseListCubit extends CubitSignal<ExpenseListState>
     _readSubtotals();
   }
 
-  /// Reads [key]'s subtotal again after it failed (the retry icon, P5-22).
+  /// Reads [key]'s subtotal again after it failed (the retry icon).
   void retrySubtotal(SubtotalKey key) {
     final state = value;
     if (state is! ExpenseListLoaded ||
@@ -539,13 +536,12 @@ class ExpenseListCubit extends CubitSignal<ExpenseListState>
     }
   }
 
-  /// The draft slot, for opening the form (phase-4.md §7.4). Null when
-  /// empty or when it can't be read (logged): the form then opens without
-  /// a draft.
+  /// The draft slot, for opening the form. Null when empty or when it can't be
+  /// read (logged): the form then opens without a draft.
   Future<ExpenseDraft?> pendingDraft() => _drafts.readOrNull();
 
-  /// Re-reads which expense has unsaved changes, after a form closed:
-  /// draft writes don't bump `DataVersion` (phase-4.md §8.2).
+  /// Re-reads which expense has unsaved changes, after a form closed: draft
+  /// writes don't bump `DataVersion`.
   Future<void> refreshDraftMark() async {
     final id = (await pendingDraft())?.editingExpenseId;
     final current = value;
@@ -639,9 +635,9 @@ class ExpenseListCubit extends CubitSignal<ExpenseListState>
   }
 
   /// Whether Home's photos icon shows, and whether [filter] lets a photo
-  /// through (P6-45). With a text filter its [matches] are already read:
-  /// they are checked against the expenses with photos. Its own try/catch:
-  /// a failure hides the icon (logged), the list loads normally.
+  /// through. With a text filter its [matches] are already read: they are
+  /// checked against the expenses with photos. Its own try/catch: a failure
+  /// hides the icon (logged), the list loads normally.
   Future<FilteredScreenIcon> _photosIcon(
     ExpenseFilter filter,
     List<SearchEntry>? matches,
@@ -661,10 +657,10 @@ class ExpenseListCubit extends CubitSignal<ExpenseListState>
     }
   }
 
-  /// Home's Upcoming icon (phase-7b.md §7.5): hidden while no item has a
-  /// payment Upcoming would list ([hasUpcomingPayment]), greyed when
-  /// [filter] lets none of them through ([upcomingItemMatches]). Its own
-  /// try/catch: a failure hides the icon (logged), the list loads normally.
+  /// Home's Upcoming icon: hidden while no item has a payment Upcoming would
+  /// list ([hasUpcomingPayment]), greyed when [filter] lets none of them
+  /// through ([upcomingItemMatches]). Its own try/catch: a failure hides the
+  /// icon (logged), the list loads normally.
   Future<FilteredScreenIcon> _upcomingIcon(ExpenseFilter filter) async {
     final recurring = _recurring;
     if (recurring == null) return FilteredScreenIcon.hidden;
@@ -715,10 +711,10 @@ class ExpenseListCubit extends CubitSignal<ExpenseListState>
     );
   }
 
-  /// The chips of the chip currency. Their own try/catch: a failure hides
-  /// the row (logged) and the list loads normally (phase-4.md §8.1). Read
-  /// again if the currency changed during the query, so a reload in flight
-  /// can't put the old currency's chips back.
+  /// The chips of the chip currency. Their own try/catch: a failure hides the
+  /// row (logged) and the list loads normally. Read again if the currency
+  /// changed during the query, so a reload in flight can't put the old
+  /// currency's chips back.
   Future<List<Money>> _loadChips() async {
     final code = _chipCurrency;
     try {

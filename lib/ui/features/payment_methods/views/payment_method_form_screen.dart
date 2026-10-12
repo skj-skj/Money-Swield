@@ -56,10 +56,10 @@ class _PaymentMethodFormScreenState extends State<PaymentMethodFormScreen> {
     super.dispose();
   }
 
-  /// Delete (never offered for the default, which the repository refuses
-  /// as well): a plain confirm when no expense uses it; otherwise ask where
-  /// to move its expenses, binned ones included, then move and delete in
-  /// one transaction (D7, phase-2.md §10.1).
+  /// Delete (never offered for the default, which the repository refuses as
+  /// well): a plain confirm when no expense uses it; otherwise ask where to
+  /// move its expenses, binned ones included, then move and delete in one
+  /// transaction.
   Future<void> _delete(String name) async {
     final l10n = AppLocalizations.of(context);
     final original = widget.original!;

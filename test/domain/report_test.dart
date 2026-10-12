@@ -5,7 +5,6 @@ import 'package:my_expense_tracker_app/domain/report_document.dart';
 import 'package:my_expense_tracker_app/domain/report_filter.dart';
 import 'package:my_expense_tracker_app/domain/report_range.dart';
 
-/// phase-8.md §5.2 and §12 "Domain: buildReport".
 const eventThenCategory = ReportGrouping(
   GroupDimension.event,
   then: GroupDimension.category,
@@ -126,7 +125,7 @@ void main() {
     });
 
     test('unknown category / method / event ids still group: totals whole', () {
-      // The screen names them "?" (§6.1); the domain never drops them.
+      // The screen names them "?"; the domain never drops them.
       final r = build(
         [
           row(category: 999, method: 888, events: {777}, amount: 70),
@@ -433,7 +432,7 @@ void main() {
   group('sharePermille', () {
     BigInt b(int x) => BigInt.from(x);
 
-    test('§5.2 table', () {
+    test('share cases', () {
       expect(sharePermille(b(1), b(3)), 333);
       expect(sharePermille(b(2), b(3)), 667);
       expect(sharePermille(b(1), b(2000)), 1);

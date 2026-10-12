@@ -42,7 +42,7 @@ void main() {
     ];
 
     test('a binned payment brings its recurring item for the detail line; '
-        'a plain one and a deleted item none (phase-7a.md §8.7)', () async {
+        'a plain one and a deleted item none', () async {
       final item = await insertRecurringRow(deps.database);
       final payment = await insertExpenseRow(deps.database);
       await deps.database.update(

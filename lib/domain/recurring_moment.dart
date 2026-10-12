@@ -1,5 +1,4 @@
-/// The moment an added recurring payment gets (phase-7a.md §5.6, P7a-24).
-/// Pure Dart.
+/// The moment an added recurring payment gets. Pure Dart.
 library;
 
 import 'periods.dart';
@@ -8,8 +7,8 @@ import 'periods.dart';
 /// (UTC) and the zone's offset then.
 typedef ZonedMoment = ({DateTime occurredAt, int offsetMinutes});
 
-/// The device's zone: Dart's local `DateTime`, which moves a time inside a
-/// DST gap forward (F10). Tests pass a fake zone instead.
+/// The device's zone: Dart's local `DateTime`, which moves a time inside a DST
+/// gap forward. Tests pass a fake zone instead.
 ZonedMoment deviceMoment(int year, int month, int day, int hour, int minute) {
   final local = DateTime(year, month, day, hour, minute);
   return (
@@ -18,8 +17,8 @@ ZonedMoment deviceMoment(int year, int month, int day, int hour, int minute) {
   );
 }
 
-/// `occurred_at` (UTC) and offset for a payment due on [day] at [minutes]
-/// past midnight, in the device's zone when it is added (D3).
+/// `occurred_at` (UTC) and offset for a payment due on [day] at [minutes] past
+/// midnight, in the device's zone when it is added.
 ///
 /// A DST gap can push the time into the next day (a gap from 23:00 moves
 /// 23:30 to after midnight): then 12:00 that day is used, so the payment

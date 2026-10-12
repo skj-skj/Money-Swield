@@ -8,8 +8,8 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../../helpers/test_database.dart';
 
-/// Phase 4's reads and writes on `expenses` (phase-4.md §6.1–§6.3, §6.5,
-/// R14). Phase 2's are in `expense_repository_test.dart`.
+/// Smart entry's reads and writes on `expenses`. The basic ones are in
+/// `expense_repository_test.dart`.
 void main() {
   late Database db;
   late TestClock clock;
@@ -125,8 +125,7 @@ void main() {
       expect(row.recent, 1, reason: 'the binned use is not counted');
     });
 
-    test('future-dated rows are neither counted nor the last amount '
-        '(P4-17)', () async {
+    test('future-dated rows are neither counted nor the last amount', () async {
       await add('Rent', daysAgo: 10, amount: 100);
       await add('Rent', daysAgo: -5, amount: 999);
       await add('Trip', daysAgo: -30);
@@ -153,7 +152,7 @@ void main() {
       );
     });
 
-    test('a tie on occurred_at goes to the highest id (R3)', () async {
+    test('a tie on occurred_at goes to the highest id', () async {
       await add('Tea', amount: 100);
       final second = await add('Tea', amount: 200);
       await add('Other');
@@ -251,7 +250,7 @@ void main() {
     );
   });
 
-  group('clearDraft (phase-4.md §6.3)', () {
+  group('clearDraft', () {
     ExpenseInput input() => ExpenseInput(
       title: 'Lunch',
       description: null,
@@ -327,7 +326,7 @@ void main() {
     });
   });
 
-  group('moveToBin (R14)', () {
+  group('moveToBin', () {
     test('a binned expense throws ExpenseNotFound and keeps its first '
         'deletion time', () async {
       final added = await add('Tea');
@@ -354,7 +353,7 @@ void main() {
     );
   });
 
-  test('drafts are invisible to every expense read (§6.5)', () async {
+  test('drafts are invisible to every expense read', () async {
     await add('Real', amount: 100);
     await add('Real', amount: 100);
     final binned = await add('Binned');

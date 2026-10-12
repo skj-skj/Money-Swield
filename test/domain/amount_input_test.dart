@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_expense_tracker_app/domain/amount_input.dart';
 
-/// Every row of the table in phase-2.md §4.2.
+/// Every case of the amount input rules.
 void main() {
   AmountParse inr(String text) => parseAmount(text, minorDigits: 2);
 

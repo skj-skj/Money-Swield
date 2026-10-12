@@ -6,9 +6,9 @@ import java.io.IOException
 import java.io.RandomAccessFile
 
 /**
- * Joins PDFs that Android's `PdfDocument` wrote into one (phase-8.md §12a,
- * owner 2026-10-11): a report is written in parts of a hundred pages, so
- * memory stays bounded however long it is, then joined here.
+ * Joins PDFs that Android's `PdfDocument` wrote into one (owner 2026-10-11): a
+ * report is written in parts of a hundred pages, so memory stays bounded
+ * however long it is, then joined here.
  *
  * Only for these files, not any PDF: they are PDF 1.4 with a classic
  * `xref` table, no object streams, a `/Catalog` and a page tree (checked

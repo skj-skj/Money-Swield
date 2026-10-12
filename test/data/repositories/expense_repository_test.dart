@@ -437,8 +437,8 @@ void main() {
       },
     );
 
-    // Binning an already binned expense throws since Phase 4 (R14) and
-    // keeps its first deletion time: expense_repository_smart_entry_test.
+    // Binning an already binned expense throws and keeps its
+    // first deletion time: expense_repository_smart_entry_test.
 
     test('binned is ordered by deletion, newest first', () async {
       final a = await addBinned(input(title: 'A'));

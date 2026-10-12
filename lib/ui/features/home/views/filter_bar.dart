@@ -9,10 +9,10 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../core/widgets/filter_chips.dart';
 import '../view_models/expense_list_cubit.dart';
 
-/// The bar above Home's list (phase-5.md §8.4): one chip per active filter,
-/// each with ✕, then the grouping; on the right the filter icon, with a
-/// dot while any filter is active. The chips scroll sideways when they
-/// don't fit. Pinned in both card positions (P5-11).
+/// The bar above Home's list: one chip per active filter, each with ✕, then the
+/// grouping; on the right the filter icon, with a dot while any filter is
+/// active. The chips scroll sideways when they don't fit. Pinned in both card
+/// positions.
 class FilterBar extends StatelessWidget {
   const FilterBar({
     super.key,
@@ -40,24 +40,23 @@ class FilterBar extends StatelessWidget {
   /// A chip's ✕ removed part of the filter.
   final ValueChanged<ExpenseFilter> onChange;
 
-  /// The photos icon left of the filter icon (phase-6.md §8.9, P6-36):
-  /// hidden without photos, greyed out when the filters hide every one
-  /// (P6-45).
+  /// The photos icon left of the filter icon: hidden without photos, greyed out
+  /// when the filters hide every one.
   final FilteredScreenIcon photosIcon;
 
   /// Opens the Photos screen.
   final VoidCallback? onPhotos;
 
-  /// The Upcoming payments icon left of the photos icon (phase-7b.md
-  /// §8.3, P7b-7): hidden while no item runs, greyed when the filters hide
-  /// every upcoming payment, with the filter dot, like the photos icon
-  /// (owner, 2026-10-10: Upcoming follows the filters).
+  /// The Upcoming payments icon left of the photos icon: hidden while no item
+  /// runs, greyed when the filters hide every upcoming payment, with the filter
+  /// dot, like the photos icon (owner, 2026-10-10: Upcoming follows the
+  /// filters).
   final FilteredScreenIcon upcomingIcon;
   final VoidCallback? onUpcoming;
 
-  /// The SMS icon, first of the icons (phase-9a.md §8.1, P9a-6): the icon
-  /// row reads SMS, Upcoming, Photos, Filter. It hides itself while
-  /// SMS is off, and Home's filters never grey it (P9a-7).
+  /// The SMS icon, first of the icons: the icon row reads SMS, Upcoming,
+  /// Photos, Filter. It hides itself while SMS is off, and Home's filters never
+  /// grey it.
   final Widget? smsButton;
 
   @override

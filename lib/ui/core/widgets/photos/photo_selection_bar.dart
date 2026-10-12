@@ -2,9 +2,8 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../../l10n/app_localizations.dart';
 
-/// The bar of selection mode (phase-6.md §8.10, P6-50), the same in an
-/// expense's Photos sheet, on the Photos screen and (Save only) in the Bin
-/// detail:
+/// The bar of selection mode, the same in an expense's Photos sheet, on the
+/// Photos screen and (Save only) in the Bin detail:
 ///
 /// ✕ · "2 selected" · Select all · … · Save ‖ 8 dp ‖ Delete
 ///
@@ -34,7 +33,7 @@ class PhotoSelectionBar extends StatelessWidget {
   final VoidCallback onSave;
   final VoidCallback onClose;
 
-  /// Null where photos can't be deleted (the Bin detail, P6-43).
+  /// Null where photos can't be deleted (the Bin detail).
   final VoidCallback? onDelete;
 
   /// A save is running: both actions are off (a double tap does nothing).
@@ -123,12 +122,11 @@ class PhotoSelectionBar extends StatelessWidget {
     );
   }
 
-  /// Whether the bar is one row in [width] (else Save and Delete take a
-  /// second row): ✕ (48), the number (with its 12 of padding) and the
-  /// Select all icon (48) beside Save, the gap and Delete. A screen
-  /// reserves the bar's height with it, so starting selection doesn't move
-  /// the photos under the user's finger (seen on the Oppo, phase-6.md
-  /// §12a).
+  /// Whether the bar is one row in [width] (else Save and Delete take a second
+  /// row): ✕ (48), the number (with its 12 of padding) and the Select all icon
+  /// (48) beside Save, the gap and Delete. A screen reserves the bar's height
+  /// with it, so starting selection doesn't move the photos under the user's
+  /// finger (seen on the Oppo).
   static bool fitsOneRow(
     BuildContext context,
     double width, {
@@ -229,7 +227,7 @@ class PhotoSelectionBar extends StatelessWidget {
 }
 
 /// Where photos are being deleted from: the confirm's text says what
-/// "permanently" means there (§8.10).
+/// "permanently" means there.
 enum PhotoDeletePlace {
   /// The Photos screen: they go from their expenses at once.
   photosScreen,
@@ -241,10 +239,10 @@ enum PhotoDeletePlace {
   newExpense,
 }
 
-/// Asks before deleting [count] photos (§8.10, P6-8): "Delete 3 photos?",
-/// a warning that they will be deleted permanently and that copies saved to
-/// Pictures stay, and **Cancel** first (focused) · **Delete** in the error
-/// colour. True when confirmed.
+/// Asks before deleting [count] photos: "Delete 3 photos?", a warning that they
+/// will be deleted permanently and that copies saved to Pictures stay, and
+/// **Cancel** first (focused) · **Delete** in the error colour. True when
+/// confirmed.
 Future<bool> confirmPhotoDelete(
   BuildContext context, {
   required int count,

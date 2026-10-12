@@ -4,8 +4,8 @@ import '../../../../domain/models/money.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/money_formatter.dart';
 
-/// Home's usual amounts (phase-4.md §8.1): up to 6 chips in one row that
-/// scrolls sideways. A tap opens Add with that amount. Nothing when empty.
+/// Home's usual amounts: up to 6 chips in one row that scrolls sideways. A tap
+/// opens Add with that amount. Nothing when empty.
 class AmountChipsRow extends StatelessWidget {
   const AmountChipsRow({super.key, required this.chips, required this.onTap});
 

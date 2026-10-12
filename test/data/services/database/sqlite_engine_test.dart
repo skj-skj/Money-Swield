@@ -4,8 +4,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import '../../../helpers/test_database.dart';
 
 /// Tests must run on the SQLite of the oldest supported phone (Android 10,
-/// 3.22.0), built from Android's source (`pubspec.yaml` `hooks:`,
-/// notes/spec/sqlite.md). Without this, a `sqlite3` package upgrade that
+/// 3.22.0), built from Android's source (`pubspec.yaml` `hooks:`). Without this, a `sqlite3` package upgrade that
 /// changes its hook options would silently put every test back on a newer
 /// SQLite, where SQL a phone rejects passes.
 void main() {

@@ -1,17 +1,16 @@
-/// Home's filters and text matching (phase-5.md §5.6).
+/// Home's filters and text matching.
 ///
-/// They combine as: **any** chosen category, **and** at least **one**
-/// chosen event, **and** every word of the text (P5-32), **and**, with
-/// Only recurring, a payment of a recurring item (phase-7b.md §6.4). The
-/// category, event and recurring parts are SQL (`ExpenseRepository`); the
-/// text part is matched here, in Dart, because SQL's `LIKE` folds ASCII
-/// only in tests and Unicode on phones (sqlite.md §5.4).
+/// They combine as: **any** chosen category, **and** at least **one** chosen
+/// event, **and** every word of the text, **and**, with Only recurring, a
+/// payment of a recurring item. The category, event and recurring parts are SQL
+/// (`ExpenseRepository`); the text part is matched here, in Dart, because SQL's
+/// `LIKE` folds ASCII only in tests and Unicode on phones.
 library;
 
 import 'package:characters/characters.dart';
 
 /// The longest search text used, in characters (grapheme clusters, as
-/// `TextField.maxLength` counts them, P5-19).
+/// `TextField.maxLength` counts them).
 const maxSearchLength = 100;
 
 class ExpenseFilter {
@@ -33,9 +32,9 @@ class ExpenseFilter {
   /// Empty = with or without events.
   final Set<int> eventIds;
 
-  /// Only payments of recurring items (P7b-11): every payment linked to an
-  /// item, payment 0 and archived items' included; one whose item was
-  /// deleted for good lost its link and drops out.
+  /// Only payments of recurring items: every payment linked to an item, payment
+  /// 0 and archived items' included; one whose item was deleted for good lost
+  /// its link and drops out.
   final bool onlyRecurring;
 
   bool get hasText => searchWords(text).isNotEmpty;
@@ -115,9 +114,9 @@ List<String> searchWords(String text) => text.characters
     .where((word) => word.isNotEmpty)
     .toList();
 
-/// Whether every one of [words] is in [entry]'s title or description, as
-/// part of a word. No wildcards: `%`, `_`, `*` are plain characters. No
-/// accent folding (P5-25) and no Unicode normalization.
+/// Whether every one of [words] is in [entry]'s title or description, as part
+/// of a word. No wildcards: `%`, `_`, `*` are plain characters. No accent
+/// folding and no Unicode normalization.
 bool matchesText(SearchEntry entry, List<String> words) =>
     matchesWords(entry.folded, words);
 

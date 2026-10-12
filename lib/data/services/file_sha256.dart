@@ -3,8 +3,8 @@ import 'dart:isolate';
 
 import 'package:crypto/crypto.dart';
 
-/// SHA-256 as the app names photos by it (phase-6.md §4.3): 64 lower-case
-/// hex digits. One implementation for staging, backups and restores.
+/// SHA-256 as the app names photos by it: 64 lower-case hex digits. One
+/// implementation for staging, backups and restores.
 class Sha256Builder {
   // Closed through [_input] in [close], which every user calls: that is
   // what yields the digest. The lint can't follow it.

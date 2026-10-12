@@ -8,12 +8,12 @@ import 'package:my_expense_tracker_app/ui/core/period_names.dart';
 import 'package:my_expense_tracker_app/ui/features/home/view_models/trend_cubit.dart';
 import 'package:my_expense_tracker_app/ui/features/home/views/trend_card.dart';
 
-/// The trend card's swipes (phase-5.md §8.2, §12e). The reel turns like a
-/// mechanical dial: a quick flick turns exactly one face, a held drag one
-/// face per card height, with a detent and a haptic tick at each face
-/// (owner, 2026-10-07). The whole card takes the swipe, padding included
-/// (found on the Oppo). The carousel: a drag while a fling still slides
-/// finishes that page at once (regression from the 2026-10-06 review).
+/// The trend card's swipes. The reel turns like a mechanical dial: a quick
+/// flick turns exactly one face, a held drag one face per card height, with a
+/// detent and a haptic tick at each face (owner, 2026-10-07). The whole card
+/// takes the swipe, padding included (found on the Oppo). The carousel: a drag
+/// while a fling still slides finishes that page at once (regression from the
+/// 2026-10-06 review).
 void main() {
   const today = '2026-10-05';
   late List<int> turns;

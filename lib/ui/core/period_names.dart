@@ -8,11 +8,10 @@ import 'date_texts.dart';
 import 'formatting_locale.dart';
 import 'money_formatter.dart';
 
-/// The names of days, weeks, months and years on Home (phase-5.md §8.3,
-/// P5-10): dates and numbers only, no "Today" or "This week". The year is
-/// added when the period's year isn't [today]'s. Each name starts with a
-/// capital letter: intl writes Spanish months and weekdays in lower case
-/// (`lun, 5 oct`, R13).
+/// The names of days, weeks, months and years on Home: dates and numbers only,
+/// no "Today" or "This week". The year is added when the period's year isn't
+/// [today]'s. Each name starts with a capital letter: intl writes Spanish
+/// months and weekdays in lower case (`lun, 5 oct`).
 class PeriodNames {
   const PeriodNames({
     required this.l10n,
@@ -73,8 +72,8 @@ class PeriodNames {
     return format.format(date);
   }
 
-  /// `Oct Week 3` / `Dec 2025 Week 5`, or `Week 41` / `Week 52, 2025`:
-  /// named after the year and month of its 4th day (§5.1).
+  /// `Oct Week 3` / `Dec 2025 Week 5`, or `Week 41` / `Week 52, 2025`: named
+  /// after the year and month of its 4th day.
   String week(PeriodRange week) {
     final id = weekIdOf(week);
     final otherYear = id.year != _thisYear;
@@ -102,7 +101,7 @@ class PeriodNames {
   }
 
   /// `Oct 2026`: a month with its year even in this year, for the Photos
-  /// screen's frames (phase-6.md §8.9), which mix years more than Home.
+  /// screen's frames, which mix years more than Home.
   String monthWithYear(String day) =>
       _sentence(_monthName(parseDay(day), withYear: true));
 
@@ -136,7 +135,7 @@ String totalsText(
   );
 }
 
-/// One currency's total, or "Too large" (phase-5.md R3).
+/// One currency's total, or "Too large".
 String totalText(
   AppLocalizations l10n,
   MoneyFormatter formatter,

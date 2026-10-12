@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_expense_tracker_app/domain/periods.dart';
 
-/// phase-5.md §5.1 and §12 "Domain".
 void main() {
   String range(String day, Period period, [WeekStart s = WeekStart.monday]) {
     final r = periodOf(day, period, s);
@@ -9,7 +8,7 @@ void main() {
   }
 
   group('periodOf', () {
-    test('every row of the §5.1 table', () {
+    test('every period kind', () {
       expect(range('2026-10-05', Period.day), '2026-10-05 … 2026-10-05');
       expect(range('2026-10-04', Period.week), '2026-09-28 … 2026-10-04');
       expect(
@@ -122,7 +121,7 @@ void main() {
       WeekStart start = WeekStart.monday,
     ]) => weekIdOf(periodOf(day, Period.week, start));
 
-    test('every row of the §5.1 week-number table', () {
+    test('every week-number case', () {
       expect(id('2026-10-05'), (
         year: 2026,
         month: 10,

@@ -10,9 +10,8 @@ import '../services/database/sql_helpers.dart';
 /// Makes a timer; `Timer.new` in the app, a fake in tests.
 typedef TimerFactory = Timer Function(Duration duration, void Function() run);
 
-/// The one draft slot (D9, phase-4.md §6.4): in memory first, mirrored to
-/// the `expense_draft` row ([debounce] after the last change) so it
-/// survives the app being killed.
+/// The one draft slot: in memory first, mirrored to the `expense_draft` row
+/// ([debounce] after the last change) so it survives the app being killed.
 ///
 /// Created with the other repositories in `AppDependencies`, so the
 /// restart after a restore drops the memory copy: an old database's draft
@@ -37,7 +36,7 @@ class ExpenseDraftRepository {
 
   static const _table = 'expense_draft';
 
-  /// The slot's only row (database.md §3.9).
+  /// The slot's only row.
   static const _slotId = 1;
 
   ExpenseDraft? _memory;
@@ -93,8 +92,8 @@ class ExpenseDraftRepository {
     return _memory = draft;
   }
 
-  /// Puts [draft] in the slot, replacing whatever was there (P4-1), and
-  /// writes it to the row [debounce] after the last call.
+  /// Puts [draft] in the slot, replacing whatever was there, and writes it to
+  /// the row [debounce] after the last call.
   void update(ExpenseDraft draft) {
     if (_closed) return;
     _memory = draft;
@@ -105,11 +104,10 @@ class ExpenseDraftRepository {
   }
 
   /// Takes [photoIds] out of the slot's draft when it is an Edit draft of
-  /// [expenseId] (phase-6.md §6.4a): the Photos screen deleted them from
-  /// that expense, and without this the draft would bring them back on its
-  /// next Update. Through [update], so memory and row agree. An Add draft
-  /// or another expense's draft is left alone: its photos are its own
-  /// until saved.
+  /// [expenseId]: the Photos screen deleted them from that expense, and without
+  /// this the draft would bring them back on its next Update. Through [update],
+  /// so memory and row agree. An Add draft or another expense's draft is left
+  /// alone: its photos are its own until saved.
   Future<void> dropSavedPhotos(int expenseId, Set<int> photoIds) async {
     final draft = await read();
     if (draft == null || draft.editingExpenseId != expenseId) return;
@@ -155,25 +153,25 @@ class ExpenseDraftRepository {
   /// (`ExpenseRepository.add` / `update` / `moveToBin` with `clearDraft`).
   void forget() => _forgetMemory();
 
-  /// Writes what is due, then refuses every further change. A restore
-  /// calls it before closing the database (phase-4.md §6.4).
+  /// Writes what is due, then refuses every further change. A restore calls it
+  /// before closing the database.
   Future<void> close() async {
     await flush();
     _closed = true;
   }
 
-  /// Read-only check that the slot can be read, for a restore's "opens as
-  /// the app would" (R10). An unreadable draft is fine (the app would drop
-  /// it) and is left alone.
+  /// Read-only check that the slot can be read, for a restore's "opens as the
+  /// app would". An unreadable draft is fine (the app would drop it) and is
+  /// left alone.
   static Future<void> probe(DatabaseExecutor db) async {
     final rows = await db.query(_table, where: 'id = ?', whereArgs: [_slotId]);
     if (rows.firstOrNull case final row?) _parse(row);
   }
 
-  /// The draft in [db]'s slot, read-only, never deleted: for another
-  /// database (a pre-restore copy, phase-6.md §6.5). Null when there is
-  /// none, or no `expense_draft` table (a copy from before Phase 4), or it
-  /// can't be read as a draft. SQL errors throw.
+  /// The draft in [db]'s slot, read-only, never deleted: for another database
+  /// (a pre-restore copy). Null when there is none, or no `expense_draft` table
+  /// (a copy from before drafts existed), or it can't be read as a draft. SQL errors
+  /// throw.
   static Future<ExpenseDraft?> readDraft(DatabaseExecutor db) async {
     final table = await db.rawQuery(
       "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = '$_table'",
@@ -213,7 +211,7 @@ class ExpenseDraftRepository {
           'updated_at': draft.updatedAt.millisecondsSinceEpoch,
         },
         // Deletes the old row first; safe because nothing references this
-        // table (sqlite.md §5.2). UPSERT needs 3.24.
+        // table. UPSERT needs 3.24.
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
     } catch (error, stackTrace) {

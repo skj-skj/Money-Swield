@@ -3,9 +3,9 @@ import 'package:material_ui/material_ui.dart';
 import '../period_names.dart';
 import 'list_frames.dart';
 
-/// Month frames ("Oct 2026") with sticky day headers, as slivers: the
-/// Photos screen (phase-6.md §8.9) and the SMS screen (phase-9a.md §8.2)
-/// lay out their months alike and differ only in what a day holds.
+/// Month frames ("Oct 2026") with sticky day headers, as slivers: the Photos
+/// screen and the SMS screen lay out their months alike and differ only in what
+/// a day holds.
 ///
 /// [months] are newest first; a month is drawn open (no bottom) while
 /// [isOpen] says more pages may add to it, and [openFooter] (a spinner or

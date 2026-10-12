@@ -5,11 +5,11 @@ import '../../../../domain/report_document.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../view_models/report_export_cubit.dart';
 
-/// "Making the PDF… page 12 of 40" with Cancel, while [cubit] works. Back
-/// is Cancel too (§8.8); the screen closes it when the export is done.
-/// Once the file is being saved or shared, Cancel is off: the copy to
-/// Download (or the hand-over) can't be stopped half-way, so a Cancel
-/// there would be ignored and the file saved anyway.
+/// "Making the PDF… page 12 of 40" with Cancel, while [cubit] works. Back is
+/// Cancel too; the screen closes it when the export is done. Once the file is
+/// being saved or shared, Cancel is off: the copy to Download (or the
+/// hand-over) can't be stopped half-way, so a Cancel there would be ignored and
+/// the file saved anyway.
 class ExportBusyDialog extends StatelessWidget {
   const ExportBusyDialog({super.key, required this.cubit});
 

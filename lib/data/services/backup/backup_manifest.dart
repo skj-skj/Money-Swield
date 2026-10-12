@@ -3,14 +3,14 @@ import 'dart:convert';
 import '../../../domain/photos.dart';
 import '../database/database_files.dart';
 
-/// A photo inside a backup (phase-6.md §5.7). Its zip entry is named by
-/// its `relativePath` itself.
+/// A photo inside a backup. Its zip entry is named by its `relativePath`
+/// itself.
 typedef ManifestPhoto = ({String relativePath, String sha256, int byteSize});
 
-/// `manifest.json` inside a backup zip (phase-3.md §5.1).
+/// `manifest.json` inside a backup zip.
 ///
-/// `created_at` is ISO-8601 UTC text, not epoch ms like the database: people
-/// do open these zips (P3-11).
+/// `created_at` is ISO-8601 UTC text, not epoch ms like the database: people do
+/// open these zips.
 class BackupManifest {
   const BackupManifest({
     required this.format,
@@ -35,12 +35,12 @@ class BackupManifest {
   /// The newest applied migration. Informative only (shown in reports).
   final int? schemaVersion;
 
-  /// When the backup was made. Null when a backup's `created_at` is missing
-  /// or unreadable: that doesn't reject it (§5.1).
+  /// When the backup was made. Null when a backup's `created_at` is missing or
+  /// unreadable: that doesn't reject it.
   final DateTime? createdAt;
 
-  /// Whether the zip holds the photos ("Include photos", P6-16). A
-  /// database-only backup still lists none.
+  /// Whether the zip holds the photos ("Include photos"). A database-only
+  /// backup still lists none.
   final bool includesPhotos;
 
   /// The photos in the zip, each under its own path; empty unless
@@ -92,7 +92,7 @@ class BackupManifest {
     }
     final appVersion = json['app_version'];
     final schemaVersion = json['schema_version'];
-    // Missing (a Phase 3 backup) is false; anything but a bool isn't ours.
+    // Missing (an older, database-only backup) is false; anything but a bool isn't ours.
     final includesPhotos = json['includes_photos'] ?? false;
     if (includesPhotos is! bool) {
       throw const FormatException('manifest.json has no valid includes_photos');
@@ -108,10 +108,10 @@ class BackupManifest {
     );
   }
 
-  /// The photo list of a backup with photos (§5.7). Every entry must be a
-  /// valid path whose name is its SHA-256, with a size from 1 byte to
-  /// [maxPhotoBytes], and no path twice: **any** bad entry makes the whole
-  /// file "not a backup", so a crafted path never reaches a file.
+  /// The photo list of a backup with photos. Every entry must be a valid path
+  /// whose name is its SHA-256, with a size from 1 byte to [maxPhotoBytes], and
+  /// no path twice: **any** bad entry makes the whole file "not a backup", so a
+  /// crafted path never reaches a file.
   static List<ManifestPhoto> _decodePhotos(Object? value) {
     if (value is! List<Object?>) {
       throw const FormatException('manifest.json has no valid photos list');

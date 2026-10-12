@@ -1,14 +1,13 @@
 package com.skj.expense.tracker.my_expense_tracker_app
 
 /**
- * The words `expense_tracker/on_device_ai` answers with (phase-9b.md
- * §6.1), from ML Kit's numbers. Plain Kotlin in `src/main`, so it is tested
- * on the JVM in both flavors (`make test-android`) and the foss build needs
- * no ML Kit class to compile it.
+ * The words `expense_tracker/on_device_ai` answers with, from ML Kit's numbers.
+ * Plain Kotlin in `src/main`, so it is tested on the JVM in both flavors (`make
+ * test-android`) and the foss build needs no ML Kit class to compile it.
  *
- * The numbers are copied from ML Kit GenAI 1.0.0-beta4
- * (`FeatureStatus`, `GenAiException.ErrorCode`, read with javap), not
- * imported: foss has no ML Kit (P9b-2).
+ * The numbers are copied from ML Kit GenAI 1.0.0-beta4 (`FeatureStatus`,
+ * `GenAiException.ErrorCode`, read with javap), not imported: foss has no ML
+ * Kit.
  */
 object OnDeviceAiCodes {
     const val UNAVAILABLE = 0
@@ -29,8 +28,8 @@ object OnDeviceAiCodes {
 
     /**
      * The stable model when it is available; else the preview one when
-     * **it** is available (the owner's Pixel has only that one installed,
-     * phase-9b.md §12a); else the stable model's status, so a phone that
+     * **it** is available (the owner's Pixel has only that one installed);
+     * else the stable model's status, so a phone that
      * can download it offers that. [preview] is null when not asked (the
      * stable one was available).
      */
@@ -41,10 +40,10 @@ object OnDeviceAiCodes {
     }
 
     /**
-     * `GenAiException.errorCode` → the error the scanner acts on (§6.2):
-     * `background` and `busy` stop the AI pass (retried at the next open),
-     * `quota` sends the rest of the scan to the regex, anything else is
-     * `failed` (the regex reads that one SMS).
+     * `GenAiException.errorCode` → the error the scanner acts on: `background`
+     * and `busy` stop the AI pass (retried at the next open), `quota` sends the
+     * rest of the scan to the regex, anything else is `failed` (the regex reads
+     * that one SMS).
      */
     fun errorOf(errorCode: Int): String = when (errorCode) {
         30 -> "background" // BACKGROUND_USE_BLOCKED: not the top app.

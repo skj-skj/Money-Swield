@@ -1,6 +1,6 @@
-/// An amount of money: an integer in minor units plus its currency
-/// (database.md §1). The only type that carries an amount; there is no
-/// `double` anywhere between the text field and the database.
+/// An amount of money: an integer in minor units plus its currency. The only
+/// type that carries an amount; there is no `double` anywhere between the text
+/// field and the database.
 class Money {
   const Money(this.amountMinor, this.currencyCode);
 

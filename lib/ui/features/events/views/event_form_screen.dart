@@ -60,9 +60,8 @@ class _EventFormScreenState extends State<EventFormScreen> {
     if (done && mounted) Navigator.pop(context);
   }
 
-  /// Delete: the confirmation says how many expenses and recurring items
-  /// lose the event; they themselves stay (phase-2.md §10.2, phase-7a.md
-  /// R3).
+  /// Delete: the confirmation says how many expenses and recurring items lose
+  /// the event; they themselves stay.
   Future<void> _delete(String name) async {
     final l10n = AppLocalizations.of(context);
     var usage = (expenses: 0, templates: 0);

@@ -1,10 +1,9 @@
-/// When a recurring item's payments fall (phase-7a.md §5.1). Pure Dart.
+/// When a recurring item's payments fall. Pure Dart.
 ///
-/// Dates are `YYYY-MM-DD` strings; arithmetic is on `DateTime.utc`
-/// midnights ([parseDay]), so a DST change can't move a date (F9). Every
-/// payment is computed from the start, never from the previous payment,
-/// and clamped to the month's last day: a monthly item from 31 Jan falls on
-/// 28 Feb, then on 31 Mar again (database.md §3.8).
+/// Dates are `YYYY-MM-DD` strings; arithmetic is on `DateTime.utc` midnights
+/// ([parseDay]), so a DST change can't move a date. Every payment is computed
+/// from the start, never from the previous payment, and clamped to the month's
+/// last day: a monthly item from 31 Jan falls on 28 Feb, then on 31 Mar again.
 library;
 
 import 'dart:math' as math;
@@ -13,9 +12,9 @@ import 'periods.dart';
 
 enum Frequency { daily, weekly, monthly, yearly }
 
-/// The latest date anything repeats to: the date pickers' limit (F11).
-/// Keeps every stored date a 4-digit year, which [parseDay] and comparing
-/// dates as strings need. Payments after it are never computed.
+/// The latest date anything repeats to: the date pickers' limit. Keeps every
+/// stored date a 4-digit year, which [parseDay] and comparing dates as strings
+/// need. Payments after it are never computed.
 const lastEndOn = '2200-12-31';
 
 final DateTime _lastEnd = parseDay(lastEndOn);
@@ -63,9 +62,9 @@ final class Schedule {
 String occurrenceAt(Schedule s, int k) => isoDay(_dateAt(s, k));
 
 /// The [k]-th payment, or null when it falls after [lastEndOn]: "after 999
-/// payments" yearly × 99 would be year 100828, which [parseDay] can't read
-/// and which sorts before "2200" as text (phase-7b.md §5.1). Compared as
-/// dates, never as strings. The end is not applied.
+/// payments" yearly × 99 would be year 100828, which [parseDay] can't read and
+/// which sorts before "2200" as text. Compared as dates, never as strings. The
+/// end is not applied.
 String? occurrenceWithinLimit(Schedule s, int k) {
   final date = _dateAt(s, k);
   return date.isAfter(_lastEnd) ? null : isoDay(date);

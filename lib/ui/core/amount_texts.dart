@@ -3,9 +3,9 @@ import '../../domain/amount_input.dart';
 import '../../domain/models/currency.dart';
 import '../../l10n/app_localizations.dart';
 
-/// What's wrong with a typed amount in [currencyCode] (phase-4.md §5.1):
-/// the expense form's amount field and a recurring item's Change price
-/// sheet (phase-7a.md §8.5) say it the same way. Null for no error.
+/// What's wrong with a typed amount in [currencyCode]: the expense form's
+/// amount field and a recurring item's Change price sheet say it the same way.
+/// Null for no error.
 String? amountErrorText(
   AppLocalizations l10n,
   ExpressionError? error,

@@ -4,12 +4,12 @@ import '../../../../domain/photo_sizing.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../back_guard.dart';
 
-/// What the review after the camera decided (phase-6.md §8.2a).
+/// What the review after the camera decided.
 sealed class ReviewDecision {
   const ReviewDecision();
 }
 
-/// Use photo, or Back (P6-33): keep it, turned [quarterTurns] clockwise.
+/// Use photo, or Back: keep it, turned [quarterTurns] clockwise.
 final class UseReviewedPhoto extends ReviewDecision {
   const UseReviewedPhoto(this.quarterTurns);
 
@@ -20,10 +20,10 @@ final class DiscardReviewedPhoto extends ReviewDecision {
   const DiscardReviewedPhoto();
 }
 
-/// The camera's photo, full screen on black, to turn before it is added:
-/// the only time a photo can be turned (P6-32). Turning is on screen only;
-/// the photo is encoded once, from the camera's file, when it is used
-/// (P6-34). **Back = Use photo as shown**: Back never loses a shot.
+/// The camera's photo, full screen on black, to turn before it is added: the
+/// only time a photo can be turned. Turning is on screen only; the photo is
+/// encoded once, from the camera's file, when it is used. **Back = Use photo as
+/// shown**: Back never loses a shot.
 class PhotoReviewScreen extends StatefulWidget {
   const PhotoReviewScreen({super.key, required this.image, this.notice});
 

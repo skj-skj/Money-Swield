@@ -9,9 +9,9 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
 /**
- * Joining the report's PDF parts (phase-8.md §12a). The parts are built
- * here the way Skia writes them: a catalog, an info dictionary and a
- * balanced page tree whose nodes' object order isn't the page order.
+ * Joining the report's PDF parts. The parts are built here the way Skia writes
+ * them: a catalog, an info dictionary and a balanced page tree whose nodes'
+ * object order isn't the page order.
  */
 class PdfJoinTest {
     @get:Rule

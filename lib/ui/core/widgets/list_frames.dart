@@ -1,9 +1,8 @@
 import 'package:material_ui/material_ui.dart';
 
-/// The outlined groups of a long list (phase-5.md §8.3, P5-30): Home's
-/// days, weeks, months and years, and the Photos screen's months
-/// (phase-6.md §8.9, R17). Shared, so both read the same; each screen puts
-/// its own content (Home's subtotals) in them.
+/// The outlined groups of a long list: Home's days, weeks, months and years,
+/// and the Photos screen's months. Shared, so both read the same; each screen
+/// puts its own content (Home's subtotals) in them.
 
 /// Where a frame's side lines are, from the screen's edges.
 const frameMargin = 16.0;
@@ -81,11 +80,10 @@ class _FramePainter extends BoxPainter {
   }
 }
 
-/// A frame's top, sticky while its group is on screen (P5-12): the
-/// group's [name] on the border at the left and [trailing] (Home's
-/// subtotal) from the middle to the right, on a page-coloured strip with
-/// the frame's top and side lines, so it still reads as the frame's top
-/// when pinned.
+/// A frame's top, sticky while its group is on screen: the group's [name] on
+/// the border at the left and [trailing] (Home's subtotal) from the middle to
+/// the right, on a page-coloured strip with the frame's top and side lines, so
+/// it still reads as the frame's top when pinned.
 class FrameTop extends StatelessWidget {
   const FrameTop({super.key, required this.name, this.trailing});
 

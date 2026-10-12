@@ -1,6 +1,6 @@
-/// Turning what the user typed in the amount field into minor units and
-/// back (phase-2.md §4.2). Works on the digits of the string only, never
-/// through `double`, so nothing is ever rounded.
+/// Turning what the user typed in the amount field into minor units and back.
+/// Works on the digits of the string only, never through `double`, so nothing
+/// is ever rounded.
 library;
 
 /// Why a typed amount was refused. When several apply, the first in this
@@ -44,10 +44,9 @@ final class AmountRejected extends AmountParse {
   String toString() => 'AmountRejected(${error.name})';
 }
 
-/// At most this many digits before the separator, leading zeros not
-/// counted. Keeps one amount at 15 significant digits or fewer even for a
-/// 3-digit currency, which a double (used only to display it) holds
-/// exactly (phase-2.md §4.2, P2-2).
+/// At most this many digits before the separator, leading zeros not counted.
+/// Keeps one amount at 15 significant digits or fewer even for a 3-digit
+/// currency, which a double (used only to display it) holds exactly.
 const maxIntegerDigits = 12;
 
 final _digitsOnly = RegExp(r'^[0-9]*$');
@@ -89,10 +88,9 @@ AmountParse parseAmount(String text, {required int minorDigits}) {
   return AmountParsed(amountMinor);
 }
 
-/// Whether the live preview should show under the amount field: the text
-/// has a `,` or more than one `.`. For 3-digit currencies `1,000` is one
-/// dinar, not a thousand, and only the preview tells the user which one
-/// they typed (phase-2.md §4.2).
+/// Whether the live preview should show under the amount field: the text has a
+/// `,` or more than one `.`. For 3-digit currencies `1,000` is one dinar, not a
+/// thousand, and only the preview tells the user which one they typed.
 bool amountNeedsPreview(String text) =>
     text.contains(',') || '.'.allMatches(text).length > 1;
 

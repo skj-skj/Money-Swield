@@ -1,5 +1,5 @@
-/// The Home list as a tree of groups and days (phase-5.md §5.5), so the UI
-/// can build one sliver group per frame and per day and pin their headers.
+/// The Home list as a tree of groups and days, so the UI can build one sliver
+/// group per frame and per day and pin their headers.
 library;
 
 import 'models/expense.dart';
@@ -30,13 +30,13 @@ final class ListDay {
   /// `occurred_on`.
   final String day;
 
-  /// In list order (§4.1).
+  /// In list order.
   final List<Expense> expenses;
 }
 
-/// [expenses], in list order (local date, then moment; §4.1), as groups
-/// of [grouping] holding days. With that order dates never come back, so
-/// each group and each day appears once.
+/// [expenses], in list order (local date, then moment), as groups of [grouping]
+/// holding days. With that order dates never come back, so each group and each
+/// day appears once.
 List<ListGroup> homeGroups(
   List<Expense> expenses, {
   required Period grouping,

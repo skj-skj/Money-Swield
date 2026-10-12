@@ -18,7 +18,7 @@ final class TrendFace {
 
   final PeriodRange range;
 
-  /// The whole period's total per currency (the headline, P5-8).
+  /// The whole period's total per currency (the headline).
   final CurrencyTotals totals;
 
   /// The carousel's pages: currencies with rows, default first, then by
@@ -54,8 +54,8 @@ final class TrendLoaded extends TrendState {
     this.selected,
   });
 
-  /// Week, month and year, all built from one read (P5-36), so a turn or a
-  /// currency swipe reads nothing and the next face is ready mid-drag.
+  /// Week, month and year, all built from one read, so a turn or a currency
+  /// swipe reads nothing and the next face is ready mid-drag.
   final Map<Period, TrendFace> faces;
 
   final Period period;
@@ -63,7 +63,7 @@ final class TrendLoaded extends TrendState {
   /// The carousel's current currency.
   final String currency;
 
-  /// The rows are filtered: the card says so (P5-31).
+  /// The rows are filtered: the card says so.
   final bool filtered;
 
   /// The device's local date when loaded, for the highlighted point.
@@ -81,8 +81,8 @@ final class TrendLoaded extends TrendState {
     return face.isEmpty ? [currency] : face.currencies;
   }
 
-  /// The currency [period]'s face shows: the current one while that period
-  /// has rows in it, else its first (P5-27).
+  /// The currency [period]'s face shows: the current one while that period has
+  /// rows in it, else its first.
   String currencyFor(Period period, String defaultCurrency) {
     final face = faces[period]!;
     return face.currencies.contains(currency)
@@ -108,8 +108,8 @@ final class TrendFailed extends TrendState {
   const TrendFailed();
 }
 
-/// Home's trend card (phase-5.md §7.3): the current week, month or year,
-/// one currency at a time, for what the filters show.
+/// Home's trend card: the current week, month or year, one currency at a time,
+/// for what the filters show.
 class TrendCubit extends CubitSignal<TrendState> with EmitIfOpen<TrendState> {
   TrendCubit({
     required this._expenses,
@@ -173,9 +173,9 @@ class TrendCubit extends CubitSignal<TrendState> with EmitIfOpen<TrendState> {
     }
   }
 
-  /// The card follows the filters (P5-31). The same filter reads nothing:
-  /// Home's list hands its filter over after its first load, while the
-  /// card's own first load (same filter) is already running.
+  /// The card follows the filters. The same filter reads nothing: Home's list
+  /// hands its filter over after its first load, while the card's own first
+  /// load (same filter) is already running.
   Future<void> setFilter(ExpenseFilter filter) async {
     if (filter == _filter) return;
     _filter = filter;
@@ -195,10 +195,10 @@ class TrendCubit extends CubitSignal<TrendState> with EmitIfOpen<TrendState> {
     if (_rows != null) _build(clearSelection: false);
   }
 
-  /// Turns the card [steps] periods: positive to the next ones, negative
-  /// to the previous ones, wrapping (P5-29); a spin of the reel can turn
-  /// several at once. Reads nothing: every face is loaded. Returns the new
-  /// period, for the screen to save.
+  /// Turns the card [steps] periods: positive to the next ones, negative to the
+  /// previous ones, wrapping; a spin of the reel can turn several at once.
+  /// Reads nothing: every face is loaded. Returns the new period, for the
+  /// screen to save.
   Period turn(int steps) {
     _period = cardPeriodAfter(_period, steps);
     final state = value;

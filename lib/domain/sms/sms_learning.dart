@@ -1,5 +1,5 @@
-/// The category suggested for an SMS (phase-9a.md §5.4, P9a-11). Pure
-/// Dart: the repository reads the rows, this picks.
+/// The category suggested for an SMS. Pure Dart: the repository reads the rows,
+/// this picks.
 library;
 
 import '../title_suggestions.dart';
@@ -15,7 +15,7 @@ typedef SmsLearned = ({String title, int categoryId});
 ///    `ExpenseRepository.titleHistoryOn`: active rows up to today, `recent`
 ///    counting the 180 days, so a row with `recent == 0` is older);
 /// 3. [ai]: the on-device model's pick among the user's categories, for a
-///    payee with no history (phase-9b.md §5.3; owner: "if not then AI
+///    payee with no history (owner: "if not then AI
 ///    should judge");
 /// 4. null.
 int? suggestedCategory({

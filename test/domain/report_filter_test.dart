@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:my_expense_tracker_app/domain/expense_filter.dart';
 import 'package:my_expense_tracker_app/domain/report_filter.dart';
 
-/// phase-8.md §4 (report_filter), §5.2 and §12 "Domain: report_filter".
 void main() {
   const full = ReportFilter(
     base: ExpenseFilter(

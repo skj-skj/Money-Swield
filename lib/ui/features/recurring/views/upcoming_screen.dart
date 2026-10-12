@@ -25,12 +25,12 @@ import '../view_models/upcoming_cubit.dart';
 import 'recurring_navigation.dart';
 import 'skip_dialog.dart';
 
-/// **Upcoming payments** (phase-7b.md §8.3): every payment of the next 12
+/// **Upcoming payments**: every payment of the next 12
 /// months, nearest first, in month frames with sticky day headers like the
-/// Photos screen (R3); no subtotals. Like the Photos screen it follows
-/// Home's filters, with a Filtered mark (owner, 2026-10-10; P7b-9 said it
-/// ignored them). A row opens its item's page; ⊘ skips it once or stops
-/// the item; a skipped row stays, greyed, with ↺ to bring it back.
+/// Photos screen; no subtotals. Like the Photos screen it follows Home's
+/// filters, with a Filtered mark (owner, 2026-10-10; it
+/// ignored them before). A row opens its item's page; ⊘ skips it once or stops the item; a
+/// skipped row stays, greyed, with ↺ to bring it back.
 class UpcomingScreen extends StatefulWidget {
   const UpcomingScreen({
     super.key,
@@ -150,7 +150,7 @@ class _UpcomingScreenState extends State<UpcomingScreen>
     }
   }
 
-  /// ↺: no dialog (§8.1 F).
+  /// ↺: no dialog.
   Future<void> _bringBack(UpcomingPayment payment, String date) async {
     final l10n = AppLocalizations.of(context);
     var back = false;
@@ -294,9 +294,9 @@ class _UpcomingScreenState extends State<UpcomingScreen>
         start: frameMargin + frameInset,
         end: 0,
       ),
-      // No repeat mark: every row here repeats, and the mark cut titles
-      // short at 360 dp ("Swimming c…" on the Oppo, phase-7b.md §12a).
-      // "Netflix, ₹649, Monday 9 November" (+ ", Skipped").
+      // No repeat mark: every row here repeats, and the mark cut titles short
+      // at 360 dp ("Swimming c…" on the Oppo). "Netflix, ₹649, Monday 9
+      // November" (+ ", Skipped").
       semanticsLabel: [
         l10n.upcomingRowSemantics(
           payment.title,

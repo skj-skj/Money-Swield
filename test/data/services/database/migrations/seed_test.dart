@@ -3,8 +3,8 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../../../../helpers/test_database.dart';
 
-/// The Phase 1 migrations create the tables and seed the built-in rows
-/// (phase-1.md §3). `all_migrations_test.dart` already covers up/down/up.
+/// The first migrations create the tables and seed the built-in rows.
+/// `all_migrations_test.dart` already covers up/down/up.
 void main() {
   late Database db;
 

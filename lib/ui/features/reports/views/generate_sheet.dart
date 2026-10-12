@@ -12,8 +12,8 @@ import '../../../core/widgets/section_heading.dart';
 import 'report_texts.dart';
 
 /// What the Generate sheet closed with: its filter (applied to the screen
-/// however the sheet closes, like the filter sheet, P5-18), its options
-/// (remembered) and the button tapped, or null when closed without one.
+/// however the sheet closes, like the filter sheet), its options (remembered)
+/// and the button tapped, or null when closed without one.
 typedef GenerateChoice = ({
   ExpenseFilter filter,
   Set<int> paymentMethodIds,

@@ -121,7 +121,7 @@ void main() {
     expect(await db.query('categories', where: 'id = 1'), hasLength(1));
   });
 
-  group('recurring items (phase-7a.md R2)', () {
+  group('recurring items', () {
     Future<List<(int, int, int)>> items() async => [
       for (final row in await db.query('recurring_expenses', orderBy: 'id'))
         (

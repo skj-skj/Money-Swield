@@ -6,10 +6,10 @@ const journalSuffixes = ['-wal', '-journal'];
 const sidecarSuffixes = ['-wal', '-shm', '-journal'];
 
 /// Throws unless every journal next to the database at [path] is missing or
-/// empty. Used before a step that moves or zips the `.db` alone, where
-/// anything still in a journal would be lost. Checks the size, not the
-/// file: Android's TRUNCATE mode keeps a 0-byte `-journal` (phase-3.md
-/// §12a). [what] names the database in the error.
+/// empty. Used before a step that moves or zips the `.db` alone, where anything
+/// still in a journal would be lost. Checks the size, not the file: Android's
+/// TRUNCATE mode keeps a 0-byte `-journal`. [what] names the database in the
+/// error.
 Future<void> checkJournalsEmpty(String path, {required String what}) async {
   for (final suffix in journalSuffixes) {
     final journal = File('$path$suffix');

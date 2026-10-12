@@ -10,8 +10,8 @@ import '../../../../domain/periods.dart';
 import '../../../../domain/upcoming.dart';
 import '../../../core/emit_if_open.dart';
 
-/// What Upcoming payments shows (phase-7b.md §7.4). States don't override
-/// `==`, so every emitted state reaches the screen.
+/// What Upcoming payments shows. States don't override `==`, so every emitted
+/// state reaches the screen.
 sealed class UpcomingState {
   const UpcomingState();
 }
@@ -74,11 +74,11 @@ final class UpcomingLoaded extends UpcomingState {
   );
 }
 
-/// **Upcoming payments** (phase-7b.md §7.4, §8.3): every payment of the
-/// running items over the next 12 months, a month a page as the screen
-/// scrolls (P7b-10); each can be skipped once, brought back, or its item
-/// stopped. Computed from the items and the stored skips, read once per
-/// (re)load: paging needs no further reads.
+/// **Upcoming payments**: every payment of the
+/// running items over the next 12 months, a month a page as the screen scrolls;
+/// each can be skipped once, brought back, or its item stopped. Computed from
+/// the items and the stored skips, read once per (re)load: paging needs no
+/// further reads.
 class UpcomingCubit extends CubitSignal<UpcomingState>
     with EmitIfOpen<UpcomingState> {
   UpcomingCubit({
@@ -227,7 +227,7 @@ class UpcomingCubit extends CubitSignal<UpcomingState>
     }
   }
 
-  /// **Skip once** (P7b-8): the row stays, greyed. True when skipped (the
+  /// **Skip once**: the row stays, greyed. True when skipped (the
   /// screen offers Undo, which is [unskip]).
   Future<bool> skipOnce(UpcomingPayment payment) async =>
       await _busyRow(payment.key, () async {

@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- play built with -PnoSms=true (D11, phase-9a.md P9a-25): replaces
+    <!-- play built with -PnoSms=true: replaces
          src/play/AndroidManifest.xml so READ_SMS is not requested; the app
          then hides the SMS feature (SmsChannel `status.built` is false). -->
 </manifest>

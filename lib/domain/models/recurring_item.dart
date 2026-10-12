@@ -3,7 +3,7 @@ import '../recurring_plan.dart';
 import '../recurring_price.dart';
 import 'money.dart';
 
-/// Why an item is in the Archive (P7a-12).
+/// Why an item is in the Archive.
 enum ArchiveReason {
   /// Stop was tapped.
   stopped,
@@ -11,11 +11,11 @@ enum ArchiveReason {
   /// Its end date passed with no payment left.
   expired,
 
-  /// How often changed: a new item was made from it (phase-7b.md §6.1).
+  /// How often changed: a new item was made from it.
   replaced,
 }
 
-/// A recurring item as the lists and its page show it (phase-7a.md §6.1).
+/// A recurring item as the lists and its page show it.
 class RecurringItem {
   const RecurringItem({
     required this.id,
@@ -41,14 +41,14 @@ class RecurringItem {
   });
 
   /// Its prices, any order: Upcoming shows each payment at the price on its
-  /// date (phase-7b.md §5.3).
+  /// date.
   final List<PricePoint> prices;
 
   final int id;
   final String title;
   final String? description;
 
-  /// Fixed (P7a-10): prices are minor units of it.
+  /// Fixed: prices are minor units of it.
   final String currencyCode;
   final int categoryId;
   final int paymentMethodId;
@@ -82,11 +82,11 @@ class RecurringItem {
   /// Active payments: binned ones aren't counted.
   final int paymentCount;
 
-  /// The backlog waiting for Add all / Skip them (§5.3); null when none.
+  /// The backlog waiting for Add all / Skip them; null when none.
   final HoldPayments? hold;
 
-  /// The item this one was made from when its schedule changed
-  /// (`replaces_id`, phase-7b.md §4.1); null otherwise.
+  /// The item this one was made from when its schedule changed (`replaces_id`);
+  /// null otherwise.
   final int? replacesId;
 
   /// Archived by a change of how often: an item made from it was created
@@ -104,11 +104,11 @@ class RecurringItem {
     null => null,
   };
 
-  /// Stopped or expired; null while running. Expired = archived with no
-  /// payment left and an end before the day it was archived: the expiry
-  /// does exactly that, while Stop can also archive an item with no
-  /// payment left whose end is still ahead (§12a; the doc's "cursor NULL"
-  /// alone would call that one expired).
+  /// Stopped or expired; null while running. Expired = archived with no payment
+  /// left and an end before the day it was archived: the expiry does exactly
+  /// that, while Stop can also archive an item with no payment left whose end
+  /// is still ahead (the doc's "cursor NULL" alone would call that one
+  /// expired).
   ArchiveReason? get archiveReason {
     final on = archivedOn;
     if (on == null) return null;
@@ -125,9 +125,8 @@ class RecurringItem {
       '${isArchived ? ', archived' : ''}${isBroken ? ', broken' : ''})';
 }
 
-/// What the Edit screen saves (phase-7a.md §7.4). The currency is never
-/// edited (P7a-10); changing how often makes a new item instead
-/// (`RecurringRepository.replaceSchedule`, phase-7b.md §6.1).
+/// What the Edit screen saves. The currency is never edited; changing how often
+/// makes a new item instead (`RecurringRepository.replaceSchedule`).
 class RecurringEdit {
   const RecurringEdit({
     required this.title,
@@ -157,10 +156,10 @@ class RecurringEdit {
 /// does nothing if the item changed since.
 typedef ArchiveUndo = ({int id, int updatedAtMs});
 
-/// An item a run held back (§5.3).
+/// An item a run held back.
 typedef HeldItem = ({int id, String title, int count, String from, String to});
 
-/// What a generator run did (§6.3).
+/// What a generator run did.
 class GenerateReport {
   const GenerateReport({
     this.added = 0,

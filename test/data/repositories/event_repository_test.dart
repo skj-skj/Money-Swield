@@ -172,16 +172,13 @@ void main() {
       expect(await repository.usage(3), (expenses: 0, templates: 0));
     });
 
-    test(
-      'counts recurring items with the event, archived ones too (R3)',
-      () async {
-        await insertRecurringRow(db, eventIds: {1, 2});
-        await insertRecurringRow(db, eventIds: {1}, archivedAt: 5);
-        await insertExpenseRow(db, eventIds: {1});
-        expect(await repository.usage(1), (expenses: 1, templates: 2));
-        expect(await repository.usage(2), (expenses: 0, templates: 1));
-      },
-    );
+    test('counts recurring items with the event, archived ones too', () async {
+      await insertRecurringRow(db, eventIds: {1, 2});
+      await insertRecurringRow(db, eventIds: {1}, archivedAt: 5);
+      await insertExpenseRow(db, eventIds: {1});
+      expect(await repository.usage(1), (expenses: 1, templates: 2));
+      expect(await repository.usage(2), (expenses: 0, templates: 1));
+    });
 
     test('deleting an event used only by an item keeps the item, without '
         'the event', () async {

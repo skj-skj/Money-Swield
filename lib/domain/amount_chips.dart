@@ -1,4 +1,4 @@
-/// Home's amount chips (phase-4.md §6.2, P4-10, P4-11).
+/// Home's amount chips.
 library;
 
 import 'models/money.dart';

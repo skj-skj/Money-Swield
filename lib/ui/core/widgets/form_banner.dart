@@ -1,8 +1,8 @@
 import 'package:material_ui/material_ui.dart';
 
-/// One line under a form's app bar on the secondary container colour: an
-/// icon, a text and an optional action. The draft banner (phase-4.md §7.4)
-/// and the "From SMS" banner (phase-9a.md §8.4) are this.
+/// One line under a form's app bar on the secondary container colour: an icon,
+/// a text and an optional action. The draft banner and the "From SMS" banner
+/// are this.
 class FormBanner extends StatelessWidget {
   const FormBanner({
     super.key,

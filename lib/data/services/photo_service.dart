@@ -42,10 +42,10 @@ class PhotoServiceException implements Exception {
 /// MIME type and its length in bytes.
 typedef ImageFacts = ({int width, int height, String mimeType, int bytes});
 
-/// Android's camera, photo picker, image decoding and encoding, MediaStore
-/// and free space, behind an interface so tests can stand in for them
-/// (phase-6.md §6.1). Paths are absolute; a `source` is a picker's
-/// `content://` URI or a file path. Throws [PhotoServiceException].
+/// Android's camera, photo picker, image decoding and encoding, MediaStore and
+/// free space, behind an interface so tests can stand in for them. Paths are
+/// absolute; a `source` is a picker's `content://` URI or a file path. Throws
+/// [PhotoServiceException].
 abstract interface class PhotoService {
   /// Opens the camera app, which writes its picture to [path]. True when a
   /// picture was taken, false when cancelled.
@@ -74,8 +74,8 @@ abstract interface class PhotoService {
   });
 
   /// Copies [sourcePath] into `Pictures/<folder>/` as a new picture named
-  /// [displayName] (only ever inserting, P6-46), dated by EXIF on the
-  /// expense's moment (§12a). Returns the name MediaStore gave it.
+  /// [displayName] (only ever inserting), dated by EXIF on the expense's
+  /// moment. Returns the name MediaStore gave it.
   Future<String> saveToPictures({
     required String sourcePath,
     required String folder,

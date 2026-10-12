@@ -1,15 +1,15 @@
-/// A recurring item's prices over time (phase-7a.md §5.4). Pure Dart.
+/// A recurring item's prices over time. Pure Dart.
 ///
-/// A price change adds a price from a date; history is never edited
-/// (database.md §3.8, A7). Payments already added keep their amount.
+/// A price change adds a price from a date; history is never edited. Payments
+/// already added keep their amount.
 library;
 
 /// A price in minor units of the item's currency, from a date on.
 typedef PricePoint = ({String from, int amountMinor});
 
-/// The price in force on [day]: the point with the latest `from` on or
-/// before it. Null before the first (a stored item's first point is its
-/// start). Agrees with the repository's SQL lookup (F4).
+/// The price in force on [day]: the point with the latest `from` on or before
+/// it. Null before the first (a stored item's first point is its start). Agrees
+/// with the repository's SQL lookup.
 int? priceOn(List<PricePoint> points, String day) {
   PricePoint? best;
   for (final p in points) {
@@ -37,7 +37,7 @@ enum PriceChange {
   inForce,
 }
 
-/// What changing the price from [from] does (§5.4's table), for an item
+/// What changing the price from [from] does, for an item
 /// that starts on [startOn] with [points], when it is [today].
 PriceChange priceChangeFor(
   List<PricePoint> points, {
@@ -51,8 +51,8 @@ PriceChange priceChangeFor(
   return from.compareTo(today) > 0 ? PriceChange.replace : PriceChange.inForce;
 }
 
-/// Whether the price from [from] may be removed: only a scheduled one
-/// (after [today]) that isn't the first (§5.4).
+/// Whether the price from [from] may be removed: only a scheduled one (after
+/// [today]) that isn't the first.
 bool canRemovePrice(
   List<PricePoint> points, {
   required String from,

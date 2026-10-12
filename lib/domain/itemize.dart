@@ -1,5 +1,5 @@
-/// The Itemize line: an expression's additive terms with a label after
-/// each, `50 (potato) + 60 × 2 (onion)` (phase-4.md §5.2, P4-9).
+/// The Itemize line: an expression's additive terms with a label after each,
+/// `50 (potato) + 60 × 2 (onion)`.
 library;
 
 import 'amount_expression.dart';

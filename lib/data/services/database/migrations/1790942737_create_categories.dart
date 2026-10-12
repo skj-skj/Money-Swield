@@ -3,7 +3,7 @@
 
 import '../migration/migration.dart';
 
-/// Expense categories, seeded with the built-in ones (database.md §3.2).
+/// Expense categories, seeded with the built-in ones.
 ///
 /// Built-in rows have a `builtin_key` and a NULL `name`, so the app shows
 /// them in the user's language until they are renamed.

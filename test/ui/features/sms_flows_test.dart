@@ -14,8 +14,8 @@ import '../../helpers/fake_sms_service.dart';
 import '../../helpers/pump_app.dart';
 import '../../helpers/test_database.dart';
 
-/// Home's SMS icon, the SMS screen, the draft dialog and the form's banner
-/// (phase-9a.md §8, §12 "Widgets"). Today is Sun 11 Oct 2026, 14:30 IST.
+/// Home's SMS icon, the SMS screen, the draft dialog and the form's banner.
+/// Today is Sun 11 Oct 2026, 14:30 IST.
 void main() {
   late AppDependencies deps;
   late FakeSmsService sms;
@@ -41,8 +41,8 @@ void main() {
       await deps.settings.setOnboardingCompleted();
       await deps.settings.setSmsEnabled(enabled);
       if (language != 'en') await deps.settings.setLocale(Locale(language));
-      // One expense, so Home shows its filter bar (P5-20 hides it on an
-      // empty Home).
+      // One expense, so Home shows its filter bar (an empty Home
+      // hides it).
       if (withExpense) {
         await deps.expenses.add(
           ExpenseInput(
@@ -97,7 +97,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  group('the icon (§8.1)', () {
+  group('the icon', () {
     testWidgets('first of the icons, with a count badge that follows what '
         'the SMS screen did', (t) async {
       await setUpApp(t, seedInbox: standardInbox);
@@ -125,7 +125,7 @@ void main() {
       );
     });
 
-    testWidgets('an empty Home (no filter bar, P5-20): the icon in the app '
+    testWidgets('an empty Home (no filter bar): the icon in the app '
         'bar, left of the currency button; once an expense is added, only '
         'in the filter bar (regression: found on the Oppo, the suggestions '
         'had no way in; owner, 2026-10-11)', (t) async {
@@ -198,7 +198,7 @@ void main() {
   });
 
   testWidgets('Settings → SMS tile follows the SMS state: the count, then '
-      'Off once turned off there (§8.5)', (t) async {
+      'Off once turned off there', (t) async {
     await setUpApp(t, seedInbox: standardInbox);
     await start(t);
     await t.tap(find.text('Settings'));
@@ -225,7 +225,7 @@ void main() {
     );
   });
 
-  group('the screen (§8.2)', () {
+  group('the screen', () {
     testWidgets('frames and day headers; two columns; ATM not there; the '
         'dismiss icon removes that card only, Undo brings it back', (t) async {
       await setUpApp(t, seedInbox: standardInbox);
@@ -362,7 +362,7 @@ void main() {
     }
   });
 
-  group('the draft dialog (§8.4)', () {
+  group('the draft dialog', () {
     ExpenseDraft addDraft({int? editing, String title = 'Lunch'}) =>
         ExpenseDraft(
           editingExpenseId: editing,

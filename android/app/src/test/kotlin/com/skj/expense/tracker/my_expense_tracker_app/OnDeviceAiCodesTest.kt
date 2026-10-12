@@ -3,7 +3,7 @@ package com.skj.expense.tracker.my_expense_tracker_app
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-/** The on-device AI channel's words (phase-9b.md §11, Kotlin). */
+/** The on-device AI channel's words (Kotlin). */
 class OnDeviceAiCodesTest {
 
     @Test

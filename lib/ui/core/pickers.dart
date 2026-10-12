@@ -1,5 +1,5 @@
-/// The app's date and time pickers: every screen opens them the same way
-/// (phase-7a.md review): the formatting locale, and the way the user last
+/// The app's date and time pickers: every screen opens them the same way:
+/// the formatting locale, and the way the user last
 /// left them (calendar or typing, dial or keyboard), remembered in the
 /// settings.
 library;

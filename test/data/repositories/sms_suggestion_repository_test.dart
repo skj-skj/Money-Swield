@@ -11,10 +11,9 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../../helpers/test_database.dart';
 
-/// `sms_suggestions` and `SmsSuggestionRepository` (phase-9a.md §4, §6.1,
-/// §12 "Repository"), and `ExpenseRepository.add(fromSms)` (R8), on
-/// SQLite 3.22. Suggestions have no bin; the learning queries each get a
-/// binned expense that must not count.
+/// `sms_suggestions` and `SmsSuggestionRepository`, and
+/// `ExpenseRepository.add(fromSms)`, on SQLite 3.22. Suggestions have no bin;
+/// the learning queries each get a binned expense that must not count.
 void main() {
   late Database db;
   late TestClock clock;
@@ -88,7 +87,7 @@ void main() {
     );
   }
 
-  group('the table (§4)', () {
+  group('the table', () {
     test('columns, NOT NULL, no body, both SET NULL, six indexes', () async {
       final columns = {
         for (final c in await db.rawQuery('PRAGMA table_info(sms_suggestions)'))
@@ -164,7 +163,7 @@ void main() {
     });
   });
 
-  group('plans (F1, sqlite.md §5)', () {
+  group('plans', () {
     Future<String> plan(String sql, [List<Object?> args = const []]) async => [
       for (final r in await db.rawQuery('EXPLAIN QUERY PLAN $sql', args))
         r['detail'],
@@ -207,7 +206,7 @@ void main() {
         'AND received_at < ?',
         [0],
       );
-      // Recorded in §12a: both read a table that the purge keeps small.
+      // Both read a table that the purge keeps small.
       printOnFailure('existingKeys: $keysPlan\npurge: $purgePlan');
       expect(purgePlan, contains('index_sms_suggestions_on_status'));
     });
@@ -245,7 +244,7 @@ void main() {
     });
 
     test('a bad row throws before any write (INSERT OR IGNORE would skip a '
-        'NOT NULL break silently, F1)', () async {
+        'NOT NULL break silently)', () async {
       for (final bad in [
         row(sender: ' '),
         row(hash: 'x'),
@@ -269,7 +268,7 @@ void main() {
         await repo.insertScanned([row(hash: sha('a'))], cursorMs: 10);
         // A category that doesn't exist, forced through the learning path: a
         // learned row whose expense names category 999 can't exist, so the
-        // failure is forced with a temp trigger (sqlite.md §5.11).
+        // failure is forced with a temp trigger.
         await db.execute(
           'CREATE TEMP TRIGGER fail_insert BEFORE INSERT ON sms_suggestions '
           "BEGIN SELECT RAISE(ABORT, 'forced'); END",
@@ -306,7 +305,7 @@ void main() {
       },
     );
 
-    test('a category by title through the transaction (R12: this hangs if '
+    test('a category by title through the transaction (this hangs if '
         'it reads through the database); not from a title only older than '
         '180 days, not from a binned or future one', () async {
       await expenses.add(input(title: 'Acme Marketplace', categoryId: 5));
@@ -438,7 +437,7 @@ void main() {
     });
   });
 
-  group('ExpenseRepository.add(fromSms) (R8)', () {
+  group('ExpenseRepository.add(fromSms)', () {
     test('marks the suggestion added with the expense id in one transaction; '
         'a second add → SmsAlreadyAdded and no second expense', () async {
       final s = await stored(row());
@@ -457,7 +456,7 @@ void main() {
     });
 
     test('a link whose sha differs, or no row (purged): saved, nothing '
-        'marked (P9a-38)', () async {
+        'marked', () async {
       final s = await stored(row());
       await expenses.add(input(), fromSms: (id: s.id, bodySha256: sha('9')));
       expect((await repo.byId(s.id))!.status, SmsStatus.pending);
@@ -518,17 +517,14 @@ void main() {
     });
   });
 
-  test(
-    'AppDependencies.probe refuses a database without the table (R6)',
-    () async {
-      await AppDependencies.probe(db, deviceCurrency: 'INR');
-      await db.execute('DROP TABLE sms_suggestions');
-      await expectLater(
-        AppDependencies.probe(db, deviceCurrency: 'INR'),
-        throwsA(isA<DatabaseException>()),
-      );
-    },
-  );
+  test('AppDependencies.probe refuses a database without the table', () async {
+    await AppDependencies.probe(db, deviceCurrency: 'INR');
+    await db.execute('DROP TABLE sms_suggestions');
+    await expectLater(
+      AppDependencies.probe(db, deviceCurrency: 'INR'),
+      throwsA(isA<DatabaseException>()),
+    );
+  });
 }
 
 extension on ExpenseInput {

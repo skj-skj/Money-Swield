@@ -17,7 +17,7 @@ class CannotDeleteDefault implements Exception {
   String toString() => 'CannotDeleteDefault: payment method $id is the default';
 }
 
-/// Reads and writes the `payment_methods` table (database.md §3.3).
+/// Reads and writes the `payment_methods` table.
 ///
 /// Validation (name length, uniqueness, one emoji) is done by the form's
 /// cubit, because uniqueness depends on the localized names of built-ins.
@@ -36,7 +36,7 @@ class PaymentMethodRepository {
   /// Knows which method is the default, so [delete] can refuse it.
   final SettingsRepository _settings;
 
-  /// Bumped after every write (phase-2.md §5).
+  /// Bumped after every write.
   final DataVersion _dataVersion;
 
   final DateTime Function() _now;
@@ -45,9 +45,9 @@ class PaymentMethodRepository {
   /// display name, which depends on the language.
   Future<List<PaymentMethod>> all() => allOn(_db);
 
-  /// [all] on [db]: inside a transaction, the transaction's executor (a
-  /// call to the database itself there waits for the transaction to end,
-  /// and so never returns; phase-8.md R13).
+  /// [all] on [db]: inside a transaction, the transaction's executor (a call to
+  /// the database itself there waits for the transaction to end, and so never
+  /// returns).
   static Future<List<PaymentMethod>> allOn(DatabaseExecutor db) async {
     final rows = await db.query('payment_methods');
     return [for (final row in rows) _fromRow(row)];
@@ -104,14 +104,14 @@ class PaymentMethodRepository {
     _dataVersion.bump();
   }
 
-  /// How many expenses use the method. Binned ones are counted on purpose:
-  /// they block the delete too and must be moved (database.md §3.3).
+  /// How many expenses use the method. Binned ones are counted on purpose: they
+  /// block the delete too and must be moved.
   Future<OwnerUsage> usage(int id) => ExpenseOwner.paymentMethod.usage(_db, id);
 
-  /// Moves every expense of method [id], binned ones included, to [toId]
-  /// and deletes [id], in one transaction (D7). Throws
-  /// [CannotDeleteDefault] for the default, and fails on the foreign key if
-  /// [toId] no longer exists; either way nothing changes.
+  /// Moves every expense of method [id], binned ones included, to [toId] and
+  /// deletes [id], in one transaction. Throws [CannotDeleteDefault] for the
+  /// default, and fails on the foreign key if [toId] no longer exists; either
+  /// way nothing changes.
   Future<void> moveExpensesAndDelete(int id, {required int toId}) async {
     // ExpenseOwner checks this too, but only after the default check: here
     // a move onto itself is an ArgumentError even for the default.

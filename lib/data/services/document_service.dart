@@ -6,8 +6,8 @@ class DocumentTooLarge implements Exception {
   const DocumentTooLarge();
 }
 
-/// The system save and open dialogs, and the app version (phase-3.md §7).
-/// An interface so tests can stand in for the dialogs.
+/// The system save and open dialogs, and the app version. An interface so tests
+/// can stand in for the dialogs.
 abstract interface class DocumentService {
   /// Opens the save dialog with [suggestedName], copies the file at
   /// [sourcePath] into the chosen document and reads it back to compare.

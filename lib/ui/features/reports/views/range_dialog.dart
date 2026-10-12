@@ -6,10 +6,10 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../core/pickers.dart';
 import 'report_texts.dart';
 
-/// The Range dialog (phase-8.md §8.3, P8-4, P8-5): From, To, All time.
-/// Returns the range on Show; null on Cancel, back or a tap outside
-/// (nothing changes then). [initial] is the saved range, or the last 12
-/// months the first time; with All time its dates are [fallback]'s.
+/// The Range dialog: From, To, All time. Returns the range on Show; null on
+/// Cancel, back or a tap outside (nothing changes then). [initial] is the saved
+/// range, or the last 12 months the first time; with All time its dates are
+/// [fallback]'s.
 Future<ReportRange?> showRangeDialog(
   BuildContext context, {
   required ReportRange initial,
@@ -43,8 +43,7 @@ class _RangeDialogState extends State<_RangeDialog> {
   late String _from = widget.initial.from ?? widget.fallback.from!;
   late String _to = widget.initial.to ?? widget.fallback.to!;
 
-  /// From can't pass To, nor To come before From (§8.3), so the pair is
-  /// always valid.
+  /// From can't pass To, nor To come before From, so the pair is always valid.
   Future<void> _pickFrom() async {
     final picked = await pickDay(
       context,

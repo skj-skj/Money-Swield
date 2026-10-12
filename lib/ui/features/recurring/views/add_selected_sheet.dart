@@ -5,11 +5,11 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../core/money_formatter.dart';
 import '../../../core/widgets/app_sheet.dart';
 
-/// **Add selected** (phase-7b.md §8.1 E, §8.2): every held date with its
-/// price, all ticked at first (P7b-6); Select all / None; the button says
-/// what it does ("Add 9", or "Skip all 10" with nothing ticked). Returns
-/// the ticked dates, or null on Cancel, Back, a swipe down or a tap
-/// outside: nothing is written then.
+/// **Add selected**: every held date with its
+/// price, all ticked at first; Select all / None; the button says what it does
+/// ("Add 9", or "Skip all 10" with nothing ticked). Returns the ticked dates,
+/// or null on Cancel, Back, a swipe down or a tap outside: nothing is written
+/// then.
 Future<Set<String>?> showAddSelectedSheet(
   BuildContext context, {
   required List<String> days,
@@ -119,8 +119,8 @@ class _AddSelectedSheetState extends State<_AddSelectedSheet> {
         const Divider(height: 1),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-          // An OverflowBar: at 360 dp × 2.0 the two buttons stack instead
-          // of overflowing (phase-7a.md §12a B5).
+          // An OverflowBar: at 360 dp × 2.0 the two buttons stack instead of
+          // overflowing.
           child: OverflowBar(
             alignment: MainAxisAlignment.end,
             spacing: 8,

@@ -4,7 +4,7 @@ import 'package:my_expense_tracker_app/domain/report.dart';
 import 'package:my_expense_tracker_app/domain/report_document.dart';
 import 'package:my_expense_tracker_app/domain/report_range.dart';
 
-/// phase-8.md §6.6 file names (P8-20).
+/// File names and sheet names.
 void main() {
   const mon = WeekStart.monday;
   const today = '2026-10-10';
@@ -51,7 +51,7 @@ void main() {
     }
   });
 
-  group('sheetNames (F9; sections are user-named)', () {
+  group('sheetNames (sections are user-named)', () {
     test('forbidden characters, quotes, 31 characters, empty, History', () {
       expect(sheetNames([r'a/b\c?d*e[f]g:h']), ['a-b-c-d-e-f-g-h']);
       expect(sheetNames(["'Quoted'"]), ['Quoted']);

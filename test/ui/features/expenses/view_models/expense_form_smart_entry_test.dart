@@ -14,7 +14,7 @@ import 'package:my_expense_tracker_app/ui/features/expenses/view_models/expense_
 import '../../../../helpers/fake_timers.dart';
 import '../../../../helpers/test_database.dart';
 
-/// The Add/Edit form's Phase 4 behaviour (phase-4.md §7, §12 "Cubits").
+/// The Add/Edit form's smart entry behaviour.
 void main() {
   late AppDependencies deps;
   late TestClock clock;
@@ -184,7 +184,7 @@ void main() {
       expect(fields.currencyCode, 'INR');
       expect(ready(cubit).touched, {
         DraftField.title,
-      }, reason: 'prefilled fields stay untouched (P4-3)');
+      }, reason: 'prefilled fields stay untouched');
     });
 
     test('the date and time are never copied', () async {
@@ -428,7 +428,7 @@ void main() {
       });
     });
 
-    group('amount and currency go together (P4-14)', () {
+    group('amount and currency go together', () {
       Future<ExpenseFormCubit> pickUsd({
         bool amountTouched = false,
         String? amountTyped,
@@ -640,7 +640,7 @@ void main() {
     });
   });
 
-  group('draft slot ownership (phase-4.md §7.3)', () {
+  group('draft slot ownership', () {
     test('a change writes the draft; changing back clears it', () async {
       final cubit = await openForm()
         ..titleChanged('Tea');
@@ -730,7 +730,7 @@ void main() {
     });
   });
 
-  group('save and the draft (phase-4.md §6.3, §7.3)', () {
+  group('save and the draft', () {
     test(
       'Save deletes the draft row with the expense: no row, no memory',
       () async {
@@ -819,7 +819,7 @@ void main() {
     });
 
     test('Update of an expense binned meanwhile keeps the edits as an Add '
-        'draft (P4-12)', () async {
+        'draft', () async {
       final e = await seed();
       final cubit = await openForm(expenseId: e.id)
         ..titleChanged('Edited');
@@ -842,7 +842,7 @@ void main() {
       expect(await slot(), isNull);
     });
 
-    test('Delete of an already binned expense says gone (R14)', () async {
+    test('Delete of an already binned expense says gone', () async {
       final e = await seed();
       final cubit = await openForm(expenseId: e.id);
       await deps.expenses.moveToBin(e.id);
@@ -884,8 +884,8 @@ void main() {
     });
   });
 
-  group('resume (phase-4.md §7.4, §7.5)', () {
-    test('an Add draft with an untouched date opens at now (P4-16)', () async {
+  group('resume', () {
+    test('an Add draft with an untouched date opens at now', () async {
       final cubit = await openForm(draft: _addDraft(title: 'Tea'));
       final local = clock.now.toLocal();
       expect(fieldsOf(cubit).wallClock.hour, local.hour);
@@ -1005,7 +1005,7 @@ void main() {
     });
   });
 
-  group('chip (phase-4.md §7.4, §8.1)', () {
+  group('chip', () {
     test('a chip fills the amount and marks it touched', () async {
       final cubit = await openForm(chip: const Money(5000, 'INR'));
       expect(fieldsOf(cubit).expression, '50.00');
@@ -1133,9 +1133,9 @@ void main() {
     });
   });
 
-  group('Clear and Discard draft (phase-4.md §7.6)', () {
+  group('Clear and Discard draft', () {
     test('Undo lists again an archived event only the undone fields had '
-        '(else it is saved without being shown, R7)', () async {
+        '(else it is saved without being shown)', () async {
       await deps.events.setArchived(2, true);
       final cubit = await openForm(
         draft: _addDraft(title: 'x', eventIds: {1, 2}),

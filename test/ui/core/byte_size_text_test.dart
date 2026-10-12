@@ -3,7 +3,6 @@ import 'package:my_expense_tracker_app/ui/core/byte_size_text.dart';
 
 import '../../helpers/test_database.dart';
 
-/// phase-6.md §5.4.
 void main() {
   String en(int bytes) => byteSizeText(l10nFor('en'), 'en_IN', bytes);
 

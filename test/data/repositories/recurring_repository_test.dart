@@ -7,7 +7,7 @@ import 'package:my_expense_tracker_app/domain/repeat_input.dart';
 import '../../helpers/recurring_fixture.dart';
 import '../../helpers/test_database.dart';
 
-/// `RecurringRepository` (phase-7a.md §6.1) apart from the generator.
+/// `RecurringRepository` apart from the generator.
 void main() {
   late RecurringFixture f;
 
@@ -115,7 +115,7 @@ void main() {
       expect(await f.recurring.byId(id), isNull);
     });
 
-    test('the probe passes with a broken item (R4)', () async {
+    test('the probe passes with a broken item', () async {
       final id = await item();
       await f.db.delete(
         'recurring_amounts',
@@ -198,25 +198,19 @@ void main() {
       );
     });
 
-    test(
-      'an end extended on an item with no payment left: payments start '
-      'again after the old end (§12a: it would add nothing ever again)',
-      () async {
-        final id = await item(
-          choice: const RepeatChoice(
-            end: RepeatEnd.onDate,
-            endOn: '2026-10-20',
-          ),
-        );
-        expect(await f.cursorOf(id), isNull);
-        await f.recurring.update(id, edit(endOn: '2027-03-31'));
-        expect(await f.cursorOf(id), '2026-11-09');
-        await f.recurring.update(id, edit(endOn: '2026-10-20'));
-        expect(await f.cursorOf(id), isNull);
-        await f.recurring.update(id, edit());
-        expect(await f.cursorOf(id), '2026-11-09');
-      },
-    );
+    test('an end extended on an item with no payment left: payments start '
+        'again after the old end (it would add nothing ever again)', () async {
+      final id = await item(
+        choice: const RepeatChoice(end: RepeatEnd.onDate, endOn: '2026-10-20'),
+      );
+      expect(await f.cursorOf(id), isNull);
+      await f.recurring.update(id, edit(endOn: '2027-03-31'));
+      expect(await f.cursorOf(id), '2026-11-09');
+      await f.recurring.update(id, edit(endOn: '2026-10-20'));
+      expect(await f.cursorOf(id), isNull);
+      await f.recurring.update(id, edit());
+      expect(await f.cursorOf(id), '2026-11-09');
+    });
 
     test('an archived item opens read-only: update refused', () async {
       final id = await item();
@@ -232,7 +226,7 @@ void main() {
     });
   });
 
-  group('prices (§5.4)', () {
+  group('prices', () {
     test('every row of the table', () async {
       final id = await item(start: '2026-07-09');
       Future<List<PricePointView>> prices() async => [

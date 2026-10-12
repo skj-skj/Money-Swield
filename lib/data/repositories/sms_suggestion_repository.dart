@@ -11,9 +11,9 @@ import '../services/database/sql_helpers.dart';
 import 'expense_repository.dart';
 import 'settings_repository.dart';
 
-/// Thrown by `ExpenseRepository.add` (with `fromSms`) when the suggestion
-/// was added already: the whole Save rolls back, so one SMS never becomes
-/// two expenses (phase-9a.md §9, P9a-22).
+/// Thrown by `ExpenseRepository.add` (with `fromSms`) when the suggestion was
+/// added already: the whole Save rolls back, so one SMS never becomes two
+/// expenses.
 class SmsAlreadyAdded implements Exception {
   const SmsAlreadyAdded(this.id);
 
@@ -23,8 +23,8 @@ class SmsAlreadyAdded implements Exception {
   String toString() => 'SmsAlreadyAdded: suggestion $id';
 }
 
-/// Reads and writes `sms_suggestions` (database.md §3.10, phase-9a.md
-/// §6.1). Never sees the SMS text: rows come in parsed, with a hash.
+/// Reads and writes `sms_suggestions`. Never sees the SMS text: rows come in
+/// parsed, with a hash.
 class SmsSuggestionRepository {
   SmsSuggestionRepository(this._db, {DateTime Function()? now})
     : _now = now ?? DateTime.now;
@@ -34,8 +34,8 @@ class SmsSuggestionRepository {
 
   static const _table = 'sms_suggestions';
 
-  /// The page order, served by the `(status, received_on, received_at)`
-  /// index with no temp B-tree (F1).
+  /// The page order, served by the `(status, received_on, received_at)` index
+  /// with no temp B-tree.
   static const _pageOrder = 'received_on DESC, received_at DESC, id DESC';
 
   /// A page of pending suggestions, newest first, after [after] (keyset).
@@ -99,8 +99,8 @@ class SmsSuggestionRepository {
   );
 
   /// The stored `(sender, received_at, body_sha256)` of SMS received from
-  /// [fromMs] to [toMs], so the scan skips them before parsing (§5.8): an
-  /// SMS is parsed once.
+  /// [fromMs] to [toMs], so the scan skips them before parsing: an SMS is
+  /// parsed once.
   Future<Set<SmsKey>> existingKeys({
     required int fromMs,
     required int toMs,
@@ -122,19 +122,17 @@ class SmsSuggestionRepository {
   }
 
   /// Stores a scan's [rows] and moves the cursor to [cursorMs], in **one
-  /// transaction** (§6.3): a crash keeps both or neither, so the SMS after
-  /// the cursor are read again and the ones before are stored.
+  /// transaction**: a crash keeps both or neither, so the SMS after the cursor
+  /// are read again and the ones before are stored.
   ///
-  /// Every row is checked in Dart first and a bad one throws before
-  /// anything is written: `INSERT OR IGNORE` would skip a NOT NULL break
-  /// silently (F1). A row whose reference **and amount** are stored
-  /// already, or repeated earlier in [rows], is dropped (one payment in two
-  /// SMS, P9a-18). The amount too, because two banks' short references
-  /// (6 digits) do meet over the years, and added rows are never purged:
-  /// the reference alone would drop a real payment (phase-9a.md §12a). The
-  /// title and category are filled here, through the transaction (F12,
-  /// R12), so a Save that learned meanwhile is seen. Returns how many rows
-  /// were added.
+  /// Every row is checked in Dart first and a bad one throws before anything is
+  /// written: `INSERT OR IGNORE` would skip a NOT NULL break silently. A row
+  /// whose reference **and amount** are stored already, or repeated earlier in
+  /// [rows], is dropped (one payment in two SMS). The amount too, because two
+  /// banks' short references (6 digits) do meet over the years, and added rows
+  /// are never purged: the reference alone would drop a real payment. The title
+  /// and category are filled here, through the transaction, so a Save that
+  /// learned meanwhile is seen. Returns how many rows were added.
   Future<int> insertScanned(
     List<NewSmsSuggestion> rows, {
     required int cursorMs,
@@ -150,8 +148,8 @@ class SmsSuggestionRepository {
       final learned = <String, SmsLearned?>{};
       List<TitleHistoryRow>? history;
       // The model's pick was one of the categories when the scan began; a
-      // category deleted since would break the foreign key and fail the
-      // whole write (phase-9b.md §12a), so it is dropped here instead.
+      // category deleted since would break the foreign key and fail the whole
+      // write, so it is dropped here instead.
       final categoryIds = rows.any((row) => row.aiCategoryId != null)
           ? await _categoryIds(txn)
           : const <int>{};
@@ -212,7 +210,7 @@ class SmsSuggestionRepository {
           ],
         );
       }
-      // The ignored rows' results are never read (sqlite.md §5.9).
+      // The ignored rows' results are never read.
       await batch.commit(noResult: true);
       await txn.insert('settings', {
         'key': SettingsRepository.smsCursorKey,
@@ -222,9 +220,9 @@ class SmsSuggestionRepository {
     });
   }
 
-  /// Deletes pending and dismissed suggestions received more than [days]
-  /// ago (§4, P9a-19). Added ones stay: they hold no text and feed the
-  /// learning and the duplicate check. Returns how many.
+  /// Deletes pending and dismissed suggestions received more than [days] ago.
+  /// Added ones stay: they hold no text and feed the learning and the duplicate
+  /// check. Returns how many.
   Future<int> purgeOld({required int nowMs, required int days}) => _db.delete(
     _table,
     where: "status IN ('pending', 'dismissed') AND received_at < ?",
@@ -232,12 +230,11 @@ class SmsSuggestionRepository {
   );
 
   /// Marks the suggestion [link] added as [expenseId] inside Save's own
-  /// transaction (R8), guarded so a second Save changes nothing. Returns
-  /// the row's payee key when it was marked (for [learnOn]), null when no
-  /// row with this id **and** this hash exists (purged, or a restore put
-  /// another SMS under the id): the expense is kept, nothing marked
-  /// (P9a-38). Throws [SmsAlreadyAdded] when it was added before: the
-  /// caller's transaction rolls back.
+  /// transaction, guarded so a second Save changes nothing. Returns the row's
+  /// payee key when it was marked (for [learnOn]), null when no row with this
+  /// id **and** this hash exists (purged, or a restore put another SMS under
+  /// the id): the expense is kept, nothing marked. Throws [SmsAlreadyAdded]
+  /// when it was added before: the caller's transaction rolls back.
   static Future<({bool marked, String? payeeKey})> markAddedOn(
     Transaction txn,
     SmsLink link,
@@ -263,8 +260,8 @@ class SmsSuggestionRepository {
     return (marked: true, payeeKey: rows.single['payee_key'] as String?);
   }
 
-  /// Teaches the pending suggestions of [payeeKey] the [title] and
-  /// [categoryId] a Save just used (P9a-12), in its transaction.
+  /// Teaches the pending suggestions of [payeeKey] the [title] and [categoryId]
+  /// a Save just used, in its transaction.
   static Future<void> learnOn(
     Transaction txn,
     String? payeeKey,
@@ -281,8 +278,8 @@ class SmsSuggestionRepository {
     );
   }
 
-  /// Names every column, so a restored database without the table (or an
-  /// older one) is refused before the swap (R6). On an empty table too.
+  /// Names every column, so a restored database without the table (or an older
+  /// one) is refused before the swap. On an empty table too.
   static Future<void> probe(DatabaseExecutor db) => db.query(
     _table,
     columns: [
@@ -313,8 +310,8 @@ class SmsSuggestionRepository {
       (await db.rawQuery('SELECT count(*) AS n FROM $_table')).single['n']!
           as int;
 
-  /// The title and category of the newest still-active expense added from
-  /// an SMS of [payeeKey] (§4.1 `learnedFor`). Through [txn] (F12).
+  /// The title and category of the newest still-active expense added from an
+  /// SMS of [payeeKey] (`learnedFor`). Through [txn].
   static Future<SmsLearned?> _learnedFor(
     Transaction txn,
     String payeeKey,
@@ -334,8 +331,7 @@ class SmsSuggestionRepository {
     );
   }
 
-  /// The stored `(reference, amount)` pairs among [references], chunked
-  /// (sqlite.md §3).
+  /// The stored `(reference, amount)` pairs among [references], chunked.
   static Future<Set<(String, int)>> _existingPayments(
     Transaction txn,
     Set<String> references,
@@ -352,7 +348,7 @@ class SmsSuggestionRepository {
       (row['reference']! as String, row['amount_minor']! as int),
   };
 
-  /// The Dart check before any write (F1).
+  /// The Dart check before any write.
   static Future<Set<int>> _categoryIds(Transaction txn) async => {
     for (final row in await txn.query('categories', columns: ['id']))
       row['id']! as int,

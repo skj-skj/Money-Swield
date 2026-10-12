@@ -52,3 +52,6 @@ app.*.map.json
 
 # Personal notes and specs, kept local only
 /notes/
+
+# Personal Claude Code instructions, kept local only
+/CLAUDE.local.md

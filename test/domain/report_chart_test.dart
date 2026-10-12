@@ -5,7 +5,6 @@ import 'package:my_expense_tracker_app/domain/report_chart.dart';
 import 'package:my_expense_tracker_app/domain/report_filter.dart';
 import 'package:my_expense_tracker_app/domain/report_range.dart';
 
-/// phase-8.md §5.3 and §12 "Domain: chartSlices".
 void main() {
   var nextId = 1;
 

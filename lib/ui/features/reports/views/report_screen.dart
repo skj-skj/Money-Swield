@@ -32,12 +32,12 @@ import 'range_dialog.dart';
 import 'report_card.dart';
 import 'report_texts.dart';
 
-/// The Reports tab (phase-8.md §8.2, overhauled by the owner on
-/// 2026-10-10): an overview, not a second Home. The period row, the
-/// report's own filter (Home's sheet and chips), the card (categories as
-/// bars or a donut), and **Generate report**: a sheet with the filter and
-/// the export's options, which makes the PDF or Excel file. Reloads when
-/// it shows again after a write elsewhere, on resume and at midnight.
+/// The Reports tab (overhauled by the owner on 2026-10-10): an overview, not a
+/// second Home. The period row, the report's own filter (Home's sheet and
+/// chips), the card (categories as bars or a donut), and **Generate report**: a
+/// sheet with the filter and the export's options, which makes the PDF or Excel
+/// file. Reloads when it shows again after a write elsewhere, on resume and at
+/// midnight.
 class ReportScreen extends StatefulWidget {
   const ReportScreen({
     super.key,
@@ -140,8 +140,8 @@ class _ReportScreenState extends State<ReportScreen> {
     await saveOrShowError(_messengerContext, () => _cubit.setPeriod(period));
   }
 
-  /// The Range dialog: Show applies (and remembers); Cancel changes
-  /// nothing, the segment stays where it was (§8.3).
+  /// The Range dialog: Show applies (and remembers); Cancel changes nothing,
+  /// the segment stays where it was.
   Future<void> _openRange() async {
     final settings = context.read<SettingsCubit>().value;
     final state = _cubit.value;
@@ -252,11 +252,11 @@ class _ReportScreenState extends State<ReportScreen> {
     );
   }
 
-  /// Generate report (owner, 2026-10-10): the sheet with the filter and
-  /// the options. Its filter becomes the screen's however it closes (so
-  /// the card shows what the file holds) and its options are remembered;
-  /// with a button tapped, the file is made from the report as it then
-  /// is, no other read: the busy dialog, then what happened (§8.8, §8.9).
+  /// Generate report (owner, 2026-10-10): the sheet with the filter and the
+  /// options. Its filter becomes the screen's however it closes (so the card
+  /// shows what the file holds) and its options are remembered; with a button
+  /// tapped, the file is made from the report as it then is, no other read: the
+  /// busy dialog, then what happened.
   Future<void> _openGenerate() async {
     final state = _cubit.value;
     final data = state.data;
@@ -512,7 +512,7 @@ class _ReportScreenState extends State<ReportScreen> {
             width: double.infinity,
             child: FilledButton.icon(
               key: const ValueKey('reportGenerate'),
-              // Disabled while empty, loading or failed (P8-24).
+              // Disabled while empty, loading or failed.
               onPressed: ready ? _openGenerate : null,
               icon: const Icon(Icons.description_outlined),
               label: Text(
@@ -586,8 +586,8 @@ class _ReportScreenState extends State<ReportScreen> {
             onSelectionChanged: (selection) => _pickPeriod(selection.single),
           ),
           if (range.period == ReportPeriod.range)
-            // A tap on Range itself opens the dialog again (§8.3); the
-            // segment doesn't fire for the selected one, so the row does.
+            // A tap on Range itself opens the dialog again; the segment doesn't
+            // fire for the selected one, so the row does.
             InkWell(
               key: const ValueKey('reportRangeRow'),
               onTap: _openRange,

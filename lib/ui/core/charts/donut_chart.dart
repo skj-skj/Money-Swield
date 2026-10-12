@@ -4,11 +4,11 @@ import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/rendering.dart' show SemanticsProperties;
 import 'package:material_ui/material_ui.dart';
 
-/// A ring of slices (phase-8.md §8.5): from 12 o'clock clockwise, in the
-/// order given, a gap after each where the card shows through. Knows nothing of money:
-/// it draws [sweeps] (degrees, `ringSweeps` in the domain) in [colors].
-/// A tap on a slice (or near it) calls [onTap] with its index; each slice
-/// is a TalkBack node read as [sliceLabel].
+/// A ring of slices: from 12 o'clock clockwise, in the order given, a gap after
+/// each where the card shows through. Knows nothing of money: it draws [sweeps]
+/// (degrees, `ringSweeps` in the domain) in [colors]. A tap on a slice (or near
+/// it) calls [onTap] with its index; each slice is a TalkBack node read as
+/// [sliceLabel].
 class DonutChart extends StatelessWidget {
   const DonutChart({
     super.key,
@@ -91,7 +91,7 @@ class DonutPainter extends CustomPainter {
   final String Function(int index)? sliceLabel;
   final ValueChanged<int>? onTap;
 
-  /// The hole's radius ÷ the ring's (§8.5: 55 %).
+  /// The hole's radius ÷ the ring's (55 %).
   static const innerRatio = 0.55;
 
   /// The gap after each slice, in degrees (≈ 2 dp on a 120 dp ring).

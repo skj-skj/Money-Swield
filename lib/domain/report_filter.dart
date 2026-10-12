@@ -1,7 +1,7 @@
-/// The report's own filter (phase-8.md §5.2, §8.4, P8-6): Home's
-/// (search text, categories, events, Only recurring) plus payment methods.
-/// Remembered across starts as JSON in `report_filter` (§4), parsed here
-/// in Dart: Android 10's SQLite has no JSON functions (sqlite.md §3).
+/// The report's own filter: Home's (search text, categories, events, Only
+/// recurring) plus payment methods. Remembered across starts as JSON in
+/// `report_filter`, parsed here in Dart: Android 10's SQLite has no JSON
+/// functions.
 library;
 
 import 'dart:convert';
@@ -37,7 +37,7 @@ final class ReportFilter {
       );
 
   /// Without the ids that aren't in [categories], [events] or [methods]
-  /// (deleted since it was chosen, R11), and which ids were dropped.
+  /// (deleted since it was chosen), and which ids were dropped.
   ({
     ReportFilter filter,
     Set<int> categories,
@@ -66,9 +66,9 @@ final class ReportFilter {
     );
   }
 
-  /// As stored in `report_filter`: null for no filter, else JSON with
-  /// only the parts that are set (§4). The text as it is (the screen
-  /// trims it before applying).
+  /// As stored in `report_filter`: null for no filter, else JSON with only the
+  /// parts that are set. The text as it is (the screen trims it before
+  /// applying).
   String? toJson() {
     if (isEmpty && base.text.isEmpty) return null;
     return jsonEncode({

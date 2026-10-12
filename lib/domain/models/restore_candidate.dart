@@ -1,5 +1,4 @@
-/// Why a file can't be restored, one per text the user sees (phase-3.md
-/// §6.2).
+/// Why a file can't be restored, one per text the user sees.
 enum RestoreRejection {
   /// "This file isn't a backup from Expense Tracker."
   notABackup,
@@ -32,8 +31,8 @@ enum RestoreSource {
   preRestoreCopy,
 }
 
-/// A validated database waiting to replace the live one, with what the
-/// confirm dialog shows (§6.3).
+/// A validated database waiting to replace the live one, with what the confirm
+/// dialog shows.
 class RestoreCandidate {
   const RestoreCandidate({
     required this.source,
@@ -56,8 +55,8 @@ class RestoreCandidate {
   /// doesn't stamp `last_backup_at`.
   final DateTime? createdAt;
 
-  /// Expenses not in the bin (database.md §3.5). Null when the backup has no
-  /// `expenses` table (an older schema): shown as "—".
+  /// Expenses not in the bin. Null when the backup has no `expenses` table (an
+  /// older schema): shown as "—".
   final int? activeExpenses;
 
   /// Expenses in the bin, counted apart from [activeExpenses]. Null as above.
@@ -67,12 +66,12 @@ class RestoreCandidate {
   /// none (or no `expenses` table).
   final DateTime? latestExpenseOn;
 
-  /// Running recurring items (phase-7a.md R14, P7a-20); null when the
-  /// backup has no `recurring_expenses` table (from before Phase 7).
+  /// Running recurring items; null when the backup has no `recurring_expenses`
+  /// table (from before recurring items).
   final int? recurringItems;
 
-  /// Whether the backup holds its photos (phase-6.md §8.8). A
-  /// database-only backup, or Undo's copy, has none to write.
+  /// Whether the backup holds its photos. A database-only backup, or Undo's
+  /// copy, has none to write.
   final bool includesPhotos;
 
   /// The photos in the backup and their size.
@@ -89,8 +88,8 @@ class RestoreCandidate {
   /// Room kept free besides what a restore writes.
   static const spaceMargin = 50 * 1024 * 1024;
 
-  /// Whether the photos fit (P6-17): if not, the confirm offers "Restore
-  /// without photos" instead.
+  /// Whether the photos fit: if not, the confirm offers "Restore without
+  /// photos" instead.
   bool get photosFit {
     final free = freeBytes;
     return free == null || photoBytesToWrite <= free - spaceMargin;
@@ -100,7 +99,7 @@ class RestoreCandidate {
   int get photoBytesShort =>
       photosFit ? 0 : photoBytesToWrite - (freeBytes! - spaceMargin);
 
-  /// A copy with the photo summary (§6.8 step 3).
+  /// A copy with the photo summary.
   RestoreCandidate withPhotos({
     required int count,
     required int bytes,
@@ -120,7 +119,7 @@ class RestoreCandidate {
     freeBytes: free,
   );
 
-  /// A zip restore writes the backup's own time into `last_backup_at`
-  /// (P3-9); Undo keeps the copy's value.
+  /// A zip restore writes the backup's own time into `last_backup_at`; Undo
+  /// keeps the copy's value.
   bool get stampsLastBackup => source == RestoreSource.zip && createdAt != null;
 }

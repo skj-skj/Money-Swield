@@ -6,7 +6,7 @@ import 'package:my_expense_tracker_app/data/services/xlsx/xlsx_writer.dart'
     as xlsx;
 
 /// [ReportExportService] without files or channels: it records what it was
-/// asked and answers as told (phase-8.md §12 "fake channel").
+/// asked and answers as told.
 class FakeReportExportService implements ReportExportService {
   final pdfs = <PdfDoc>[];
   final books = <xlsx.XlsxWorkbook>[];

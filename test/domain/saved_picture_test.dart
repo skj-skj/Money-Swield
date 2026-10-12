@@ -2,7 +2,6 @@ import 'package:characters/characters.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_expense_tracker_app/domain/saved_picture.dart';
 
-/// phase-6.md §5.9.
 void main() {
   String name(String title, {String day = '2026-10-01', String ext = 'jpg'}) =>
       savedPictureName(
@@ -12,7 +11,7 @@ void main() {
         fallbackTitle: 'Expense',
       );
 
-  group('§5.9 table, every row', () {
+  group('every name case', () {
     test('Lunch', () {
       expect(name('Lunch', day: '2026-10-05'), 'Lunch 2026-10-05.jpg');
     });

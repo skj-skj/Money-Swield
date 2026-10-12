@@ -88,18 +88,18 @@ class AppSettings {
   /// wallpaper colors (Android 12+), falling back to `defaultSeedColor`.
   final int? themeSeed;
 
-  /// The first day of a week in Home's groups and card (A2; phase-5.md
-  /// P5-15: Monday unless changed, not from the locale).
+  /// The first day of a week in Home's groups and card (Monday unless changed,
+  /// not from the locale).
   final WeekStart weekStart;
 
-  /// How weeks are named: "Oct Week 3" (default) or "Week 41" (P5-10).
+  /// How weeks are named: "Oct Week 3" (default) or "Week 41".
   final WeekLabel weekLabel;
 
-  /// The trend card's period: week, month or year, set by swiping it
-  /// (P5-1, P5-2). Never [Period.day].
+  /// The trend card's period: week, month or year, set by swiping it. Never
+  /// [Period.day].
   final Period cardPeriod;
 
-  /// How Home's list is grouped: day, week, month or year (P5-1, P5-2).
+  /// How Home's list is grouped: day, week, month or year.
   final Period listGrouping;
 
   final TrendChartStyle trendChartStyle;
@@ -109,8 +109,8 @@ class AppSettings {
   /// The tick of the card's reel at each face (owner, 2026-10-07).
   final CardHaptics trendCardHaptics;
 
-  /// How photos taken with the camera are kept (phase-6.md §4.2): larger
-  /// than the size, resized to it at the quality; 1080p / 85 by default.
+  /// How photos taken with the camera are kept: larger than the size, resized
+  /// to it at the quality; 1080p / 85 by default.
   final PhotoSizing cameraPhotos;
 
   /// The same for photos picked from the gallery (owner rev 7: also 1080p).
@@ -163,9 +163,9 @@ class AppSettings {
   /// A copy with the app language set to [locale] (null = follow the device).
   AppSettings withLocale(Locale? locale) => _copy(locale: () => locale);
 
-  /// A copy with the default look: wallpaper colors, rounded tiles and
-  /// circle buttons. Home's settings (chart, card, weeks) aren't part of
-  /// the look and stay (phase-5.md P5-33).
+  /// A copy with the default look: wallpaper colors, rounded tiles and circle
+  /// buttons. Home's settings (chart, card, weeks) aren't part of the look and
+  /// stay.
   AppSettings withDefaultLook() => withThemeSeed(null)
       .copyWith(tileShape: defaultTileShape, buttonShape: defaultButtonShape);
 
@@ -181,8 +181,8 @@ class AppSettings {
     weekLabel: defaultWeekLabel,
   );
 
-  /// A copy with Settings → Photos' defaults (phase-6.md §8.6). Not part
-  /// of the default look or Home's defaults.
+  /// A copy with Settings → Photos' defaults. Not part of the default look or
+  /// Home's defaults.
   AppSettings withDefaultPhotos() => copyWith(
     cameraPhotos: defaultPhotoSizing,
     galleryPhotos: defaultPhotoSizing,
@@ -192,9 +192,9 @@ class AppSettings {
   AppSettings withThemeSeed(int? seed) => _copy(themeSeed: () => seed);
 
   /// The one place that rebuilds the object field by field, so a new field
-  /// can't be forgotten in one of the copies and silently reset to its
-  /// default on a language or colour change (phase-5.md R14). [locale] and
-  /// [themeSeed] are functions because null is a value for them.
+  /// can't be forgotten in one of the copies and silently reset to its default
+  /// on a language or colour change. [locale] and [themeSeed] are functions
+  /// because null is a value for them.
   AppSettings _copy({
     bool? onboardingCompleted,
     Locale? Function()? locale,

@@ -26,11 +26,10 @@ Future<String?> showCurrencyPicker(
   );
 }
 
-/// The "Recent" section of the picker: [selected] first, then up to
-/// [maxRecent] of [recent], without duplicates and without codes missing
-/// from the catalog (a newer app's data). Empty when nothing but the
-/// selected currency would be in it, so a fresh install shows the plain
-/// list (phase-2.md §8).
+/// The "Recent" section of the picker: [selected] first, then up to [maxRecent]
+/// of [recent], without duplicates and without codes missing from the catalog
+/// (a newer app's data). Empty when nothing but the selected currency would be
+/// in it, so a fresh install shows the plain list.
 List<Currency> recentSection(
   String selected,
   List<String> recent, {

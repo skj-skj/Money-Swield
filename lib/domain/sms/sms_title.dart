@@ -1,5 +1,5 @@
-/// The title suggested for an SMS, and the payee key the learning matches
-/// on (phase-9a.md §5.3, §5.4, P9a-10). Pure Dart.
+/// The title suggested for an SMS, and the payee key the learning matches on.
+/// Pure Dart.
 library;
 
 import 'sms_payment_method.dart' show isUpiId;
@@ -33,10 +33,10 @@ const _cutSuffixOf = ['PRIVATE', 'LIMITED', 'LTD'];
 /// [payee]'s words, spaces collapsed, with trailing [payeeSuffixes]
 /// dropped. A UPI ID is one word and never loses anything.
 ///
-/// A long payee (banks cut names at about 25 characters) also loses a last
-/// word that is the start of one of [_cutSuffixOf]: "GLOBEX DESIGNS
-/// PRIVATE LI", "Example Clearing Corporation Lt" (found on the Oppo,
-/// phase-9a.md §12a). A short name keeps such a word ("ZEN LI").
+/// A long payee (banks cut names at about 25 characters) also loses a last word
+/// that is the start of one of [_cutSuffixOf]: "GLOBEX DESIGNS PRIVATE LI",
+/// "Example Clearing Corporation Lt" (found on the Oppo). A short name keeps
+/// such a word ("ZEN LI").
 List<String> _payeeWords(String payee) {
   final words = payee.trim().split(_spaces)..removeWhere((w) => w.isEmpty);
   if (words.length == 1 && isUpiId(words.single)) return words;
@@ -73,24 +73,23 @@ String? cleanPayee(String? payee) {
   ].join(' ');
 }
 
-/// The key two spellings of one payee share: lower-cased (Unicode, in
-/// Dart: SQL folds ASCII only in tests, sqlite.md §5.4), spaces collapsed,
-/// suffixes dropped. "ACME MARKETPLACE PRIVATE" and "Acme  Marketplace
-/// Priva" are one payee. Null when nothing is left.
+/// The key two spellings of one payee share: lower-cased (Unicode, in Dart: SQL
+/// folds ASCII only in tests), spaces collapsed, suffixes dropped. "ACME
+/// MARKETPLACE PRIVATE" and "Acme Marketplace Priva" are one payee. Null when
+/// nothing is left.
 String? payeeKeyOf(String? payee) {
   if (payee == null) return null;
   final words = _payeeWords(payee);
   return words.isEmpty ? null : words.join(' ').toLowerCase();
 }
 
-/// The suggested title (§5.3, phase-9b.md §5.3, P9b-53), the first that
-/// gives one: the [learned] title of the payee's newest SMS-added expense,
-/// the on-device model's title [ai], then [cleanPayee]. Null: the form's
-/// title stays empty and Save asks for it (A1).
+/// The suggested title, the first that gives one: the [learned] title of the
+/// payee's newest SMS-added expense, the on-device model's title [ai], then
+/// [cleanPayee]. Null: the form's title stays empty and Save asks for it.
 ///
 /// The model's title is cleaned like a payee: it often repeats the bank's
 /// all-caps name ("AMAZON", "GLOBEX TECHNOLOGIES"), which then reads as
-/// "Amazon" like a regex card does (gate, phase-9b.md §12a).
+/// "Amazon" like a regex card does (gate).
 String? suggestedTitle({String? learned, String? ai, String? payee}) {
   final fromLearning = learned?.trim();
   if (fromLearning != null && fromLearning.isNotEmpty) return fromLearning;

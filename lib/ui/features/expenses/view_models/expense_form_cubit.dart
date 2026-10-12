@@ -42,7 +42,7 @@ import '../../../core/recent_currencies.dart';
 
 enum TitleError { required, tooLong }
 
-/// What the form screen pops with. Home acts on it (phase-2.md §6.1).
+/// What the form screen pops with. Home acts on it.
 sealed class ExpenseFormResult {
   const ExpenseFormResult();
 }
@@ -59,16 +59,14 @@ final class ExpenseSaved extends ExpenseFormResult {
 
   final Expense expense;
 
-  /// An Edit's Update, not an Add's Save: "Updated. Repeats: …"
-  /// (phase-7b.md §8.5).
+  /// An Edit's Update, not an Add's Save: "Updated. Repeats: …".
   final bool updated;
 
-  /// Photos the save couldn't link: their row went meanwhile (phase-6.md
-  /// §7.1). Home says so.
+  /// Photos the save couldn't link: their row went meanwhile. Home says so.
   final int photosNotKept;
 
-  /// Saved with Repeats (phase-7a.md §7.1): Home says "Saved. Repeats: …"
-  /// or "Saved with 2 earlier payments."
+  /// Saved with Repeats: Home says "Saved. Repeats: …" or "Saved with 2 earlier
+  /// payments."
   final bool repeating;
 
   /// Earlier payments the save added with it.
@@ -85,8 +83,8 @@ final class ExpenseBinned extends ExpenseFormResult {
 }
 
 /// The edited expense was binned or deleted meanwhile. Home says so: like
-/// "Moved to bin", the message is shown after the pop, on Home's own
-/// messenger. [draftKept]: the edits were kept as an Add draft (P4-12).
+/// "Moved to bin", the message is shown after the pop, on Home's own messenger.
+/// [draftKept]: the edits were kept as an Add draft.
 final class ExpenseGone extends ExpenseFormResult {
   const ExpenseGone({this.draftKept = false});
 
@@ -94,7 +92,7 @@ final class ExpenseGone extends ExpenseFormResult {
 }
 
 /// Back with unsaved changes: they're in the draft slot. Home says "Draft
-/// saved" (P4-13).
+/// saved".
 final class ExpenseDraftKept extends ExpenseFormResult {
   const ExpenseDraftKept();
 }
@@ -115,16 +113,16 @@ final class ExpenseFormLoadFailed extends ExpenseFormState {
   final Object error;
 }
 
-/// The edited expense was binned or deleted meanwhile: the screen says so
-/// and pops (phase-2.md §6.3). [draftKept] as for [ExpenseGone].
+/// The edited expense was binned or deleted meanwhile: the screen says so and
+/// pops. [draftKept] as for [ExpenseGone].
 final class ExpenseFormGone extends ExpenseFormState {
   const ExpenseFormGone({this.draftKept = false});
 
   final bool draftKept;
 }
 
-/// The last Itemize: the line put first in the description, its labels and
-/// the canonical terms they belong to (phase-4.md §5.2).
+/// The last Itemize: the line put first in the description, its labels and the
+/// canonical terms they belong to.
 class ItemizeMemory {
   const ItemizeMemory({
     required this.line,
@@ -141,9 +139,8 @@ class ItemizeMemory {
   final List<String> terms;
 }
 
-/// What the form is doing with photos (phase-6.md §7.1). While picking,
-/// processing or reviewing, Save is off and Back waits (P6-15); saving to
-/// Pictures blocks neither.
+/// What the form is doing with photos. While picking, processing or reviewing,
+/// Save is off and Back waits; saving to Pictures blocks neither.
 sealed class PhotoWork {
   const PhotoWork();
 
@@ -174,9 +171,9 @@ final class PhotoProcessing extends PhotoWork {
   bool get blocksSave => true;
 }
 
-/// A camera shot waits for Use photo or Discard (§8.2a). [previewPath] is
-/// its small copy; [recovered]: the app was killed while it waited, and it
-/// is offered again ("The photo you took is back").
+/// A camera shot waits for Use photo or Discard. [previewPath] is its small
+/// copy; [recovered]: the app was killed while it waited, and it is offered
+/// again ("The photo you took is back").
 final class PhotoReviewing extends PhotoWork {
   const PhotoReviewing({
     required this.captureName,
@@ -200,7 +197,7 @@ final class PhotoSavingToPictures extends PhotoWork {
   final int total;
 }
 
-/// What adding photos did, for the screen's message (§7.1).
+/// What adding photos did, for the screen's message.
 typedef PhotoAddReport = ({
   int added,
   int duplicates,
@@ -209,8 +206,8 @@ typedef PhotoAddReport = ({
   PhotoError? error,
 });
 
-/// Save could not copy the photos into place: nothing was saved, the draft
-/// and its staged files are untouched (§6.4 step 2).
+/// Save could not copy the photos into place: nothing was saved, the draft and
+/// its staged files are untouched.
 class PhotoSaveFailed implements Exception {
   const PhotoSaveFailed(this.cause);
 
@@ -244,15 +241,15 @@ final class ExpenseFormReady extends ExpenseFormState {
   /// Most popular first.
   final List<Category> categories;
 
-  /// Most popular first. Archived events are left out, except those already
-  /// on the edited expense or the resumed draft (A10, R7).
+  /// Most popular first. Archived events are left out, except those already on
+  /// the edited expense or the resumed draft.
   final List<Event> events;
 
-  /// The default first, then by name (P2-9).
+  /// The default first, then by name.
   final List<PaymentMethod> paymentMethods;
 
-  /// Fields the user changed, a chip set, or that came from a saved
-  /// expense or a resumed draft. Prefill fills only the others (D13).
+  /// Fields the user changed, a chip set, or that came from a saved expense or
+  /// a resumed draft. Prefill fills only the others.
   final Set<DraftField> touched;
 
   final ItemizeMemory itemize;
@@ -279,11 +276,11 @@ final class ExpenseFormReady extends ExpenseFormState {
   final PhotoWork photoWork;
 
   /// The photos selected in the Photos sheet, by index; null when not
-  /// selecting (§8.10).
+  /// selecting.
   final Set<int>? selection;
 
-  /// Photos of the resumed draft that couldn't be found (P6-22), said once
-  /// when the form opens; 0 after.
+  /// Photos of the resumed draft that couldn't be found, said once when the
+  /// form opens; 0 after.
   final int droppedDraftPhotos;
 
   ExpenseFormReady copyWith({
@@ -334,8 +331,8 @@ class ExpenseFields {
 
   final String title;
 
-  /// The amount as the field shows it (field form, phase-4.md §5.1):
-  /// `50+60×2`, `.` or `,` as typed.
+  /// The amount as the field shows it (field form): `50+60×2`, `.` or `,` as
+  /// typed.
   final String expression;
 
   final String description;
@@ -348,18 +345,17 @@ class ExpenseFields {
   /// wall-clock time (like `Expense.wallClock`).
   final DateTime wallClock;
 
-  /// In the order added (phase-6.md §5.2).
+  /// In the order added.
   final List<FormPhoto> photos;
 
-  /// The Repeats section as typed (phase-7a.md §7.1); null = off. Add only.
+  /// The Repeats section as typed; null = off. Add only.
   final RepeatChoice? repeat;
 
   /// [expression] in canonical form, as stored and compared.
   String get canonicalExpression => fieldToCanonical(expression);
 
-  /// Without what a title suggestion never fills or removes (photos,
-  /// P6-27; Repeats, phase-7a.md §7.1): adding either doesn't stop the
-  /// picks, and a pick keeps both.
+  /// Without what a title suggestion never fills or removes (photos; Repeats):
+  /// adding either doesn't stop the picks, and a pick keeps both.
   ExpenseFields get withoutExtras =>
       copyWith(photos: const [], repeat: () => null);
 
@@ -418,7 +414,7 @@ class ExpenseFields {
   );
 }
 
-/// What Clear and Discard draft put back on Undo (phase-4.md §7.6).
+/// What Clear and Discard draft put back on Undo.
 typedef _Snapshot = ({
   ExpenseFields fields,
   Set<DraftField> touched,
@@ -432,8 +428,7 @@ typedef _Snapshot = ({
   SmsSuggestion? smsSource,
 });
 
-/// The last prefill (phase-4.md §7.1): the form just before it, and the
-/// fields it left.
+/// The last prefill: the form just before it, and the fields it left.
 typedef _Prefill = ({
   ExpenseFields before,
   Set<DraftField> touched,
@@ -441,22 +436,20 @@ typedef _Prefill = ({
   ExpenseFields filled,
 });
 
-/// The Add/Edit expense form (phase-2.md §6, phase-4.md §7).
+/// The Add/Edit expense form.
 class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     with EmitIfOpen<ExpenseFormState> {
   /// [expenseId] is the expense to edit, or null to add one. New expenses
   /// start with the default currency and payment method passed in.
   ///
-  /// `openingDraft` is the slot's draft when the form is opened from it
-  /// (an Add draft for Add, this expense's Edit draft for Edit); the form
-  /// then owns the slot. `chipAmount` is a Home chip's amount
-  /// (phase-4.md §8.1).
-  /// [decimalSeparator] is the formatting locale's, for amounts the form
-  /// writes into the field.
+  /// `openingDraft` is the slot's draft when the form is opened from it (an Add
+  /// draft for Add, this expense's Edit draft for Edit); the form then owns the
+  /// slot. `chipAmount` is a Home chip's amount. [decimalSeparator] is the
+  /// formatting locale's, for amounts the form writes into the field.
   ///
-  /// `sms` is the SMS suggestion a new Add form is filled from (phase-9a.md
-  /// §7.3); `smsSuggestions` re-reads the suggestion a resumed SMS draft
-  /// names, for its banner (§8.4).
+  /// `sms` is the SMS suggestion a new Add form is filled from;
+  /// `smsSuggestions` re-reads the suggestion a resumed SMS draft names, for
+  /// its banner.
   ExpenseFormCubit({
     required this._expenses,
     required this._categories,
@@ -489,12 +482,12 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
   final ExpenseDraftRepository _drafts;
   final PhotoStore _photos;
 
-  /// For the link row of a payment's Edit (phase-7a.md §7.1). Null in
-  /// tests that don't need it: no link row.
+  /// For the link row of a payment's Edit. Null in tests that don't need it: no
+  /// link row.
   final RecurringRepository? _recurring;
 
-  /// Opened from Recurring → New (§8.3): Repeats starts on. A new form's
-  /// baseline then has it on, so the form isn't a draft until it changes.
+  /// Opened from Recurring → New: Repeats starts on. A new form's baseline then
+  /// has it on, so the form isn't a draft until it changes.
   final bool startRepeating;
 
   /// Settings → Photos, as they were when the form opened.
@@ -510,14 +503,14 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
   final SmsSuggestion? _sms;
   final SmsSuggestionRepository? _smsSuggestions;
 
-  /// The SMS suggestion this Add form saves (phase-9a.md §7.3): marked
-  /// added in Save's own transaction. Kept in the draft; Clear drops it.
+  /// The SMS suggestion this Add form saves: marked added in Save's own
+  /// transaction. Kept in the draft; Clear drops it.
   SmsLink? _smsLink;
   SmsLink? get smsLink => _smsLink;
 
-  /// The suggestion as stored, for the "From SMS" banner: the one the form
-  /// was filled from, or the resumed draft's, re-read (null when it is
-  /// gone: no banner, the Save still works, P9a-38).
+  /// The suggestion as stored, for the "From SMS" banner: the one the form was
+  /// filled from, or the resumed draft's, re-read (null when it is gone: no
+  /// banner, the Save still works).
   SmsSuggestion? get smsSource => _smsSource;
   SmsSuggestion? _smsSource;
   final String decimalSeparator;
@@ -526,14 +519,14 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
   bool get isEditing => expenseId != null;
 
   /// Whether the Repeats section shows: on Add, and on the Edit of a plain
-  /// expense (phase-7b.md §6.2, P7b-2). A payment's Edit shows its link row
-  /// instead (P7a-5). False until the edited expense is loaded.
+  /// expense. A payment's Edit shows its link row instead. False until the
+  /// edited expense is loaded.
   bool get canRepeat =>
       !isEditing ||
       (_original != null && _original!.recurringExpenseId == null);
 
-  /// The recurring item the edited expense is a payment of, for the link
-  /// row (§8.1 E); null for a plain expense, an Add, or an item gone.
+  /// The recurring item the edited expense is a payment of, for the link row;
+  /// null for a plain expense, an Add, or an item gone.
   RecurringItem? get linkedItem => _linkedItem;
   RecurringItem? _linkedItem;
 
@@ -559,18 +552,17 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
   /// Photos of the form the store can show and save.
   PhotoStore get photoStore => _photos;
 
-  /// What dirtiness is measured against: a new form (Add) or the stored
-  /// expense (Edit), never the draft (phase-4.md §7.3).
+  /// What dirtiness is measured against: a new form (Add) or the stored expense
+  /// (Edit), never the draft.
   ExpenseFields? _baseline;
 
   /// The picked date and time as device-local time, or null while the user
-  /// hasn't touched date or time on an edit, so an expense recorded in
-  /// another time zone keeps its moment and offset (phase-2.md §3.3).
+  /// hasn't touched date or time on an edit, so an expense recorded in another
+  /// time zone keeps its moment and offset.
   DateTime? _pickedLocal;
 
-  /// Whether the draft slot holds this form's draft: opened from it, or
-  /// written by it. Only then may the form clear the slot or save with
-  /// `clearDraft` (phase-4.md §7.3).
+  /// Whether the draft slot holds this form's draft: opened from it, or written
+  /// by it. Only then may the form clear the slot or save with `clearDraft`.
   bool _ownsDraft = false;
   bool get ownsDraft => _ownsDraft;
 
@@ -645,9 +637,9 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     await _loadTitleHistory();
   }
 
-  /// The SMS link and its row (§7.3, §8.4). Add only: an Edit never comes
-  /// from an SMS. A draft's row is re-read and must still be the same SMS
-  /// (its hash); a failed read only loses the banner.
+  /// The SMS link and its row. Add only: an Edit never comes from an SMS. A
+  /// draft's row is re-read and must still be the same SMS (its hash); a failed
+  /// read only loses the banner.
   Future<void> _loadSmsSource() async {
     if (isEditing) return;
     final sms = _sms;
@@ -681,9 +673,9 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     }
   }
 
-  /// Keeps the resumed draft's photos that still exist (P6-22): a saved
-  /// photo whose row is gone, or a staged one whose file is gone, is
-  /// dropped, and the form says how many.
+  /// Keeps the resumed draft's photos that still exist: a saved photo whose row
+  /// is gone, or a staged one whose file is gone, is dropped, and the form says
+  /// how many.
   Future<void> _checkDraftPhotos() async {
     final photos = _openingDraft?.photos ?? const <FormPhoto>[];
     if (photos.isEmpty) return;
@@ -705,10 +697,9 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     _droppedDraftPhotos = photos.length - _draftPhotos.length;
   }
 
-  /// A camera shot left waiting for this form (the app was killed while
-  /// the camera or the review was open) comes back into the review, so it
-  /// can still be turned (§7.1). A shot for another form waits for that
-  /// one.
+  /// A camera shot left waiting for this form (the app was killed while the
+  /// camera or the review was open) comes back into the review, so it can still
+  /// be turned. A shot for another form waits for that one.
   Future<void> _offerPendingCapture() async {
     try {
       final capture = await _photos.pendingCapture();
@@ -766,8 +757,8 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
         terms: draft.itemizeTerms,
       );
       _ownsDraft = true;
-      // Recurring → New with an Add draft in the slot: the draft as it
-      // was, Repeats switched on only if it has none (§8.3).
+      // Recurring → New with an Add draft in the slot: the draft as it was,
+      // Repeats switched on only if it has none.
       if (startRepeating && fields.repeat == null) {
         fields = fields.copyWith(repeat: () => RepeatChoice.defaults);
       }
@@ -804,12 +795,12 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     );
   }
 
-  /// [fields] (a new form) filled from [sms], applied like a chip (R7):
-  /// the form as it opened, so no draft until the user changes something
-  /// (P9a-21). Title if any; the amount in INR whatever the default
-  /// currency (P9a-31); the moment the SMS came, in this device's zone; the
-  /// payment method with its key's built-in row (renamed too; deleted:
-  /// the new form's default, §5.5); the category if it still exists.
+  /// [fields] (a new form) filled from [sms], applied like a chip: the form as
+  /// it opened, so no draft until the user changes something. Title if any; the
+  /// amount in INR whatever the default currency; the moment the SMS came, in
+  /// this device's zone; the payment method with its key's built-in row
+  /// (renamed too; deleted: the new form's default); the category if it still
+  /// exists.
   ({ExpenseFields fields, Set<DraftField> touched}) _smsFields(
     SmsSuggestion sms,
     ExpenseFields fields,
@@ -878,10 +869,9 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     photos: _originalPhotos,
   );
 
-  /// [expense]'s amount for the field: its expression if it is valid and
-  /// worth exactly the stored amount, else the plain amount. The stored
-  /// amount always wins (phase-4.md §5.1), so an untouched Edit saves the
-  /// same minor units.
+  /// [expense]'s amount for the field: its expression if it is valid and worth
+  /// exactly the stored amount, else the plain amount. The stored amount always
+  /// wins, so an untouched Edit saves the same minor units.
   String _storedAmountText(Expense expense) {
     final Money(:amountMinor, :currencyCode) = expense.amount;
     final stored = expense.amountExpression;
@@ -902,10 +892,10 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     decimalSeparator,
   );
 
-  /// [draft] as fields, cleaned against what exists now (phase-4.md §7.5):
-  /// a category or payment method that's gone falls back to the
-  /// expense's (Edit) or the new form's (Add); events that are gone are
-  /// dropped; texts over a limit and an unknown currency are kept.
+  /// [draft] as fields, cleaned against what exists now: a category or payment
+  /// method that's gone falls back to the expense's (Edit) or the new form's
+  /// (Add); events that are gone are dropped; texts over a limit and an unknown
+  /// currency are kept.
   ExpenseFields _cleanedDraft(
     ExpenseDraft draft,
     ExpenseFields baseline,
@@ -919,8 +909,8 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
         if (_allEvents.any((e) => e.id == id)) id,
     };
     final picked = draft.pickedWallClock;
-    // An untouched date: Add gets now (P4-16), Edit keeps the expense's
-    // moment and offset.
+    // An untouched date: Add gets now, Edit keeps the expense's moment and
+    // offset.
     if (picked != null) _pickedLocal = picked;
     return ExpenseFields(
       title: draft.title,
@@ -936,8 +926,7 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
           : draft.currencyCode,
       wallClock: picked == null ? baseline.wallClock : _wallClockOf(picked),
       photos: _draftPhotos,
-      // A payment's Edit has no Repeats (P7a-5); a plain expense's may
-      // (phase-7b.md §6.2).
+      // A payment's Edit has no Repeats; a plain expense's may.
       repeat: canRepeat ? draft.repeat : null,
     );
   }
@@ -960,9 +949,9 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     if (fields.wallClock != baseline.wallClock) DraftField.dateTime,
   };
 
-  /// Whether a suggestion may fill in its amount in [currencyCode]: the
-  /// amount is untouched or empty (typed, then cleared: owner,
-  /// 2026-10-04), and the currency is untouched or the same (P4-14).
+  /// Whether a suggestion may fill in its amount in [currencyCode]: the amount
+  /// is untouched or empty (typed, then cleared: owner, 2026-10-04), and the
+  /// currency is untouched or the same.
   static bool _mayFillAmount(
     Set<DraftField> touched,
     ExpenseFields fields,
@@ -973,8 +962,8 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
       (!touched.contains(DraftField.currency) ||
           fields.currencyCode == currencyCode);
 
-  /// The Itemize memory recovered from [description]'s first line when it
-  /// is the line for [fields]' expression (Edit, prefill, phase-4.md §5.2).
+  /// The Itemize memory recovered from [description]'s first line when it is
+  /// the line for [fields]' expression (Edit, prefill).
   ItemizeMemory _recognizedItemize(String description, ExpenseFields fields) {
     final terms = _termsOf(fields);
     if (terms == null) return ItemizeMemory.none;
@@ -1010,9 +999,9 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
   /// has the value that prefill left (changed and changed back counts as
   /// unchanged), or once the form is cleared back to its baseline.
   ///
-  /// Photos don't count here: a suggestion never fills or removes them
-  /// (P6-27), so adding one doesn't stop the picks. They still count for
-  /// the draft ([_needsDraft]).
+  /// Photos don't count here: a suggestion never fills or removes them, so
+  /// adding one doesn't stop the picks. They still count for the draft
+  /// ([_needsDraft]).
   bool _maySuggest(ExpenseFields fields) {
     final withoutExtras = fields.withoutExtras;
     if (_sameButTitle(withoutExtras, _baseline?.withoutExtras)) {
@@ -1095,15 +1084,15 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
         (!isEditing || isDirty);
   }
 
-  /// Back waits while photos are being added or a picture is being saved
-  /// to Pictures (§7.1).
+  /// Back waits while photos are being added or a picture is being saved to
+  /// Pictures.
   bool get photosBusy {
     final work = _ready?.photoWork;
     return work != null && work is! PhotoIdle;
   }
 
-  /// More photos than an expense may have (a damaged draft): Save says
-  /// how many to remove (§5.2). Shown after the first save attempt.
+  /// More photos than an expense may have (a damaged draft): Save says how many
+  /// to remove. Shown after the first save attempt.
   int? get photosOverLimit {
     final ready = _ready;
     if (ready == null || !ready.showErrors) return null;
@@ -1172,9 +1161,8 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
   ({String expression, String currencyCode, ExpressionResult result})?
   _lastEvaluated;
 
-  /// What the result line under the amount shows, or null when it is
-  /// hidden: shown for an operator, a `,` or two separators (R8), before
-  /// the first save too.
+  /// What the result line under the amount shows, or null when it is hidden:
+  /// shown for an operator, a `,` or two separators, before the first save too.
   ExpressionResult? get amountResult {
     final ready = _ready;
     if (ready == null || !needsResultLine(ready.fields.expression)) {
@@ -1294,9 +1282,9 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     _setLocal(DateTime(shown.year, shown.month, shown.day, hour, minute));
   }
 
-  /// [local] is already normalized by Dart: a time that doesn't exist (in
-  /// a DST gap) has moved forward. The form shows it as normalized, so what
-  /// is saved is exactly what was shown (phase-2.md §3.3).
+  /// [local] is already normalized by Dart: a time that doesn't exist (in a DST
+  /// gap) has moved forward. The form shows it as normalized, so what is saved
+  /// is exactly what was shown.
   void _setLocal(DateTime local) {
     _pickedLocal = local;
     _change(
@@ -1384,10 +1372,10 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     emitIfOpen(ready.copyWith(suggestions: const []));
   }
 
-  /// Sets the title to [suggestion]'s spelling, then fills the untouched
-  /// fields from the newest expense with that title (D13, phase-4.md §7.1).
-  /// Fields it fills stay untouched, so a second pick replaces them (P4-3).
-  /// Ignored while a pick isn't offered ([_maySuggest]).
+  /// Sets the title to [suggestion]'s spelling, then fills the untouched fields
+  /// from the newest expense with that title. Fields it fills stay untouched,
+  /// so a second pick replaces them. Ignored while a pick isn't offered
+  /// ([_maySuggest]).
   Future<void> pickSuggestion(TitleSuggestion suggestion) async {
     final ready = _ready;
     if (ready == null || !_maySuggest(ready.fields)) return;
@@ -1413,13 +1401,12 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
   void _prefillFrom(Expense source) {
     final ready = _ready;
     if (ready == null) return;
-    // Nothing changed since the last prefill: start from the form as it
-    // was before it, so this one replaces everything that one filled,
-    // an amount it filled into an emptied field too (P4-3).
+    // Nothing changed since the last prefill: start from the form as it was
+    // before it, so this one replaces everything that one filled, an amount it
+    // filled into an emptied field too.
     final last = _prefill;
-    // Photos and Repeats set since don't make it a new start, and are
-    // kept: the form before the last prefill knew nothing of them (§12a;
-    // phase-7a.md §12a).
+    // Photos and Repeats set since don't make it a new start, and are kept: the
+    // form before the last prefill knew nothing of them.
     final again =
         last != null &&
         _sameButTitle(ready.fields.withoutExtras, last.filled.withoutExtras);
@@ -1456,7 +1443,7 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
       fields = fields.copyWith(categoryId: source.categoryId);
     }
     if (untouched(DraftField.events)) {
-      // Archived events are left out (A10).
+      // Archived events are left out.
       fields = fields.copyWith(
         eventIds: {
           for (final e in _allEvents)
@@ -1488,9 +1475,9 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
 
   // Itemize.
 
-  /// Puts the Itemize line for the current terms with [labels] first in
-  /// the description: in place of the last one if the user hasn't changed
-  /// it, else above it (phase-4.md §5.2).
+  /// Puts the Itemize line for the current terms with [labels] first in the
+  /// description: in place of the last one if the user hasn't changed it, else
+  /// above it.
   void itemize(List<String> labels) {
     final ready = _ready;
     final terms = itemizeTerms;
@@ -1516,7 +1503,7 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     );
   }
 
-  // Clear, Discard draft, Undo (phase-4.md §7.6).
+  // Clear, Discard draft, Undo.
 
   /// Whether Clear does anything: the Add form differs from a new form.
   bool get canClear => !isEditing && isDirty;
@@ -1527,7 +1514,7 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     final ready = _ready;
     if (ready == null || isEditing) return;
     _undo = _snapshotOf(ready);
-    // Back to a plain Add form: the SMS goes too (§7.3).
+    // Back to a plain Add form: the SMS goes too.
     _smsLink = null;
     _smsSource = null;
     _prefill = null;
@@ -1577,8 +1564,8 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     _apply(
       ready.copyWith(
         fields: undo.fields,
-        // The reset dropped an archived event only the undone fields had;
-        // list it again, or it would be saved without being shown (R7).
+        // The reset dropped an archived event only the undone fields had; list
+        // it again, or it would be saved without being shown.
         events: _visibleEvents(_allEvents, undo.fields.eventIds),
         touched: undo.touched,
         itemize: undo.itemize,
@@ -1626,13 +1613,13 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     }
   }
 
-  // The draft slot (phase-4.md §7.3).
+  // The draft slot.
 
-  /// Mirrors the form to the slot: a form that needs a draft writes (and
-  /// so takes the slot, replacing another form's draft, P4-1); one that no
-  /// longer does (clean again, or only a suggestion's values) empties the
-  /// slot if it holds this form's draft.
-  /// Nothing is written while loading, saving, or after close.
+  /// Mirrors the form to the slot: a form that needs a draft writes (and so
+  /// takes the slot, replacing another form's draft); one that no longer does
+  /// (clean again, or only a suggestion's values) empties the slot if it holds
+  /// this form's draft. Nothing is written while loading, saving, or after
+  /// close.
   void _syncDraft() {
     final ready = _ready;
     if (ready == null || ready.saving || isClosed) return;
@@ -1666,8 +1653,7 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
       suggestionsBlocked: !_maySuggest(fields),
       photos: fields.photos,
       repeat: fields.repeat,
-      // An Edit's changes kept as an Add draft (P4-12) never came from an
-      // SMS.
+      // An Edit's changes kept as an Add draft never came from an SMS.
       sms: asAdd || isEditing ? null : _smsLink,
     );
   }
@@ -1695,9 +1681,8 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     return _drafts.flush();
   }
 
-  // Repeats (phase-7a.md §7.1): on Add and on a plain expense's Edit
-  // (phase-7b.md §7.1); a change like any field, so the draft follows and
-  // Update is enabled by Repeats alone.
+  // Repeats: on Add and on a plain expense's Edit; a change like any field, so
+  // the draft follows and Update is enabled by Repeats alone.
 
   /// Switches Repeats on (the settings last switched off, else every 1
   /// month, never ending) or off. Off keeps the settings for switching on
@@ -1715,14 +1700,14 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
       _updateRepeat((r) => r.copyWith(frequency: frequency));
 
   /// The Every field as typed (the field takes digits only, two at most);
-  /// checked at Save (P7a-26).
+  /// checked at Save.
   void repeatIntervalChanged(String text) =>
       _updateRepeat((r) => r.copyWith(intervalText: text));
 
-  /// Never, On date or After N payments. On without a date yet gets one:
-  /// six months after the form's date (clamped to the month's end), so the
-  /// row always shows one and the picker opens on it. After with nothing
-  /// typed gets [defaultRepeatCountText] the same way (phase-7b.md §12a).
+  /// Never, On date or After N payments. On without a date yet gets one: six
+  /// months after the form's date (clamped to the month's end), so the row
+  /// always shows one and the picker opens on it. After with nothing typed gets
+  /// [defaultRepeatCountText] the same way.
   void repeatEndChanged(RepeatEnd end) => _updateRepeat(
     (r) => r.copyWith(
       end: end,
@@ -1733,8 +1718,8 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     ),
   );
 
-  /// The After field as typed (digits only, three at most; phase-7b.md
-  /// §7.1); checked at Save, like Every.
+  /// The After field as typed (digits only, three at most); checked at Save,
+  /// like Every.
   void repeatCountChanged(String text) => _updateRepeat(
     (r) => r.copyWith(end: RepeatEnd.afterCount, countText: text),
   );
@@ -1770,8 +1755,8 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     1,
   );
 
-  /// The first payment's date: the form's date (§6.2 takes the saved
-  /// row's, which is this one).
+  /// The first payment's date: the form's date (the save takes the
+  /// saved row's, which is this one).
   String? get repeatStartOn {
     final ready = _ready;
     return ready == null ? null : isoDay(ready.fields.wallClock);
@@ -1780,11 +1765,10 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
   /// Today on the device, for the section's texts.
   String get today => todayOn(_now());
 
-  /// What the section says under the rule (§8.2): the earlier payments a
-  /// Save adds (at most [maxPastPayments]; `pastCount` is them all), the
-  /// next one after those and, with an end, the last one (phase-7b.md
-  /// §8.2). Null while Repeats is off, or Every or After N isn't valid
-  /// ([scheduleOrNull]). Live, before any Save attempt.
+  /// What the section says under the rule: the earlier payments a Save adds (at
+  /// most [maxPastPayments]; `pastCount` is them all), the next one after those
+  /// and, with an end, the last one. Null while Repeats is off, or Every or
+  /// After N isn't valid ([scheduleOrNull]). Live, before any Save attempt.
   RepeatSummary? get repeatSummary {
     final repeat = _ready?.fields.repeat;
     final startOn = repeatStartOn;
@@ -1834,8 +1818,8 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     );
   }
 
-  /// Whether the last save repeats, and how many earlier payments it
-  /// added: the screen pops with them (§8.9).
+  /// Whether the last save repeats, and how many earlier payments it added: the
+  /// screen pops with them.
   bool get lastSaveRepeating => _lastSaveRepeating;
   bool _lastSaveRepeating = false;
   int get lastPastAdded => _lastPastAdded;
@@ -1846,12 +1830,11 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
   // Saving.
 
   /// Validates and saves. Returns the saved expense, or null if a field is
-  /// invalid (the errors are then shown) or a save is already running.
-  /// Emits [ExpenseFormGone] and returns null if the edited expense was
-  /// binned or deleted meanwhile; the edits are then kept as an Add draft
-  /// (P4-12). Rethrows other database errors (the draft is kept); the
-  /// screen tells the user. [SmsAlreadyAdded] too: nothing was saved, the
-  /// form and its draft stay (P9a-22).
+  /// invalid (the errors are then shown) or a save is already running. Emits
+  /// [ExpenseFormGone] and returns null if the edited expense was binned or
+  /// deleted meanwhile; the edits are then kept as an Add draft. Rethrows other
+  /// database errors (the draft is kept); the screen tells the user.
+  /// [SmsAlreadyAdded] too: nothing was saved, the form and its draft stay.
   Future<Expense?> save() async {
     final ready = _ready;
     if (ready == null || ready.saving) return null;
@@ -1876,7 +1859,7 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     var saved = false;
     try {
       final owns = await _settleDraft();
-      // Staged photos are copied into place first (§6.4 step 2).
+      // Staged photos are copied into place first.
       final links = await _photoLinks(fields.photos);
       final input = ExpenseInput(
         title: fields.title.trim(),
@@ -1948,10 +1931,9 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     }
   }
 
-  /// Moves the edited expense to the bin (no confirm: it is recoverable,
-  /// A4), its draft with it. Returns its id, or null on a new form or
-  /// while saving. Emits [ExpenseFormGone] and returns null if it was
-  /// already binned or gone (R14).
+  /// Moves the edited expense to the bin (no confirm: it is recoverable), its
+  /// draft with it. Returns its id, or null on a new form or while saving.
+  /// Emits [ExpenseFormGone] and returns null if it was already binned or gone.
   Future<int?> moveToBin() async {
     final ready = _ready;
     final id = expenseId;
@@ -1979,7 +1961,7 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
   int get lastPhotosNotKept => _lastPhotosNotKept;
   int _lastPhotosNotKept = 0;
 
-  /// §6.4 step 2: each staged photo copied into `photos/` (its name is its
+  /// Each staged photo copied into `photos/` (its name is its
   /// hash), each saved one by id. A copy that fails (no space, I/O) stops
   /// the save before anything is written: [PhotoSaveFailed].
   Future<List<PhotoLinkInput>> _photoLinks(List<FormPhoto> photos) async {
@@ -2022,7 +2004,7 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     }
   }
 
-  // Photos (phase-6.md §7.1).
+  // Photos.
 
   int get remainingPhotoSlotsNow =>
       remainingPhotoSlots(_ready?.fields.photos ?? const []);
@@ -2038,12 +2020,11 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
         remainingPhotoSlots(ready.fields.photos) > 0;
   }
 
-  /// Opens the camera (§7.1). The marker is written and the draft flushed
-  /// first, so a shot survives the app being killed while the camera is
-  /// open; it is not the draft slot, so another expense's draft stays.
-  /// Returns an error to show, or null. A taken picture goes to the review
-  /// ([PhotoReviewing]); the screen then calls [useCapture] or
-  /// [discardCapture].
+  /// Opens the camera. The marker is written and the draft flushed first, so a
+  /// shot survives the app being killed while the camera is open; it is not the
+  /// draft slot, so another expense's draft stays. Returns an error to show, or
+  /// null. A taken picture goes to the review ([PhotoReviewing]); the screen
+  /// then calls [useCapture] or [discardCapture].
   Future<PhotoError?> addFromCamera() async {
     if (!canAddPhotos) return null;
     final name = _photos.newCaptureName();
@@ -2162,11 +2143,11 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     }
   }
 
-  /// Opens the photo picker for the free slots, then processes what was
-  /// picked with the gallery's sizing, one at a time with progress, and
-  /// adds them in one change (§7.1). The document picker may return more
-  /// than asked: only the first ones that fit are processed. A photo that
-  /// fails is counted; the rest go in.
+  /// Opens the photo picker for the free slots, then processes what was picked
+  /// with the gallery's sizing, one at a time with progress, and adds them in
+  /// one change. The document picker may return more than asked: only the first
+  /// ones that fit are processed. A photo that fails is counted; the rest go
+  /// in.
   Future<PhotoAddReport?> addFromGallery() async {
     if (!canAddPhotos) return null;
     final slots = remainingPhotoSlotsNow;
@@ -2265,7 +2246,7 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     );
   }
 
-  // Selection (§8.10).
+  // Selection.
 
   /// A long press: selection starts with photo [index].
   void startSelection(int index) {
@@ -2330,9 +2311,8 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     _offerHeldCapture();
   }
 
-  /// Save in the selection bar: copies to Pictures, no confirm (P6-49);
-  /// selection stays. Not an edit: nothing in the form or the draft
-  /// changes (P6-47).
+  /// Save in the selection bar: copies to Pictures, no confirm; selection
+  /// stays. Not an edit: nothing in the form or the draft changes.
   Future<SaveToPicturesResult?> saveSelectedToPictures() {
     final selection = _ready?.selection;
     if (selection == null) return Future.value();
@@ -2386,7 +2366,7 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     return true;
   }
 
-  /// The save deleted the row: forget the memory copy too (§6.3).
+  /// The save deleted the row: forget the memory copy too.
   void _afterDraftDeleted(bool owned) {
     if (!owned) return;
     _ownsDraft = false;
@@ -2446,9 +2426,9 @@ class ExpenseFormCubit extends CubitSignal<ExpenseFormState>
     return [for (final entry in keyed) entry.item];
   }
 
-  /// Unarchived events, plus archived ones already on the edited expense
-  /// or in [selected] (a resumed draft): shown as selected, so saving
-  /// doesn't drop them silently (A10, R7).
+  /// Unarchived events, plus archived ones already on the edited expense or in
+  /// [selected] (a resumed draft): shown as selected, so saving doesn't drop
+  /// them silently.
   List<Event> _visibleEvents(List<Event> events, Set<int> selected) {
     final onExpense = _original?.eventIds ?? const <int>{};
     return _eventsByPopularity([

@@ -3,8 +3,8 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../../../../helpers/test_database.dart';
 
-/// The `expense_draft` table (phase-4.md §4). `all_migrations_test.dart`
-/// already covers up/down/up.
+/// The `expense_draft` table. `all_migrations_test.dart` already covers
+/// up/down/up.
 void main() {
   late Database db;
 
@@ -43,21 +43,23 @@ void main() {
     );
   });
 
-  test('nothing references expense_draft, so the replace can never cascade '
-      '(sqlite.md §5.2)', () async {
-    final tables = await db.rawQuery(
-      "SELECT name FROM sqlite_master WHERE type = 'table'",
-    );
-    for (final row in tables) {
-      final name = row['name']! as String;
-      final keys = await db.rawQuery("PRAGMA foreign_key_list('$name')");
-      expect(
-        keys.map((k) => k['table']),
-        isNot(contains('expense_draft')),
-        reason: name,
+  test(
+    'nothing references expense_draft, so the replace can never cascade',
+    () async {
+      final tables = await db.rawQuery(
+        "SELECT name FROM sqlite_master WHERE type = 'table'",
       );
-    }
-  });
+      for (final row in tables) {
+        final name = row['name']! as String;
+        final keys = await db.rawQuery("PRAGMA foreign_key_list('$name')");
+        expect(
+          keys.map((k) => k['table']),
+          isNot(contains('expense_draft')),
+          reason: name,
+        );
+      }
+    },
+  );
 
   test('form_json and updated_at are required', () async {
     await expectLater(

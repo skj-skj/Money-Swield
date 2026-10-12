@@ -7,9 +7,8 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../../helpers/recurring_fixture.dart';
 
-/// Changing how often and the swap on Restore (phase-7b.md §6.1, §9:
-/// "a new schedule loses or doubles payments", "two items run for one
-/// bill").
+/// Changing how often and the swap on Restore ("a new schedule loses or doubles
+/// payments", "two items run for one bill").
 void main() {
   late RecurringFixture f;
 
@@ -76,7 +75,7 @@ void main() {
     });
 
     test('prices: the old one\'s on the new start plus its scheduled ones '
-        'after it (P7b-5)', () async {
+        'after it', () async {
       final old = await netflix();
       await f.recurring.changePrice(
         old,
@@ -123,7 +122,7 @@ void main() {
     test('a First payment on or before the old one\'s last handled date, or '
         'before today, is refused; nothing written', () async {
       // Today's payment (9 Oct) was added: 9 Oct is handled even if it is
-      // deleted, so the new schedule can't start on it (§6.5).
+      // deleted, so the new schedule can't start on it.
       final old = await netflix();
       final payment = (await f.recurring.payments(old)).single;
       await f.expenses.moveToBin(payment.id);
@@ -256,7 +255,7 @@ void main() {
     );
   });
 
-  group('the swap (P7b-3)', () {
+  group('the swap', () {
     test('runningRelative: direct and down a chain A → B → C', () async {
       final a = await netflix();
       final b = await f.recurring.replaceSchedule(

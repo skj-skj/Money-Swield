@@ -318,7 +318,7 @@ void main() {
     });
   });
 
-  group('initialName (phase-2.md §6.4)', () {
+  group('initialName', () {
     CategoryFormCubit formWith({Category? original, required String name}) {
       final cubit = CategoryFormCubit(
         repository: repository,

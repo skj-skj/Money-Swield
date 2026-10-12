@@ -3,11 +3,10 @@ import 'package:material_ui/material_ui.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../view_models/sms_cubit.dart';
 
-/// Home's SMS icon, first in the icon row (phase-9a.md §8.1, P9a-6): hidden
-/// while SMS is off or not built; a count badge in the tertiary colour
-/// while suggestions wait (not the filter dot's colour); `sms_failed`
-/// without a badge when the permission is off. Never greyed by Home's
-/// filters (P9a-7): the SMS screen ignores them.
+/// Home's SMS icon, first in the icon row: hidden while SMS is off or not
+/// built; a count badge in the tertiary colour while suggestions wait (not the
+/// filter dot's colour); `sms_failed` without a badge when the permission is
+/// off. Never greyed by Home's filters: the SMS screen ignores them.
 class SmsIconButton extends StatelessWidget {
   const SmsIconButton({
     super.key,
@@ -30,9 +29,9 @@ class SmsIconButton extends StatelessWidget {
     final needsPermission =
         state.availability == SmsAvailability.needsPermission;
     final count = needsPermission ? 0 : state.pendingCount;
-    // Room for a wide badge ("99+") so it doesn't run over the next icon,
-    // and its text scaled at most 1.3×: at the Oppo's largest font the
-    // badge covered the filter icon (phase-9a.md §12a).
+    // Room for a wide badge ("99+") so it doesn't run over the next icon, and
+    // its text scaled at most 1.3×: at the Oppo's largest font the badge
+    // covered the filter icon.
     return Padding(
       padding: EdgeInsetsDirectional.only(end: count > 9 ? 14 : 0),
       child: MediaQuery.withClampedTextScaling(
@@ -60,7 +59,7 @@ class SmsIconButton extends StatelessWidget {
           : l10n.smsSuggestions,
       onPressed: onPressed,
       icon: Badge.count(
-        // Its default is 999 (phase-9a.md §8.1).
+        // Its default is 999.
         maxCount: 99,
         count: count,
         isLabelVisible: count > 0,

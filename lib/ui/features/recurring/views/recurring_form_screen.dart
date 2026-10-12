@@ -38,8 +38,8 @@ final class RecurringEdited extends RecurringFormResult {
   const RecurringEdited();
 }
 
-/// How often changed (phase-7b.md §8.1 C): a new item [newId] was made and
-/// the item [oldTitle] archived. The page opens the new one.
+/// How often changed: a new item [newId] was made and the item [oldTitle]
+/// archived. The page opens the new one.
 final class RecurringReplaced extends RecurringFormResult {
   const RecurringReplaced(this.newId, this.oldTitle);
 
@@ -47,11 +47,10 @@ final class RecurringReplaced extends RecurringFormResult {
   final String oldTitle;
 }
 
-/// Edit a running recurring item (phase-7a.md §8.5): title, description,
-/// category, events, payment method, time, how often (phase-7b.md §8.2:
-/// a change makes a new item, after a dialog), end. "Changes apply to
-/// payments added from now on." No draft (P7a-15): Back with changes asks.
-/// Pops a [RecurringFormResult] when saved.
+/// Edit a running recurring item: title, description, category, events, payment
+/// method, time, how often (a change makes a new item, after a dialog), end.
+/// "Changes apply to payments added from now on." No draft: Back with changes
+/// asks. Pops a [RecurringFormResult] when saved.
 class RecurringFormScreen extends StatefulWidget {
   const RecurringFormScreen({
     super.key,
@@ -72,7 +71,7 @@ class _RecurringFormScreenState extends State<RecurringFormScreen> {
   final _title = TextEditingController();
   final _description = TextEditingController();
 
-  /// How often's Every field (phase-7b.md §8.2).
+  /// How often's Every field.
   final _interval = TextEditingController();
   final _messenger = GlobalKey<ScaffoldMessengerState>();
   final _scaffold = GlobalKey<ScaffoldState>();
@@ -133,7 +132,7 @@ class _RecurringFormScreenState extends State<RecurringFormScreen> {
     if (saved && mounted) Navigator.pop(context, const RecurringEdited());
   }
 
-  /// How often changed (§8.1 C): checked, then asked, then a new item.
+  /// How often changed: checked, then asked, then a new item.
   Future<void> _saveAsNew() async {
     final ready = _form.value;
     final schedule = _form.newSchedule;
@@ -212,7 +211,7 @@ class _RecurringFormScreenState extends State<RecurringFormScreen> {
   }
 
   /// The new schedule's First payment: from the earliest allowed to
-  /// [lastEndOn] (phase-7b.md §7.3).
+  /// [lastEndOn].
   Future<void> _pickFirstPayment(RecurringFormReady state) async {
     final picked = await pickDay(
       context,
@@ -318,10 +317,9 @@ class _RecurringFormScreenState extends State<RecurringFormScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        // The time, then the payment method: each the full width, so a
-        // large font or a long method name never overflows (a plain
-        // dropdown next to the time overflowed by 95 dp at font 2.0;
-        // phase-7a.md §12a).
+        // The time, then the payment method: each the full width, so a large
+        // font or a long method name never overflows (a plain dropdown next to
+        // the time overflowed by 95 dp at font 2.0).
         Align(
           alignment: AlignmentDirectional.centerStart,
           child: OutlinedButton.icon(
@@ -436,7 +434,7 @@ class _RecurringFormScreenState extends State<RecurringFormScreen> {
                       icon: const Icon(Icons.event, size: 18),
                       label: Text(
                         // The date "On" would end on (the earliest allowed)
-                        // rather than "—" (Oppo, phase-7a.md §12a).
+                        // rather than "—" (Oppo).
                         shortDateText(
                           locale,
                           parseDay(
@@ -472,9 +470,9 @@ class _RecurringFormScreenState extends State<RecurringFormScreen> {
     );
   }
 
-  /// "How often": Every, and once it differs from the item's, the First
-  /// payment and "Saving makes a new recurring item" (phase-7b.md §8.2).
-  /// Locked while payments wait (they would be dropped).
+  /// "How often": Every, and once it differs from the item's, the First payment
+  /// and "Saving makes a new recurring item". Locked while payments wait (they
+  /// would be dropped).
   List<Widget> _howOften(RecurringFormReady state) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
@@ -496,9 +494,8 @@ class _RecurringFormScreenState extends State<RecurringFormScreen> {
         showError: _form.intervalInvalid,
         enabled: !state.scheduleLocked,
       ),
-      // The rule in words, the new one once changed ("Every week on
-      // Tuesday"): which weekday a change to weekly picks wasn't said
-      // anywhere (Oppo, phase-7b.md §12a).
+      // The rule in words, the new one once changed ("Every week on Tuesday"):
+      // which weekday a change to weekly picks wasn't said anywhere (Oppo).
       if (_form.newSchedule ?? state.item.schedule case final rule?)
         Padding(
           padding: const EdgeInsets.only(top: 4),

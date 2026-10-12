@@ -3,8 +3,8 @@
 
 import '../migration/migration.dart';
 
-/// Events (trips, birthdays …), seeded with the built-in ones
-/// (database.md §3.4). `archived_at` hides an event from the picker.
+/// Events (trips, birthdays …), seeded with the built-in ones. `archived_at`
+/// hides an event from the picker.
 class CreateEvents extends Migration {
   const CreateEvents() : super(version: 1790942747, name: 'create_events');
 

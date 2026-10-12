@@ -6,7 +6,7 @@ List<String> termsOf(String canonical) =>
     (evaluateExpression(canonical, minorDigits: 2) as ExpressionValue).terms;
 
 void main() {
-  group('buildItemizeLine: the §5.2 table', () {
+  group('buildItemizeLine', () {
     test('every term labelled', () {
       expect(
         buildItemizeLine(termsOf('50+60*2'), ['potato', 'onion'], '.'),

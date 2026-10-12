@@ -22,11 +22,10 @@ import '../../../core/widgets/show_message.dart';
 import '../view_models/bin_cubit.dart';
 import '../view_models/expense_photos_cubit.dart';
 
-/// A binned expense, read-only: binned expenses can't be edited, only
-/// restored or deleted for good (database.md §3.5). Pops after either.
-/// Its photos show too, read-only: a long press selects them to Save to
-/// Pictures (no Delete), and the viewer has Save only (phase-6.md §8.5,
-/// P6-24, P6-43), so they can be kept before the expense is purged.
+/// A binned expense, read-only: binned expenses can't be edited, only restored
+/// or deleted for good. Pops after either. Its photos show too, read-only: a
+/// long press selects them to Save to Pictures (no Delete), and the viewer has
+/// Save only, so they can be kept before the expense is purged.
 class BinDetailScreen extends StatelessWidget {
   const BinDetailScreen({
     super.key,

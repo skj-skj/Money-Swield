@@ -28,8 +28,7 @@ import '../../../helpers/file_database.dart';
 import '../../../helpers/pump_app.dart';
 import '../../../helpers/test_database.dart';
 
-/// Backup and restore through the whole app, on real database files
-/// (phase-3.md §12, Widgets).
+/// Backup and restore through the whole app, on real database files (Widgets).
 void main() {
   late FileDatabases files;
   late FakeDocumentService documents;
@@ -227,7 +226,7 @@ void main() {
     expect(find.text('बैकअप रीस्टोर हो गया'), findsOneWidget);
     final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
     expect(app.themeMode, ThemeMode.dark);
-    // A pre-restore copy of the onboarding data was made too (P3-21).
+    // A pre-restore copy of the onboarding data was made too.
     expect(
       await tester.runAsync(tools.appDatabase.preRestoreCopies),
       hasLength(1),

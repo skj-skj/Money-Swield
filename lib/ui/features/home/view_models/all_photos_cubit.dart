@@ -14,8 +14,8 @@ import '../../../../domain/photo_groups.dart';
 import '../../../../domain/selection.dart';
 import '../../../core/emit_if_open.dart';
 
-/// What the Photos screen shows (phase-6.md §7.4). States don't override
-/// `==`, so every emitted state reaches the screen.
+/// What the Photos screen shows. States don't override `==`, so every emitted
+/// state reaches the screen.
 sealed class AllPhotosState {
   const AllPhotosState();
 }
@@ -49,7 +49,7 @@ final class AllPhotosLoaded extends AllPhotosState {
   final bool loadingMore;
   final bool loadMoreFailed;
 
-  /// The selected tiles; null when not selecting (§8.10).
+  /// The selected tiles; null when not selecting.
   final Set<PhotoTileKey>? selection;
 
   /// A Save to Pictures or a Delete is running.
@@ -84,13 +84,12 @@ final class AllPhotosLoaded extends AllPhotosState {
   }
 }
 
-/// The photos of what Home's filters show (P6-37): active expenses with
-/// photos, newest first, 30 expenses a page (an expense's photos are never
-/// split), always by month (§8.9). The filter is fixed while the screen is
-/// open; it is changed on Home.
+/// The photos of what Home's filters show: active expenses with photos, newest
+/// first, 30 expenses a page (an expense's photos are never split), always by
+/// month. The filter is fixed while the screen is open; it is changed on Home.
 ///
-/// With a text filter the words are matched in Dart, like Home's list
-/// (phase-5.md §6.3): the matches with photos are read 30 at a time.
+/// With a text filter the words are matched in Dart, like Home's list: the
+/// matches with photos are read 30 at a time.
 class AllPhotosCubit extends CubitSignal<AllPhotosState>
     with EmitIfOpen<AllPhotosState> {
   AllPhotosCubit({
@@ -124,7 +123,7 @@ class AllPhotosCubit extends CubitSignal<AllPhotosState>
   List<int>? _matchIds;
   int _matchesUsed = 0;
 
-  /// The load or page running now: a Delete waits for it (§7.4).
+  /// The load or page running now: a Delete waits for it.
   Future<void>? _running;
 
   Future<void> load() => _track(_loadTop(pageSize));
@@ -139,7 +138,7 @@ class AllPhotosCubit extends CubitSignal<AllPhotosState>
     return _track(_loadTop(math.max(shown, pageSize)));
   }
 
-  /// Only if something was written since the last load (P2-14).
+  /// Only if something was written since the last load.
   Future<bool> reloadIfChanged() async {
     if (_loadedVersion == _dataVersion.value) return false;
     await reload();
@@ -233,7 +232,7 @@ class AllPhotosCubit extends CubitSignal<AllPhotosState>
     }());
   }
 
-  // Selection (§8.10, owner rev 6).
+  // Selection (owner rev 6).
 
   void startSelection(PhotoTileKey key) => _setSelection({key});
 
@@ -244,7 +243,7 @@ class AllPhotosCubit extends CubitSignal<AllPhotosState>
     _setSelection(toggledSelection(selection, key));
   }
 
-  /// The loaded tiles only (§8.9).
+  /// The loaded tiles only.
   void selectAll() {
     final state = value;
     if (state is! AllPhotosLoaded || state.selection == null) return;
@@ -260,8 +259,8 @@ class AllPhotosCubit extends CubitSignal<AllPhotosState>
     }
   }
 
-  /// Save: each picture named from its own expense (§5.9); no confirm;
-  /// selection stays. A second call while one runs is ignored.
+  /// Save: each picture named from its own expense; no confirm; selection
+  /// stays. A second call while one runs is ignored.
   Future<SaveToPicturesResult?> saveSelectedToPictures() async {
     final state = value;
     final selection = state is AllPhotosLoaded ? state.selection : null;
@@ -283,11 +282,11 @@ class AllPhotosCubit extends CubitSignal<AllPhotosState>
     }
   }
 
-  /// Delete, after the screen's confirm (§6.4a, owner rev 6): the selected
-  /// photos leave their expenses at once, in one transaction (an expense
-  /// binned meanwhile is skipped), and leave that expense's Edit draft, so
-  /// the draft can't bring them back. Selection ends; the grid reloads.
-  /// Returns how many photos went. A page still loading is waited for.
+  /// Delete, after the screen's confirm (owner rev 6): the selected photos
+  /// leave their expenses at once, in one transaction (an expense binned
+  /// meanwhile is skipped), and leave that expense's Edit draft, so the draft
+  /// can't bring them back. Selection ends; the grid reloads. Returns how many
+  /// photos went. A page still loading is waited for.
   Future<int> deleteSelected() async {
     final state = value;
     final selection = state is AllPhotosLoaded ? state.selection : null;
@@ -311,8 +310,8 @@ class AllPhotosCubit extends CubitSignal<AllPhotosState>
         try {
           await _drafts.dropSavedPhotos(expenseId, photoIds);
         } catch (error) {
-          // The draft keeps the photo: its row survives the sweep (the
-          // live draft references it), so nothing is lost (§6.4a).
+          // The draft keeps the photo: its row survives the sweep (the live
+          // draft references it), so nothing is lost.
           debugPrint('Taking deleted photos out of the draft failed: $error');
         }
       }
@@ -333,7 +332,7 @@ class AllPhotosCubit extends CubitSignal<AllPhotosState>
     await reload();
   }
 
-  /// The draft slot, for opening the form (phase-4.md §7.4).
+  /// The draft slot, for opening the form.
   Future<ExpenseDraft?> pendingDraft() => _drafts.readOrNull();
 
   /// The selected keys that are still on screen after a reload.

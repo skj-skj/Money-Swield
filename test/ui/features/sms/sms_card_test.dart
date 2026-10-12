@@ -4,7 +4,7 @@ import 'package:my_expense_tracker_app/domain/models/sms_suggestion.dart';
 import 'package:my_expense_tracker_app/l10n/app_localizations.dart';
 import 'package:my_expense_tracker_app/ui/features/sms/views/sms_card.dart';
 
-/// The SMS card (phase-9a.md §8.2); both bugs were found on the Oppo.
+/// The SMS card; both bugs were found on the Oppo.
 void main() {
   SmsSuggestion sms({int amount = 12345600, String? payee}) => SmsSuggestion(
     id: 1,

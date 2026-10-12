@@ -20,8 +20,8 @@ import '../services/database/sql_helpers.dart';
 /// device".
 const supportedLanguageCodes = ['en', 'es', 'hi'];
 
-/// Reads and writes the `settings` table (database.md §3.1). Owns the list
-/// of keys and their defaults: a missing row means "use the default".
+/// Reads and writes the `settings` table. Owns the list of keys and their
+/// defaults: a missing row means "use the default".
 class SettingsRepository {
   SettingsRepository(this._db, {required this._deviceCurrency});
 
@@ -63,7 +63,7 @@ class SettingsRepository {
   static const _reportExportFormatKey = 'report_export_format';
   static const _reportFilterKey = 'report_filter';
 
-  /// The stored values of `trend_chart_style` (database.md §3.1).
+  /// The stored values of `trend_chart_style`.
   static const _chartStyleNames = {
     TrendChartStyle.lineFilled: 'line_filled',
     TrendChartStyle.line: 'line',
@@ -111,7 +111,7 @@ class SettingsRepository {
       datePickerKeyboard: _isTrue(values[_datePickerKeyboardKey]),
       // Missing, 'dynamic' or unreadable all mean the wallpaper colors.
       themeSeed: int.tryParse(values[_themeColorKey] ?? ''),
-      // Home (phase-5.md §4.2). Missing or unknown → the default.
+      // Home. Missing or unknown → the default.
       weekStart: _enumOr(
         WeekStart.values,
         values[_weekStartKey],
@@ -160,10 +160,10 @@ class SettingsRepository {
     );
   }
 
-  /// What the Reports screen opens on (phase-8.md §4). Each value falls
-  /// back to its default on its own when missing or unreadable; a filter
-  /// that can't be read is no filter (logged by the caller, which sees
-  /// [ReportPrefs.filter] empty while the row isn't).
+  /// What the Reports screen opens on. Each value falls back to its default on
+  /// its own when missing or unreadable; a filter that can't be read is no
+  /// filter (logged by the caller, which sees [ReportPrefs.filter] empty while
+  /// the row isn't).
   Future<({ReportPrefs prefs, bool filterUnreadable})> loadReport() async {
     final rows = await _db.query(
       'settings',
@@ -222,9 +222,9 @@ class SettingsRepository {
     );
   }
 
-  /// A photo size and quality as stored (§4.2): each falls back to its
-  /// default on its own when missing or unknown, so a quality the app no
-  /// longer offers doesn't reset the size.
+  /// A photo size and quality as stored: each falls back to its default on its
+  /// own when missing or unknown, so a quality the app no longer offers doesn't
+  /// reset the size.
   static PhotoSizing _photoSizing(String? size, String? quality) => (
     size: _enumOr(PhotoSize.values, size, defaultPhotoSizing.size),
     quality: switch (int.tryParse(quality ?? '')) {
@@ -437,8 +437,8 @@ class SettingsRepository {
       _write(_themeColorKey, seed?.toString() ?? _dynamicThemeColor);
 
   /// When the last backup was saved, or null if never. Not part of
-  /// [AppSettings], so a backup doesn't rebuild `MaterialApp` (phase-3.md
-  /// §3). An unreadable value reads as "never".
+  /// [AppSettings], so a backup doesn't rebuild `MaterialApp`. An unreadable
+  /// value reads as "never".
   Future<DateTime?> lastBackupAt() async {
     final ms = int.tryParse(await valueOf(_db, _lastBackupAtKey) ?? '');
     return ms == null ? null : utcFromEpochMs(ms);
@@ -448,32 +448,31 @@ class SettingsRepository {
   Future<void> setLastBackupAt(DateTime at) =>
       _write(_lastBackupAtKey, '${at.millisecondsSinceEpoch}');
 
-  /// Whether the user turned SMS suggestions on (phase-9a.md §4; `1` only
-  /// after the permission was granted once). Not part of [AppSettings]: only
-  /// `SmsCubit` reads it, and turning it on or off rebuilds nothing else.
+  /// Whether the user turned SMS suggestions on (`1` only after the permission
+  /// was granted once). Not part of [AppSettings]: only `SmsCubit` reads it,
+  /// and turning it on or off rebuilds nothing else.
   Future<bool> smsEnabled() async => _isTrue(await valueOf(_db, smsEnabledKey));
 
   Future<void> setSmsEnabled(bool enabled) =>
       _write(smsEnabledKey, _bool(enabled));
 
-  /// `sms_enabled` (database.md §3.1).
+  /// `sms_enabled`.
   static const smsEnabledKey = 'sms_enabled';
 
-  /// Whether the on-device model may read the SMS (phase-9b.md §4): on by
-  /// default, so missing means on; only an explicit `0` turns it off.
-  /// Matters only on play with a model on the phone. Not part of
-  /// [AppSettings], like [smsEnabled].
+  /// Whether the on-device model may read the SMS: on by default, so missing
+  /// means on; only an explicit `0` turns it off. Matters only on play with a
+  /// model on the phone. Not part of [AppSettings], like [smsEnabled].
   Future<bool> smsAiParsing() async =>
       await valueOf(_db, smsAiParsingKey) != '0';
 
   Future<void> setSmsAiParsing(bool on) => _write(smsAiParsingKey, _bool(on));
 
-  /// `sms_ai_parsing` (database.md §3.1).
+  /// `sms_ai_parsing`.
   static const smsAiParsingKey = 'sms_ai_parsing';
 
-  /// `sms_last_scanned_at`: the SMS scan's cursor, epoch ms (phase-9a.md
-  /// §6.3 step 7). Written and read only by `SmsSuggestionRepository`,
-  /// inside the scan's transaction, so it is public here only as the name.
+  /// `sms_last_scanned_at`: the SMS scan's cursor, epoch ms. Written and read
+  /// only by `SmsSuggestionRepository`, inside the scan's transaction, so it is
+  /// public here only as the name.
   static const smsCursorKey = 'sms_last_scanned_at';
 
   /// One setting's stored value through [db], or null when it isn't

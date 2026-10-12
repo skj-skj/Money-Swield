@@ -4,10 +4,10 @@ import '../../../../data/services/photo_store.dart';
 import '../../../../domain/saved_picture.dart';
 import '../../../../l10n/app_localizations.dart';
 
-/// What to say after a Save to Pictures (phase-6.md §6.6), shared by the
-/// form, the viewer, the Bin and the Photos screen: where they went, how
-/// many failed or were missing, or that there was no room. Nothing saved
-/// because every one failed is "Couldn't save".
+/// What to say after a Save to Pictures, shared by the form, the viewer, the
+/// Bin and the Photos screen: where they went, how many failed or were missing,
+/// or that there was no room. Nothing saved because every one failed is
+/// "Couldn't save".
 String savedToPicturesText(AppLocalizations l10n, SaveToPicturesResult result) {
   const folder = 'Pictures/$savedPicturesFolder';
   if (result.noSpace) return l10n.noSpaceToSavePhotos;

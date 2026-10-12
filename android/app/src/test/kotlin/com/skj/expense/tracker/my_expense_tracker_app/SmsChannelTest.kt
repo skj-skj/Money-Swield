@@ -6,7 +6,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** The plain parts of SmsChannel (phase-9a.md §12, Kotlin). */
+/** The plain parts of SmsChannel (Kotlin). */
 class SmsChannelTest {
 
     @Test

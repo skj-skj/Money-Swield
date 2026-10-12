@@ -10,9 +10,9 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'test_database.dart';
 
 /// A migrated database with the expense and recurring repositories on a
-/// hand-moved clock (phase-7a.md §12: "the clock is TestClock"). The clock
-/// starts at noon, device time, on 2026-10-09, so "today" is that date in
-/// whatever zone the tests run.
+/// hand-moved clock ("the clock is TestClock"). The clock starts at noon,
+/// device time, on 2026-10-09, so "today" is that date in whatever zone the
+/// tests run.
 class RecurringFixture {
   RecurringFixture._(this.db, this.clock, this.dataVersion, this.localMoment)
     : expenses = ExpenseRepository(

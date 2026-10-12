@@ -3,17 +3,15 @@
 
 import '../migration/migration.dart';
 
-/// Expenses (database.md §3.5, phase-2.md §3.1) and the recurring items
-/// that add them (§3.8, phase-7a.md §4.1). Money is an integer in minor
-/// units with its currency next to it; `deleted_at` set means the expense
-/// is in the bin.
+/// Expenses and the recurring items that add them. Money is an integer in minor
+/// units with its currency next to it; `deleted_at` set means the expense is in
+/// the bin.
 ///
-/// The recurring tables come first: `expenses.recurring_expense_id`
-/// references them, and the framework refuses a reference to a table that
-/// doesn't exist yet. They live in this migration, not a new one, because
-/// the app is unreleased (owner: migrations are edited until release;
-/// P7a-14), so a Phase 6 database needs a fresh install; phase 7b edited it
-/// again (`replaces_id`, `recurring_skips`), so a 7a database does too.
+/// The recurring tables come first: `expenses.recurring_expense_id` references
+/// them, and the framework refuses a reference to a table that doesn't exist
+/// yet. They live in this migration, not a new one, because the app is
+/// unreleased (owner: migrations are edited until release), so a database
+/// from before they were added needs a fresh install.
 class CreateExpenses extends Migration {
   const CreateExpenses() : super(version: 1790960250, name: 'create_expenses');
 
@@ -22,8 +20,8 @@ class CreateExpenses extends Migration {
     await m.createTable('recurring_expenses', (t) {
       t.text('title', nullable: false);
       t.text('description');
-      // Prices are minor units of this currency, so it never changes
-      // (P7a-10); `recurring_amounts` has no currency of its own.
+      // Prices are minor units of this currency, so it never changes;
+      // `recurring_amounts` has no currency of its own.
       t.text('currency_code', nullable: false);
       t.references(
         'category_id',
@@ -47,19 +45,19 @@ class CreateExpenses extends Migration {
       // The time put on added payments, minutes past local midnight.
       t.integer('time_of_day_minutes', nullable: false);
       // The next payment not yet handled: every date before it was added,
-      // deleted or skipped, and is never looked at again (phase-7a.md
-      // §6.7). Never moves backwards; kept when archived. NULL when no
-      // payment is left before the end.
+      // deleted or skipped, and is never looked at again. Never moves
+      // backwards; kept when archived. NULL when no payment is left before the
+      // end.
       t.text('next_due_on');
       // Set = archived: stopped, or expired (its end date passed). Adds
       // nothing; listed only in the Archive.
       t.integer('archived_at');
       t.integer('created_at', nullable: false);
       t.integer('updated_at', nullable: false);
-      // The item this one was made from when its schedule changed
-      // (phase-7b.md §4.1), so restoring the old one can swap them and the
-      // Archive can call it "replaced". SET NULL: deleting the old one for
-      // good keeps this one. A self-reference: the framework allows it.
+      // The item this one was made from when its schedule changed, so restoring
+      // the old one can swap them and the Archive can call it "replaced". SET
+      // NULL: deleting the old one for good keeps this one. A self-reference:
+      // the framework allows it.
       t.references(
         'replaces_id',
         toTable: 'recurring_expenses',
@@ -75,8 +73,7 @@ class CreateExpenses extends Migration {
         index: false, // First column of the unique index below.
       );
       t.integer('amount_minor', nullable: false);
-      // A price change adds a row from a date and never edits history
-      // (database.md §3.8).
+      // A price change adds a row from a date and never edits history.
       t.text('effective_from', nullable: false);
       t.integer('created_at', nullable: false);
       t.integer('updated_at', nullable: false);
@@ -98,11 +95,11 @@ class CreateExpenses extends Migration {
       );
       t.primaryKey(['recurring_expense_id', 'event_id']);
     });
-    // Upcoming payments skipped once (phase-7b.md §4.1). A skip can't be a
-    // binned row (the payment has no row yet), and the cursor can't jump
-    // one date without the ones before it. The generator passes over a
-    // skipped date and deletes the skips its cursor has passed in the same
-    // transaction, so only future skips are kept.
+    // Upcoming payments skipped once. A skip can't be a binned row (the payment
+    // has no row yet), and the cursor can't jump one date without the ones
+    // before it. The generator passes over a skipped date and deletes the skips
+    // its cursor has passed in the same transaction, so only future skips are
+    // kept.
     await m.createTable('recurring_skips', (t) {
       t.references(
         'recurring_expense_id',
@@ -121,8 +118,7 @@ class CreateExpenses extends Migration {
       t.text('title', nullable: false);
       t.text('description');
       t.integer('amount_minor', nullable: false);
-      // What was typed, e.g. `50+60`; NULL for a plain number (Phase 4's
-      // amount field).
+      // What was typed, e.g. `50+60`; NULL for a plain number.
       t.text('amount_expression');
       t.text('currency_code', nullable: false);
       t.integer('occurred_at', nullable: false);
@@ -156,15 +152,13 @@ class CreateExpenses extends Migration {
       t.integer('deleted_at');
       t.integer('created_at', nullable: false);
       t.integer('updated_at', nullable: false);
-      // Home lists expenses by local date, then moment (phase-5.md R1):
-      // ordering by the moment alone gives a traveller's day two headers.
-      // The same index serves every occurred_on range (totals, chips,
-      // usage).
+      // Home lists expenses by local date, then moment: ordering by the moment
+      // alone gives a traveller's day two headers. The same index serves every
+      // occurred_on range (totals, chips, usage).
       t.index(['occurred_on', 'occurred_at', 'id']);
       t.index(['category_id', 'occurred_on']);
-      // Only for the bin and the purge (`IS NOT NULL`, `<`). Active-row
-      // queries write `+deleted_at IS NULL` so the planner never picks it
-      // (phase-2.md §5).
+      // Only for the bin and the purge (`IS NOT NULL`, `<`). Active-row queries
+      // write `+deleted_at IS NULL` so the planner never picks it.
       t.index(['deleted_at']);
       // One row per payment: the generator running twice, or after a
       // crash, can't add a payment again. Binned rows count. SQLite allows

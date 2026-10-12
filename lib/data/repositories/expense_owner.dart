@@ -21,9 +21,9 @@ enum ExpenseOwner {
   /// Its column in `expenses` and `recurring_expenses`.
   final String column;
 
-  /// How many expenses and recurring items use owner [id]. Binned expenses
-  /// and archived items are counted on purpose: they block the delete too
-  /// (RESTRICT) and must be moved (database.md §3.2, phase-7a.md R2).
+  /// How many expenses and recurring items use owner [id]. Binned expenses and
+  /// archived items are counted on purpose: they block the delete too
+  /// (RESTRICT) and must be moved.
   Future<OwnerUsage> usage(DatabaseExecutor db, int id) async {
     final row = (await db.rawQuery(
       'SELECT COALESCE(SUM(deleted_at IS NULL), 0) AS active, '
@@ -42,12 +42,11 @@ enum ExpenseOwner {
     );
   }
 
-  /// Inside the caller's transaction: moves every expense of owner [id],
-  /// binned ones included, and every recurring item of it, archived ones
-  /// included (their later payments then use [toId]), to [toId] (stamping
-  /// [updatedAtMs]) and deletes [id]. If [toId] no longer exists the move
-  /// fails on the foreign key, and the caller's transaction rolls
-  /// everything back (D7).
+  /// Inside the caller's transaction: moves every expense of owner [id], binned
+  /// ones included, and every recurring item of it, archived ones included
+  /// (their later payments then use [toId]), to [toId] (stamping [updatedAtMs])
+  /// and deletes [id]. If [toId] no longer exists the move fails on the foreign
+  /// key, and the caller's transaction rolls everything back.
   Future<void> moveExpensesAndDelete(
     Transaction txn,
     int id, {

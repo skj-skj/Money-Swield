@@ -1,4 +1,4 @@
-# R8 rules for the play flavor only (phase-9b.md §12a).
+# R8 rules for the play flavor only.
 #
 # ML Kit finds its components by reflection: Firebase's ComponentDiscovery
 # reads `com.google.firebase.components:<class>` from the merged manifest and

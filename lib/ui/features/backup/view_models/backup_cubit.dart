@@ -11,7 +11,7 @@ import '../../../../domain/error_report.dart';
 import '../../../../domain/models/sms_suggestion.dart' show ScanProgress;
 import '../../../core/emit_if_open.dart';
 
-/// What the Backup & restore screen shows (phase-3.md §9).
+/// What the Backup & restore screen shows.
 class BackupState {
   const BackupState({
     this.lastBackupAt,
@@ -39,7 +39,7 @@ class BackupState {
   /// Set after a failed backup: the screen shows the error report.
   final String? failureReport;
 
-  /// "Include photos", ticked every time the screen opens (P6-16).
+  /// "Include photos", ticked every time the screen opens.
   final bool includePhotos;
 
   /// The photos and their size, for the checkbox; null until read.
@@ -53,12 +53,12 @@ class BackupState {
   /// Photos the last saved backup had to leave out (missing files).
   final int missingPhotos;
 
-  /// The backup waits for an SMS scan to finish (phase-9a.md §6.7):
-  /// "Waiting for SMS reading to finish…" with Cancel.
+  /// The backup waits for an SMS scan to finish: "Waiting for SMS reading to
+  /// finish…" with Cancel.
   final bool waitingForSms;
 
-  /// While [waitingForSms] and the scan reads with the on-device model:
-  /// "… (12 of 40)" (phase-9b.md §6.2). Null otherwise.
+  /// While [waitingForSms] and the scan reads with the on-device model: "… (12
+  /// of 40)". Null otherwise.
   final ScanProgress? smsProgress;
 
   BackupState copyWith({
@@ -103,14 +103,14 @@ enum BackupResult {
   failed,
   ignored,
 
-  /// Not enough room on the phone to build it (phase-6.md §6.7).
+  /// Not enough room on the phone to build it.
   noSpace,
 
   /// The place picked in the save dialog had no room for it.
   saveTargetFull,
 }
 
-/// Backs up the data and says when the last backup was (§5.2).
+/// Backs up the data and says when the last backup was.
 class BackupCubit extends CubitSignal<BackupState>
     with EmitIfOpen<BackupState> {
   BackupCubit({
@@ -126,14 +126,14 @@ class BackupCubit extends CubitSignal<BackupState>
   final DocumentService _documents;
   final AppDatabase _appDatabase;
 
-  /// The photos' count and size, for "Include photos" (§8.7).
+  /// The photos' count and size, for "Include photos".
   final Future<({int count, int bytes})> Function()? _photoStats;
 
-  /// The SMS scan running now, or null (phase-9a.md §6.7, P9a-48): a
-  /// function, so this cubit doesn't know the scanner.
+  /// The SMS scan running now, or null: a function, so this cubit doesn't know
+  /// the scanner.
   final Future<void>? Function()? _runningSmsScan;
 
-  /// The running scan's progress, shown while waiting (phase-9b.md §6.2).
+  /// The running scan's progress, shown while waiting.
   final ValueListenable<ScanProgress?>? _smsProgress;
 
   /// Completed by [cancelWait].
@@ -178,10 +178,10 @@ class BackupCubit extends CubitSignal<BackupState>
   /// while one runs is ignored (a double tap): there is one temp folder and
   /// one pending dialog. The temp files are deleted in every case.
   ///
-  /// A running SMS scan is waited for first (P9a-48), so the backup holds
-  /// every suggestion that scan stores; Cancel meanwhile ([cancelWait])
-  /// ends it with nothing built. No SMS text is ever in the database, so
-  /// the wait is not what keeps text out of a backup.
+  /// A running SMS scan is waited for first, so the backup holds every
+  /// suggestion that scan stores; Cancel meanwhile ([cancelWait]) ends it with
+  /// nothing built. No SMS text is ever in the database, so the wait is not
+  /// what keeps text out of a backup.
   Future<BackupResult> backUp() async {
     if (value.backingUp) return BackupResult.ignored;
     emitIfOpen(

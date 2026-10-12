@@ -1,17 +1,17 @@
-/// How a picture becomes the app's photo (phase-6.md §5.3): kept as it is,
-/// or resized and JPEG-encoded by native code. Pure Dart; the Kotlin side
-/// only carries out the plan.
+/// How a picture becomes the app's photo: kept as it is, or resized and
+/// JPEG-encoded by native code. Pure Dart; the Kotlin side only carries out the
+/// plan.
 library;
 
 import 'dart:math' as math;
 
 import 'photos.dart';
 
-/// The largest frame a photo is resized to fit, either way round, or
-/// [original] to keep it (P6-2).
+/// The largest frame a photo is resized to fit, either way round, or [original]
+/// to keep it.
 enum PhotoSize { p720, p1080, p1440, p2160, original }
 
-/// A source's size setting and JPEG quality (Settings → Photos, §4.2).
+/// A source's size setting and JPEG quality (Settings → Photos).
 typedef PhotoSizing = ({PhotoSize size, int quality});
 
 /// The defaults for camera and gallery photos alike (owner rev 7): a
@@ -21,11 +21,11 @@ const defaultPhotoSizing = (size: PhotoSize.p1080, quality: 85);
 /// The qualities Settings offers.
 const photoQualities = [70, 80, 85, 90, 95];
 
-/// What Original re-encodes at when it can't keep the bytes (P6-3).
+/// What Original re-encodes at when it can't keep the bytes.
 const originalQuality = 95;
 
 /// The longest edge an Original re-encode keeps: 8192 needed 192 MB of
-/// bitmap (§3.1 review), 4096 at most 48 MB.
+/// bitmap, 4096 at most 48 MB.
 const originalMaxEdge = 4096;
 
 /// The frame [size] fits a picture in, either way round: p720 is 1280 ×
@@ -45,7 +45,7 @@ enum ImageType {
   webp,
   gif,
 
-  /// HEIC, DNG, BMP and the like: always re-encoded (P6-3).
+  /// HEIC, DNG, BMP and the like: always re-encoded.
   other;
 
   static ImageType ofMime(String mimeType) => switch (mimeType.toLowerCase()) {
@@ -135,7 +135,7 @@ final class Encode extends PhotoPlan {
 
 /// The plan for a picture of [width] × [height] as shown (EXIF orientation
 /// applied, then [quarterTurns] turns), of [type] and [bytes] long, under
-/// [sizing] (§5.3):
+/// [sizing]:
 ///
 /// - Original keeps JPEG, PNG, WebP and GIF bytes when unturned and at
 ///   most [maxPhotoBytes]; otherwise it encodes at [originalQuality],
@@ -190,5 +190,5 @@ PhotoPlan planPhoto({
   );
 }
 
-/// [turns] quarter turns plus [delta], always 0..3 (§5.3).
+/// [turns] quarter turns plus [delta], always 0..3.
 int addQuarterTurns(int turns, int delta) => (turns + delta) % 4;

@@ -5,8 +5,8 @@ import '../picker_order.dart';
 import 'item_card.dart';
 import 'two_column_masonry.dart';
 
-/// The ⋯ screen of a `TilePicker` in search mode: the matches after the
-/// first 4, as cards like the Manage lists (phase-2.md §6.2).
+/// The ⋯ screen of a `TilePicker` in search mode: the matches after the first
+/// 4, as cards like the Manage lists.
 ///
 /// Pops with true when the picker should leave search mode: after picking
 /// in a single-select picker, or after creating a new item. Back pops with

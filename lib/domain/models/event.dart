@@ -1,5 +1,4 @@
-/// An event such as a trip or a birthday that expenses can be tagged with
-/// (database.md §3.4).
+/// An event such as a trip or a birthday that expenses can be tagged with.
 class Event {
   const Event({
     required this.id,

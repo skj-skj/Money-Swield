@@ -18,7 +18,7 @@ import '../../../helpers/test_database.dart';
 import '../../../helpers/test_folders.dart';
 import '../../../helpers/test_images.dart';
 
-/// A binned expense's photos (phase-6.md §8.5, P6-24, P6-43).
+/// A binned expense's photos.
 void main() {
   late AppDependencies deps;
   late FakePhotoService service;

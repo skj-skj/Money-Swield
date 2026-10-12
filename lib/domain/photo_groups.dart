@@ -1,4 +1,4 @@
-/// The Photos screen's months and days (phase-6.md §5.8). Pure Dart.
+/// The Photos screen's months and days. Pure Dart.
 library;
 
 import 'home_list.dart';
@@ -10,8 +10,8 @@ import 'photos.dart';
 /// read (`ExpenseRepository.photoExpensesPage`).
 typedef PhotoExpense = ({Expense expense, List<SavedPhoto> photos});
 
-/// One photo on the Photos screen. A photo shared by two expenses is two
-/// tiles (P6-38), told apart by [tileKeyOf].
+/// One photo on the Photos screen. A photo shared by two expenses is two tiles,
+/// told apart by [tileKeyOf].
 typedef PhotoTile = ({Expense expense, SavedPhoto photo});
 
 /// What selects a tile: its expense and photo (owner revs 5–6).
@@ -38,7 +38,7 @@ final class PhotoMonth {
 }
 
 /// A day inside a month: its photos, which the grid lays out two per row,
-/// starting a new row (§8.9).
+/// starting a new row.
 final class PhotoDay {
   const PhotoDay({required this.day, required this.tiles});
 

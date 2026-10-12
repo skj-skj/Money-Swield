@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:my_expense_tracker_app/data/services/sms_service.dart';
 
-/// Stands in for the SMS channel (phase-9a.md §12 "Scanner"): an inbox in
-/// memory, a permission the test sets, and a record of every read.
+/// Stands in for the SMS channel: an inbox in memory, a permission the test
+/// sets, and a record of every read.
 class FakeSmsService implements SmsService {
   FakeSmsService({this.built = true, this.granted = true, this.canAsk = true});
 
@@ -14,8 +14,7 @@ class FakeSmsService implements SmsService {
   /// What the next `request` answers; it also sets [granted].
   bool grantOnRequest = true;
 
-  /// Asking flips [canAsk] off after this many refusals ("Don't allow"
-  /// twice, P9a-30).
+  /// Asking flips [canAsk] off after this many refusals ("Don't allow" twice).
   int refusalsUntilBlocked = 2;
   int requests = 0;
   int settingsOpened = 0;

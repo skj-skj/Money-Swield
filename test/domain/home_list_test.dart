@@ -4,7 +4,7 @@ import 'package:my_expense_tracker_app/domain/models/expense.dart';
 import 'package:my_expense_tracker_app/domain/models/money.dart';
 import 'package:my_expense_tracker_app/domain/periods.dart';
 
-/// phase-5.md §5.5. Moved from test/ui/features/home/views/home_list_test.
+/// Moved from test/ui/features/home/views/home_list_test.
 void main() {
   var nextId = 100;
   Expense on(String day, [String? title]) {

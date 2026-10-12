@@ -18,7 +18,7 @@ import 'package:my_expense_tracker_app/ui/core/widgets/photos/saved_to_pictures_
 import '../../../helpers/test_database.dart';
 import '../../../helpers/test_images.dart';
 
-/// The shared photo components (phase-6.md §8), each on its own.
+/// The shared photo components, each on its own.
 void main() {
   Future<void> pump(WidgetTester tester, Widget child, {Locale locale = en}) =>
       tester.pumpWidget(
@@ -240,7 +240,7 @@ void main() {
     });
   });
 
-  group('PhotoSelectionBar (§8.10)', () {
+  group('PhotoSelectionBar', () {
     for (final locale in [en, es, hi]) {
       for (final scale in [1.0, 2.0]) {
         testWidgets('at 360 dp, ${locale.languageCode}, font $scale: Save and '
@@ -464,7 +464,7 @@ void main() {
     });
   });
 
-  group('PhotoReviewScreen (§8.2a)', () {
+  group('PhotoReviewScreen', () {
     Future<ReviewDecision?> review(
       WidgetTester tester,
       Future<void> Function() act,
@@ -512,7 +512,7 @@ void main() {
       expect((decision! as UseReviewedPhoto).quarterTurns, 3);
     });
 
-    testWidgets('Back uses the photo as shown (P6-33)', (tester) async {
+    testWidgets('Back uses the photo as shown', (tester) async {
       final decision = await review(tester, () async {
         await tester.tap(find.byKey(const ValueKey('rotateRight')));
         await tester.pumpAndSettle();
@@ -539,7 +539,7 @@ void main() {
     });
   });
 
-  group('PhotoViewer (§8.4)', () {
+  group('PhotoViewer', () {
     testWidgets('"2 / 3", swipe, Delete → confirm → "2 / 2", the last delete '
         'closes; Save shows its message', (tester) async {
       final deleted = <int>[];

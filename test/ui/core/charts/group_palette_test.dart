@@ -5,10 +5,10 @@ import 'package:material_color_utilities/material_color_utilities.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:my_expense_tracker_app/ui/core/charts/group_palette.dart';
 
-/// phase-8.md §12 "Palette" (F11): over 144 themes, light and dark, every
-/// slice colour keeps 3:1 on the card and adjacent slices stay apart for
-/// normal, protan and deutan vision. Contrast and colour distance are
-/// computed here from sRGB, independently of the palette's own HCT maths.
+/// Over 144 themes, light and dark, every slice
+/// colour keeps 3:1 on the card and adjacent slices stay apart for normal,
+/// protan and deutan vision. Contrast and colour distance are computed here
+/// from sRGB, independently of the palette's own HCT maths.
 void main() {
   final schemes = [
     for (final brightness in Brightness.values)
@@ -34,7 +34,7 @@ void main() {
         expect(ratio, greaterThanOrEqualTo(3.0), reason: '$scheme $color');
       }
     }
-    // The worst values are quoted in phase-8.md §12a.
+    // The worst value, for tuning the palette.
     // ignore: avoid_print
     print('worst contrast: ${worst.toStringAsFixed(2)}');
   });
@@ -56,7 +56,7 @@ void main() {
           expect(distance, greaterThanOrEqualTo(minimum), reason: '$a $b');
         }
       }
-      // The worst values are quoted in phase-8.md §12a.
+      // The worst value, for tuning the palette.
       // ignore: avoid_print
       print('$name worst ΔE: ${worst.toStringAsFixed(1)}');
     });

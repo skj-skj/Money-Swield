@@ -230,7 +230,7 @@ void main() {
     expect(dueCount(s, cursor: '2026-06-30', today: '2026-05-15'), 0);
   });
 
-  group('a new schedule (phase-7b.md §7.3)', () {
+  group('a new schedule', () {
     test('lastHandledOn: the payment before the cursor; none left: the '
         'last before the end', () {
       final s = monthlyFrom('2026-01-31');
@@ -279,7 +279,7 @@ void main() {
     });
   });
 
-  group('Add selected (phase-7b.md §5.2: held monthly 09-07, 10-07; today '
+  group('Add selected (held monthly 09-07, 10-07; today '
       '10-09)', () {
     final s = monthlyFrom('2026-08-07');
     ({List<String> add, int listed, String? next}) select(
@@ -337,7 +337,7 @@ void main() {
     });
   });
 
-  group('planTemplate with skips (phase-7b.md §5.2)', () {
+  group('planTemplate with skips', () {
     test('cursor 09-07 (monthly), 09-07 skipped, today 10-09: Add [10-07] '
         '(2 days old: not held)', () {
       final p = planTemplate(
@@ -401,7 +401,7 @@ void main() {
     });
   });
 
-  group('runningRelatives (P7b-3)', () {
+  group('runningRelatives', () {
     Map<int, FamilyLink> family(Map<int, (int?, bool)> rows) => {
       for (final MapEntry(key: id, value: (parent, running)) in rows.entries)
         id: (replacesId: parent, running: running),

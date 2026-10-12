@@ -1,4 +1,4 @@
-/// The SMS screen's months and days (phase-9a.md §5.7). Pure Dart.
+/// The SMS screen's months and days. Pure Dart.
 library;
 
 import '../home_list.dart';

@@ -5,11 +5,10 @@ import '../../../l10n/app_localizations.dart';
 import '../recurrence_text.dart';
 import 'repeat_number_field.dart';
 
-/// "Every [ 1 ] [ month ▾ ]": the Add form's Repeats section
-/// (phase-7a.md §8.2) and the recurring item's Edit screen (phase-7b.md
-/// §8.2). A Wrap, so at a large font the dropdown goes under the field
-/// instead of being cut. The screen owns the field's controller, so typing
-/// never moves the cursor.
+/// "Every [ 1 ] [ month ▾ ]": the Add form's Repeats section and the recurring
+/// item's Edit screen. A Wrap, so at a large font the dropdown goes under the
+/// field instead of being cut. The screen owns the field's controller, so
+/// typing never moves the cursor.
 class RepeatEveryRow extends StatelessWidget {
   const RepeatEveryRow({
     super.key,

@@ -1,7 +1,6 @@
-/// SMS bodies the domain tests read (phase-9a.md §5.2). The first five are
-/// `notes/sms-example/sms.json` (already anonymized: format kept, values
-/// fake); `sms.txt` next to it holds real messages and is never copied
-/// here. The rest are written for §12's cases.
+/// SMS bodies the domain tests read. The first five are
+/// anonymized samples (format kept, values made up); real messages are never
+/// copied here. The rest are written for edge cases.
 library;
 
 /// sample #1: UPI "Sent Rs"; the word UPI only in the footer.
@@ -22,7 +21,7 @@ const bankSent3 =
     'On 13/03/26\nRef 100000000003\nNot You?\n'
     'Call 18000000000/SMS BLOCK UPI to 9000000000';
 
-/// sample #4: a UPI ATM withdrawal, not a candidate (P9a-35).
+/// sample #4: a UPI ATM withdrawal, not a candidate.
 const bankAtm =
     'UPI ATM Withdrawal:Rs.5000.\nFrom:ABC Bank A/c 1234\nAt:the bank ATM ATM\n'
     'UPI RRN:012345678904 on 11/03/26\n'

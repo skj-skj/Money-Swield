@@ -3,8 +3,8 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../../../../helpers/test_database.dart';
 
-/// The foreign keys of the Phase 2 tables (phase-2.md §3, database.md §1).
-/// `all_migrations_test.dart` already covers up/down/up.
+/// The foreign keys of the expense tables. `all_migrations_test.dart` already
+/// covers up/down/up.
 void main() {
   late Database db;
 

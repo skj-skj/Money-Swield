@@ -11,7 +11,7 @@ import 'package:my_expense_tracker_app/ui/features/expenses/view_models/expense_
 import '../../../../helpers/fake_timers.dart';
 import '../../../../helpers/test_database.dart';
 
-/// The Add form's Repeats (phase-7a.md §7.1).
+/// The Add form's Repeats.
 void main() {
   late AppDependencies deps;
   late TestClock clock;
@@ -161,7 +161,7 @@ void main() {
       expect(cubit.repeatError, RepeatError.endBeforeStart);
     });
 
-    test('after N payments (phase-7b.md §7.1): picking After fills 12; '
+    test('after N payments: picking After fills 12; '
         'the count is kept as typed; the preview gives the last date; a '
         'bad count blocks Save', () async {
       final cubit = await validForm()
@@ -295,8 +295,7 @@ void main() {
       expect(repeatOf(cubit)!.intervalText, '2');
     });
 
-    test('a plain expense\'s Edit draft brings Repeats back (phase-7b.md '
-        '§7.1; was "never", Add only, in 7a)', () async {
+    test('a plain expense\'s Edit draft brings Repeats back', () async {
       final saved = await deps.expenses.add(
         ExpenseInput(
           title: 'Lunch',
@@ -360,7 +359,7 @@ void main() {
     });
 
     test('Repeats on after a pick still allows a second pick, which keeps '
-        'it on (like photos, phase-6.md §12a)', () async {
+        'it on (like photos)', () async {
       final cubit = await openForm();
       await cubit.pickSuggestion(suggestionFor(cubit, 'Ne'));
       cubit.repeatToggled(true);
@@ -431,7 +430,7 @@ void main() {
       );
     }
 
-    test('a plain expense (phase-7b.md §7.1): Repeats alone enables Update; '
+    test('a plain expense: Repeats alone enables Update; '
         'Update makes it payment 0 and adds 1 Oct', () async {
       final saved = await rent();
       final cubit = await openForm(expenseId: saved.id);

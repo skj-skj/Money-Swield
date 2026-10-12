@@ -12,8 +12,7 @@ import '../../domain/sms/fixtures/india_sms.dart';
 import '../../helpers/fake_sms_service.dart';
 import '../../helpers/test_database.dart';
 
-/// `SmsScanner` (phase-9a.md §6.3, §12 "Scanner") with a fake inbox and
-/// clock, on SQLite 3.22.
+/// `SmsScanner` with a fake inbox and clock, on SQLite 3.22.
 void main() {
   late Database db;
   late TestClock clock;

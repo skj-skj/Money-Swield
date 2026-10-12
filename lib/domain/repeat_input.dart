@@ -1,5 +1,4 @@
-/// The Repeats section of the Add form as typed, and its checks
-/// (phase-7a.md §5.2). Pure Dart.
+/// The Repeats section of the Add form as typed, and its checks. Pure Dart.
 library;
 
 import 'periods.dart';
@@ -7,13 +6,13 @@ import 'recurrence.dart';
 
 export 'recurrence.dart' show Frequency, lastEndOn;
 
-/// How Repeats ends: never, on a date, or after N payments (phase-7b.md
-/// §5.1; offered where an item is created, not in its Edit screen, P7b-1).
+/// How Repeats ends: never, on a date, or after N payments (offered where an
+/// item is created, not in its Edit screen).
 enum RepeatEnd { never, onDate, afterCount }
 
-/// What the Repeats section holds. Kept **as typed** (P7a-26): a half-typed
-/// interval ("", "0") or count stays as it is, in the form and the draft,
-/// and is checked at Save only.
+/// What the Repeats section holds. Kept **as typed**: a half-typed interval
+/// ("", "0") or count stays as it is, in the form and the draft, and is checked
+/// at Save only.
 final class RepeatChoice {
   const RepeatChoice({
     this.frequency = Frequency.monthly,
@@ -38,7 +37,7 @@ final class RepeatChoice {
   final String? endOn;
 
   /// The "After N payments" field as typed: payments in all, the first one
-  /// included (phase-7b.md §5.1). Kept while [end] is something else.
+  /// included. Kept while [end] is something else.
   final String countText;
 
   RepeatChoice copyWith({
@@ -100,16 +99,15 @@ final _digits = RegExp(r'^[0-9]+$');
 
 const maxRepeatInterval = 99;
 
-/// The most payments "After N payments" takes (phase-7b.md §5.1).
+/// The most payments "After N payments" takes.
 const maxRepeatCount = 999;
 
-/// What the After field holds when After is picked with nothing typed:
-/// the flow's example (§8.1 A), so the row always says what it means, as
-/// "On" shows a date (phase-7a.md §12a D2).
+/// What the After field holds when After is picked with nothing typed: the
+/// flow's example, so the row always says what it means, as "On" shows a date.
 const defaultRepeatCountText = '12';
 
-/// The most earlier payments a Save adds, and the most one generator run
-/// adds per item (P7a-13).
+/// The most earlier payments a Save adds, and the most one generator run adds
+/// per item.
 const maxPastPayments = 1000;
 
 enum RepeatError {
@@ -128,13 +126,13 @@ enum RepeatError {
   /// More than [maxPastPayments] earlier payments.
   tooManyPast,
 
-  /// After N payments, N not 2 to [maxRepeatCount] (phase-7b.md §5.1).
+  /// After N payments, N not 2 to [maxRepeatCount].
   countRange,
 }
 
 /// The schedule a Save stores for a first payment on [startOn]. "After N
-/// payments" is stored as the N-th payment's date (P7b-1). Only for a
-/// choice [validateRepeat] accepts.
+/// payments" is stored as the N-th payment's date. Only for a choice
+/// [validateRepeat] accepts.
 Schedule scheduleFor(RepeatChoice c, String startOn) {
   final interval = c.interval;
   if (interval == null) {
@@ -191,9 +189,9 @@ RepeatError? validateRepeat(
   return null;
 }
 
-/// What the Repeats section says under the rule: the earlier payments a
-/// Save adds, how many in all, the next payment after them and, when it
-/// ends, its last payment (phase-7b.md §8.2).
+/// What the Repeats section says under the rule: the earlier payments a Save
+/// adds, how many in all, the next payment after them and, when it ends, its
+/// last payment.
 typedef RepeatSummary = ({
   List<String> past,
   int pastCount,

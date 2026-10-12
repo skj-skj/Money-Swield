@@ -5,8 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:my_expense_tracker_app/data/services/on_device_ai_service.dart';
 import 'package:my_expense_tracker_app/domain/models/app_flavor.dart';
 
-/// `ChannelOnDeviceAiService` over a mocked `expense_tracker/on_device_ai`
-/// (phase-9b.md §6.1).
+/// `ChannelOnDeviceAiService` over a mocked `expense_tracker/on_device_ai`.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   const channel = MethodChannel('expense_tracker/on_device_ai');

@@ -3,7 +3,7 @@
 
 import '../migration/migration.dart';
 
-/// Payment methods, seeded with the built-in ones (database.md §3.3).
+/// Payment methods, seeded with the built-in ones.
 ///
 /// `cash` is the default payment method until the user picks another one
 /// (SettingsRepository falls back to it when the setting is missing).

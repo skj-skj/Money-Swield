@@ -29,7 +29,7 @@ class BinLookups {
   final Map<int, PaymentMethod> paymentMethods;
 
   /// The items the binned payments belong to, for "Payment of Netflix
-  /// (Monthly)" (phase-7a.md §8.7).
+  /// (Monthly)".
   final Map<int, RecurringItem> recurring;
 }
 
@@ -57,8 +57,7 @@ final class BinFailed extends BinState {
   final Object error;
 }
 
-/// How long ago an expense was binned and how long until the purge
-/// removes it (phase-2.md §9.2).
+/// How long ago an expense was binned and how long until the purge removes it.
 typedef BinAge = ({int daysAgo, int? daysLeft});
 
 /// `daysAgo` counts **calendar days** between the device-local dates of
@@ -81,9 +80,8 @@ BinAge binAge(DateTime deletedAt, DateTime now) {
   );
 }
 
-/// The bin: binned expenses with restore and permanent delete
-/// (phase-2.md §9.2). Every action reloads the list. Actions rethrow a
-/// failed write; the screen tells the user.
+/// The bin: binned expenses with restore and permanent delete. Every action
+/// reloads the list. Actions rethrow a failed write; the screen tells the user.
 class BinCubit extends CubitSignal<BinState> with EmitIfOpen<BinState> {
   BinCubit({
     required this._expenses,

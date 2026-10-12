@@ -3,12 +3,11 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../../../../helpers/test_database.dart';
 
-/// The recurring tables and the two columns on `expenses` (phase-7a.md
-/// §4.1, database.md §3.8), as declared: columns, defaults, foreign-key
-/// actions and unique indexes. That SQLite enforces them is SQLite's to
-/// test; what the app relies on is tested where it relies on it (the
-/// generator's duplicate guard, Delete for good, the owner moves).
-/// `all_migrations_test.dart` covers up/down/up.
+/// The recurring tables and the two columns on `expenses`, as declared:
+/// columns, defaults, foreign-key actions and unique indexes. That SQLite
+/// enforces them is SQLite's to test; what the app relies on is tested where it
+/// relies on it (the generator's duplicate guard, Delete for good, the owner
+/// moves). `all_migrations_test.dart` covers up/down/up.
 void main() {
   late Database db;
 
@@ -33,7 +32,7 @@ void main() {
   Future<List<Map<String, Object?>>> foreignKeys(String table) =>
       db.rawQuery('PRAGMA foreign_key_list($table)');
 
-  test('recurring_expenses has the columns of §4.1, NOT NULL where the '
+  test('recurring_expenses has its columns, NOT NULL where the '
       'spec says, and interval_count defaults to 1', () async {
     final byName = {
       for (final c in await columns('recurring_expenses')) c['name']: c,
@@ -76,7 +75,7 @@ void main() {
         reason: '$name',
       );
     }
-    // A plain `1`, never `TRUE` (sqlite.md §5.1), and read back as 1.
+    // A plain `1`, never `TRUE`, and read back as 1.
     expect(byName['interval_count']!['dflt_value'], '1');
     final id = await insertItem();
     final row = (await db.query(
@@ -113,7 +112,7 @@ void main() {
       action(await foreignKeys('expenses'), 'recurring_expense_id'),
       'SET NULL',
     );
-    // Phase 7b: deleting the old item for good keeps its replacement; a
+    // Deleting the old item for good keeps its replacement; a
     // skip goes with its item.
     expect(action(item, 'replaces_id'), 'SET NULL');
     expect(
@@ -122,8 +121,7 @@ void main() {
     );
   });
 
-  test('recurring_skips has its columns, all NOT NULL (phase-7b.md '
-      '§4.1)', () async {
+  test('recurring_skips has its columns, all NOT NULL', () async {
     final byName = {
       for (final c in await columns('recurring_skips')) c['name']: c,
     };

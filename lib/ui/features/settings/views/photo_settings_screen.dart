@@ -12,9 +12,9 @@ import '../../../core/widgets/section_heading.dart';
 import '../view_models/settings_cubit.dart';
 import '../view_models/settings_summary_cubit.dart';
 
-/// Settings → Photos (phase-6.md §8.6, P6-20): how camera and gallery
-/// photos are kept (size and JPEG quality each), what photos use, and
-/// where they live. Changes apply to photos added from now on (P6-28).
+/// Settings → Photos: how camera and gallery photos are kept (size and JPEG
+/// quality each), what photos use, and where they live. Changes apply to photos
+/// added from now on.
 class PhotoSettingsScreen extends StatelessWidget {
   const PhotoSettingsScreen({super.key, required this.summary});
 
@@ -172,7 +172,7 @@ String photoSizeName(AppLocalizations l10n, PhotoSize size) {
 }
 
 /// "1080p", without "(default)", for the tile's summary. The sizes aren't
-/// translated (§10).
+/// translated.
 String photoSizeShortName(AppLocalizations l10n, PhotoSize size) =>
     switch (size) {
       PhotoSize.p720 => '720p',

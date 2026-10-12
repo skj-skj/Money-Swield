@@ -13,11 +13,11 @@ import '../../migration/views/migration_screen.dart';
 import '../view_models/restore_cubit.dart';
 import 'backup_texts.dart';
 
-/// One restore, from picking the file to the restart (phase-3.md §10).
+/// One restore, from picking the file to the restart.
 ///
 /// Back cancels and deletes the candidate at every step but two: while the
-/// candidate migrates (leaving would delete a file the runner still has
-/// open) and while it's swapped in (P3-17).
+/// candidate migrates (leaving would delete a file the runner still has open)
+/// and while it's swapped in.
 class RestoreScreen extends StatefulWidget {
   const RestoreScreen({
     super.key,
@@ -131,8 +131,8 @@ class _RestoreScreenState extends State<RestoreScreen> {
       currentExpenses: state.currentExpenses,
     );
     final candidate = state.candidate;
-    // Photos that don't fit: "Restore without photos" instead of Restore
-    // (P6-17); nothing else would be written.
+    // Photos that don't fit: "Restore without photos" instead of Restore;
+    // nothing else would be written.
     final withoutPhotos = candidate.includesPhotos && !candidate.photosFit;
     final confirmed = await showDialog<bool>(
       context: context,
@@ -333,8 +333,8 @@ class _Refused extends StatelessWidget {
   }
 }
 
-/// The picked backup is larger than the free space (R2): said plainly,
-/// with OK back to Backup & restore.
+/// The picked backup is larger than the free space: said plainly, with OK back
+/// to Backup & restore.
 class _NoSpace extends StatelessWidget {
   const _NoSpace({required this.text});
 

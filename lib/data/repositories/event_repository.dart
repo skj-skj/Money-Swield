@@ -4,7 +4,7 @@ import '../../domain/models/event.dart';
 import '../services/database/sql_helpers.dart';
 import 'data_version.dart';
 
-/// Reads and writes the `events` table (database.md §3.4).
+/// Reads and writes the `events` table.
 ///
 /// Validation (name length, uniqueness, one emoji) is done by the form's
 /// cubit, because uniqueness depends on the localized names of built-ins.
@@ -19,7 +19,7 @@ class EventRepository {
 
   final Database _db;
 
-  /// Bumped after every write (phase-2.md §5).
+  /// Bumped after every write.
   final DataVersion _dataVersion;
 
   final DateTime Function() _now;
@@ -28,9 +28,9 @@ class EventRepository {
   /// screen sorts by display name, which depends on the language.
   Future<List<Event>> all() => allOn(_db);
 
-  /// [all] on [db]: inside a transaction, the transaction's executor (a
-  /// call to the database itself there waits for the transaction to end,
-  /// and so never returns; phase-8.md R13).
+  /// [all] on [db]: inside a transaction, the transaction's executor (a call to
+  /// the database itself there waits for the transaction to end, and so never
+  /// returns).
   static Future<List<Event>> allOn(DatabaseExecutor db) async {
     final rows = await db.query('events');
     return [for (final row in rows) _fromRow(row)];
@@ -106,16 +106,16 @@ class EventRepository {
     _dataVersion.bump();
   }
 
-  /// Deletes the event. Its links cascade and the expenses stay, binned
-  /// ones included (database.md §3.4).
+  /// Deletes the event. Its links cascade and the expenses stay, binned ones
+  /// included.
   Future<void> delete(int id) async {
     await _db.delete('events', where: 'id = ?', whereArgs: [id]);
     _dataVersion.bump();
   }
 
-  /// How many expenses (binned ones included) and recurring items
-  /// (archived ones included) have the event: deleting it removes it from
-  /// all of them (phase-7a.md R3). Shown in the delete confirmation.
+  /// How many expenses (binned ones included) and recurring items (archived
+  /// ones included) have the event: deleting it removes it from all of them.
+  /// Shown in the delete confirmation.
   Future<({int expenses, int templates})> usage(int id) async {
     final expenses = await _db.rawQuery(
       'SELECT COUNT(*) AS n FROM expense_events WHERE event_id = ?',

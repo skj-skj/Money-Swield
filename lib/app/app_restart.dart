@@ -1,13 +1,12 @@
 import 'package:material_ui/material_ui.dart';
 
-/// Restarts everything below `MaterialApp` after a restore swapped the
-/// database file (phase-3.md §6.6). Every repository holds the closed
-/// connection and every screen holds repositories, so patching them one by
-/// one would miss something; rebuilding the tree can't.
-/// What Home says once after a restart that followed a restore: "Backup
-/// restored", that its settings were missing or unreadable (so it was
-/// restored with default settings), or that some photos couldn't be
-/// restored and show as missing (phase-6.md §6.8).
+/// Restarts everything below `MaterialApp` after a restore swapped the database
+/// file. Every repository holds the closed connection and every screen holds
+/// repositories, so patching them one by one would miss something; rebuilding
+/// the tree can't. What Home says once after a restart that followed a restore:
+/// "Backup restored", that its settings were missing or unreadable (so it was
+/// restored with default settings), or that some photos couldn't be restored
+/// and show as missing.
 class RestoreNotice {
   const RestoreNotice({this.settingsReset = false, this.failedPhotos = 0});
 

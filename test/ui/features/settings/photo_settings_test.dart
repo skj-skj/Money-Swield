@@ -10,7 +10,7 @@ import 'package:my_expense_tracker_app/ui/features/settings/views/photo_settings
 import '../../../helpers/pump_app.dart';
 import '../../../helpers/test_database.dart';
 
-/// Settings → Photos and the tiles' summaries (phase-6.md §8.6, R15).
+/// Settings → Photos and the tiles' summaries.
 void main() {
   late AppDependencies deps;
 
@@ -82,7 +82,7 @@ void main() {
   });
 
   testWidgets('the tile: "Camera 1080p · Gallery 1080p · 1.0 MB"; Last '
-      'backup comes from the same cubit (R15)', (tester) async {
+      'backup comes from the same cubit', (tester) async {
     await tester.runAsync(() async {
       await addWithPhotos([('a', 1024 * 1024)]);
       await deps.backups.recordBackup(DateTime.now().toUtc());

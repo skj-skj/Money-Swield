@@ -27,13 +27,12 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 
 /**
- * `expense_tracker/on_device_ai`, play only (phase-9b.md §6.1, P9b-2):
- * Gemini Nano through AICore, with ML Kit's GenAI Prompt API. The foss
- * build has a class with this name that answers `unavailable` and holds no
- * Google code (`src/foss`).
+ * `expense_tracker/on_device_ai`, play only: Gemini Nano through AICore, with
+ * ML Kit's GenAI Prompt API. The foss build has a class with this name that
+ * answers `unavailable` and holds no Google code (`src/foss`).
  *
- * The SMS text is handed to the model on the phone and the answer goes
- * back to Dart; nothing is written or logged (phase-9a.md P9a-19).
+ * The SMS text is handed to the model on the phone and the answer goes back to
+ * Dart; nothing is written or logged.
  */
 class OnDeviceAi(messenger: BinaryMessenger, @Suppress("UNUSED_PARAMETER") context: Context) :
     MethodChannel.MethodCallHandler {
@@ -42,9 +41,9 @@ class OnDeviceAi(messenger: BinaryMessenger, @Suppress("UNUSED_PARAMETER") conte
 
     /**
      * Answers go back on the main thread; ML Kit's calls suspend. Whatever
-     * escapes a call's own catch is logged, never thrown: an uncaught
-     * exception in a coroutine on the main thread crashes the app (seen in
-     * a release build, phase-9b.md §12a). Dart times such a call out.
+     * escapes a call's own catch is logged, never thrown: an uncaught exception
+     * in a coroutine on the main thread crashes the app (seen in a release
+     * build). Dart times such a call out.
      */
     private val scope = CoroutineScope(
         SupervisorJob() + Dispatchers.Main +
@@ -54,7 +53,7 @@ class OnDeviceAi(messenger: BinaryMessenger, @Suppress("UNUSED_PARAMETER") conte
     /**
      * The "fast" model (`nano-v4-fast` on the Pixel 11 Pro): one short JSON
      * answer per SMS, about 0.7 s each, so speed matters more than the full
-     * model's quality (phase-9b.md §12a, gate).
+     * model's quality (gate).
      */
     private val stable: GenerativeModel by lazy { client(ModelReleaseStage.STABLE) }
 
@@ -126,11 +125,11 @@ class OnDeviceAi(messenger: BinaryMessenger, @Suppress("UNUSED_PARAMETER") conte
     }
 
     /**
-     * Downloads the stable model (P9b-34: only when the user turns the AI
-     * on). Answers `true` when it is in, an error when it failed; it may
-     * take long, or (seen on the owner's Pixel) never answer, so Dart never
-     * waits on it: it shows "Downloading the model…" and reads [status]
-     * again. A second call while one runs answers `true` at once.
+     * Downloads the stable model (only when the user turns the AI on). Answers
+     * `true` when it is in, an error when it failed; it may take long, or (seen
+     * on the owner's Pixel) never answer, so Dart never waits on it: it shows
+     * "Downloading the model…" and reads [status] again. A second call while
+     * one runs answers `true` at once.
      */
     private fun download(result: MethodChannel.Result) {
         if (downloading?.isActive == true) {
@@ -162,8 +161,8 @@ class OnDeviceAi(messenger: BinaryMessenger, @Suppress("UNUSED_PARAMETER") conte
 
     /**
      * One prompt, answered with the model's text, or an error whose code is
-     * `background`, `busy`, `quota`, `timeout` or `failed` (§6.1). The
-     * message holds ML Kit's number only, never the text.
+     * `background`, `busy`, `quota`, `timeout` or `failed`. The message holds
+     * ML Kit's number only, never the text.
      */
     private fun prompt(text: String, timeoutMs: Long, result: MethodChannel.Result) {
         scope.launch {

@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:my_expense_tracker_app/data/services/xlsx/xlsx_writer.dart';
 import 'package:my_expense_tracker_app/l10n/app_localizations.dart';
 
-/// phase-8.md §6.5 and §12 "Xlsx writer": decode the zip, read the XML.
+/// The .xlsx writer: decode the zip, read the XML.
 void main() {
   Map<String, String> parts(XlsxWorkbook book) {
     final archive = ZipDecoder().decodeBytes(writeXlsx(book));

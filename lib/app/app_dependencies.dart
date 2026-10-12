@@ -56,11 +56,11 @@ class AppDependencies {
   /// with an in-memory database; [restoreTools] defaults to the real
   /// database file and dialogs, which such tests never reach.
   ///
-  /// [photoRoot] is the app's external files folder (`databases/` and the
-  /// photo folders). Without it the app has no photo folder: photos read
-  /// as missing and nothing is swept, for tests that never touch photos.
-  /// [sweepPhotos] false leaves out the startup sweep: widget tests, where
-  /// its real file I/O never completes (phase-6.md F17).
+  /// [photoRoot] is the app's external files folder (`databases/` and the photo
+  /// folders). Without it the app has no photo folder: photos read as missing
+  /// and nothing is swept, for tests that never touch photos. [sweepPhotos]
+  /// false leaves out the startup sweep: widget tests, where its real file I/O
+  /// never completes.
   factory AppDependencies.forDatabase(
     Database database, {
     required String deviceCurrency,
@@ -185,11 +185,10 @@ class AppDependencies {
   );
 
   /// Runs one small query per repository on [db], the way the app does on
-  /// start: settings, a page of expenses, today's amounts (Home's totals,
-  /// phase-5.md R10), the categories, events, payment
-  /// methods and the draft slot (read-only: an unreadable draft is fine
-  /// and stays, R10). A restore runs it on the candidate before swapping it
-  /// in, so a database that can't start the app is refused (§6.4 step 3).
+  /// start: settings, a page of expenses, today's amounts (Home's totals), the
+  /// categories, events, payment methods and the draft slot (read-only: an
+  /// unreadable draft is fine and stays). A restore runs it on the candidate
+  /// before swapping it in, so a database that can't start the app is refused.
   static Future<void> probe(
     Database db, {
     required String deviceCurrency,
@@ -211,35 +210,34 @@ class AppDependencies {
       dataVersion: dataVersion,
     ).all();
     await ExpenseDraftRepository.probe(db);
-    // Both photo tables, as the form and Settings read them (R12).
+    // Both photo tables, as the form and Settings read them.
     await expenses.photosOf(0);
     await expenses.photoStats();
-    // The recurring columns and tables, named (phase-7a.md R4): `page`
-    // above passes a database without them. A Phase 6 backup has
-    // create_expenses applied but none of this schema, so it is refused
-    // here instead of failing at the generator after the swap.
+    // The recurring columns and tables, named: `page` above passes a database
+    // without them. An older backup has create_expenses applied but none of
+    // this schema, so it is refused here instead of failing at the generator
+    // after the swap.
     await RecurringRepository.probe(db);
-    // A new table must be named here too (phase-9a.md R6): a backup
-    // without it would pass and fail at the first scan.
+    // A new table must be named here too: a backup without it would pass and
+    // fail at the first scan.
     await SmsSuggestionRepository.probe(db);
   }
 
-  /// Closes the database for a restore's swap (phase-3.md §6.4): first
-  /// writes the draft that is due and stops further draft writes, so
-  /// nothing of this database is written after it closes, nor into the
-  /// restored one (phase-4.md §6.4).
+  /// Closes the database for a restore's swap: first writes the draft that is
+  /// due and stops further draft writes, so nothing of this database is written
+  /// after it closes, nor into the restored one.
   Future<void> closeForRestore() async {
-    // A running scan writes nothing more, and its write in flight (if any)
-    // ends before the database closes (R14).
+    // A running scan writes nothing more, and its write in flight (if any) ends
+    // before the database closes.
     smsScanner.close();
     await smsScanner.idle;
     await drafts.close();
     await database.close();
   }
 
-  /// Stays open for the app's lifetime, like the cubits made in main().
-  /// Only a restore closes it, right before swapping the file, and then
-  /// restarts the app (phase-3.md §6.6).
+  /// Stays open for the app's lifetime, like the cubits made in main(). Only a
+  /// restore closes it, right before swapping the file, and then restarts the
+  /// app.
   final Database database;
   final SettingsRepository settings;
   final CategoryRepository categories;
@@ -247,39 +245,37 @@ class AppDependencies {
   final PaymentMethodRepository paymentMethods;
   final ExpenseRepository expenses;
 
-  /// Recurring items and the generator (phase-7a.md §6.1).
+  /// Recurring items and the generator.
   final RecurringRepository recurring;
 
-  /// Suggestions from bank SMS (phase-9a.md §6.1). Not part of
-  /// [dataVersion]: a suggestion changes nothing Home lists; Save bumps it
-  /// through [expenses].
+  /// Suggestions from bank SMS. Not part of [dataVersion]: a suggestion changes
+  /// nothing Home lists; Save bumps it through [expenses].
   final SmsSuggestionRepository smsSuggestions;
 
-  /// The phone's SMS inbox and permission (§6.4).
+  /// The phone's SMS inbox and permission.
   final SmsService sms;
 
-  /// The on-device model that reads SMS on play (phase-9b.md §6.1);
-  /// `unavailable` on foss.
+  /// The on-device model that reads SMS on play; `unavailable` on foss.
   final OnDeviceAiService ai;
 
-  /// Reads new bank SMS into [smsSuggestions] (§6.3).
+  /// Reads new bank SMS into [smsSuggestions].
   final SmsScanner smsScanner;
 
-  /// Reads reports (phase-8.md §6.1); writes nothing.
+  /// Reads reports; writes nothing.
   final ReportRepository reports;
 
-  /// Writes, saves and shares a report's PDF and Excel files (§6.3).
+  /// Writes, saves and shares a report's PDF and Excel files.
   final ReportExportService reportExports;
 
-  /// The unsaved Add/Edit form (phase-4.md §6.4). Not part of
-  /// [dataVersion]: a draft changes nothing Home counts.
+  /// The unsaved Add/Edit form. Not part of [dataVersion]: a draft changes
+  /// nothing Home counts.
   final ExpenseDraftRepository drafts;
 
-  /// The photo files (phase-6.md §6.2).
+  /// The photo files.
   final PhotoStore photos;
 
-  /// Deletes unused photo rows and files once per start (§6.5); null
-  /// without a photo folder.
+  /// Deletes unused photo rows and files once per start; null without a photo
+  /// folder.
   final PhotoSweeper? photoSweeper;
 
   final BackupRepository backups;

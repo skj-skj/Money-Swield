@@ -10,15 +10,15 @@ import '../../../core/widgets/photos/photo_selection_bar.dart';
 import '../../../core/widgets/sheet_messenger.dart';
 import '../view_models/expense_form_cubit.dart';
 
-/// The expense's photos (phase-6.md §8.3), like Itemize: a sheet with a
-/// two-column grid ending in a **+** tile while there is room. It follows
-/// the cubit, so photos added from inside it appear.
+/// The expense's photos, like Itemize: a sheet with a two-column grid ending in
+/// a **+** tile while there is room. It follows the cubit, so photos added from
+/// inside it appear.
 ///
-/// A tap opens the viewer ([onOpen]); a long press starts selection
-/// (§8.10), whose bar replaces the title row at the sheet's top right
-/// (owner rev 7). That row stays pinned while the photos scroll. Back
-/// leaves selection before the sheet. Messages are snackbars over the
-/// sheet's bottom ([SheetMessenger]): the screen's own would be under it.
+/// A tap opens the viewer ([onOpen]); a long press starts selection, whose bar
+/// replaces the title row at the sheet's top right (owner rev 7). That row
+/// stays pinned while the photos scroll. Back leaves selection before the
+/// sheet. Messages are snackbars over the sheet's bottom ([SheetMessenger]):
+/// the screen's own would be under it.
 Future<void> showPhotosSheet(
   BuildContext context, {
   required ExpenseFormCubit cubit,

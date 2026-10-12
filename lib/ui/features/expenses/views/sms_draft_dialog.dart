@@ -4,9 +4,9 @@ import '../../../../domain/models/expense_draft.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/widgets/confirm_dialog.dart';
 
-/// Asks before an SMS card's form dismisses [draft] (phase-9a.md §8.4,
-/// P9a-3, P9a-51): **Cancel** (the default; back is Cancel too) or
-/// **Dismiss draft**, which deletes it for good (P9a-50: no Undo). An Edit
+/// Asks before an SMS card's form dismisses [draft]: **Cancel** (the default;
+/// back is Cancel too) or
+/// **Dismiss draft**, which deletes it for good (no Undo). An Edit
 /// draft's message names the expense by the title it has in the draft;
 /// the stored expense stays as it was. True when the user chose Dismiss
 /// draft.

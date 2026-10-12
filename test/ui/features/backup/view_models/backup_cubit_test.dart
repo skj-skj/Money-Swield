@@ -154,7 +154,7 @@ void main() {
     expect(cubit.value.newestCopy, isNull);
   });
 
-  group('waits for a running SMS scan (phase-9a.md §6.7)', () {
+  group('waits for a running SMS scan', () {
     BackupCubit waitingCubit(
       Future<void>? Function() scan, {
       ValueListenable<ScanProgress?>? progress,
@@ -189,7 +189,7 @@ void main() {
     });
 
     test('with the on-device model: the count follows the scan, and is '
-        'gone after (phase-9b.md §6.2)', () async {
+        'gone after', () async {
       final scan = Completer<void>();
       final progress = ValueNotifier<ScanProgress?>((done: 3, total: 40));
       final waiting = waitingCubit(() => scan.future, progress: progress);

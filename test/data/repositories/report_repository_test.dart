@@ -8,7 +8,6 @@ import 'package:my_expense_tracker_app/domain/report_range.dart';
 
 import '../../helpers/recurring_fixture.dart';
 
-/// phase-8.md §4.1, §6.1 and §12 "Repository".
 void main() {
   late RecurringFixture f;
   late ReportRepository reports;
@@ -205,7 +204,7 @@ void main() {
     );
   });
 
-  group('plans on 3.22 (F1, F13): the date index, no temp B-tree', () {
+  group('plans on 3.22: the date index, no temp B-tree', () {
     Future<List<String>> plan(ReportRange range, ReportFilter filter) async {
       final sql = ReportRepository.reportSql(range, filter);
       final args = range.isAllTime

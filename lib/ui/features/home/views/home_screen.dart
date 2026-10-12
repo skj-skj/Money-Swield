@@ -42,10 +42,9 @@ import 'filter_sheet.dart';
 import 'home_list_slivers.dart';
 import 'trend_card.dart';
 
-/// The Home tab (phase-2.md §7, phase-5.md §8.1): the trend card, the
-/// filter bar, the amount chips and every expense in outlined groups (a
-/// day, week, month or year each) with sticky tops, day headers inside
-/// them and subtotals per currency.
+/// The Home tab: the trend card, the filter bar, the amount chips and every
+/// expense in outlined groups (a day, week, month or year each) with sticky
+/// tops, day headers inside them and subtotals per currency.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
     super.key,
@@ -58,17 +57,17 @@ class HomeScreen extends StatefulWidget {
 
   final AppDependencies dependencies;
 
-  /// The app-level SMS state (phase-9a.md §7.1): the SMS icon and its
-  /// badge. Null: no icon (tests that don't need it).
+  /// The app-level SMS state: the SMS icon and its badge. Null: no icon (tests
+  /// that don't need it).
   final SmsCubit? sms;
 
-  /// What the recurring generator did at startup (phase-7a.md §8.6, §8.9):
-  /// said once, after the restore message.
+  /// What the recurring generator did at startup: said once, after the restore
+  /// message.
   final GenerateReport recurringReport;
 
-  /// Said once, right after the app restarted on restored data
-  /// (phase-3.md §6.6): "Backup restored", or that its settings were
-  /// missing and the defaults are used. Null says nothing.
+  /// Said once, right after the app restarted on restored data: "Backup
+  /// restored", or that its settings were missing and the defaults are used.
+  /// Null says nothing.
   final RestoreNotice? restoreNotice;
 
   /// Whether this tab is the one shown. The shell keeps the tab alive while
@@ -105,8 +104,8 @@ class _HomeScreenState extends State<HomeScreen> with ScrollPaging<HomeScreen> {
     weekStart: _startSettings.weekStart,
   )..load();
 
-  /// Opens the form with Home's draft rules and double-tap guard, shared
-  /// with the Photos screen (phase-6.md R17).
+  /// Opens the form with Home's draft rules and double-tap guard, shared with
+  /// the Photos screen.
   late final _opener = ExpenseFormOpener(
     dependencies: widget.dependencies,
     pendingDraft: _cubit.pendingDraft,
@@ -131,10 +130,10 @@ class _HomeScreenState extends State<HomeScreen> with ScrollPaging<HomeScreen> {
   @override
   double get loadMoreLead => 5 * 72.0;
 
-  /// Fires at the next local midnight, so a new day can start a new week,
-  /// month or year on the card and in the names (R5) while the app is
-  /// open. Timers don't run while the app is in the background, so
-  /// resuming checks again ([_lifecycle]).
+  /// Fires at the next local midnight, so a new day can start a new week, month
+  /// or year on the card and in the names while the app is open. Timers don't
+  /// run while the app is in the background, so resuming checks again
+  /// ([_lifecycle]).
   Timer? _midnight;
   late final AppLifecycleListener _lifecycle;
 
@@ -143,9 +142,9 @@ class _HomeScreenState extends State<HomeScreen> with ScrollPaging<HomeScreen> {
     super.initState();
     _lifecycle = AppLifecycleListener(onResume: _rebuildForNewDay);
     _scheduleMidnight();
-    // On Home's own messenger, like its other snackbars, so the FAB moves
-    // up for it instead of being covered. The restore message first, then
-    // what the recurring generator did, queued behind it (§7.5).
+    // On Home's own messenger, like its other snackbars, so the FAB moves up
+    // for it instead of being covered. The restore message first, then what the
+    // recurring generator did, queued behind it.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       if (widget.restoreNotice case final notice?) _showRestoreNotice(notice);
@@ -169,10 +168,10 @@ class _HomeScreenState extends State<HomeScreen> with ScrollPaging<HomeScreen> {
     }
   }
 
-  /// "Added 2 recurring expenses" (no Undo: delete them one by one, P7a-8),
-  /// and the backlogs waiting: "Gym has 10 payments waiting" (Review) for
-  /// one (its page), "2 recurring items have payments waiting" (Review)
-  /// for several (the list). Queued behind what is showing.
+  /// "Added 2 recurring expenses" (no Undo: delete them one by one), and the
+  /// backlogs waiting: "Gym has 10 payments waiting" (Review) for one (its
+  /// page), "2 recurring items have payments waiting" (Review) for several (the
+  /// list). Queued behind what is showing.
   void _showRecurringReport(GenerateReport report) {
     final l10n = AppLocalizations.of(context);
     final messenger = _messenger.currentState;
@@ -234,9 +233,9 @@ class _HomeScreenState extends State<HomeScreen> with ScrollPaging<HomeScreen> {
     _midnight = Timer(nextMidnight.difference(now), _rebuildForNewDay);
   }
 
-  /// Names are computed in build from the clock; the card reloads, so it
-  /// shows the new current period (R5). On a new day the recurring
-  /// payments that came due are added too (phase-7a.md R12).
+  /// Names are computed in build from the clock; the card reloads, so it shows
+  /// the new current period. On a new day the recurring payments that came due
+  /// are added too.
   void _rebuildForNewDay() {
     if (!mounted) return;
     setState(() {});
@@ -264,7 +263,7 @@ class _HomeScreenState extends State<HomeScreen> with ScrollPaging<HomeScreen> {
   /// Reloads the list and the card after a write (save, bin, Undo).
   Future<void> _reload() => Future.wait([_cubit.reload(), _trend.load()]);
 
-  /// Only if something was written since the last load (P2-14).
+  /// Only if something was written since the last load.
   Future<void> _reloadIfChanged() async {
     if (await _cubit.reloadIfChanged()) await _trend.load();
   }
@@ -282,8 +281,8 @@ class _HomeScreenState extends State<HomeScreen> with ScrollPaging<HomeScreen> {
   void loadMore() => _cubit.loadMore();
 
   /// Opens Add (no [expenseId]; [chipAmount] from a chip) or Edit
-  /// ([ExpenseFormOpener]), then reloads what the form changed and says
-  /// what happened, on Home's own messenger (phase-2.md §9.1, §12a).
+  /// ([ExpenseFormOpener]), then reloads what the form changed and says what
+  /// happened, on Home's own messenger.
   Future<void> _openForm({int? expenseId, Money? chipAmount}) async {
     final (:opened, :result) = await _opener.open(
       context,
@@ -308,10 +307,9 @@ class _HomeScreenState extends State<HomeScreen> with ScrollPaging<HomeScreen> {
     );
   }
 
-  /// The Photos screen, for Home's filters (phase-6.md §8.9). Photos can
-  /// be deleted and expenses edited there, so back here the list reloads
-  /// if anything changed (with the icon's state), and the unsaved mark is
-  /// read again.
+  /// The Photos screen, for Home's filters. Photos can be deleted and expenses
+  /// edited there, so back here the list reloads if anything changed (with the
+  /// icon's state), and the unsaved mark is read again.
   Future<void> _openPhotos(ExpenseFilter filter) async {
     await Navigator.push<void>(
       context,
@@ -325,9 +323,9 @@ class _HomeScreenState extends State<HomeScreen> with ScrollPaging<HomeScreen> {
     await _cubit.refreshDraftMark();
   }
 
-  /// The SMS screen (phase-9a.md §8.2). Expenses are added there, so back
-  /// here the list reloads if anything changed, and the draft mark is read
-  /// again (a draft may have been dismissed or saved there).
+  /// The SMS screen. Expenses are added there, so back here the list reloads if
+  /// anything changed, and the draft mark is read again (a draft may have been
+  /// dismissed or saved there).
   Future<void> _openSms(SmsCubit sms) async {
     await Navigator.push<void>(
       context,
@@ -340,15 +338,15 @@ class _HomeScreenState extends State<HomeScreen> with ScrollPaging<HomeScreen> {
     await _cubit.refreshDraftMark();
   }
 
-  /// No active expenses at all (and no filter): the empty state, without
-  /// the card and the filter bar (P5-20).
+  /// No active expenses at all (and no filter): the empty state, without the
+  /// card and the filter bar.
   static bool _isEmptyHome(ExpenseListState state) =>
       state is ExpenseListLoaded &&
       state.expenses.isEmpty &&
       state.filter.isEmpty;
 
-  /// The SMS icon with its badge (§8.1), following the SMS state; hidden
-  /// while SMS is off. Null without the SMS state.
+  /// The SMS icon with its badge, following the SMS state; hidden while SMS is
+  /// off. Null without the SMS state.
   Widget? _smsButton() => switch (widget.sms) {
     final sms? => BlocSignalBuilder<SmsCubit, SmsState>(
       bloc: sms,
@@ -359,10 +357,10 @@ class _HomeScreenState extends State<HomeScreen> with ScrollPaging<HomeScreen> {
     null => null,
   };
 
-  /// Upcoming payments for Home's filters (phase-7b.md §8.3; owner,
-  /// 2026-10-10: like the Photos screen). Skips, stops and the item pages
-  /// opened there change data: back here the list reloads if anything
-  /// changed (DataVersion), with the trend card.
+  /// Upcoming payments for Home's filters (owner, 2026-10-10: like the Photos
+  /// screen). Skips, stops and the item pages opened there change data: back
+  /// here the list reloads if anything changed (DataVersion), with the trend
+  /// card.
   Future<void> _openUpcoming(ExpenseFilter filter) async {
     await Navigator.push<void>(
       context,
@@ -396,7 +394,7 @@ class _HomeScreenState extends State<HomeScreen> with ScrollPaging<HomeScreen> {
       recent: recent,
     );
     if (code == null || !mounted) return;
-    // D1: the default for new expenses only; existing ones keep theirs.
+    // The default for new expenses only; existing ones keep theirs.
     final settingsCubit = context.read<SettingsCubit>();
     await saveOrShowError(
       _messengerContext,
@@ -404,9 +402,9 @@ class _HomeScreenState extends State<HomeScreen> with ScrollPaging<HomeScreen> {
     );
   }
 
-  /// The chips, groups and card follow the settings, wherever they are
-  /// changed (Home or Settings): settings writes don't bump `DataVersion`
-  /// (R6). Each setter does nothing when its value didn't change.
+  /// The chips, groups and card follow the settings, wherever they are changed
+  /// (Home or Settings): settings writes don't bump `DataVersion`. Each setter
+  /// does nothing when its value didn't change.
   void _onSettings(BuildContext context, AppSettings settings) {
     _cubit.setDefaultCurrency(settings.defaultCurrency);
     _trend.setDefaultCurrency(settings.defaultCurrency);
@@ -419,7 +417,7 @@ class _HomeScreenState extends State<HomeScreen> with ScrollPaging<HomeScreen> {
     _trend.setWeekStart(settings.weekStart);
   }
 
-  /// After the filters or the grouping changed (P5-34).
+  /// After the filters or the grouping changed.
   void _scrollToTop() {
     if (pagingScroll.hasClients) pagingScroll.jumpTo(0);
   }
@@ -458,8 +456,8 @@ class _HomeScreenState extends State<HomeScreen> with ScrollPaging<HomeScreen> {
     if (result.filter != state.filter) await _setFilter(result.filter);
   }
 
-  /// A swipe on the card turned it [steps] faces: shown at once, then
-  /// saved, once per swipe however far the reel spun (P5-1).
+  /// A swipe on the card turned it [steps] faces: shown at once, then saved,
+  /// once per swipe however far the reel spun.
   void _turnCard(int steps) {
     final period = _trend.turn(steps);
     final settings = context.read<SettingsCubit>();
@@ -489,10 +487,10 @@ class _HomeScreenState extends State<HomeScreen> with ScrollPaging<HomeScreen> {
         title: Text(l10n.appTitle),
         actions: [
           // The SMS icon, left of the currency button, only while Home is
-          // empty: there is no filter bar then (P5-20), and without it a
-          // new user had no way to their suggestions (found on the Oppo).
-          // Once an expense exists it lives in the filter bar's icon row
-          // only (owner, 2026-10-11).
+          // empty: there is no filter bar then, and without it a new user had
+          // no way to their suggestions (found on the Oppo). Once an expense
+          // exists it lives in the filter bar's icon row only (owner,
+          // 2026-10-11).
           if (_smsButton() case final sms?)
             BlocSignalBuilder<ExpenseListCubit, ExpenseListState>(
               bloc: _cubit,
@@ -533,8 +531,8 @@ class _HomeScreenState extends State<HomeScreen> with ScrollPaging<HomeScreen> {
         listener: _onSettings,
         child: BlocSignalListener<ExpenseListCubit, ExpenseListState>(
           bloc: _cubit,
-          // The card follows the list's filter (P5-31), including when a
-          // reload dropped a deleted category from it.
+          // The card follows the list's filter, including when a reload dropped
+          // a deleted category from it.
           listenWhen: (previous, current) =>
               current is ExpenseListLoaded &&
               (previous is! ExpenseListLoaded ||
@@ -582,11 +580,11 @@ class _HomeScreenState extends State<HomeScreen> with ScrollPaging<HomeScreen> {
       chips: state.chips,
       onTap: (amount) => _openForm(chipAmount: amount),
     );
-    // No active expenses at all: no card, no filter bar (P5-20).
+    // No active expenses at all: no card, no filter bar.
     if (_isEmptyHome(state)) {
       return Column(
         children: [
-          // Shown on the empty state too (phase-4.md §8.1).
+          // Shown on the empty state too.
           chips,
           Expanded(
             child: EmptyStateView(

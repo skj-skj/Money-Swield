@@ -20,7 +20,7 @@ import 'package:my_expense_tracker_app/ui/core/period_names.dart';
 import 'package:my_expense_tracker_app/ui/features/reports/report_document_builder.dart';
 import 'package:my_expense_tracker_app/ui/features/reports/views/report_texts.dart';
 
-/// phase-8.md §12 "Document builder" (owner's overhaul, 2026-10-10): the
+/// The document builder (owner's overhaul, 2026-10-10): the
 /// PDF's blocks and the Excel sheets from a report, without widgets.
 void main() {
   setUpAll(initializeDateFormatting);

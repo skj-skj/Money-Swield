@@ -18,8 +18,8 @@ import 'test_folders.dart';
 /// (`files/databases/`, `cache/`), deleted when the test ends.
 ///
 /// Tests run on Windows, where an open file can't be deleted or renamed: a
-/// connection left open fails the teardown or the swap. That is a useful
-/// leak detector (phase-3.md §12): fix the leak, don't loosen the test.
+/// connection left open fails the teardown or the swap. That is a useful leak
+/// detector: fix the leak, don't loosen the test.
 class FileDatabases {
   FileDatabases._(this.root, this.factory);
 

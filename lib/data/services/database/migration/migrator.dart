@@ -483,9 +483,9 @@ class Migrator {
         : null;
 
     // Drop the old table, then rename the new one into its place: nothing
-    // references the temporary name, so SQLite below and above 3.26 agree
-    // on what happens to other tables' foreign keys. Renaming the old table
-    // out of the way first would break them on 3.26+ (sqlite.md §4).
+    // references the temporary name, so SQLite below and above 3.26 agree on
+    // what happens to other tables' foreign keys. Renaming the old table out of
+    // the way first would break them on 3.26+.
     await _db.execute('DROP TABLE ${quote(table)}');
     await _db.execute(
       'ALTER TABLE ${quote(temporary)} RENAME TO ${quote(table)}',
@@ -513,10 +513,10 @@ class Migrator {
 
   /// The highest id [table] ever handed out, or null if none was.
   ///
-  /// `seq` may be NULL: SQLite 3.22 (Android 10) writes `(table, NULL)`
-  /// when [_rebuild] copies no rows while `sqlite_sequence` is still empty
-  /// (sqlite.md §4). NULL means no id was handed out, so it reads as null;
-  /// a `!` here crashed the second rebuild of such a table.
+  /// `seq` may be NULL: SQLite 3.22 (Android 10) writes `(table, NULL)` when
+  /// [_rebuild] copies no rows while `sqlite_sequence` is still empty. NULL
+  /// means no id was handed out, so it reads as null; a `!` here crashed the
+  /// second rebuild of such a table.
   Future<int?> _autoIncrementCounter(String table) async {
     if (!await _reader.tableExists('sqlite_sequence')) return null;
     final rows = await _db.query(

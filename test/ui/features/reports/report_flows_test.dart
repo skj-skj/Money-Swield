@@ -19,9 +19,8 @@ import '../../../helpers/fake_report_export_service.dart';
 import '../../../helpers/pump_app.dart';
 import '../../../helpers/test_database.dart';
 
-/// Phase 8's flows through the real app (phase-8.md §12 "Widgets", the
-/// owner's overhaul of 2026-10-10), on the Oppo's 360 dp: an overflow
-/// anywhere fails.
+/// The Reports flows through the real app (the owner's overhaul of 2026-10-10),
+/// on the Oppo's 360 dp: an overflow anywhere fails.
 void main() {
   late AppDependencies deps;
   late TestClock clock;

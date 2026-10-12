@@ -354,7 +354,7 @@ void main() {
     expect(identical(loaded(cubit), before), isFalse);
   });
 
-  // Regressions found in the Phase 5 review (2026-10-06).
+  // Regressions found in review (2026-10-06).
   group('a regroup or a failed filter during a load', () {
     test('setWeekStart during the first load still shows the list', () async {
       await add('2026-10-05');

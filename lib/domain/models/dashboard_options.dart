@@ -1,5 +1,5 @@
-/// How Home's trend card is drawn (phase-5.md P5-28; owner, 2026-10-06
-/// added [dots] and [runningTotal]). Colours come only from the theme.
+/// How Home's trend card is drawn (owner, 2026-10-06 added [dots] and
+/// [runningTotal]). Colours come only from the theme.
 enum TrendChartStyle {
   /// A smooth line, the area under it filled (the default).
   lineFilled,
@@ -18,8 +18,8 @@ enum TrendChartStyle {
   runningTotal,
 }
 
-/// Whether the trend card stays at the top of Home or scrolls away with
-/// the list (phase-5.md P5-11).
+/// Whether the trend card stays at the top of Home or scrolls away with the
+/// list.
 enum TrendCardPosition { locked, scrolls }
 
 /// How tall the trend card is (owner, 2026-10-06): a smaller card leaves
@@ -31,7 +31,6 @@ enum TrendCardSize { small, medium, large }
 /// or strong one. Android's own touch-feedback switch still applies.
 enum CardHaptics { off, light, medium, strong }
 
-/// The report card's faces, in reel order (phase-8.md §8.5, P8-2): bars
-/// (the default) and a donut. No trend line (owner, 2026-10-10: a report
-/// is an overview).
+/// The report card's faces, in reel order: bars (the default) and a donut. No
+/// trend line (owner, 2026-10-10: a report is an overview).
 enum ReportChart { bars, donut }

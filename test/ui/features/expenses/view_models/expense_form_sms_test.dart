@@ -10,8 +10,7 @@ import 'package:my_expense_tracker_app/ui/features/expenses/view_models/expense_
 import '../../../../helpers/fake_timers.dart';
 import '../../../../helpers/test_database.dart';
 
-/// The Add form filled from an SMS suggestion (phase-9a.md §7.3, §12
-/// "Cubits").
+/// The Add form filled from an SMS suggestion.
 void main() {
   late AppDependencies deps;
   late TestClock clock;

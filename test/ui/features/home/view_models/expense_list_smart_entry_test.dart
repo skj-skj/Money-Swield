@@ -12,7 +12,7 @@ import 'package:my_expense_tracker_app/ui/features/home/view_models/expense_list
 import '../../../../helpers/fake_timers.dart';
 import '../../../../helpers/test_database.dart';
 
-/// Home's chips and unsaved mark (phase-4.md §8, §9).
+/// Home's chips and unsaved mark.
 void main() {
   late AppDependencies deps;
   late TestClock clock;

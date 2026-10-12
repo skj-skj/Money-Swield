@@ -10,11 +10,10 @@ import 'confirm_dialog.dart';
 import 'save_error.dart';
 import 'tile_picker.dart';
 
-/// Delete for a category or payment method (D7, phase-2.md §10.1): a plain
-/// confirm when nothing uses it; otherwise ask where to move its expenses,
-/// binned ones included, and its recurring items, archived ones included
-/// (phase-7a.md R2), then move and delete in one transaction. Returns
-/// whether it was deleted.
+/// Delete for a category or payment method: a plain confirm when nothing uses
+/// it; otherwise ask where to move its expenses, binned ones included, and its
+/// recurring items, archived ones included, then move and delete in one
+/// transaction. Returns whether it was deleted.
 ///
 /// One copy for both forms, so the two delete flows can't drift apart.
 /// [targets] are the other items; they are shown in name order, like the
@@ -80,10 +79,9 @@ String ownerUsageMessage(AppLocalizations l10n, String name, OwnerUsage usage) {
 }
 
 /// Asks where to move the expenses of a category or payment method that is
-/// about to be deleted (D7, phase-2.md §10.1). [message] says how many use
-/// it; [items] are the possible targets. Returns the picked target's id, or
-/// null if cancelled. Nothing is picked at first, so "Move and delete"
-/// starts disabled.
+/// about to be deleted. [message] says how many use it; [items] are the
+/// possible targets. Returns the picked target's id, or null if cancelled.
+/// Nothing is picked at first, so "Move and delete" starts disabled.
 Future<int?> showMoveDialog(
   BuildContext context, {
   required String message,

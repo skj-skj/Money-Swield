@@ -25,7 +25,7 @@ void main() {
     addTearDown(tester.view.reset);
   }
 
-  /// Settings → Look, where these rows live since Phase 5's grid.
+  /// Settings → Look, where these rows live.
   Future<void> openSettings(WidgetTester tester, AppDependencies deps) async {
     await pumpApp(tester, dependencies: deps);
     await tester.tap(find.widgetWithText(NavigationDestination, 'Settings'));

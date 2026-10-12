@@ -15,7 +15,7 @@ import '../helpers/fake_report_export_service.dart';
 import '../helpers/file_database.dart';
 import '../helpers/test_database.dart';
 
-/// The bin purge at startup (phase-2.md §9.3).
+/// The bin purge at startup.
 void main() {
   late AppDependencies deps;
   late TestClock clock;
@@ -87,7 +87,7 @@ void main() {
     expect(cubit.value, isA<StartupReady>());
   });
 
-  group('recurring generator (phase-7a.md R13)', () {
+  group('recurring generator', () {
     test(
       'runs before the bin purge, and its report reaches StartupReady',
       () async {

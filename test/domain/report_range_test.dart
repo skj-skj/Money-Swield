@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:my_expense_tracker_app/domain/periods.dart';
 import 'package:my_expense_tracker_app/domain/report_range.dart';
 
-/// phase-8.md §5.1 and §12 "Domain: report_range".
 void main() {
   const mon = WeekStart.monday;
   const sun = WeekStart.sunday;

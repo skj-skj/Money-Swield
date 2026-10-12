@@ -17,10 +17,10 @@ import '../../../core/widgets/save_error.dart';
 import '../../expenses/views/operator_row.dart';
 import '../view_models/recurring_detail_cubit.dart';
 
-/// Change price (phase-7a.md §8.5): the new amount, typed like the form's
-/// (operators, the currency's digits, a live result), and the date it
-/// applies from (default: the next payment). Save stays off until both are
-/// valid; the sheet says why. Returns true when a price was saved.
+/// Change price: the new amount, typed like the form's (operators, the
+/// currency's digits, a live result), and the date it applies from (default:
+/// the next payment). Save stays off until both are valid; the sheet says why.
+/// Returns true when a price was saved.
 Future<bool> showChangePriceSheet(
   BuildContext context, {
   required RecurringDetailCubit cubit,
@@ -194,8 +194,8 @@ class _ChangePriceSheetState extends State<_ChangePriceSheet> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  // Stacks the buttons when they don't fit side by side (a
-                  // Row overflowed at font 2.0 on 360 dp; §12a).
+                  // Stacks the buttons when they don't fit side by side (a Row
+                  // overflowed at font 2.0 on 360 dp).
                   OverflowBar(
                     alignment: MainAxisAlignment.end,
                     overflowAlignment: OverflowBarAlignment.end,

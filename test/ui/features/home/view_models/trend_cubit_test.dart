@@ -37,7 +37,7 @@ class _CountingExpenses extends ExpenseRepository {
   }
 }
 
-/// phase-5.md §7.3 and §12 "TrendCubit". Clock times are local
+/// Clock times are local
 /// `DateTime(…)`s, so the tests hold in any zone.
 void main() {
   late AppDependencies deps;
@@ -165,7 +165,7 @@ void main() {
     expect(headline(cubit), BigInt.from(4));
   });
 
-  test('future-dated days of the period count (P5-13)', () async {
+  test('future-dated days of the period count', () async {
     await add('2026-10-30', minor: 9);
     final cubit = cubitFor();
     await cubit.load();
@@ -199,7 +199,7 @@ void main() {
     });
 
     test('kept across a reload and a turn while it has rows, else the '
-        'default (P5-27)', () async {
+        'default', () async {
       await add('2026-10-05', minor: 100);
       await add('2026-10-05', minor: 5, code: 'USD');
       await add('2026-03-05', minor: 6, code: 'EUR');
@@ -262,7 +262,7 @@ void main() {
     expect(headline(cubit), BigInt.from(100));
   });
 
-  group('follows the filter (P5-31)', () {
+  group('follows the filter', () {
     test('a Food filter: this month\'s Food rows, marked filtered', () async {
       await add('2026-10-05', minor: 100, categoryId: 1);
       await add('2026-10-06', minor: 1000, categoryId: 2);
@@ -317,7 +317,7 @@ void main() {
     expect(expenses.reads, 1);
   });
 
-  // Regression (Phase 5 review, 2026-10-06): Home's list hands its filter
+  // Regression (review, 2026-10-06): Home's list hands its filter
   // to the card after its first load, while the card's own first load,
   // with the same filter, is running. That read the rows twice.
   test('setFilter with the same filter reads nothing', () async {

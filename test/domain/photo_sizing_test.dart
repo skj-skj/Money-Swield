@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:my_expense_tracker_app/domain/photo_sizing.dart';
 import 'package:my_expense_tracker_app/domain/photos.dart';
 
-/// phase-6.md §5.3.
 void main() {
   const mb = 1024 * 1024;
   const p1080 = (size: PhotoSize.p1080, quality: 85);
@@ -28,7 +27,7 @@ void main() {
   Encode encode(int w, int h, [int q = 85]) =>
       Encode(width: w, height: h, quality: q);
 
-  group('§5.3 table, every row', () {
+  group('every size and source', () {
     test('4000 × 3000 camera JPEG at 1080p → 1440 × 1080', () {
       expect(plan(4000, 3000), encode(1440, 1080));
     });

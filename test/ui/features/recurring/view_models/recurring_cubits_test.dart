@@ -15,7 +15,7 @@ import 'package:my_expense_tracker_app/ui/features/recurring/view_models/recurri
 
 import '../../../../helpers/test_database.dart';
 
-/// The Recurring screens' cubits (phase-7a.md §7.2–§7.5).
+/// The Recurring screens' cubits.
 void main() {
   late AppDependencies deps;
   late TestClock clock;
@@ -383,8 +383,8 @@ void main() {
       await deps.recurring.archive(id);
       final cubit = await detail(id);
       expect(await cubit.delete(), isTrue);
-      // Not read again by the delete: the page closes with its own
-      // message (a reload said Gone and closed it twice; §12a).
+      // Not read again by the delete: the page closes with its own message (a
+      // reload said Gone and closed it twice).
       expect(cubit.value, isA<RecurringDetailLoaded>());
       await cubit.load();
       expect(cubit.value, isA<RecurringDetailGone>());
@@ -494,7 +494,7 @@ void main() {
       expect(deps.dataVersion.value, version + 1);
     });
 
-    group('how often (phase-7b.md §7.3)', () {
+    group('how often', () {
       test('Every changed → First payment, default the next date; back to '
           'the item\'s → no change', () async {
         final cubit = await form(await item('Netflix'));
@@ -595,7 +595,7 @@ void main() {
     });
   });
 
-  group('the swap (phase-7b.md §7.2)', () {
+  group('the swap', () {
     test('an archived replaced item\'s page knows its running relative; '
         'Restore swaps it out', () async {
       final a = await item('Netflix');

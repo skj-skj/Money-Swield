@@ -23,7 +23,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  /// A tile of the Settings grid (phase-5.md §8.5).
+  /// A tile of the Settings grid.
   Future<void> openTile(WidgetTester tester, String key) async {
     await tester.tap(find.byKey(ValueKey(key)));
     await tester.pumpAndSettle();
@@ -143,7 +143,7 @@ void main() {
     await tester.tap(find.text('Default currency'));
     await tester.pumpAndSettle();
 
-    // phase-2.md §8: the same Recent section as Home's currency chip.
+    // The same Recent section as Home's currency chip.
     expect(find.text('Recent'), findsOneWidget);
     expect(find.text('All currencies'), findsOneWidget);
     expect(

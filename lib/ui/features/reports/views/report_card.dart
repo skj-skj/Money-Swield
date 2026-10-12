@@ -13,11 +13,11 @@ import '../../../core/widgets/reel_card.dart';
 import '../view_models/report_cubit.dart';
 import 'report_texts.dart';
 
-/// The report card (phase-8.md §8.5, owner 2026-10-10): the categories
-/// in one currency as bars or a donut (no trend: a report is an overview),
-/// on Home's reel ([ReelCard]): up / down through the enabled faces, left
-/// / right through the currencies. Every face is as tall as the others, so
-/// the reel doesn't jump. A tap on Other opens what it holds ([onOther]).
+/// The report card (owner 2026-10-10): the categories in one currency as bars
+/// or a donut (no trend: a report is an overview), on Home's reel ([ReelCard]):
+/// up / down through the enabled faces, left / right through the currencies.
+/// Every face is as tall as the others, so the reel doesn't jump. A tap on
+/// Other opens what it holds ([onOther]).
 class ReportCard extends StatelessWidget {
   const ReportCard({
     super.key,
@@ -42,7 +42,7 @@ class ReportCard extends StatelessWidget {
   /// Other was tapped: the groups it holds, in its currency.
   final void Function(ChartSlice other, String currency) onOther;
 
-  /// Legend lines and bars per face: 5 groups and Other (§5.3).
+  /// Legend lines and bars per face: 5 groups and Other.
   static const rows = maxSlices;
 
   ReportChart _faceAt(int steps) {
@@ -397,7 +397,7 @@ class _Face extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 6),
-                    // Never cut: scaled down to fit (§12 "amount never cut").
+                    // Never cut: scaled down to fit.
                     Flexible(
                       flex: 4,
                       child: Align(

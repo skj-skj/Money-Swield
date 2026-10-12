@@ -1,5 +1,5 @@
-/// Which photo files the startup sweep deletes (phase-6.md §5.6, P6-13).
-/// Pure Dart: the sweeper lists the folders and gathers the references.
+/// Which photo files the startup sweep deletes. Pure Dart: the sweeper lists
+/// the folders and gathers the references.
 library;
 
 import 'photos.dart';

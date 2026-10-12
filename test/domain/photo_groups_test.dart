@@ -4,7 +4,6 @@ import 'package:my_expense_tracker_app/domain/models/money.dart';
 import 'package:my_expense_tracker_app/domain/photo_groups.dart';
 import 'package:my_expense_tracker_app/domain/photos.dart';
 
-/// phase-6.md §5.8.
 void main() {
   var nextId = 100;
   var nextPhoto = 1;

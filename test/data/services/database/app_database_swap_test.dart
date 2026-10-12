@@ -160,7 +160,7 @@ void main() {
   });
 
   test('a close() that throws stops everything: nothing copied, deleted or '
-      'renamed; the app still restarts (§6.4 step 4.1)', () async {
+      'renamed; the app still restarts', () async {
     final live = await setUpLiveAndCandidate();
     final operations = FaultyFileOperations();
 

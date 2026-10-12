@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_expense_tracker_app/domain/sms/sms_amount.dart';
 
-/// phase-9a.md §5.6 and §5.2 step 3.
 void main() {
   group('parseAmountMinor', () {
     for (final (input, expected) in [

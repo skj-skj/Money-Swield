@@ -12,8 +12,7 @@ import '../../../../helpers/fake_on_device_ai.dart';
 import '../../../../helpers/fake_sms_service.dart';
 import '../../../../helpers/test_database.dart';
 
-/// `SmsCubit` with the on-device model (phase-9b.md §7, §11
-/// "Cubits / widgets").
+/// `SmsCubit` with the on-device model.
 void main() {
   late AppDependencies deps;
   late TestClock clock;
@@ -167,7 +166,7 @@ void main() {
     });
 
     test('downloadable: shown off though the setting is on; the app never '
-        'downloads on its own (P9b-34)', () async {
+        'downloads on its own', () async {
       ai.current = AiStatus.downloadable;
       final cubit = smsCubit();
       await cubit.start();

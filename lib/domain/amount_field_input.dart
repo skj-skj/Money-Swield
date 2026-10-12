@@ -1,15 +1,14 @@
-/// Typing in the amount field (phase-4.md §5.3): the system keyboard's
-/// edits ([filterKeyboardEdit]) and the operator row's keys
-/// ([applyRowKey]). Pure functions on the text and its selection offsets,
-/// so they are tested without widgets; the field's `TextInputFormatter`
-/// and the row only call them.
+/// Typing in the amount field: the system keyboard's edits
+/// ([filterKeyboardEdit]) and the operator row's keys ([applyRowKey]). Pure
+/// functions on the text and its selection offsets, so they are tested without
+/// widgets; the field's `TextInputFormatter` and the row only call them.
 library;
 
 import 'dart:math' show max, min;
 
 import 'amount_expression.dart';
 
-/// The operator row's keys (P4-19).
+/// The operator row's keys.
 enum RowKey { plus, minus, times, divide, decimal }
 
 /// Text and selection of the amount field after an edit. `base` and
@@ -35,14 +34,13 @@ bool _isFieldOperator(String char) =>
 /// The amount field's text after a keyboard edit, or null to refuse the
 /// edit (the field keeps its old text).
 ///
-/// `-` → `−`; `*`, `x`, `X` → `×`; `/` → `÷`; spaces are dropped; digits,
-/// `.`, `,` and `+ − × ÷` are kept. Any other character refuses the whole
-/// edit, as Phase 2's filter did, and so does going over
-/// [maxExpressionLength], unless the text is still shorter than
-/// [previousLength] (the text before the edit): a text already over the
-/// limit (a damaged draft keeps it, phase-4.md §7.5) can still be deleted
-/// down. It never reorders or fixes the structure: `5++2` stays as typed
-/// and the result line says it is invalid. Each kept character maps to
+/// `-` → `−`; `*`, `x`, `X` → `×`; `/` → `÷`; spaces are dropped; digits, `.`,
+/// `,` and `+ − × ÷` are kept. Any other character refuses the whole edit, as
+/// the plain-number filter did, and so does going over [maxExpressionLength], unless
+/// the text is still shorter than [previousLength] (the text before the edit):
+/// a text already over the limit (a damaged draft keeps it) can still be
+/// deleted down. It never reorders or fixes the structure: `5++2` stays as
+/// typed and the result line says it is invalid. Each kept character maps to
 /// one, so the selection moves only past dropped spaces.
 FieldEdit? filterKeyboardEdit(FieldEdit edit, {int previousLength = 0}) {
   final text = edit.text;

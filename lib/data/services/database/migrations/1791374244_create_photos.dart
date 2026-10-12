@@ -3,13 +3,13 @@
 
 import '../migration/migration.dart';
 
-/// Photos of expenses (database.md §3.7, phase-6.md §4.1). A file is named
-/// by its SHA-256 and shared by every expense with the same picture, so a
-/// photo is one row however many expenses link it.
+/// Photos of expenses. A file is named by its SHA-256 and shared by every
+/// expense with the same picture, so a photo is one row however many expenses
+/// link it.
 ///
-/// Deleting a link never deletes a row or a file: the startup sweep does,
-/// once nothing references them (phase-6.md §6.5). Pictures the user saves
-/// to Pictures/ are copies and are not in this table.
+/// Deleting a link never deletes a row or a file: the startup sweep does, once
+/// nothing references them. Pictures the user saves to Pictures/ are copies and
+/// are not in this table.
 class CreatePhotos extends Migration {
   const CreatePhotos() : super(version: 1791374244, name: 'create_photos');
 

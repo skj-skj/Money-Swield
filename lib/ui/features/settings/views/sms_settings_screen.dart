@@ -7,10 +7,9 @@ import '../../../core/widgets/show_message.dart';
 import '../../sms/view_models/sms_cubit.dart';
 import '../../sms/views/sms_texts.dart';
 
-/// Settings → SMS (phase-9a.md §8.5, P9a-29): the SMS suggestions switch
-/// (the permission is asked when it is turned on), when the inbox was last
-/// read, and what the app keeps. Turning it off keeps the suggestions
-/// (until the 30-day purge).
+/// Settings → SMS: the SMS suggestions switch (the permission is asked when it
+/// is turned on), when the inbox was last read, and what the app keeps. Turning
+/// it off keeps the suggestions (until the 30-day purge).
 class SmsSettingsScreen extends StatelessWidget {
   const SmsSettingsScreen({super.key, required this.sms});
 
@@ -30,9 +29,9 @@ class SmsSettingsScreen extends StatelessWidget {
     }
   }
 
-  /// "Use on-device AI" (phase-9b.md §8): play with a model in or one that
-  /// can come, SMS on. The help stays while the model downloads, so what
-  /// it does and that nothing leaves the phone is always there.
+  /// "Use on-device AI": play with a model in or one that can come, SMS on. The
+  /// help stays while the model downloads, so what it does and that nothing
+  /// leaves the phone is always there.
   Widget _aiSwitch(BuildContext context, SmsState state) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);

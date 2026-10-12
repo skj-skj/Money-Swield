@@ -15,12 +15,11 @@ import '../section_heading.dart';
 import '../tile_picker.dart';
 import 'filter_sheet_cubit.dart';
 
-/// Opens [FilterSheet] over a screen and returns what it holds when it
-/// closes, however it closes: Show results, back, a swipe down or a tap
-/// outside (phase-5.md §8.4, P5-18), so nothing typed is lost. Home adds
-/// its list grouping as [leading]; Reports adds payment methods
-/// ([paymentMethods] not null), and its Generate sheet its options and
-/// buttons ([leading], [actions]).
+/// Opens [FilterSheet] over a screen and returns what it holds when it closes,
+/// however it closes: Show results, back, a swipe down or a tap outside, so
+/// nothing typed is lost. Home adds its list grouping as [leading]; Reports
+/// adds payment methods ([paymentMethods] not null), and its Generate sheet its
+/// options and buttons ([leading], [actions]).
 Future<FilterSheetValue> showFilterSheet(
   BuildContext context, {
   required ExpenseFilter filter,
@@ -59,14 +58,13 @@ Future<FilterSheetValue> showFilterSheet(
 /// Which picker is in search mode, if any.
 enum _Searching { none, categories, events, paymentMethods }
 
-/// The filter's fields: the search, Only recurring, then categories and
-/// events in the same tile pickers as the Add expense form, here both
-/// multi-select, each with its own search and without New (owner,
-/// 2026-10-06; phase-5.md §8.4), and on Reports payment methods. One
-/// component for Home's filter sheet, Reports' and its Generate sheet
-/// (owner, 2026-10-10): [leading] goes above the fields (Home's grouping,
-/// the Generate options), [actions] at the bottom (by default Clear and
-/// Show results).
+/// The filter's fields: the search, Only recurring, then categories and events
+/// in the same tile pickers as the Add expense form, here both multi-select,
+/// each with its own search and without New (owner, 2026-10-06), and on Reports
+/// payment methods. One component for Home's filter sheet, Reports' and its
+/// Generate sheet (owner, 2026-10-10): [leading] goes above the fields (Home's
+/// grouping, the Generate options), [actions] at the bottom (by default Clear
+/// and Show results).
 class FilterSheet extends StatefulWidget {
   const FilterSheet({
     super.key,
@@ -136,8 +134,7 @@ class _FilterSheetState extends State<FilterSheet> {
     ];
   }
 
-  /// Name order, archived events after the others (reports still count
-  /// them, A10).
+  /// Name order, archived events after the others (reports still count them).
   List<PickerItem> _eventItems(AppLocalizations l10n) {
     final events = widget.events.values.toList()
       ..sort((a, b) {
@@ -216,7 +213,7 @@ class _FilterSheetState extends State<FilterSheet> {
                         decoration: InputDecoration(
                           hintText: l10n.filterSearchHint,
                           prefixIcon: const Icon(Icons.search),
-                          // No counter: the limit is generous (P5-19).
+                          // No counter: the limit is generous.
                           counterText: '',
                           border: const OutlineInputBorder(),
                           suffixIcon: filter.text.isEmpty
@@ -231,8 +228,7 @@ class _FilterSheetState extends State<FilterSheet> {
                                 ),
                         ),
                       ),
-                      // Under the search (phase-7b.md §8.4); shown even
-                      // with no recurring item.
+                      // Under the search; shown even with no recurring item.
                       SwitchListTile(
                         key: const ValueKey('filterOnlyRecurring'),
                         contentPadding: EdgeInsets.zero,

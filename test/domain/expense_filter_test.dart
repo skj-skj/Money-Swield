@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_expense_tracker_app/domain/expense_filter.dart';
 
-/// phase-5.md §5.6 and §12 "Filter / text".
 void main() {
   SearchEntry entry(String title, [String? description]) => (
     id: 1,
@@ -15,7 +14,7 @@ void main() {
   bool matches(String text, String title, [String? description]) =>
       matchesText(entry(title, description), searchWords(text));
 
-  test('every row of the §5.6 table', () {
+  test('every case of the text match', () {
     expect(matches('lunch', 'Lunch with Ana'), isTrue);
     expect(matches('LUNCH ana', 'Lunch with Ana'), isTrue);
     expect(matches('café', 'CAFÉ COFFEE DAY'), isTrue);
@@ -41,7 +40,7 @@ void main() {
     expect(matches('onion', 'Groceries', 'potato\nonion'), isTrue);
   });
 
-  test('no accent folding (P5-25)', () {
+  test('no accent folding', () {
     expect(matches('cafe', 'Café'), isFalse);
   });
 
@@ -68,7 +67,7 @@ void main() {
     });
   });
 
-  test('onlyRecurring (phase-7b.md §6.4): in ==, hashCode, isEmpty, '
+  test('onlyRecurring: in ==, hashCode, isEmpty, '
       'withoutText, copyWith', () {
     const on = ExpenseFilter(onlyRecurring: true);
     expect(on.isEmpty, isFalse);

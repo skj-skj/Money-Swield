@@ -6,9 +6,9 @@ import '../../../core/builtin_names.dart';
 import '../../manage/view_models/item_form_cubit.dart';
 import '../../settings/view_models/settings_cubit.dart';
 
-/// The add/edit payment method form (phase-1.md §8, §9.5): the shared form
-/// ([ItemFormCubit], without a description) plus "Set as default",
-/// delete, or move the expenses then delete.
+/// The add/edit payment method form: the shared form ([ItemFormCubit], without
+/// a description) plus "Set as default", delete, or move the expenses then
+/// delete.
 class PaymentMethodFormCubit extends ItemFormCubit<PaymentMethod> {
   /// [original] is the method being edited, or null to add one. [existing]
   /// is every method, used to refuse a duplicate name.
@@ -88,8 +88,8 @@ class PaymentMethodFormCubit extends ItemFormCubit<PaymentMethod> {
   /// How many expenses use the edited payment method, binned ones included.
   Future<OwnerUsage> usage() => _repository.usage(original!.id);
 
-  /// Moves the edited payment method's expenses to [toId] and deletes it,
-  /// in one transaction (D7).
+  /// Moves the edited payment method's expenses to [toId] and deletes it, in
+  /// one transaction.
   Future<void> moveExpensesAndDelete(int toId) => runBusy(
     (original) => _repository.moveExpensesAndDelete(original.id, toId: toId),
   );

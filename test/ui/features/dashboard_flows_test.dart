@@ -16,8 +16,8 @@ import 'package:my_expense_tracker_app/ui/features/home/views/day_header.dart';
 import '../../helpers/pump_app.dart';
 import '../../helpers/test_database.dart';
 
-/// Phase 5's flows through the real app (phase-5.md §12 "Widgets"), on a
-/// 360 dp wide screen like the Oppo A77s: an overflow anywhere fails.
+/// Home's flows through the real app, on a 360 dp wide screen like the Oppo
+/// A77s: an overflow anywhere fails.
 void main() {
   late AppDependencies deps;
   late TestClock clock;
@@ -298,7 +298,7 @@ void main() {
     });
 
     testWidgets('chart style: filled line, bars, line; Restore default look '
-        'keeps it (P5-33)', (tester) async {
+        'keeps it', (tester) async {
       useOppoSize(tester);
       await add('2026-10-05');
       await pumpApp(tester, dependencies: deps);
@@ -885,7 +885,7 @@ void main() {
     });
   });
 
-  testWidgets('midnight: the card shows the new week (R5)', (tester) async {
+  testWidgets('midnight: the card shows the new week', (tester) async {
     useOppoSize(tester);
     clock.now = DateTime(2026, 10, 4, 23, 59, 50).toUtc(); // Sunday
     await add('2026-10-04', minor: 100);
@@ -926,7 +926,7 @@ void main() {
         await add('2026-10-05', minor: 1105000, categoryId: long.id);
         await add('2026-10-05', minor: 999, code: 'USD');
         await pumpApp(tester, dependencies: deps);
-        // intl's short month, starting with a capital letter (R13).
+        // intl's short month, starting with a capital letter.
         final month = toBeginningOfSentenceCase(
           DateFormat.MMM(code).format(DateTime(2026, 10)),
           code,

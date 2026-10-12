@@ -5,11 +5,10 @@ import 'package:material_ui/material_ui.dart';
 import '../../../../l10n/app_localizations.dart';
 import 'photo_thumb.dart';
 
-/// The form's photo button, left of the description and centred on it
-/// (phase-6.md §8.1, P6-11): 56 × 56, outlined like the fields. Empty it
-/// shows a camera-with-plus; with photos, up to three of them fanned out
-/// like a hand of playing cards (the newest on the right, on top) and the
-/// count; busy, a progress ring and no taps.
+/// The form's photo button, left of the description and centred on it: 56 × 56,
+/// outlined like the fields. Empty it shows a camera-with-plus; with photos, up
+/// to three of them fanned out like a hand of playing cards (the newest on the
+/// right, on top) and the count; busy, a progress ring and no taps.
 ///
 /// The cards are taller than the button and turn about their bottom
 /// middle, so they spill over its outline (owner, after the Oppo run: a
@@ -56,9 +55,9 @@ class PhotoStackButton extends StatelessWidget {
     final shown = busy ? 0 : count.clamp(0, 3);
     final fan = shown == 0 ? const <double>[] : fanOf(shown);
     return Semantics(
-      // Its own node: without it the button merged with the description
-      // next to it into one unlabelled button TalkBack couldn't use (seen
-      // on the Oppo, phase-6.md §12a; the currency box had the same).
+      // Its own node: without it the button merged with the description next to
+      // it into one unlabelled button TalkBack couldn't use (seen on the Oppo;
+      // the currency box had the same).
       container: true,
       button: true,
       label: count == 0 ? l10n.addPhotos : l10n.photosCountOpen(count),

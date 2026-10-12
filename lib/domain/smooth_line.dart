@@ -1,4 +1,4 @@
-/// The trend card's smooth line (phase-5.md §5.4).
+/// The trend card's smooth line.
 ///
 /// A plain smoothing curve (Catmull-Rom, a cubic spline) overshoots:
 /// between a day of ₹500 and a day of ₹0 it dips below zero, which would

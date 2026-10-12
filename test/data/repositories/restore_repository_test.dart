@@ -21,8 +21,8 @@ import '../../helpers/test_database.dart';
 import '../services/backup/zip_test_helpers.dart';
 import '../services/database/migration/test_helpers.dart';
 
-/// The Phase 1 schema: settings, categories, payment methods, events.
-final phase1Migrations = allMigrations.take(4).toList();
+/// The first schema: settings, categories, payment methods, events.
+final firstSchemaMigrations = allMigrations.take(4).toList();
 
 void main() {
   late FileDatabases files;
@@ -104,7 +104,7 @@ void main() {
         expect(candidate.stampsLastBackup, isTrue);
         expect(File(files.paths.candidate).existsSync(), isTrue);
         // Kept until the restore ends: its photos are written after the
-        // confirm (R3).
+        // confirm.
         expect(File(files.paths.pickedZip).existsSync(), isTrue);
         await repo.deletePickedZip();
         expect(File(files.paths.pickedZip).existsSync(), isFalse);
@@ -154,36 +154,36 @@ void main() {
         expect(candidate.latestExpenseOn, isNull);
       });
 
-      test('a Phase 1 backup (no expenses table) still validates', () async {
-        await pick(await sourceDatabase(migrations: phase1Migrations));
-        final candidate = await repo.prepareFromZip();
-        expect(candidate.activeExpenses, isNull);
-        expect(candidate.binnedExpenses, isNull);
-        expect(candidate.latestExpenseOn, isNull);
-        // Counted before the candidate is migrated: no table, no count.
-        expect(candidate.recurringItems, isNull);
-      });
-
       test(
-        'running recurring items are counted, archived ones not (R14)',
+        'a first-schema backup (no expenses table) still validates',
         () async {
-          await pick(
-            await sourceDatabase(
-              fill: (db) async {
-                await insertRecurringRow(db, title: 'A');
-                await insertRecurringRow(db, title: 'B');
-                await insertRecurringRow(db, title: 'C', archivedAt: 5);
-              },
-            ),
-          );
+          await pick(await sourceDatabase(migrations: firstSchemaMigrations));
           final candidate = await repo.prepareFromZip();
-          expect(candidate.recurringItems, 2);
+          expect(candidate.activeExpenses, isNull);
+          expect(candidate.binnedExpenses, isNull);
+          expect(candidate.latestExpenseOn, isNull);
+          // Counted before the candidate is migrated: no table, no count.
+          expect(candidate.recurringItems, isNull);
         },
       );
+
+      test('running recurring items are counted, archived ones not', () async {
+        await pick(
+          await sourceDatabase(
+            fill: (db) async {
+              await insertRecurringRow(db, title: 'A');
+              await insertRecurringRow(db, title: 'B');
+              await insertRecurringRow(db, title: 'C', archivedAt: 5);
+            },
+          ),
+        );
+        final candidate = await repo.prepareFromZip();
+        expect(candidate.recurringItems, 2);
+      });
     });
 
-    test('a backup from a Phase 6 build (create_expenses applied, no '
-        'recurring schema) is refused, nothing changed (P7a-14, R4)', () async {
+    test('a backup from an older build (create_expenses applied, no '
+        'recurring schema) is refused, nothing changed', () async {
       await pick(
         await sourceDatabase(
           fill: (db) async {
@@ -407,9 +407,9 @@ void main() {
     // expenses are fine.
     final broken = <String, Future<void> Function(Database db)>{
       'the table is gone': (db) => db.execute('DROP TABLE settings'),
-      // `RENAME COLUMN` needs SQLite 3.25; the tests run Android 10's 3.22
-      // (sqlite.md §3), so the rename is a rebuild by hand. The columns
-      // are CreateSettings' with `value` called `v`.
+      // `RENAME COLUMN` needs SQLite 3.25; the tests run Android 10's 3.22, so
+      // the rename is a rebuild by hand. The columns are CreateSettings' with
+      // `value` called `v`.
       'a column was renamed by hand': (db) async {
         await db.execute(
           'CREATE TABLE settings_new '
@@ -543,7 +543,7 @@ void main() {
   test('an older backup migrates forward with its data intact', () async {
     await setUpFiles();
     final source = await sourceDatabase(
-      migrations: phase1Migrations,
+      migrations: firstSchemaMigrations,
       fill: (db) => db.insert('categories', {
         'name': 'Old category',
         'emoji': '📦',

@@ -8,8 +8,7 @@ import 'package:my_expense_tracker_app/domain/repeat_input.dart';
 
 import '../../helpers/recurring_fixture.dart';
 
-/// The generator (phase-7a.md §6.3) and "a deleted payment never comes
-/// back" (§6.7).
+/// The generator and "a deleted payment never comes back".
 void main() {
   late RecurringFixture f;
 
@@ -415,7 +414,7 @@ void main() {
     });
   });
 
-  group('§6.7: a deleted payment never comes back', () {
+  group('a deleted payment never comes back', () {
     Future<(int, int)> todaysPayment() async {
       final id = await monthlyFrom('2026-09-09');
       f.setToday('2026-10-09');
@@ -502,7 +501,7 @@ void main() {
     });
 
     test('stopped with no payment left and an end still ahead: Restore '
-        'keeps it so (no payment comes back; §12a)', () async {
+        'keeps it so (no payment comes back)', () async {
       final id = await monthlyFrom(
         '2026-09-09',
         choice: const RepeatChoice(end: RepeatEnd.onDate, endOn: '2026-10-20'),

@@ -13,7 +13,7 @@ import 'package:my_expense_tracker_app/ui/features/reports/view_models/report_cu
 
 import '../../../../helpers/test_database.dart';
 
-/// phase-8.md §7.1 and §12 "Cubits" (owner's overhaul, 2026-10-10).
+/// ReportCubit (owner's overhaul, 2026-10-10).
 void main() {
   late AppDependencies deps;
   late TestClock clock;

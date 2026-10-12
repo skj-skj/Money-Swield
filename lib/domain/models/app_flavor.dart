@@ -1,6 +1,6 @@
-/// Which build this is (phase-9a.md §6.6, P9a-24): **foss** (no
-/// closed-source code; F-Droid, the FOSS APK) or **play** (Google Play).
-/// In 9a they differ only in play's `-PnoSms` switch; 9b adds the AI.
+/// Which build this is: **foss** (no closed-source code; F-Droid, the FOSS APK)
+/// or **play** (Google Play). They differ in play's `-PnoSms` switch and
+/// play's on-device AI.
 enum AppFlavor {
   foss,
   play;

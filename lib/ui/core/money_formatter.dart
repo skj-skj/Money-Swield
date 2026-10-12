@@ -5,8 +5,8 @@ import '../../domain/models/currency.dart';
 import '../../domain/models/money.dart';
 import 'formatting_locale.dart';
 
-/// The one place that turns [Money] and totals into text (phase-2.md
-/// §4.4, phase-5.md §5.7): `₹1,10,050.00`, `$85.00`, `¥500`.
+/// The one place that turns [Money] and totals into text: `₹1,10,050.00`,
+/// `$85.00`, `¥500`.
 ///
 /// One instance per locale, each caching one `NumberFormat` per currency:
 /// building them per row would make the expense list stutter.
@@ -27,10 +27,10 @@ class MoneyFormatter {
   final String localeName;
   final _wholeFormats = <String, NumberFormat>{};
 
-  /// Every digit exactly, for any amount (phase-5.md §5.7, R2): the major
-  /// part goes through intl's integer path, and the minor digits are put
-  /// after its last digit with the locale's decimal separator. No
-  /// `double`, so even a total beyond 2⁵³ keeps its last digits.
+  /// Every digit exactly, for any amount: the major part goes through intl's
+  /// integer path, and the minor digits are put after its last digit with the
+  /// locale's decimal separator. No `double`, so even a total beyond 2⁵³ keeps
+  /// its last digits.
   String format(Money money) {
     assert(money.amountMinor >= 0, 'amounts are never negative');
     final scale = minorUnitsPerMajor(_minorDigits(money.currencyCode));
@@ -41,9 +41,9 @@ class MoneyFormatter {
     );
   }
 
-  /// [format] for a total, which may be larger than an `int`. Null when
-  /// even its major part isn't one (above 2⁶³ − 1 major units), shown as
-  /// "Too large" (R3).
+  /// [format] for a total, which may be larger than an `int`. Null when even
+  /// its major part isn't one (above 2⁶³ − 1 major units), shown as "Too
+  /// large".
   String? formatTotal(String currencyCode, BigInt amountMinor) {
     assert(amountMinor >= BigInt.zero, 'totals are never negative');
     final scale = BigInt.from(minorUnitsPerMajor(_minorDigits(currencyCode)));
@@ -52,10 +52,9 @@ class MoneyFormatter {
     return _splice(currencyCode, major.toInt(), (amountMinor % scale).toInt());
   }
 
-  /// Every digit of a total, for an export (phase-8.md R7): [formatTotal]
-  /// when it can, else the code and every digit with the locale's decimal
-  /// separator, ungrouped (`INR 276701161105643274.21`): an export never
-  /// says "Too large".
+  /// Every digit of a total, for an export: [formatTotal] when it can, else the
+  /// code and every digit with the locale's decimal separator, ungrouped
+  /// (`INR 276701161105643274.21`): an export never says "Too large".
   String exactTotal(String currencyCode, BigInt amountMinor) {
     final shown = formatTotal(currencyCode, amountMinor);
     if (shown != null) return shown;

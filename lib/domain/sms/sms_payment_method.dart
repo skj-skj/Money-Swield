@@ -1,6 +1,5 @@
-/// The payment method of an SMS debit (phase-9a.md §5.5, P9a-53, owner
-/// rev 5): from the words in the text, never an account or card number.
-/// Pure Dart.
+/// The payment method of an SMS debit (owner rev 5): from the words in the
+/// text, never an account or card number. Pure Dart.
 library;
 
 /// `upi` as a word, or `vpa`.
@@ -8,9 +7,9 @@ final _upiWord = RegExp(r'\b(?:upi|vpa)\b', caseSensitive: false);
 
 /// A UPI ID (`name@bank`), not an e-mail address: the handle after `@` is
 /// letters only and isn't followed by `.letter` (`x@gmail.com`) or another
-/// letter or digit. A full stop that ends the sentence is fine: sample #5
-/// ends "…@ybl. If not you" — the doc's "not followed by `.`" would make
-/// it a debit card (phase-9a.md §12a).
+/// letter or digit. A full stop that ends the sentence is fine: sample #5 ends
+/// "…@ybl. If not you" — the doc's "not followed by `.`" would make it a debit
+/// card.
 final _upiId = RegExp(
   r'[\w.\-]+@[a-z]+(?![a-z0-9]|\.[a-z0-9])',
   caseSensitive: false,

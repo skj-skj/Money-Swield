@@ -4,9 +4,8 @@ import 'package:material_ui/material_ui.dart';
 import '../../../../domain/amount_field_input.dart';
 import '../../../../l10n/app_localizations.dart';
 
-/// The amount field's keyboard filter (phase-4.md §5.3): maps `-` `*` `/`
-/// to `− × ÷`, drops spaces, refuses anything else. The rules are in
-/// [filterKeyboardEdit].
+/// The amount field's keyboard filter: maps `-` `*` `/` to `− × ÷`, drops
+/// spaces, refuses anything else. The rules are in [filterKeyboardEdit].
 class AmountKeyboardFormatter extends TextInputFormatter {
   const AmountKeyboardFormatter();
 
@@ -54,8 +53,8 @@ FieldEdit _editOf(TextEditingValue value) => (
   extent: value.selection.extentOffset,
 );
 
-/// The five keys above the keyboard while the amount has focus:
-/// `+ − × ÷` and the locale's decimal separator (P4-19, phase-4.md §7.2).
+/// The five keys above the keyboard while the amount has focus: `+ − × ÷` and
+/// the locale's decimal separator.
 ///
 /// Wrapped in a [TextFieldTapRegion] and an [ExcludeFocus], so tapping a
 /// key never closes the keyboard or moves the focus.

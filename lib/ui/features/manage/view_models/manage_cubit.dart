@@ -7,8 +7,8 @@ import '../../../../data/repositories/payment_method_repository.dart';
 import '../../../../data/repositories/recurring_repository.dart';
 import '../../../core/emit_if_open.dart';
 
-/// How many rows each list on the Manage tab has; for Recurring, the
-/// running items (phase-7a.md §7.5).
+/// How many rows each list on the Manage tab has; for Recurring, the running
+/// items.
 typedef ManageCounts = ({
   int categories,
   int events,

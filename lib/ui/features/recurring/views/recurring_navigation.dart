@@ -10,9 +10,8 @@ import '../../../core/widgets/save_error.dart';
 import '../../../core/widgets/show_message.dart';
 import 'recurring_detail_screen.dart';
 
-/// What a recurring item's page pops with, for the screen below to say
-/// (phase-7a.md §8.9): on that screen's own messenger, like the expense
-/// form's results.
+/// What a recurring item's page pops with, for the screen below to say: on that
+/// screen's own messenger, like the expense form's results.
 sealed class RecurringPageResult {
   const RecurringPageResult(this.title);
 
@@ -33,9 +32,9 @@ final class RecurringRestored extends RecurringPageResult {
   final String? next;
 }
 
-/// Restore with the swap (phase-7b.md §8.1 D): "Switched back to Netflix ·
-/// Every month". No Undo: restoring the other one switches again. [title]
-/// is the item named with its rule.
+/// Restore with the swap: "Switched back to Netflix · Every month". No Undo:
+/// restoring the other one switches again. [title] is the item named with its
+/// rule.
 final class RecurringSwitchedBack extends RecurringPageResult {
   const RecurringSwitchedBack(super.title);
 }
@@ -60,9 +59,9 @@ Future<RecurringPageResult?> openRecurringPage(
   ),
 );
 
-/// A payment's Edit → its link row → the item's page (§8.1 E): what the
-/// page did is said on the form, which is still open ([formContext] is
-/// under its messenger). Home and the Photos screen open the form.
+/// A payment's Edit → its link row → the item's page: what the page did is said
+/// on the form, which is still open ([formContext] is under its messenger).
+/// Home and the Photos screen open the form.
 Future<void> openRecurringFromForm(
   BuildContext formContext,
   AppDependencies dependencies,

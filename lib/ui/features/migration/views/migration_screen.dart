@@ -35,8 +35,8 @@ class MigrationScreen extends StatelessWidget {
 
   final MigrationState state;
 
-  /// A first line for the failure report, e.g. that it happened while
-  /// restoring a backup (phase-3.md §6.4).
+  /// A first line for the failure report, e.g. that it happened while restoring
+  /// a backup.
   final String? reportContext;
 
   @override

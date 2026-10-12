@@ -19,9 +19,9 @@ void showMessage(
   queueMessage(messenger, message, long: long, action: action);
 }
 
-/// Like [showMessage], but behind the snackbar showing instead of in its
-/// place: for messages said together at once (the restore message, then
-/// what the recurring generator did; phase-7a.md §7.5).
+/// Like [showMessage], but behind the snackbar showing instead of in its place:
+/// for messages said together at once (the restore message, then what the
+/// recurring generator did).
 void queueMessage(
   ScaffoldMessengerState? messenger,
   String message, {

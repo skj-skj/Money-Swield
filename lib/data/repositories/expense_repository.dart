@@ -42,8 +42,7 @@ class RepeatRefused implements Exception {
   String toString() => 'RepeatRefused: ${error.name}';
 }
 
-/// Reads and writes the `expenses` and `expense_events` tables
-/// (database.md §3.5, §3.6; phase-2.md §5).
+/// Reads and writes the `expenses` and `expense_events` tables.
 ///
 /// Validation (title length, amount > 0, …) is done by the form's cubit;
 /// this class trusts its input, except for the bin rules, which it enforces
@@ -63,21 +62,21 @@ class ExpenseRepository {
   final DataVersion _dataVersion;
   final DateTime Function() _now;
 
-  /// The device's zone, for the moments of earlier payments a Save with
-  /// Repeats adds (phase-7a.md §5.6); a fake one in tests.
+  /// The device's zone, for the moments of earlier payments a Save with Repeats
+  /// adds; a fake one in tests.
   final ZonedMoment Function(int, int, int, int, int) _localMoment;
 
   /// How long an expense stays in the bin before the startup purge deletes
   /// it for good.
   static const binRetention = Duration(days: 30);
 
-  /// The window popularity counts uses in (application-design.md A3).
+  /// The window popularity counts uses in.
   static const popularityWindowDays = 90;
 
-  /// The window title suggestions count uses in (phase-4.md §6.1).
+  /// The window title suggestions count uses in.
   static const titleWindowDays = 180;
 
-  /// The window amount chips count uses in (phase-4.md §6.2).
+  /// The window amount chips count uses in.
   static const chipWindowDays = 90;
 
   /// The fewest uses an amount needs to be a chip.
@@ -86,32 +85,31 @@ class ExpenseRepository {
   /// The bin filter, in one place: every method except the bin ones uses it.
   ///
   /// The unary `+` is deliberate: it stops SQLite from using
-  /// `index_expenses_on_deleted_at` for this term. Without `ANALYZE` stats
-  /// the planner treats `IS NULL` like a selective equality, picks that
-  /// index, then reads every active row and sorts it, which defeats keyset
-  /// pagination. A partial index would be the textbook fix, but the
-  /// migration framework doesn't support them (phase-2.md §3, §5).
+  /// `index_expenses_on_deleted_at` for this term. Without `ANALYZE` stats the
+  /// planner treats `IS NULL` like a selective equality, picks that index, then
+  /// reads every active row and sorts it, which defeats keyset pagination. A
+  /// partial index would be the textbook fix, but the migration framework
+  /// doesn't support them.
   static const _active = '+deleted_at IS NULL';
 
   /// For the bin queries, which do use the `deleted_at` index.
   static const _binned = 'deleted_at IS NOT NULL';
 
-  /// Home's list order (phase-5.md §4.1, R1): by local date first, so a
-  /// traveller's day stays together, then newest moment, then id. Served
-  /// by `index_expenses_on_occurred_on_and_occurred_at_and_id`.
+  /// Home's list order: by local date first, so a traveller's day stays
+  /// together, then newest moment, then id. Served by
+  /// `index_expenses_on_occurred_on_and_occurred_at_and_id`.
   static const _listOrder = 'occurred_on DESC, occurred_at DESC, id DESC';
 
   /// Inserts the expense and its events in one transaction.
   ///
   /// With [clearDraft], the form's draft row is deleted in the same
-  /// transaction (phase-4.md §6.3): killed after the commit, there is no
-  /// draft left to save the same expense twice; killed before, nothing was
-  /// saved and the draft is still there.
+  /// transaction: killed after the commit, there is no draft left to save the
+  /// same expense twice; killed before, nothing was saved and the draft is
+  /// still there.
   ///
   /// With [fromSms], the SMS suggestion is marked added in the same
-  /// transaction (phase-9a.md R8): a crash leaves both or neither, and a
-  /// second Save of the same suggestion throws [SmsAlreadyAdded] with
-  /// nothing written.
+  /// transaction: a crash leaves both or neither, and a second Save of the same
+  /// suggestion throws [SmsAlreadyAdded] with nothing written.
   Future<Expense> add(
     ExpenseInput input, {
     bool clearDraft = false,
@@ -134,20 +132,19 @@ class ExpenseRepository {
     return expense;
   }
 
-  /// **Save with Repeats** (phase-7a.md §6.2): [input] is saved as the
+  /// **Save with Repeats**: [input] is saved as the
   /// first payment of a new recurring item that repeats as [choice], in one
   /// transaction with the item, its first price and events, and the
   /// earlier payments up to today. The schedule starts on the saved row's
   /// `occurred_on`, so the form and the stored rule can't disagree.
   ///
-  /// [choice] is checked again against today: a [RepeatRefused] means
-  /// nothing was written (a Save across midnight can tip "1,000 earlier
-  /// payments" over the cap). Killed before the commit, nothing is saved
-  /// and the draft stays; after it, everything is, and there's no draft to
-  /// save it twice ([clearDraft] as for [add]). The form's photos go to
-  /// this expense only (P7a-4). Returns the expense and how many earlier
-  /// payments were added.
-  /// [fromSms] as for [add].
+  /// [choice] is checked again against today: a [RepeatRefused] means nothing
+  /// was written (a Save across midnight can tip "1,000 earlier payments" over
+  /// the cap). Killed before the commit, nothing is saved and the draft stays;
+  /// after it, everything is, and there's no draft to save it twice
+  /// ([clearDraft] as for [add]). The form's photos go to this expense only.
+  /// Returns the expense and how many earlier payments were added. [fromSms] as
+  /// for [add].
   Future<({Expense expense, int pastAdded})> addRepeating(
     ExpenseInput input,
     RepeatChoice choice, {
@@ -161,7 +158,7 @@ class ExpenseRepository {
     fromSms: fromSms,
   );
 
-  /// **Make an existing expense repeat** (phase-7b.md §6.2): [input] is
+  /// **Make an existing expense repeat**: [input] is
   /// saved over the active expense [id], which becomes the first payment
   /// of a new item, as [addRepeating] does for a new one, in one
   /// transaction. Throws [ExpenseNotFound] for a binned or gone expense and
@@ -260,10 +257,10 @@ class ExpenseRepository {
     return (expense: expense, pastAdded: past.length);
   }
 
-  /// Saves [input] over the active expense [id] and replaces its events, in
-  /// one transaction. Throws [ExpenseNotFound] if the expense was deleted or
-  /// moved to the bin meanwhile: binned expenses can't be edited
-  /// (database.md §3.5). [clearDraft] as for [add].
+  /// Saves [input] over the active expense [id] and replaces its events, in one
+  /// transaction. Throws [ExpenseNotFound] if the expense was deleted or moved
+  /// to the bin meanwhile: binned expenses can't be edited. [clearDraft] as for
+  /// [add].
   Future<Expense> update(
     int id,
     ExpenseInput input, {
@@ -302,8 +299,8 @@ class ExpenseRepository {
       whereArgs: [id],
     );
     await _insertEvents(txn, id, input.eventIds);
-    // Replaced like the events: the rows of photos no longer linked stay
-    // until the startup sweep (P6-13).
+    // Replaced like the events: the rows of photos no longer linked stay until
+    // the startup sweep.
     await txn.delete(
       'expense_photos',
       where: 'expense_id = ?',
@@ -313,7 +310,7 @@ class ExpenseRepository {
   }
 
   /// Checks that [id] is active ([ExpenseNotFound]) and not a payment yet
-  /// ([ArgumentError]): only a plain expense is made to repeat (§6.2).
+  /// ([ArgumentError]): only a plain expense is made to repeat.
   static Future<void> _plainActiveRow(Transaction txn, int id) async {
     final rows = await txn.query(
       'expenses',
@@ -336,10 +333,9 @@ class ExpenseRepository {
   )).firstOrNull;
 
   /// Active expenses that pass [filter]'s category and event part, in list
-  /// order (local date, then moment, then id; phase-5.md §4.1),
-  /// continuing after [after] (keyset pagination, database.md §4). Its
-  /// text part is matched in Dart ([searchEntries]). Row values need
-  /// SQLite 3.15; Android 10 (minSdk 29) ships 3.22.
+  /// order (local date, then moment, then id), continuing after [after] (keyset
+  /// pagination). Its text part is matched in Dart ([searchEntries]). Row
+  /// values need SQLite 3.15; Android 10 (minSdk 29) ships 3.22.
   Future<List<Expense>> page({
     ExpenseFilter filter = ExpenseFilter.none,
     ExpenseCursor? after,
@@ -358,11 +354,10 @@ class ExpenseRepository {
     limit: limit,
   );
 
-  /// The rows a total from [from] to [to] (inclusive) covers, for
-  /// [filter]'s category and event part: date, currency and amount. The
-  /// adding is Dart's (`sumByCurrency`, a `BigInt`; no SQL `SUM`, which
-  /// throws at 2⁶³, phase-5.md R3). Future-dated rows are included
-  /// (P5-13); drafts are another table.
+  /// The rows a total from [from] to [to] (inclusive) covers, for [filter]'s
+  /// category and event part: date, currency and amount. The adding is Dart's
+  /// (`sumByCurrency`, a `BigInt`; no SQL `SUM`, which throws at 2⁶³).
+  /// Future-dated rows are included; drafts are another table.
   Future<List<AmountRow>> amountsIn({
     required String from,
     required String to,
@@ -388,9 +383,9 @@ class ExpenseRepository {
     ];
   }
 
-  /// Every active expense that passes [filter]'s category and event part,
-  /// in list order, as the text filter sees it (phase-5.md §6.3): read
-  /// once when a text filter is applied, then matched in Dart.
+  /// Every active expense that passes [filter]'s category and event part, in
+  /// list order, as the text filter sees it: read once when a text filter is
+  /// applied, then matched in Dart.
   Future<List<SearchEntry>> searchEntries({
     ExpenseFilter filter = ExpenseFilter.none,
   }) async {
@@ -439,10 +434,10 @@ class ExpenseRepository {
     return found..sort(_compareListOrder);
   }
 
-  /// Moves the active expense [id] to the bin. `updated_at` is left alone:
-  /// the expense itself didn't change. Throws [ExpenseNotFound] if it was
-  /// already binned or is gone, so nobody offers Undo for nothing (R14).
-  /// [clearDraft] as for [add].
+  /// Moves the active expense [id] to the bin. `updated_at` is left alone: the
+  /// expense itself didn't change. Throws [ExpenseNotFound] if it was already
+  /// binned or is gone, so nobody offers Undo for nothing. [clearDraft] as for
+  /// [add].
   Future<void> moveToBin(int id, {bool clearDraft = false}) async {
     await _db.transaction((txn) async {
       final changed = await txn.update(
@@ -481,8 +476,8 @@ class ExpenseRepository {
 
   /// Deletes the binned expense [id] for good; its event and photo links
   /// cascade. Only matches binned rows, so an active expense can never be
-  /// hard-deleted by mistake. Its photo rows and files stay until the
-  /// startup sweep, which deletes only what nothing references (P6-13).
+  /// hard-deleted by mistake. Its photo rows and files stay until the startup
+  /// sweep, which deletes only what nothing references.
   Future<void> deletePermanently(int id) async {
     await _db.delete('expenses', where: 'id = ? AND $_binned', whereArgs: [id]);
     _dataVersion.bump();
@@ -495,9 +490,9 @@ class ExpenseRepository {
     _dataVersion.bump();
   }
 
-  /// Deletes, in one transaction, the expenses binned more than
-  /// [binRetention] ago. Returns how many. Runs at startup, before the
-  /// photo sweep, which then frees their photos (P6-13).
+  /// Deletes, in one transaction, the expenses binned more than [binRetention]
+  /// ago. Returns how many. Runs at startup, before the photo sweep, which then
+  /// frees their photos.
   Future<int> purgeBin() async {
     final cutoff = _now().subtract(binRetention).millisecondsSinceEpoch;
     final count = await _db.transaction(
@@ -508,14 +503,14 @@ class ExpenseRepository {
     return count;
   }
 
-  // Photos (phase-6.md §6.4).
+  // Photos.
 
   /// The photos of expense [id] (active or binned), in order.
   Future<List<SavedPhoto>> photosOf(int id) async =>
       (await _photosOfMany(_db, [id]))[id] ?? const [];
 
-  /// Which of [photoIds] still have a row: a draft's saved photos are
-  /// checked with it when the form opens (P6-22).
+  /// Which of [photoIds] still have a row: a draft's saved photos are checked
+  /// with it when the form opens.
   Future<Set<int>> existingPhotoIds(Iterable<int> photoIds) async {
     final rows = await inChunks(
       photoIds.toSet().toList(),
@@ -545,15 +540,15 @@ class ExpenseRepository {
   }
 
   /// Whether any active expense has a photo: Home's photos icon shows only
-  /// then (P6-36).
+  /// then.
   Future<bool> hasPhotos() async => (await _db.rawQuery(
     'SELECT 1 FROM expenses WHERE $_active '
     'AND id IN (SELECT expense_id FROM expense_photos) LIMIT 1',
   )).isNotEmpty;
 
-  /// Whether [filter] lets through any active expense with a photo: the
-  /// icon is greyed out when it doesn't (P6-45). The category and event
-  /// part is SQL; a text part is matched in Dart, like Home's list.
+  /// Whether [filter] lets through any active expense with a photo: the icon is
+  /// greyed out when it doesn't. The category and event part is SQL; a text
+  /// part is matched in Dart, like Home's list.
   Future<bool> hasMatchingPhotos(ExpenseFilter filter) async {
     if (!filter.hasText) {
       return (await _db.rawQuery(
@@ -565,9 +560,9 @@ class ExpenseRepository {
     return (await textMatchesWithPhotos(filter)).isNotEmpty;
   }
 
-  /// The ids of [filter]'s text matches (among its category and event
-  /// part) that have photos, in list order: the Photos screen's text path
-  /// (§6.4) and [hasMatchingPhotos]'.
+  /// The ids of [filter]'s text matches (among its category and event part)
+  /// that have photos, in list order: the Photos screen's text path and
+  /// [hasMatchingPhotos]'.
   Future<List<int>> textMatchesWithPhotos(ExpenseFilter filter) async {
     final words = searchWords(filter.text);
     return withPhotos([
@@ -595,10 +590,10 @@ class ExpenseRepository {
       row['expense_id']! as int,
   };
 
-  /// A page of the Photos screen (§6.4): active expenses **with photos**
-  /// that pass [filter]'s category and event part, in Home's order,
-  /// after [after], each with its photos in order. Keyset by expense, so
-  /// an expense's photos are never split across pages.
+  /// A page of the Photos screen: active expenses **with photos** that pass
+  /// [filter]'s category and event part, in Home's order, after [after], each
+  /// with its photos in order. Keyset by expense, so an expense's photos are
+  /// never split across pages.
   Future<List<PhotoExpense>> photoExpensesPage({
     ExpenseFilter filter = ExpenseFilter.none,
     ExpenseCursor? after,
@@ -637,14 +632,14 @@ class ExpenseRepository {
     ];
   }
 
-  /// Deletes the [links] (expense, photo) from their expenses at once, in
-  /// one transaction: the Photos screen's Delete (owner rev 6, §6.4a).
-  /// Only **active** expenses are changed (one binned or deleted since the
-  /// screen loaded is skipped); each changed expense's remaining photos are
-  /// numbered 0.. again in their order, and its `updated_at` moves. Returns
-  /// how many links went and the expenses that lost some: only their Edit
-  /// drafts may drop the photos (a skipped expense keeps them). The rows
-  /// and files stay for the sweep.
+  /// Deletes the [links] (expense, photo) from their expenses at once, in one
+  /// transaction: the Photos screen's Delete (owner rev 6). Only **active**
+  /// expenses are changed (one binned or deleted since the screen loaded is
+  /// skipped); each changed expense's remaining photos are numbered 0.. again
+  /// in their order, and its `updated_at` moves. Returns how many links went
+  /// and the expenses that lost some: only their Edit drafts may drop the
+  /// photos (a skipped expense keeps them). The rows and files stay for the
+  /// sweep.
   Future<({int count, Set<int> expenseIds})> removePhotoLinks(
     List<({int expenseId, int photoId})> links,
   ) async {
@@ -733,9 +728,9 @@ class ExpenseRepository {
     return _usageMap(rows);
   }
 
-  /// The currencies of the most recently **entered** active expenses
-  /// (by `created_at`), distinct, newest first. Ordering by `occurred_at`
-  /// would let a back- or future-dated expense jump the list (P2-15).
+  /// The currencies of the most recently **entered** active expenses (by
+  /// `created_at`), distinct, newest first. Ordering by `occurred_at` would let
+  /// a back- or future-dated expense jump the list.
   Future<List<String>> recentCurrencies({int limit = 5}) async {
     final rows = await _db.rawQuery(
       'SELECT currency_code FROM expenses WHERE $_active '
@@ -746,22 +741,21 @@ class ExpenseRepository {
     return [for (final row in rows) row['currency_code']! as String];
   }
 
-  /// Every distinct title of the active expenses up to today, exact
-  /// spellings, with the newest row's amount and category and the uses in
-  /// the last [titleWindowDays] (phase-4.md §6.1). Grouping spellings and
-  /// matching happen in Dart (`title_suggestions.dart`).
+  /// Every distinct title of the active expenses up to today, exact spellings,
+  /// with the newest row's amount and category and the uses in the last
+  /// [titleWindowDays]. Grouping spellings and matching happen in Dart
+  /// (`title_suggestions.dart`).
   ///
-  /// The amount and category are SQLite's bare columns next to the one
-  /// `MAX()`: they come from the newest row, any one of them on a tie
-  /// (sqlite.md §5.3). Display only; [prefillSource] is the exact query.
-  /// The bin filter is in the `WHERE`, so a binned row is never that row.
+  /// The amount and category are SQLite's bare columns next to the one `MAX()`:
+  /// they come from the newest row, any one of them on a tie. Display only;
+  /// [prefillSource] is the exact query. The bin filter is in the `WHERE`, so a
+  /// binned row is never that row.
   Future<List<TitleHistoryRow>> titleHistory() =>
       titleHistoryOn(_db, now: _now());
 
-  /// [titleHistory] through [db], with "today" taken from [now]: the SMS
-  /// scan reads it inside its own transaction (phase-9a.md R12), where a
-  /// read through the database itself would never return (sqflite's
-  /// `transaction()` holds the lock, sqlite.md §5.15).
+  /// [titleHistory] through [db], with "today" taken from [now]: the SMS scan
+  /// reads it inside its own transaction, where a read through the database
+  /// itself would never return (sqflite's `transaction()` holds the lock).
   static Future<List<TitleHistoryRow>> titleHistoryOn(
     DatabaseExecutor db, {
     required DateTime now,
@@ -787,10 +781,10 @@ class ExpenseRepository {
     ];
   }
 
-  /// The newest active expense, up to today, titled exactly one of
-  /// [spellings], with its events: what a picked suggestion prefills the
-  /// form from (phase-4.md §6.1). Ties on `occurred_at` go to the highest
-  /// id. Null if there is none (it was binned meanwhile).
+  /// The newest active expense, up to today, titled exactly one of [spellings],
+  /// with its events: what a picked suggestion prefills the form from. Ties on
+  /// `occurred_at` go to the highest id. Null if there is none (it was binned
+  /// meanwhile).
   Future<Expense?> prefillSource(List<String> spellings) async {
     if (spellings.isEmpty) return null;
     // A title has a handful of spellings; the cap only keeps the statement
@@ -808,9 +802,9 @@ class ExpenseRepository {
     )).firstOrNull;
   }
 
-  /// Amounts in [currencyCode] used at least [chipMinUses] times in the
-  /// last [chipWindowDays] up to today, most used first, then most recent,
-  /// then smallest; at most six (phase-4.md §6.2).
+  /// Amounts in [currencyCode] used at least [chipMinUses] times in the last
+  /// [chipWindowDays] up to today, most used first, then most recent, then
+  /// smallest; at most six.
   Future<List<int>> amountChipStats(String currencyCode) async {
     final (from, today) = _window(chipWindowDays);
     final rows = await _db.rawQuery(
@@ -830,16 +824,15 @@ class ExpenseRepository {
   static String occurredOnFor(DateTime occurredAt, int utcOffsetMinutes) =>
       localDayOf(occurredAt, utcOffsetMinutes);
 
-  /// Inserts [payments] of recurring item [itemId] and copies the item's
-  /// events onto each (F5), inside the caller's transaction ([txn]): the
-  /// generator's and Save with Repeats'. Their `occurred_on` is derived
-  /// like any expense's (database.md §1). A payment of a due date that has
-  /// a row already fails on the unique index (F2) and rolls the caller
-  /// back: callers leave those out.
+  /// Inserts [payments] of recurring item [itemId] and copies the item's events
+  /// onto each, inside the caller's transaction ([txn]): the generator's and
+  /// Save with Repeats'. Their `occurred_on` is derived like any expense's. A
+  /// payment of a due date that has a row already fails on the unique index and
+  /// rolls the caller back: callers leave those out.
   ///
-  /// In one batch, then one event copy per 500 due dates (found through
-  /// the unique index): one statement and channel call per payment made
-  /// "Add the first 1,000" take seconds on the Oppo (phase-7a.md §12a).
+  /// In one batch, then one event copy per 500 due dates (found through the
+  /// unique index): one statement and channel call per payment made "Add the
+  /// first 1,000" take seconds on the Oppo.
   static Future<void> insertPayments(
     Transaction txn,
     int itemId,
@@ -890,9 +883,9 @@ class ExpenseRepository {
     });
   }
 
-  /// Recurring item [itemId]'s active payments, newest due date first,
-  /// [limit] at a time, continuing before the due date [before] (§4.3:
-  /// the unique index serves it).
+  /// Recurring item [itemId]'s active payments, newest due date first, [limit]
+  /// at a time, continuing before the due date [before] (the unique index
+  /// serves it).
   static Future<List<Expense>> paymentsOf(
     DatabaseExecutor db,
     int itemId, {
@@ -918,15 +911,15 @@ class ExpenseRepository {
     'currency_code': input.amount.currencyCode,
     'occurred_at': input.occurredAt.millisecondsSinceEpoch,
     'utc_offset_minutes': input.utcOffsetMinutes,
-    // Derived here, in the same write as its source (database.md §1).
+    // Derived here, in the same write as its source.
     'occurred_on': occurredOnFor(input.occurredAt, input.utcOffsetMinutes),
     'category_id': input.categoryId,
     'payment_method_id': input.paymentMethodId,
   };
 
   /// Marks the SMS suggestion [link] added as [expenseId] and teaches its
-  /// payee's pending suggestions the saved title and category (P9a-12),
-  /// inside the save's transaction. Nothing without a link.
+  /// payee's pending suggestions the saved title and category, inside the
+  /// save's transaction. Nothing without a link.
   static Future<void> _markSms(
     Transaction txn,
     SmsLink? link,
@@ -951,8 +944,8 @@ class ExpenseRepository {
     );
   }
 
-  /// The draft slot's row. The only place this class touches
-  /// `expense_draft` (phase-4.md §6.3); `ExpenseDraftRepository` owns it.
+  /// The draft slot's row. The only place this class touches `expense_draft`;
+  /// `ExpenseDraftRepository` owns it.
   static Future<void> _deleteDraft(Transaction txn) =>
       txn.delete('expense_draft');
 
@@ -969,15 +962,14 @@ class ExpenseRepository {
     }
   }
 
-  /// Links [photos] to the expense [expenseId] in order (§6.4), inside the
-  /// save's own transaction. A new photo's row is made if its path isn't
-  /// there yet (`INSERT OR IGNORE`), then its id read back: the insert's
-  /// return value is never used, since an ignored insert returns 0 in
-  /// tests and -1 on a phone (R16). A saved photo is linked only if its
-  /// row still exists, checked in this same transaction: a row the sweep
-  /// took meanwhile links nothing, and the form says so (F13). A photo
-  /// already linked in this save is skipped, so a duplicate can't fail
-  /// the save.
+  /// Links [photos] to the expense [expenseId] in order, inside the save's own
+  /// transaction. A new photo's row is made if its path isn't there yet
+  /// (`INSERT OR IGNORE`), then its id read back: the insert's return value is
+  /// never used, since an ignored insert returns 0 in tests and -1 on a phone.
+  /// A saved photo is linked only if its row still exists, checked in this same
+  /// transaction: a row the sweep took meanwhile links nothing, and the form
+  /// says so. A photo already linked in this save is skipped, so a duplicate
+  /// can't fail the save.
   static Future<void> _linkPhotos(
     Transaction txn,
     int expenseId,

@@ -24,10 +24,10 @@ import java.util.concurrent.Executors
 
 /**
  * `expense_tracker/report_pdf`: writes a report's PDF with Android's
- * `PdfDocument` (phase-8.md §6.4, plan A). Dart sends a layout-free
- * document (every string formatted, see report_pdf.dart); this lays it out
- * on A4 pages and draws it with the system's text stack, so Hindi
- * conjuncts and colour emoji come out right (probed on the Oppo, §12a).
+ * `PdfDocument` (plan A). Dart sends a layout-free document (every string
+ * formatted, see report_pdf.dart); this lays it out on A4 pages and draws it
+ * with the system's text stack, so Hindi conjuncts and colour emoji come out
+ * right (probed on the Oppo).
  *
  * Two passes: the first only measures, to count the pages for "Page 3 of
  * 12"; the second draws. A single-line cell is drawn with `drawText`
@@ -431,7 +431,7 @@ class ReportPdfChannel(messenger: BinaryMessenger, context: Context) :
         /** Pages per part (memory: about 25 MB of recorded pages each). */
         private const val PART_PAGES = 100
 
-        // A4 portrait in points, 36 pt margins (P8-21).
+        // A4 portrait in points, 36 pt margins.
         private const val WIDTH = 595
         private const val HEIGHT = 842
         private const val MARGIN = 36f

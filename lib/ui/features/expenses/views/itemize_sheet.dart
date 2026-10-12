@@ -5,9 +5,9 @@ import '../../../../domain/itemize.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/widgets/app_sheet.dart';
 
-/// Asks a label for each additive term of the amount (phase-4.md §5.2).
-/// Returns the labels, one per term (`''` = none), or null if closed
-/// without Done. Done needs at least one label.
+/// Asks a label for each additive term of the amount. Returns the labels, one
+/// per term (`''` = none), or null if closed without Done. Done needs at least
+/// one label.
 Future<List<String>?> showItemizeSheet(
   BuildContext context, {
   required List<String> terms,

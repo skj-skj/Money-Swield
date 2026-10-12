@@ -5,10 +5,10 @@ import '../../../../domain/title_suggestions.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/money_formatter.dart';
 
-/// The title field with its suggestions dropdown (phase-4.md §7.1): up to
-/// 5 past titles under the field, each with its last amount and category
-/// emoji. Shown while the field has focus and [suggestions] isn't empty;
-/// the form empties it after a pick and on back.
+/// The title field with its suggestions dropdown: up to 5 past titles under the
+/// field, each with its last amount and category emoji. Shown while the field
+/// has focus and [suggestions] isn't empty; the form empties it after a pick
+/// and on back.
 ///
 /// An [OverlayPortal] following the field, so the dropdown covers the form
 /// instead of pushing it down, and scrolls with the field.

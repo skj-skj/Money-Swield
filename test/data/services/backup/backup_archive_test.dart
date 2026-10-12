@@ -168,7 +168,7 @@ void main() {
       final zip = buildZip([
         textEntry(
           'manifest.json',
-          // Over the limit (16 MB since Phase 6, R4).
+          // Over the limit (16 MB).
           manifestJson({'padding': ' ' * BackupArchive.maxManifestBytes}),
         ),
         entry('expense_tracker.db', databaseBytes),

@@ -8,11 +8,10 @@ import '../../../l10n/app_localizations.dart';
 import '../builtin_names.dart';
 import '../item_labels.dart';
 
-/// One chip per active part of a filter, each with ✕ (phase-5.md §8.4):
-/// the text, Only recurring, the categories, the events and, on Reports,
-/// the payment methods (phase-8.md §8.2). Home's filter bar and the
-/// Reports screen show the same chips. A chip's ✕ calls [onChange] with
-/// that part removed; a tap on a chip calls [onOpen].
+/// One chip per active part of a filter, each with ✕: the text, Only recurring,
+/// the categories, the events and, on Reports, the payment methods. Home's
+/// filter bar and the Reports screen show the same chips. A chip's ✕ calls
+/// [onChange] with that part removed; a tap on a chip calls [onOpen].
 List<Widget> filterChips(
   BuildContext context, {
   required ExpenseFilter filter,
@@ -47,7 +46,7 @@ List<Widget> filterChips(
         l10n.filterSearchChip(text),
         () => onChange(filter.copyWith(text: '')),
       ),
-    // First after the text chip (phase-7b.md §8.4).
+    // First after the text chip.
     if (filter.onlyRecurring)
       chip(
         const ValueKey('filterChipRecurring'),

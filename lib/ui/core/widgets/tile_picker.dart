@@ -8,10 +8,10 @@ import '../item_shapes.dart';
 import '../picker_order.dart';
 import 'picker_results_screen.dart';
 
-/// The category / event picker of phase-2.md §6.2, also used by the move
-/// dialog (§10.1). One shared widget, so every use looks and behaves the
-/// same; the uses differ only in the items, single vs. multi select, and
-/// whether **New** (and **None**) is offered.
+/// The category / event picker of the Add form, also used by the move
+/// dialog. One shared widget, so every use looks and behaves the same; the uses
+/// differ only in the items, single vs. multi select, and whether **New** (and
+/// **None**) is offered.
 ///
 /// Normal state: every item in two rows that scroll sideways together,
 /// filled column by column (1 top, 2 under it, 3 top …), so the most

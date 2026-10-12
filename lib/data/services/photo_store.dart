@@ -13,21 +13,20 @@ import '../../domain/saved_picture.dart';
 import 'file_sha256.dart';
 import 'photo_service.dart';
 
-/// Builds the image a [FileImage] would, for one file at [maxPx] at most;
-/// tests swap in memory images, which load in a widget test's fake-async
-/// zone where a file never does (F17).
+/// Builds the image a [FileImage] would, for one file at [maxPx] at most; tests
+/// swap in memory images, which load in a widget test's fake-async zone where a
+/// file never does.
 typedef PhotoImageFactory = ImageProvider Function(String path, int maxPx);
 
-/// A camera shot taken but not yet used or discarded (phase-6.md §7.1): the
-/// camera's file in staging, the form it is for, and when the camera
-/// opened. Kept in `photos_staging/pending_capture.json`, outside the
-/// draft slot, so opening the camera never replaces another expense's
-/// draft (P6-14).
+/// A camera shot taken but not yet used or discarded: the camera's file in
+/// staging, the form it is for, and when the camera opened. Kept in
+/// `photos_staging/pending_capture.json`, outside the draft slot, so opening
+/// the camera never replaces another expense's draft.
 typedef PendingCapture = ({String name, int? editingExpenseId, DateTime at});
 
-/// One photo to save to Pictures, with what names and dates it: the
-/// expense's title and stored day, its wall-clock time and offset (for
-/// EXIF) and its moment (§6.6).
+/// One photo to save to Pictures, with what names and dates it: the expense's
+/// title and stored day, its wall-clock time and offset (for EXIF) and its
+/// moment.
 typedef PictureToSave = ({
   FormPhoto photo,
   String title,
@@ -37,9 +36,9 @@ typedef PictureToSave = ({
   DateTime moment,
 });
 
-/// [photo] of the saved [expense] to save, named and dated by it (§5.9):
-/// the Photos screen and the Bin detail. The form, whose expense may not
-/// be saved yet, builds its own from its fields.
+/// [photo] of the saved [expense] to save, named and dated by it: the Photos
+/// screen and the Bin detail. The form, whose expense may not be saved yet,
+/// builds its own from its fields.
 PictureToSave pictureOf(Expense expense, FormPhoto photo) => (
   photo: photo,
   title: expense.title,
@@ -60,9 +59,9 @@ typedef SaveToPicturesResult = ({
 });
 
 /// The app's photo files: `photos/` (saved, named by SHA-256) and
-/// `photos_staging/` (added to a form, not saved yet), both in the app's
-/// own external files folder next to `databases/` (phase-6.md §4.3, P6-1).
-/// No SQL here: the repository owns the rows.
+/// `photos_staging/` (added to a form, not saved yet), both in the app's own
+/// external files folder next to `databases/`. No SQL here: the repository owns
+/// the rows.
 ///
 /// Every path from the database, a draft or a marker is checked with
 /// [isValidPhotoPath] / [isValidStagingName] before a file is touched.
@@ -98,7 +97,7 @@ class PhotoStore {
   /// The marker's file name in staging.
   static const markerName = 'pending_capture.json';
 
-  /// Room kept free on top of what Save to Pictures writes (§6.6).
+  /// Room kept free on top of what Save to Pictures writes.
   static const saveMargin = 20 * 1024 * 1024;
 
   /// The app's external files folder.
@@ -118,7 +117,7 @@ class PhotoStore {
   /// A new name for the camera's target file.
   String newCaptureName() => 'capture-${_uuid()}.jpg';
 
-  /// A version 4 UUID from [Random.secure] (no `uuid` package, §4.3).
+  /// A version 4 UUID from [Random.secure] (no `uuid` package).
   String _uuid() {
     final bytes = [for (var i = 0; i < 16; i++) _random.nextInt(256)];
     bytes[6] = (bytes[6] & 0x0F) | 0x40;
@@ -129,8 +128,8 @@ class PhotoStore {
         '${hex.sublist(10).join()}';
   }
 
-  /// The absolute path of the staging file [name]; throws for a name that
-  /// isn't one of ours (§5.1).
+  /// The absolute path of the staging file [name]; throws for a name that isn't
+  /// one of ours.
   String stagingFile(String name) {
     if (!isValidStagingName(name)) {
       throw ArgumentError.value(name, 'name', 'not a staging name');
@@ -152,9 +151,9 @@ class PhotoStore {
     };
   }
 
-  /// [photo] decoded at [maxPx] at most (`ResizeImage`, P6-26), so a
-  /// thumbnail of an original never becomes a full-size bitmap. A missing
-  /// file fails to load; the widget then shows "image missing".
+  /// [photo] decoded at [maxPx] at most (`ResizeImage`), so a thumbnail of an
+  /// original never becomes a full-size bitmap. A missing file fails to load;
+  /// the widget then shows "image missing".
   ImageProvider image(FormPhoto photo, int maxPx) =>
       _imageFactory(pathOf(photo) ?? '', maxPx);
 
@@ -170,14 +169,13 @@ class PhotoStore {
 
   // Staging.
 
-  /// Processes the picked [uri] into staging under [sizing] (§6.2).
+  /// Processes the picked [uri] into staging under [sizing].
   Future<StagedPhoto> stageFromGallery(String uri, PhotoSizing sizing) =>
       _stage(uri, sizing, quarterTurns: 0);
 
   /// Processes the camera's file [captureName] under [sizing], turned by
-  /// [quarterTurns]. Its EXIF orientation is applied first (Android's
-  /// decoder does it, §12a), then the turns: one encode, from the camera's
-  /// own file (P6-34).
+  /// [quarterTurns]. Its EXIF orientation is applied first (Android's decoder
+  /// does it), then the turns: one encode, from the camera's own file.
   ///
   /// The camera's file stays: the caller deletes it (with the marker) only
   /// once the draft row names the staged copy. Until then a kill brings
@@ -238,8 +236,8 @@ class PhotoStore {
     }
   }
 
-  /// The staged photos among [photos] whose file is gone or empty, by name
-  /// (the form's draft check, P6-22). No `dart:io` in the cubit.
+  /// The staged photos among [photos] whose file is gone or empty, by name (the
+  /// form's draft check). No `dart:io` in the cubit.
   Future<Set<String>> missingStaged(Iterable<StagedPhoto> photos) async => {
     for (final photo in photos)
       if (!await _hasBytes(pathOf(photo))) photo.stagingName,
@@ -258,7 +256,7 @@ class PhotoStore {
     }
   }
 
-  // The camera marker (§7.1).
+  // The camera marker.
 
   /// Records that the camera is about to write [captureName] for the form
   /// editing [editingExpenseId] (null for Add). Written before the camera
@@ -312,10 +310,10 @@ class PhotoStore {
   // Saving.
 
   /// Copies the staged [photo] to `photos/<sha256>.<ext>` and returns that
-  /// relative path (§6.4). A file of the same size already there is the
-  /// same picture (named by its hash) and is kept; one of another size
-  /// isn't, and is replaced. The staged file stays: the draft still names
-  /// it until the save commits.
+  /// relative path. A file of the same size already there is the same picture
+  /// (named by its hash) and is kept; one of another size isn't, and is
+  /// replaced. The staged file stays: the draft still names it until the save
+  /// commits.
   Future<String> promote(StagedPhoto photo) async {
     final relative = photo.savedPath;
     if (!isValidPhotoPath(relative)) {
@@ -344,15 +342,15 @@ class PhotoStore {
     }
   }
 
-  // Save to Pictures (§6.6, owner rev 5).
+  // Save to Pictures (owner rev 5).
 
-  /// Copies [items] into `Pictures/Expense Tracker/`, one at a time, in
-  /// order. Not linked to anything: no row, setting or draft changes, and
-  /// the app never touches the copies again (P6-46, P6-47). A missing file
-  /// is skipped and counted, a failed one counted, and the rest go on.
-  /// When the phone hasn't room for all of them and 20 MB more, nothing is
-  /// saved. Free space that can't be read doesn't stop it (as for a
-  /// backup): each save then fails on its own if the phone is full.
+  /// Copies [items] into `Pictures/Expense Tracker/`, one at a time, in order.
+  /// Not linked to anything: no row, setting or draft changes, and the app
+  /// never touches the copies again. A missing file is skipped and counted, a
+  /// failed one counted, and the rest go on. When the phone hasn't room for all
+  /// of them and 20 MB more, nothing is saved. Free space that can't be read
+  /// doesn't stop it (as for a backup): each save then fails on its own if the
+  /// phone is full.
   Future<SaveToPicturesResult> saveToPictures(
     List<PictureToSave> items, {
     required String fallbackTitle,
@@ -401,9 +399,9 @@ class PhotoStore {
     return (saved: saved, missing: missing, failed: failed, noSpace: false);
   }
 
-  /// Creates both folders. No `.nomedia` (owner, 2026-10-09): they are in
-  /// the app's own storage, which gallery apps don't index (F2); only the
-  /// copies saved to Pictures are meant for them.
+  /// Creates both folders. No `.nomedia` (owner, 2026-10-09): they are in the
+  /// app's own storage, which gallery apps don't index; only the copies saved
+  /// to Pictures are meant for them.
   Future<void> _ensureFolders() async {
     for (final folder in [photosPath, stagingPath]) {
       await Directory(folder).create(recursive: true);

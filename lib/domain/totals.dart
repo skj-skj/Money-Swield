@@ -1,5 +1,5 @@
-/// Totals per currency (phase-5.md §5.2). Never stored: every total is
-/// added up here from the stored minor units of the rows it covers.
+/// Totals per currency. Never stored: every total is added up here from the
+/// stored minor units of the rows it covers.
 library;
 
 /// Per currency code, the exact sum in minor units.
@@ -8,9 +8,9 @@ typedef CurrencyTotals = Map<String, BigInt>;
 /// One row a total covers: its local date, currency and amount.
 typedef AmountRow = (String day, String code, int amountMinor);
 
-/// Adds up [rows] per currency. `BigInt`, so a sum can't overflow (Dart's
-/// `int` wraps silently at 2⁶³, SQLite's `SUM` throws there; phase-5.md
-/// R3). Only currencies that have rows appear.
+/// Adds up [rows] per currency. `BigInt`, so a sum can't overflow (Dart's `int`
+/// wraps silently at 2⁶³, SQLite's `SUM` throws there). Only currencies that
+/// have rows appear.
 CurrencyTotals sumByCurrency(Iterable<(String code, int amountMinor)> rows) {
   final totals = <String, BigInt>{};
   for (final (code, minor) in rows) {

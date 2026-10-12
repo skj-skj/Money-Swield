@@ -95,7 +95,7 @@ void main() {
     expect(back.createdAt, DateTime.utc(2026, 10, 3, 8, 35, 12));
   });
 
-  group('photos (phase-6.md §5.7)', () {
+  group('photos', () {
     final a = 'a' * 64;
     final b = 'b' * 64;
     Map<String, Object?> entry(String sha, {String? path, Object? size = 10}) =>
@@ -126,7 +126,7 @@ void main() {
       expect(back.photos, manifest.photos);
     });
 
-    test('a Phase 3 manifest (no includes_photos) is database-only', () {
+    test('an older manifest (no includes_photos) is database-only', () {
       final back = BackupManifest.decode(
         manifestJson({'includes_photos': null}),
       );

@@ -14,8 +14,8 @@ import 'restore_tools.dart';
 import 'shell.dart';
 import 'startup_cubit.dart';
 
-/// Shown once migrations are done: opens the database, loads the settings,
-/// then shows onboarding or the shell (phase-1.md §5).
+/// Shown once migrations are done: opens the database, loads the settings, then
+/// shows onboarding or the shell.
 ///
 /// Finishing onboarding sets `onboardingCompleted`, which swaps onboarding
 /// for the shell here, so there is no route back to it.
@@ -121,9 +121,9 @@ class _StartupFailedScreen extends StatelessWidget {
   final StartupFailed failure;
   final VoidCallback onRetry;
 
-  /// Offered when a pre-restore copy exists (P3-18): otherwise a restored
-  /// database that can't start the app would leave the user stuck, as Undo
-  /// normally lives in Settings.
+  /// Offered when a pre-restore copy exists: otherwise a restored database that
+  /// can't start the app would leave the user stuck, as Undo normally lives in
+  /// Settings.
   final VoidCallback? onUndoRestore;
 
   @override

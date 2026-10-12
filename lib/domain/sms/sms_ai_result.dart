@@ -1,5 +1,5 @@
-/// The on-device model's answer for one SMS, checked before anything of it
-/// is used (phase-9b.md §5.2, P9b-55). Pure Dart.
+/// The on-device model's answer for one SMS, checked before anything of it is
+/// used. Pure Dart.
 library;
 
 import 'dart:convert';
@@ -22,24 +22,24 @@ typedef AiParse = ({
   /// payee (`cleanPayee`).
   String? title,
 
-  /// One of [aiPaymentKeys], or null: 9a's text rule decides (P9b-54).
+  /// One of [aiPaymentKeys], or null: the regex text rule decides.
   String? paymentMethodKey,
 
   /// One of the categories offered, or null.
   int? categoryId,
 });
 
-/// The answer's JSON object: from the first `{` to the last `}`. The fast
-/// model on the owner's Pixel wraps it in a Markdown fence (```` ```json
-/// … ``` ````) though told not to (gate, phase-9b.md §12a).
+/// The answer's JSON object: from the first `{` to the last `}`. The fast model
+/// on the owner's Pixel wraps it in a Markdown fence (```` ```json … ``` ````)
+/// though told not to (gate).
 final _object = RegExp(r'\{.*\}', dotAll: true);
 
 /// [answer] for the SMS [body], or null when it can't be trusted: then the
-/// regex reads that SMS in the same scan (§5.2, still parsed once).
+/// regex reads that SMS in the same scan (still parsed once).
 ///
 /// - Not one JSON object, or `"is_debit"` not exactly `true` → null. A
 ///   "not a debit" goes to the regex too: one wrong answer must not lose
-///   an expense (P9b-37).
+///   an expense.
 /// - `"amount"` (a string or a number) must be one of the amounts the
 ///   text itself writes before its footer ([amountsInText]): the model
 ///   never invents, rounds or picks a balance. Else null.

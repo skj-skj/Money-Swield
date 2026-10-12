@@ -1,7 +1,6 @@
-/// Title suggestions (phase-4.md §6.1, P4-2): the title history is read
-/// once per form open and matched here, case-folded in Dart. SQL's
-/// `lower()` / `LIKE` fold ASCII only in tests and Unicode on phones
-/// (sqlite.md §5.4), so they're never used on user text.
+/// Title suggestions: the title history is read once per form open and matched
+/// here, case-folded in Dart. SQL's `lower()` / `LIKE` fold ASCII only in tests
+/// and Unicode on phones, so they're never used on user text.
 library;
 
 /// One exact spelling of a title, as the history query returns it: the

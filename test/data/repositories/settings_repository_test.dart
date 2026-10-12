@@ -224,7 +224,7 @@ void main() {
     );
   });
 
-  group('picker look and picker modes (phase-2.md §12a)', () {
+  group('picker look and picker modes', () {
     test(
       'default to rounded tiles, circle buttons, dial and calendar',
       () async {
@@ -294,7 +294,7 @@ void main() {
     });
   });
 
-  group('Home settings (phase-5.md §4.2)', () {
+  group('Home settings', () {
     test('defaults: Monday, month names, card Month, list Week, filled '
         'line, locked', () async {
       final settings = await repository.load();
@@ -374,7 +374,7 @@ void main() {
       },
     );
 
-    test('round trip of each, with the stored values of database.md', () async {
+    test('round trip of each, with the stored values', () async {
       await repository.setWeekStart(WeekStart.sunday);
       await repository.setWeekLabel(WeekLabel.number);
       await repository.setCardPeriod(Period.year);
@@ -483,25 +483,22 @@ void main() {
       expect(settings.datePickerKeyboard, isFalse);
     });
 
-    test(
-      'restoreDefaultLook leaves every Home setting alone (P5-33)',
-      () async {
-        await repository.setTrendCardSize(TrendCardSize.small);
-        await repository.setTrendCardHaptics(CardHaptics.strong);
-        await repository.setWeekStart(WeekStart.sunday);
-        await repository.setWeekLabel(WeekLabel.number);
-        await repository.setCardPeriod(Period.year);
-        await repository.setListGrouping(Period.day);
-        await repository.setTrendChartStyle(TrendChartStyle.bar);
-        await repository.setTrendCardPosition(TrendCardPosition.scrolls);
-        final before = await repository.load();
-        await repository.restoreDefaultLook();
-        expect(await repository.load(), before);
-      },
-    );
+    test('restoreDefaultLook leaves every Home setting alone', () async {
+      await repository.setTrendCardSize(TrendCardSize.small);
+      await repository.setTrendCardHaptics(CardHaptics.strong);
+      await repository.setWeekStart(WeekStart.sunday);
+      await repository.setWeekLabel(WeekLabel.number);
+      await repository.setCardPeriod(Period.year);
+      await repository.setListGrouping(Period.day);
+      await repository.setTrendChartStyle(TrendChartStyle.bar);
+      await repository.setTrendCardPosition(TrendCardPosition.scrolls);
+      final before = await repository.load();
+      await repository.restoreDefaultLook();
+      expect(await repository.load(), before);
+    });
   });
 
-  group('sms_ai_parsing (phase-9b.md §4)', () {
+  group('sms_ai_parsing', () {
     test('on by default; only an explicit 0 turns it off', () async {
       expect(await repository.smsAiParsing(), isTrue);
       await repository.setSmsAiParsing(false);
@@ -557,14 +554,14 @@ void main() {
     );
   });
 
-  group('photo sizing (phase-6.md §4.2)', () {
+  group('photo sizing', () {
     test('defaults: 1080p / 85 for camera and gallery', () async {
       final settings = await repository.load();
       expect(settings.cameraPhotos, (size: PhotoSize.p1080, quality: 85));
       expect(settings.galleryPhotos, (size: PhotoSize.p1080, quality: 85));
     });
 
-    test('round trip with the stored values of §4.2', () async {
+    test('round trip with the stored values', () async {
       await repository.setCameraPhotos((size: PhotoSize.original, quality: 95));
       await repository.setGalleryPhotos((size: PhotoSize.p720, quality: 70));
       final settings = await repository.load();
@@ -621,7 +618,7 @@ void main() {
     });
   });
 
-  group('Reports (phase-8.md §4, §6.2; owner 2026-10-10)', () {
+  group('Reports (owner 2026-10-10)', () {
     test('defaults: bars, month, no range, no filter, export by category '
         'as PDF bars with Others; both faces, locked, medium', () async {
       final (:prefs, :filterUnreadable) = await repository.loadReport();

@@ -12,13 +12,13 @@ import '../../../../domain/models/sms_suggestion.dart' show ScanProgress;
 import '../../../../domain/sms/sms_ai_prompt.dart';
 import '../../../core/emit_if_open.dart';
 
-/// Where SMS suggestions stand (phase-9a.md §7.1).
+/// Where SMS suggestions stand.
 enum SmsAvailability {
   /// Not known yet (before the first status read): nothing shows.
   unknown,
 
-  /// The build has no READ_SMS (play with `-PnoSms`, D11): no icon, no
-  /// tile, no onboarding step.
+  /// The build has no READ_SMS (play with `-PnoSms`): no icon, no tile, no
+  /// onboarding step.
   notBuilt,
 
   /// Built, not turned on.
@@ -55,16 +55,15 @@ class SmsState {
   /// before the first one in this run.
   final DateTime? lastScanAt;
 
-  /// Bumped when a scan stored new suggestions: an open SMS screen
-  /// reloads (P9a-42).
+  /// Bumped when a scan stored new suggestions: an open SMS screen reloads.
   final int scanVersion;
 
-  /// Whether Android will still show its permission dialog; when not, only
-  /// the app's settings page can grant it (P9a-30).
+  /// Whether Android will still show its permission dialog; when not, only the
+  /// app's settings page can grant it.
   final bool canAsk;
 
-  /// The on-device model (phase-9b.md §7): always `unavailable` on foss,
-  /// read without a channel call.
+  /// The on-device model: always `unavailable` on foss, read without a channel
+  /// call.
   final AiStatus aiStatus;
 
   /// The `sms_ai_parsing` setting (on by default).
@@ -74,8 +73,8 @@ class SmsState {
   /// "Downloading the model…" shows until the status says `available`.
   final bool aiDownloadStarted;
 
-  /// Settings → SMS shows the AI switch (§8): a model in or one that can
-  /// come, with SMS suggestions on. Never on foss.
+  /// Settings → SMS shows the AI switch: a model in or one that can come, with
+  /// SMS suggestions on. Never on foss.
   bool get showsAi =>
       aiStatus.canBeUsed &&
       (availability == SmsAvailability.on ||
@@ -87,16 +86,16 @@ class SmsState {
       aiStatus == AiStatus.downloading ||
       (aiDownloadStarted && aiStatus != AiStatus.available);
 
-  /// The switch's position: on when the setting is on and the model is in
-  /// or coming. A `downloadable` model shows off though the setting is on
-  /// (the default): the app never downloads it on its own (P9b-34), and a
-  /// tap starts the download.
+  /// The switch's position: on when the setting is on and the model is in or
+  /// coming. A `downloadable` model shows off though the setting is on (the
+  /// default): the app never downloads it on its own, and a tap starts the
+  /// download.
   bool get aiSwitchOn =>
       aiOn && (aiStatus == AiStatus.available || aiDownloading);
 
-  /// A scan asks the model (phase-9b.md §6.2): the switch is on and the
-  /// model is in; `downloadable` and `downloading` read with the regex
-  /// (P9b-34), as does foss (`unavailable`).
+  /// A scan asks the model: the switch is on and the model is in;
+  /// `downloadable` and `downloading` read with the regex, as does foss
+  /// (`unavailable`).
   bool get aiReads => aiOn && aiStatus == AiStatus.available;
 
   /// The feature can be seen at all (Settings tile, onboarding step).
@@ -158,7 +157,7 @@ enum SmsEnableResult {
   /// On, and a scan started.
   enabled,
 
-  /// The user refused: stays off, with the message of §8.7.
+  /// The user refused: stays off, with a message on how to turn it on.
   refused,
 
   /// Android won't ask any more: the app's settings page was opened.
@@ -168,9 +167,9 @@ enum SmsEnableResult {
   notBuilt,
 }
 
-/// App-level SMS state (phase-9a.md §7.1): created by the shell, given to
-/// Home, Settings and the backup screen. Scans when the app opens and when
-/// it comes back to the front, at most once a minute (P9a-13).
+/// App-level SMS state: created by the shell, given to Home, Settings and the
+/// backup screen. Scans when the app opens and when it comes back to the front,
+/// at most once a minute.
 class SmsCubit extends CubitSignal<SmsState> with EmitIfOpen<SmsState> {
   SmsCubit({
     required this._service,
@@ -191,17 +190,17 @@ class SmsCubit extends CubitSignal<SmsState> with EmitIfOpen<SmsState> {
   final SettingsRepository _settings;
   final OnDeviceAiService _ai;
 
-  /// The user's categories with the names they see (R16): the UI builds
-  /// them (built-ins are localized), the scan passes them to the model.
+  /// The user's categories with the names they see: the UI builds them
+  /// (built-ins are localized), the scan passes them to the model.
   final Future<List<CategoryName>> Function() _categoryNames;
   final DateTime Function() _now;
   final Duration minScanInterval;
 
   static Future<List<CategoryName>> _noCategories() async => const [];
 
-  /// The last scan's model pass stopped early (the app left the front,
-  /// AICore busy): the next [resumed] scans at once, not after a minute,
-  /// so the rest is read as soon as the app is back (P9b-40).
+  /// The last scan's model pass stopped early (the app left the front, AICore
+  /// busy): the next [resumed] scans at once, not after a minute, so the rest
+  /// is read as soon as the app is back.
   bool _stoppedEarly = false;
 
   /// When the last scan started; null before the first.
@@ -210,26 +209,25 @@ class SmsCubit extends CubitSignal<SmsState> with EmitIfOpen<SmsState> {
   /// [enable] sent the user to Android's settings to allow SMS.
   bool _enableWhenGranted = false;
 
-  /// After the first frame (application-design §3 step 6).
+  /// After the first frame.
   Future<void> start() => _scanIfDue(force: true);
 
   /// The app came back to the front: the permission may have changed in
   /// Android's settings, and new SMS may have come.
   Future<void> resumed() => _scanIfDue(force: _stoppedEarly);
 
-  /// The app left the front (phase-9b.md §6.2 step 4): the model refuses
-  /// background calls, so its pass stops after the SMS it is reading, and
-  /// [resumed] goes on from there.
+  /// The app left the front: the model refuses background calls, so its pass
+  /// stops after the SMS it is reading, and [resumed] goes on from there.
   void paused() => _scanner.pause();
 
-  /// The model's progress while a scan with it runs (the backup's "SMS 12
-  /// of 40", §6.2).
+  /// The model's progress while a scan with it runs (the backup's "SMS 12 of
+  /// 40").
   ValueListenable<ScanProgress?> get scanProgress => _scanner.progress;
 
-  /// The AI switch (§8). On: the setting is written, and a model that is
-  /// `downloadable` starts downloading (P9b-34: only now, never on its own).
-  /// Off: the regex reads everything from the next scan on; a download
-  /// already running isn't stopped (AICore's, not the app's).
+  /// The AI switch. On: the setting is written, and a model that is
+  /// `downloadable` starts downloading (only now, never on its own). Off: the
+  /// regex reads everything from the next scan on; a download already running
+  /// isn't stopped (AICore's, not the app's).
   Future<void> setAiParsing(bool on) async {
     await _settings.setSmsAiParsing(on);
     emitIfOpen(value.copyWith(aiOn: on));
@@ -244,8 +242,8 @@ class SmsCubit extends CubitSignal<SmsState> with EmitIfOpen<SmsState> {
 
   /// Starts the download and, when it ends, reads the status again; a model
   /// that is in by then is used from the next scan on. Not awaited: on some
-  /// phones it never answers (phase-9b.md §12a), and the screen shows
-  /// "Downloading the model…" meanwhile.
+  /// phones it never answers, and the screen shows "Downloading the model…"
+  /// meanwhile.
   void _download() {
     emitIfOpen(value.copyWith(aiDownloadStarted: true));
     unawaited(
@@ -268,19 +266,19 @@ class SmsCubit extends CubitSignal<SmsState> with EmitIfOpen<SmsState> {
     }
   }
 
-  /// Turns SMS suggestions on (onboarding, Settings, the screen's Allow):
-  /// asks for the permission when it isn't granted; granted → on and a
-  /// scan. Refused → stays off. When Android won't ask any more, the app's
-  /// settings page opens instead (P9a-30); [resumed] picks up the answer.
+  /// Turns SMS suggestions on (onboarding, Settings, the screen's Allow): asks
+  /// for the permission when it isn't granted; granted → on and a scan. Refused
+  /// → stays off. When Android won't ask any more, the app's settings page
+  /// opens instead; [resumed] picks up the answer.
   Future<SmsEnableResult> enable() async {
     final permission = await _service.status();
     if (!permission.built) return SmsEnableResult.notBuilt;
     var granted = permission.granted;
     if (!granted) {
       if (!permission.canAsk) {
-        // `sms_enabled` is written only once the permission is granted
-        // (database.md §3.1): [resumed] turns it on if the user allows it
-        // on the settings page, so they needn't tap the switch again.
+        // `sms_enabled` is written only once the permission is granted:
+        // [resumed] turns it on if the user allows it on the settings page, so
+        // they needn't tap the switch again.
         _enableWhenGranted = true;
         await _service.openSettings();
         await _readAvailability();
@@ -298,7 +296,7 @@ class SmsCubit extends CubitSignal<SmsState> with EmitIfOpen<SmsState> {
   }
 
   /// Turns them off: no more scans; the stored suggestions stay until the
-  /// 30-day purge (P9a-29), and come back when turned on again.
+  /// 30-day purge, and come back when turned on again.
   Future<void> disable() async {
     await _settings.setSmsEnabled(false);
     await _readAvailability();
@@ -307,8 +305,8 @@ class SmsCubit extends CubitSignal<SmsState> with EmitIfOpen<SmsState> {
   /// The app's page in Android's settings (permission refused for good).
   Future<void> openSettings() => _service.openSettings();
 
-  /// The scan running now, or null: the backup waits on it and shows that
-  /// it does only then (§6.7).
+  /// The scan running now, or null: the backup waits on it and shows that it
+  /// does only then.
   Future<void>? runningScan() => _scanner.isScanning ? _scanner.idle : null;
 
   Future<void> _scanIfDue({required bool force}) async {

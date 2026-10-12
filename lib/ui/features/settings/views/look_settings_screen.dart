@@ -12,9 +12,9 @@ import '../view_models/settings_cubit.dart';
 import 'customize_tiles_screen.dart';
 import 'theme_color_dialog.dart';
 
-/// Settings → Look (phase-5.md §8.5): theme, theme colour, tile shapes and
-/// Restore default look, the rows of the former Settings list, moved with
-/// their behaviour unchanged. Every change applies at once.
+/// Settings → Look: theme, theme colour, tile shapes and Restore default look,
+/// the rows of the former Settings list, moved with their behaviour unchanged.
+/// Every change applies at once.
 class LookSettingsScreen extends StatelessWidget {
   const LookSettingsScreen({super.key, required this.dependencies});
 

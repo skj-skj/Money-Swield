@@ -4,9 +4,9 @@ import android.app.Activity
 import android.content.Intent
 
 /**
- * One activity started for a result on behalf of a method call, at most
- * one at a time (phase-3.md §7, phase-6.md R8). Shared by the documents
- * and photos channels, each with its own [requestCode].
+ * One activity started for a result on behalf of a method call, at most one at
+ * a time. Shared by the documents and photos channels, each with its own
+ * [requestCode].
  *
  * The channels live with the cached engine, so they outlive any one
  * activity: [MainActivity] attaches itself in `onCreate`, detaches in

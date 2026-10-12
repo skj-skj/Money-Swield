@@ -3,7 +3,7 @@
 
 import '../migration/migration.dart';
 
-/// Key/value store for app preferences (database.md §3.1).
+/// Key/value store for app preferences.
 ///
 /// No seed rows: SettingsRepository has a default for every key, and a
 /// missing row means "use the default".

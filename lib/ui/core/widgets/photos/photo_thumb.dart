@@ -2,13 +2,12 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../../l10n/app_localizations.dart';
 
-/// One photo as a square-cropped thumbnail (phase-6.md §8): rounded 8, the
-/// picture filling it. A file that can't be loaded shows **image missing**
-/// (a broken-image icon, read as "Image missing"), never an error, and the
-/// tile still works (P6-21).
+/// One photo as a square-cropped thumbnail: rounded 8, the picture filling it.
+/// A file that can't be loaded shows **image missing** (a broken-image icon,
+/// read as "Image missing"), never an error, and the tile still works.
 ///
-/// [selected] non-null shows the selection tick (§8.10) and tells TalkBack
-/// "Selected" / "Not selected".
+/// [selected] non-null shows the selection tick and tells TalkBack "Selected" /
+/// "Not selected".
 class PhotoThumb extends StatelessWidget {
   const PhotoThumb({
     super.key,
@@ -29,8 +28,7 @@ class PhotoThumb extends StatelessWidget {
   final VoidCallback? onLongPress;
 
   /// Decode size for a thumbnail [logicalSize] dp wide on this screen: the
-  /// pixels it covers, so a 50 MP original never becomes a full bitmap
-  /// (P6-26).
+  /// pixels it covers, so a 50 MP original never becomes a full bitmap.
   static int decodeSize(BuildContext context, double logicalSize) =>
       (logicalSize * MediaQuery.devicePixelRatioOf(context)).ceil();
 

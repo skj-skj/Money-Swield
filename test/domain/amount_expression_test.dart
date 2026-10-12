@@ -177,7 +177,7 @@ void main() {
     });
   });
 
-  group('decimals of operands of × and ÷ (P4-15)', () {
+  group('decimals of operands of × and ÷', () {
     test('up to 3 for a quantity', () {
       expect(jpy('1.5*400'), value(600));
       expect(inr('0.375*120'), value(4500));

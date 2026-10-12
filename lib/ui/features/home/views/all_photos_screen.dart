@@ -27,11 +27,11 @@ import '../../recurring/views/recurring_navigation.dart';
 import '../../settings/view_models/settings_cubit.dart';
 import '../view_models/all_photos_cubit.dart';
 
-/// Every photo of what Home's filters show (phase-6.md §8.9, P6-37 – P6-41):
-/// month frames ("Oct 2026") with sticky day headers, two photos a row, each
-/// day starting a new row; no subtotals. A tap opens that photo's expense
-/// (Home's form rules); Back returns here, at the same place. A long press
-/// selects photos to Save to Pictures or Delete (owner rev 6).
+/// Every photo of what Home's filters show: month frames ("Oct 2026") with
+/// sticky day headers, two photos a row, each day starting a new row; no
+/// subtotals. A tap opens that photo's expense (Home's form rules); Back
+/// returns here, at the same place. A long press selects photos to Save to
+/// Pictures or Delete (owner rev 6).
 class AllPhotosScreen extends StatefulWidget {
   const AllPhotosScreen({
     super.key,

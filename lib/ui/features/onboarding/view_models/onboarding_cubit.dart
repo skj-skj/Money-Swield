@@ -9,8 +9,7 @@ import '../../../../domain/models/payment_method.dart';
 import '../../../core/emit_if_open.dart';
 import '../../settings/view_models/settings_cubit.dart';
 
-/// The onboarding steps, in order. [sms] only in a build with SMS
-/// (phase-9a.md §8.6).
+/// The onboarding steps, in order. [sms] only in a build with SMS.
 enum OnboardingStep { language, currency, paymentMethod, sms }
 
 class OnboardingState {
@@ -48,7 +47,7 @@ class OnboardingState {
   /// A choice is being saved, or "Get started" is running.
   final bool busy;
 
-  /// The build can read SMS: the fourth step shows (§8.6, P9a-28).
+  /// The build can read SMS: the fourth step shows.
   final bool smsBuilt;
 
   /// "Yes" was picked and the permission granted; "Not now" (the
@@ -108,8 +107,7 @@ class OnboardingState {
   );
 }
 
-/// The three onboarding steps (phase-1.md §9.1): language, currency,
-/// default payment method.
+/// The three onboarding steps: language, currency, default payment method.
 ///
 /// Each choice is saved as soon as it's made, so killing the app midway
 /// restarts onboarding with those choices preselected: the initial choices
@@ -139,7 +137,7 @@ class OnboardingCubit extends CubitSignal<OnboardingState>
   final SettingsCubit _settings;
   final PaymentMethodRepository _paymentMethods;
 
-  /// The SMS permission (phase-9a.md §8.6); null: no SMS step.
+  /// The SMS permission; null: no SMS step.
   final SmsService? _sms;
 
   /// Writes `sms_enabled` (`SettingsRepository.setSmsEnabled`).
@@ -156,9 +154,9 @@ class OnboardingCubit extends CubitSignal<OnboardingState>
     }
   }
 
-  /// "Yes": asks for the permission; granted → on. Refused → stays "Not
-  /// now" and the step says how to turn it on later; Get started works
-  /// either way (P9a-28). Rethrows a failed write.
+  /// "Yes": asks for the permission; granted → on. Refused → stays "Not now"
+  /// and the step says how to turn it on later; Get started works either way.
+  /// Rethrows a failed write.
   Future<void> chooseSms(bool on) async {
     final sms = _sms;
     final setEnabled = _setSmsEnabled;

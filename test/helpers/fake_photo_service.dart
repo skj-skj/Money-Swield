@@ -23,14 +23,14 @@ typedef SavedPicture = ({
   List<int> bytes,
 });
 
-/// Stands in for the photos channel (phase-6.md §12). Records every call.
+/// Stands in for the photos channel. Records every call.
 ///
-/// Sources are names in [pictures] (a picker's URIs) or real files the
-/// fake wrote itself (the camera's file). Staging writes real files:
-/// [KeepBytes] copies the source's bytes; [Encode] writes bytes that name
-/// the source, size, quality and turns, so two different plans never
-/// give the same SHA-256. "Pictures" is insert-only and renames a name
-/// already there to "name (1).jpg", like MediaStore (F4).
+/// Sources are names in [pictures] (a picker's URIs) or real files the fake
+/// wrote itself (the camera's file). Staging writes real files: [KeepBytes]
+/// copies the source's bytes; [Encode] writes bytes that name the source, size,
+/// quality and turns, so two different plans never give the same SHA-256.
+/// "Pictures" is insert-only and renames a name already there to "name
+/// (1).jpg", like MediaStore.
 class FakePhotoService implements PhotoService {
   /// What the picker and the files know, by source.
   final pictures = <String, FakePicture>{};

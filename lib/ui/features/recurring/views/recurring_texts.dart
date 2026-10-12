@@ -1,5 +1,5 @@
-/// The texts of the Recurring screens (phase-7a.md §8.3–§8.8): pure, the
-/// app's strings and a formatting locale in.
+/// The texts of the Recurring screens: pure, the app's strings and a formatting
+/// locale in.
 library;
 
 import '../../../../domain/models/recurring_item.dart';
@@ -55,9 +55,8 @@ String archiveRowSubtitle(
 }
 
 /// "Netflix · Every week on Monday": an item named with its rule, where two
-/// items of one bill must be told apart (the new-schedule and swap
-/// dialogs, phase-7b.md §8.1 C–D). The title alone when the rule can't be
-/// read.
+/// items of one bill must be told apart (the new-schedule and swap dialogs).
+/// The title alone when the rule can't be read.
 String recurringName(AppLocalizations l10n, String locale, RecurringItem item) {
   final schedule = item.schedule;
   return schedule == null
@@ -65,8 +64,8 @@ String recurringName(AppLocalizations l10n, String locale, RecurringItem item) {
       : '${item.title} · ${scheduleText(l10n, locale, schedule)}';
 }
 
-/// The hold card's text (§8.6): "10 payments are due, 3 Aug – 5 Oct.";
-/// over 1,000, "More than 1,000 payments are due, …".
+/// The hold card's text: "10 payments are due, 3 Aug – 5 Oct."; over 1,000,
+/// "More than 1,000 payments are due, …".
 String holdText(
   AppLocalizations l10n,
   String locale,
@@ -82,8 +81,7 @@ String holdText(
       : l10n.recurringHoldText(hold.count, range);
 }
 
-/// [day] as [dayText], with no line break inside it: the Oppo wrapped
-/// "9 Aug – 9 / Oct" on the hold card and "ends 10 / Oct" in a row
-/// (phase-7a.md §12a).
+/// [day] as [dayText], with no line break inside it: the Oppo wrapped "9 Aug –
+/// 9 / Oct" on the hold card and "ends 10 / Oct" in a row.
 String _day(String locale, String day, String today) =>
     dayText(locale, day, today: today).replaceAll(' ', ' ');

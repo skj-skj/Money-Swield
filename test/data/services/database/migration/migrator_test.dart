@@ -346,12 +346,11 @@ void main() {
     });
   });
 
-  // On SQLite 3.22 (Android 10, what the tests run), copying no rows into
-  // an AUTOINCREMENT table while `sqlite_sequence` is still empty writes
-  // `sqlite_sequence (t, NULL)` (with any row in it, `0`). The second
-  // rebuild read that NULL with a `!` and crashed (phase-4.md §3.1, R15).
-  // These tests start from an empty database, so no other table has handed
-  // out an id yet.
+  // On SQLite 3.22 (Android 10, what the tests run), copying no rows into an
+  // AUTOINCREMENT table while `sqlite_sequence` is still empty writes
+  // `sqlite_sequence (t, NULL)` (with any row in it, `0`). The second rebuild
+  // read that NULL with a `!` and crashed. These tests start from an empty
+  // database, so no other table has handed out an id yet.
   group('AUTOINCREMENT counter with an empty sqlite_sequence', () {
     test('an empty table can be rebuilt twice', () async {
       await m.createTable('notes', (t) => t.text('body'));

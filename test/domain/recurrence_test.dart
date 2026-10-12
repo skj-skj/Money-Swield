@@ -12,7 +12,7 @@ Schedule of(Frequency f, String start, {int every = 1, String? end}) =>
     Schedule(frequency: f, interval: every, startOn: start, endOn: end);
 
 void main() {
-  group('occurrenceAt (§5.1 table)', () {
+  group('occurrenceAt', () {
     test('monthly × 1 from 31 Jan clamps and comes back to the 31st', () {
       final s = monthly('2026-01-31');
       expect(
@@ -84,7 +84,7 @@ void main() {
     });
   });
 
-  group('occurrenceAfter / OnOrAfter (§5.1 table)', () {
+  group('occurrenceAfter / OnOrAfter', () {
     final s = monthly('2026-01-31');
 
     test('the next payment strictly after a day', () {
@@ -173,7 +173,7 @@ void main() {
     });
   });
 
-  group('dueDates (§5.1 table)', () {
+  group('dueDates', () {
     final s = monthly('2026-01-31');
 
     test('from a payment through a day', () {

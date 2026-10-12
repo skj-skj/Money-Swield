@@ -3,7 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../../../l10n/app_localizations.dart';
 import 'photo_thumb.dart';
 
-/// Square cells, two per row, 8 dp apart (phase-6.md §8.3, §8.9).
+/// Square cells, two per row, 8 dp apart.
 const photoGridDelegate = SliverGridDelegateWithFixedCrossAxisCount(
   crossAxisCount: 2,
   mainAxisSpacing: 8,
@@ -45,8 +45,8 @@ class PhotoGrid extends StatelessWidget {
   /// Photos are being added: the + tile shows progress and takes no taps.
   final bool adding;
 
-  /// What TalkBack says for photo `index` ("Photo 2 of 3"). Required: the
-  /// Bin detail's tiles had none (found on the Oppo, phase-6.md §12a).
+  /// What TalkBack says for photo `index` ("Photo 2 of 3"). Required: the Bin
+  /// detail's tiles had none (found on the Oppo).
   final String Function(int index) semanticsOf;
 
   @override

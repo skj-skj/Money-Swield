@@ -21,8 +21,8 @@ import 'package:path/path.dart' as p;
 
 import '../../../../helpers/fake_report_export_service.dart';
 
-/// phase-8.md §7.2 and §12 "Cubits: ReportExportCubit"; the export
-/// service's cache cleanup (§6.3).
+/// ReportExportCubit; the export service's
+/// cache cleanup.
 void main() {
   setUpAll(initializeDateFormatting);
 

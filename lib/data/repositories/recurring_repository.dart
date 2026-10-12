@@ -15,7 +15,7 @@ import '../services/database/sql_helpers.dart';
 import 'data_version.dart';
 import 'expense_repository.dart';
 
-/// A new recurring item, as Save with Repeats stores it (phase-7a.md §6.2).
+/// A new recurring item, as Save with Repeats stores it.
 class NewRecurringItem {
   const NewRecurringItem({
     required this.title,
@@ -44,14 +44,13 @@ class NewRecurringItem {
   /// The first payment not yet added.
   final String? nextDueOn;
 
-  /// The item it was made from when how often changed (phase-7b.md §6.1).
+  /// The item it was made from when how often changed.
   final int? replacesId;
 }
 
-/// The item is gone, archived (for a write only a running item takes),
-/// running (for Restore or Delete for good), or broken. Exceptions, not
-/// `StateError`, so a screen can catch exactly these (avoid_catching_errors;
-/// phase-7a.md §12a).
+/// The item is gone, archived (for a write only a running item takes), running
+/// (for Restore or Delete for good), or broken. Exceptions, not `StateError`,
+/// so a screen can catch exactly these (avoid_catching_errors).
 class RecurringItemUnavailable implements Exception {
   const RecurringItemUnavailable(this.detail);
 
@@ -62,9 +61,9 @@ class RecurringItemUnavailable implements Exception {
   String toString() => 'RecurringItemUnavailable: $detail';
 }
 
-/// A change the rules refuse (§5.4, P7a-27): an end too early or too late,
-/// a price before the start or on a date in force, removing a price that
-/// stays. Nothing was written.
+/// A change the rules refuse: an end too early or too late, a price before the
+/// start or on a date in force, removing a price that stays. Nothing was
+/// written.
 class RecurringChangeRefused implements Exception {
   const RecurringChangeRefused(this.detail);
 
@@ -74,15 +73,15 @@ class RecurringChangeRefused implements Exception {
   String toString() => 'RecurringChangeRefused: $detail';
 }
 
-/// What Restore did (§6.1).
+/// What Restore did.
 typedef RestoreOutcome = ({String? next, bool endCleared, int added});
 
-/// What Skip them did (§8.6).
+/// What Skip them did.
 typedef SkipOutcome = ({int skipped, int added, String? next});
 
-/// What Add selected did (phase-7b.md §8.1 E): payments added, listed
-/// dates not added (unticked, or with a row already: skipped for good), and
-/// the cursor after. `added + skipped` is how many the sheet listed.
+/// What Add selected did: payments added, listed dates not added (unticked, or
+/// with a row already: skipped for good), and the cursor after.
+/// `added + skipped` is how many the sheet listed.
 typedef SelectedOutcome = ({int added, int skipped, String? next});
 
 /// What the Add selected sheet lists ([RecurringRepository.heldDates]):
@@ -90,9 +89,8 @@ typedef SelectedOutcome = ({int added, int skipped, String? next});
 /// with, which [RecurringRepository.addSelected] holds to.
 typedef HeldDates = ({List<String> days, String cursor, String through});
 
-/// Reads and writes the recurring tables (phase-7a.md §6.1) and runs the
-/// generator (§6.3). Bumps [DataVersion] after every commit that changed
-/// something.
+/// Reads and writes the recurring tables and runs the generator. Bumps
+/// [DataVersion] after every commit that changed something.
 ///
 /// **One owner for expense rows**: payments are inserted and read through
 /// [ExpenseRepository] (which derives `occurred_on` and loads events); the
@@ -117,7 +115,7 @@ class RecurringRepository {
   final DataVersion _dataVersion;
   final DateTime Function() _now;
 
-  /// The device's zone; a fake one in tests (§5.6).
+  /// The device's zone; a fake one in tests.
   final ZonedMoment Function(int, int, int, int, int) _localMoment;
 
   /// The items the last [generateDue] couldn't run: their page says so.
@@ -174,14 +172,14 @@ class RecurringRepository {
   Future<List<Expense>> payments(int id, {String? before, int limit = 30}) =>
       ExpenseRepository.paymentsOf(_db, id, before: before, limit: limit);
 
-  /// The newest due date of item [id]'s payments, binned ones included:
-  /// an Edit can't end the item before it (P7a-27).
+  /// The newest due date of item [id]'s payments, binned ones included: an Edit
+  /// can't end the item before it.
   Future<String?> newestPaymentOn(int id) => _newestPaymentOn(_db, id);
 
   // Writes.
 
-  /// Inserts [item] with its first price (from its start) and events,
-  /// inside [txn] (Save with Repeats, §6.2). Returns its id.
+  /// Inserts [item] with its first price (from its start) and events, inside
+  /// [txn] (Save with Repeats). Returns its id.
   static Future<int> insertTemplate(
     Transaction txn,
     NewRecurringItem item,
@@ -215,11 +213,10 @@ class RecurringRepository {
     return id;
   }
 
-  /// Saves the editable fields of the running item [id] (§6.1): title,
-  /// description, category, payment method, events, time of day and end,
-  /// in one transaction. Throws [RecurringItemUnavailable] for an archived
-  /// or missing item, [RecurringChangeRefused] for an end before
-  /// [earliestEndFor] or after
+  /// Saves the editable fields of the running item [id]: title, description,
+  /// category, payment method, events, time of day and end, in one transaction.
+  /// Throws [RecurringItemUnavailable] for an archived or missing item,
+  /// [RecurringChangeRefused] for an end before [earliestEndFor] or after
   /// [lastEndOn]. The cursor follows the end ([cursorAfterEndChange]).
   Future<void> update(int id, RecurringEdit edit) async {
     final nowMs = _now().millisecondsSinceEpoch;
@@ -275,13 +272,12 @@ class RecurringRepository {
     _dataVersion.bump();
   }
 
-  /// **Changing how often** (phase-7b.md §6.1, P7b-4): one transaction
+  /// **Changing how often**: one transaction
   /// makes a new item with [edit]'s fields and [schedule] (its end is
-  /// [edit]'s), `replaces_id` = [id], the old item's price on the new start
-  /// and its scheduled prices after it (P7b-5) and [edit]'s events; then
-  /// archives the old one (its cursor kept, so restoring it never pays a
-  /// date twice). A start of today adds today's payment in the same
-  /// transaction. Returns the new id.
+  /// [edit]'s), `replaces_id` = [id], the old item's price on the new start and
+  /// its scheduled prices after it and [edit]'s events; then archives the old
+  /// one (its cursor kept, so restoring it never pays a date twice). A start of
+  /// today adds today's payment in the same transaction. Returns the new id.
   ///
   /// Refused ([RecurringChangeRefused]), nothing written: a start before
   /// [earliestFirstPayment] (on or before the old item's last handled
@@ -372,9 +368,9 @@ class RecurringRepository {
     return newId;
   }
 
-  /// The running item of [id]'s family ([runningRelatives]): what
-  /// Restoring [id] swaps out (P7b-3); null when none runs. The newest when
-  /// (only by a bug) several do.
+  /// The running item of [id]'s family ([runningRelatives]): what Restoring
+  /// [id] swaps out; null when none runs. The newest when (only by a bug)
+  /// several do.
   Future<RecurringItem?> runningRelative(int id) async {
     final relatives = await _runningRelatives(_db, id);
     return relatives.isEmpty ? null : byId(relatives.first);
@@ -395,11 +391,10 @@ class RecurringRepository {
       ),
   });
 
-  /// A new price for the running item [id] from [from] (§5.4): a new row,
-  /// or the scheduled price on that date replaced. Payments already added
-  /// keep theirs. Throws [RecurringChangeRefused] when refused (before the
-  /// start, a
-  /// price in force, an amount not above 0).
+  /// A new price for the running item [id] from [from]: a new row, or the
+  /// scheduled price on that date replaced. Payments already added keep theirs.
+  /// Throws [RecurringChangeRefused] when refused (before the start, a price in
+  /// force, an amount not above 0).
   Future<void> changePrice(
     int id, {
     required int amountMinor,
@@ -464,7 +459,7 @@ class RecurringRepository {
   }
 
   /// **Stop**: archives the running item [id]; its cursor and end are
-  /// kept (§6.7), so Undo or Restore never adds a payment twice. Throws
+  /// kept, so Undo or Restore never adds a payment twice. Throws
   /// [RecurringItemUnavailable] when it is archived already or gone.
   Future<ArchiveUndo> archive(int id) async {
     final nowMs = _now().millisecondsSinceEpoch;
@@ -484,9 +479,8 @@ class RecurringRepository {
   /// Undo of Stop: back to running, only if nothing changed since (Restore
   /// or Delete in the meantime). Returns whether it did.
   ///
-  /// Nor when another item of its family runs now (phase-7b.md §12a): Stop
-  /// B, restore A (nothing to swap), then Undo of B's Stop would have run
-  /// both for one bill.
+  /// Nor when another item of its family runs now: Stop B, restore A (nothing
+  /// to swap), then Undo of B's Stop would have run both for one bill.
   Future<bool> undoArchive(ArchiveUndo undo) async {
     final changed = await _db.transaction((txn) async {
       if ((await _runningRelatives(txn, undo.id)).isNotEmpty) return 0;
@@ -501,13 +495,13 @@ class RecurringRepository {
     return changed > 0;
   }
 
-  /// **Restore** from the Archive (§6.1): running again from today. An end
+  /// **Restore** from the Archive: running again from today. An end
   /// before today is cleared; the cursor is [cursorAfterRestore]. Then
   /// today's payment, if one is due, is added. Throws
   /// [RecurringItemUnavailable] for an
   /// item that isn't archived, or is broken.
   ///
-  /// **The swap** (phase-7b.md §6.1, P7b-3): [swapOut] is the running item
+  /// **The swap**: [swapOut] is the running item
   /// of its family the dialog named ([runningRelative]); it is archived in
   /// the same transaction (its payments stay). A family member running
   /// that isn't [swapOut] (none was named, or another one runs now) is
@@ -564,9 +558,9 @@ class RecurringRepository {
     );
   }
 
-  /// **Delete for good** an archived item (§6.1): its payments, active and
+  /// **Delete for good** an archived item: its payments, active and
   /// binned, stay as plain expenses (their due date is cleared, then the
-  /// foreign key clears the item, F3); prices and events go. Throws
+  /// foreign key clears the item); prices and events go. Throws
   /// [RecurringItemUnavailable] for a running item.
   Future<void> delete(int id) async {
     await _db.transaction((txn) async {
@@ -585,7 +579,7 @@ class RecurringRepository {
     _dataVersion.bump();
   }
 
-  /// **Skip them** (§8.6): every payment due before today is skipped (the
+  /// **Skip them**: every payment due before today is skipped (the
   /// cursor moves to the first payment from today, never backwards), then
   /// today's is added if it is due.
   Future<SkipOutcome> skipBacklog(int id) async {
@@ -607,9 +601,9 @@ class RecurringRepository {
         whereArgs: [id],
       );
       await _dropPassedSkips(txn, id, next);
-      // Dates skipped once from Upcoming were never going to be added:
-      // they aren't counted as skipped now (phase-7b.md §6.3). Counted,
-      // not walked: a daily item from 1900 has 46,000 dates.
+      // Dates skipped once from Upcoming were never going to be added: they
+      // aren't counted as skipped now. Counted, not walked: a daily item from
+      // 1900 has 46,000 dates.
       final yesterday = addDays(today, -1);
       return dueCount(schedule, cursor: cursor, today: yesterday) -
           skippedBetween(schedule, skips, cursor, yesterday);
@@ -623,7 +617,7 @@ class RecurringRepository {
     );
   }
 
-  // Add selected and skips (phase-7b.md §6.1).
+  // Add selected and skips.
 
   /// The held dates of item [id] that the Add selected sheet lists: due
   /// from its cursor through today, skipped ones left out, at most 1,000
@@ -644,7 +638,7 @@ class RecurringRepository {
     return (days: due, cursor: cursor, through: today);
   }
 
-  /// **Add selected** (§8.1 E, P7b-6): in one transaction, the [ticked]
+  /// **Add selected**: in one transaction, the [ticked]
   /// dates that are really due ([selectedPlan]) are added (one with a row
   /// already is passed over) and the cursor moves past every listed date,
   /// so the unticked ones are skipped for good. [held] is what the sheet
@@ -683,7 +677,7 @@ class RecurringRepository {
     return outcome;
   }
 
-  /// The skips stored for days after [after] (Upcoming's, §6.1).
+  /// The skips stored for days after [after] (Upcoming's).
   Future<Set<SkipKey>> skips({required String after}) async => {
     for (final row in await _db.rawQuery(
       'SELECT recurring_expense_id, due_on FROM recurring_skips '
@@ -696,7 +690,7 @@ class RecurringRepository {
       ),
   };
 
-  /// **Skip once** (§8.1 F, P7b-8): payment [day] of item [id] won't be
+  /// **Skip once**: payment [day] of item [id] won't be
   /// added. Only a day Upcoming lists: a payment of a running item, after
   /// today, on or after its cursor, before its end; anything else is
   /// [RecurringChangeRefused] (the day passed while the screen was open).
@@ -729,7 +723,7 @@ class RecurringRepository {
     if (added) _dataVersion.bump();
   }
 
-  /// **Bring back** a skipped payment (§8.1 F); Undo of Skip once. Does
+  /// **Bring back** a skipped payment; Undo of Skip once. Does
   /// nothing when it isn't skipped.
   Future<void> unskip(int id, String day) async {
     final count = await _db.delete(
@@ -740,7 +734,7 @@ class RecurringRepository {
     if (count > 0) _dataVersion.bump();
   }
 
-  // The generator (§6.3).
+  // The generator.
 
   /// Adds every payment that has come due, item by item, each in its own
   /// transaction; archives items whose end passed. [confirmed]: the user
@@ -771,8 +765,8 @@ class RecurringRepository {
     );
     var added = 0;
     // A cursor moved without a payment added (they had rows already) is a
-    // change too: screens that reload "if changed" kept showing a backlog
-    // that was gone (phase-7a.md §12a).
+    // change too: screens that reload "if changed" kept showing a backlog that
+    // was gone.
     var moved = false;
     final held = <HeldItem>[];
     final failed = <int>{};
@@ -857,7 +851,7 @@ class RecurringRepository {
       cursor: row['next_due_on'] as String?,
       today: today,
       confirmed: confirmed,
-      // Read in this transaction: a skip is never added (§6.3).
+      // Read in this transaction: a skip is never added.
       skipped: await _skipsOf(txn, id),
     );
     switch (plan) {
@@ -939,8 +933,8 @@ class RecurringRepository {
             .reduce((a, b) => a.from.compareTo(b.from) <= 0 ? a : b)
             .amountMinor;
 
-  /// The payment due on [day] of the item in [row], at [amountMinor], in
-  /// the device's zone now (§5.6).
+  /// The payment due on [day] of the item in [row], at [amountMinor], in the
+  /// device's zone now.
   PaymentInput _paymentOf(
     Map<String, Object?> row,
     String day,
@@ -966,10 +960,10 @@ class RecurringRepository {
     );
   }
 
-  // The restore probe (R4).
+  // The restore probe.
 
   /// Reads every recurring column once, the way the app does, so a
-  /// database without them (a Phase 6 backup) is refused before it
+  /// database without them (an older backup) is refused before it
   /// replaces the user's data. Plain SELECTs naming the columns, not
   /// [all]: one malformed row must not refuse a backup the app can open.
   static Future<void> probe(DatabaseExecutor db) async {
@@ -982,7 +976,7 @@ class RecurringRepository {
       'time_of_day_minutes, next_due_on, archived_at, created_at, updated_at, '
       'replaces_id FROM recurring_expenses LIMIT 1',
     );
-    // Phase 7b's schema (phase-7b.md §6.6): a 7a database lacks both.
+    // Skips and replacements: an older database lacks both.
     await db.rawQuery(
       'SELECT recurring_expense_id, due_on, created_at, updated_at '
       'FROM recurring_skips LIMIT 1',
@@ -1016,10 +1010,10 @@ class RecurringRepository {
     final points = <int, List<PricePoint>>{};
     final events = <int, Set<int>>{};
     final counts = <int, int>{};
-    // When each item's replacements were made: "replaced" (phase-7b.md
-    // §6.1) is one made in the same write that archived it.
+    // When each item's replacements were made: "replaced" is one made in the
+    // same write that archived it.
     final replacedAt = <int, Set<int>>{};
-    // Skipped dates: the hold leaves them out (phase-7b.md §5.2).
+    // Skipped dates: the hold leaves them out.
     final skips = <int, Set<String>>{};
     await inChunks(ids, (chunk) async {
       final list = sqlPlaceholders(chunk.length);
@@ -1206,9 +1200,8 @@ class RecurringRepository {
           ),
       ];
 
-  /// The due dates among [days] (in order) of item [id] that have a row,
-  /// active or binned: one covering-index range search (F6) rather than a
-  /// query per date.
+  /// The due dates among [days] (in order) of item [id] that have a row, active
+  /// or binned: one covering-index range search rather than a query per date.
   static Future<Set<String>> _paymentsOnOrBetween(
     DatabaseExecutor db,
     int id,
@@ -1233,10 +1226,9 @@ class RecurringRepository {
       row['due_on']! as String,
   };
 
-  /// Deletes item [id]'s skips before [next], its new cursor: they were
-  /// passed over and are never looked at again. With no cursor (no payment
-  /// left) they stay: an Edit that extends the end makes them payments
-  /// again (phase-7b.md §12a).
+  /// Deletes item [id]'s skips before [next], its new cursor: they were passed
+  /// over and are never looked at again. With no cursor (no payment left) they
+  /// stay: an Edit that extends the end makes them payments again.
   static Future<void> _dropPassedSkips(
     Transaction txn,
     int id,

@@ -6,11 +6,11 @@ import '../../../../l10n/app_localizations.dart';
 import '../show_message.dart';
 import 'photo_selection_bar.dart';
 
-/// Photos full screen (phase-6.md §8.4): swipe between them, pinch to zoom
-/// (1–5×), double tap for 2.5×; "2 / 5" in the bar, **Save to Pictures**
-/// and, where photos can be deleted, **Delete**, apart like the selection
-/// bar's. Each photo is decoded at most twice the screen's long edge, so an
-/// original never becomes a huge bitmap (P6-26).
+/// Photos full screen: swipe between them, pinch to zoom (1–5×), double tap for
+/// 2.5×; "2 / 5" in the bar, **Save to Pictures** and, where photos can be
+/// deleted, **Delete**, apart like the selection bar's. Each photo is decoded
+/// at most twice the screen's long edge, so an original never becomes a huge
+/// bitmap.
 class PhotoViewer extends StatefulWidget {
   const PhotoViewer({
     super.key,
@@ -110,10 +110,9 @@ class _PhotoViewerState extends State<PhotoViewer> {
       colorSchemeSeed: Theme.of(context).colorScheme.primary,
     );
     final canDelete = widget.onDelete != null;
-    // Save and Delete are icons, apart as in the selection bar (P6-50).
-    // They sit beside the counter when it fits at its widest ("10 / 10"),
-    // else on a row of their own under it: on the Oppo (360 dp) the
-    // counter was cut to "2 …" (phase-6.md §12a).
+    // Save and Delete are icons, apart as in the selection bar. They sit beside
+    // the counter when it fits at its widest ("10 / 10"), else on a row of
+    // their own under it: on the Oppo (360 dp) the counter was cut to "2 …".
     final actionsBeside =
         kToolbarHeight +
             PhotoSelectionBar.textWidth(

@@ -13,7 +13,7 @@ import '../../helpers/fake_photo_service.dart';
 import '../../helpers/test_database.dart';
 import '../../helpers/test_folders.dart';
 
-/// `PhotoSweeper` (phase-6.md §6.5) on real files and SQLite 3.22.
+/// `PhotoSweeper` on real files and SQLite 3.22.
 void main() {
   late Database db;
   late Directory root;
@@ -118,14 +118,14 @@ void main() {
   Future<String> copy({
     List<String> rows = const [],
     ExpenseDraft? draft,
-    bool phase5 = false,
+    bool withoutPhotos = false,
   }) async {
     final path = p.join(root.path, 'copy${copies.length}.db');
     final copyDb = await databaseFactoryFfiNoIsolate.openDatabase(
       path,
       options: OpenDatabaseOptions(singleInstance: false),
     );
-    if (phase5) {
+    if (withoutPhotos) {
       await copyDb.execute('CREATE TABLE expenses (id INTEGER PRIMARY KEY)');
     } else {
       await copyDb.execute(
@@ -201,7 +201,7 @@ void main() {
   });
 
   test('a pre-restore copy\'s rows and draft keep their files; a copy '
-      'from before Phase 6 adds nothing', () async {
+      'from before photos existed adds nothing', () async {
     await photo('a', linked: false);
     await photo('b', linked: false);
     await photo('d', linked: false);
@@ -214,7 +214,7 @@ void main() {
         StagedPhoto(stagingName: '$uuid.jpg', sha256: 'e' * 64, byteSize: 1),
       ]),
     );
-    await copy(phase5: true);
+    await copy(withoutPhotos: true);
     final result = await sweeper().sweep();
     expect(result.rows, 3, reason: 'the live rows are unlinked');
     expect(result.filesSkipped, isFalse);
@@ -235,7 +235,7 @@ void main() {
   });
 
   test('a draft read that throws: no file and no row deleted (stricter '
-      'than §6.5, §12a)', () async {
+      'than the plain rule)', () async {
     await photo('a', linked: false);
     staged('$uuid.jpg');
     final failing = ExpenseDraftRepository(_ThrowingDb());

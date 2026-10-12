@@ -16,13 +16,12 @@ SHELL := bash
 FILES ?=
 # debug or release.
 MODE ?= debug
-# foss (F-Droid, the FOSS APK) or play (Google Play); phase-9a.md §6.6.
+# foss (F-Droid, the FOSS APK) or play (Google Play).
 FLAVOR ?= foss
-# Debug builds only: how many days back the SMS scan reads and the purge
-# keeps (phase-9a.md §6.8), for a test phone whose SMS are old. Release
-# builds ignore it.
+# Debug builds only: how many days back the SMS scan reads and the purge keeps,
+# for a test phone whose SMS are old. Release builds ignore it.
 SMS_LOOKBACK_DAYS ?=
-# NO_SMS=1 builds play without READ_SMS (D11, phase-9a.md P9a-25).
+# NO_SMS=1 builds play without READ_SMS.
 NO_SMS ?=
 # Name for `make migration`, in snake_case.
 NAME ?=

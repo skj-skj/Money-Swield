@@ -23,18 +23,17 @@ import '../view_models/sms_list_cubit.dart';
 import 'sms_card.dart';
 import 'sms_texts.dart';
 
-/// The suggestions from bank SMS (phase-9a.md §8.2): month frames with
-/// sticky day headers like the Photos screen, each day's cards in two
-/// columns of their own height. Ignores Home's filters (P9a-7). A tap
-/// opens the Add form filled from the SMS (asking first when another
-/// draft waits, P9a-3); the dismiss icon removes a card with Undo.
+/// The suggestions from bank SMS: month frames with sticky day headers like the
+/// Photos screen, each day's cards in two columns of their own height. Ignores
+/// Home's filters. A tap opens the Add form filled from the SMS (asking first
+/// when another draft waits); the dismiss icon removes a card with Undo.
 class SmsScreen extends StatefulWidget {
   const SmsScreen({super.key, required this.dependencies, required this.sms});
 
   final AppDependencies dependencies;
 
-  /// The app-level SMS state: the permission banner, "Checked 14:05", and
-  /// a reload when a scan stores new suggestions (P9a-42).
+  /// The app-level SMS state: the permission banner, "Checked 14:05", and a
+  /// reload when a scan stores new suggestions.
   final SmsCubit sms;
 
   @override
@@ -99,8 +98,8 @@ class _SmsScreenState extends State<SmsScreen> with ScrollPaging<SmsScreen> {
       () async => dismissed = await _cubit.dismiss(sms.id),
     );
     if (!dismissed || !mounted) return;
-    // Each dismiss replaces the last one's snackbar; its Undo brings back
-    // the card it names (P9a-5).
+    // Each dismiss replaces the last one's snackbar; its Undo brings back the
+    // card it names.
     messenger?.hideCurrentSnackBar();
     showMessage(
       messenger,
@@ -241,8 +240,8 @@ class _SmsScreenState extends State<SmsScreen> with ScrollPaging<SmsScreen> {
   }
 }
 
-/// "SMS permission is off" with Allow, or Open settings once Android won't
-/// ask any more (§8.2, P9a-30).
+/// "SMS permission is off" with Allow, or Open settings once Android won't ask
+/// any more.
 class _PermissionBanner extends StatelessWidget {
   const _PermissionBanner({required this.state, required this.onAllow});
 

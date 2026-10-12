@@ -14,8 +14,8 @@ import '../../../../domain/models/restore_candidate.dart';
 import '../../../core/emit_if_open.dart';
 import '../../migration/view_models/migration_cubit.dart';
 
-/// Where a restore is (phase-3.md §9). States don't override `==`, so every
-/// emitted state reaches the screen.
+/// Where a restore is. States don't override `==`, so every emitted state
+/// reaches the screen.
 sealed class RestoreState {
   const RestoreState();
 }
@@ -51,8 +51,7 @@ final class RestoreSwapping extends RestoreState {
   const RestoreSwapping();
 }
 
-/// The backup's photos are being written, before the swap (phase-6.md
-/// §6.8 step 5): [done] of [total].
+/// The backup's photos are being written, before the swap: [done] of [total].
 final class RestoreWritingPhotos extends RestoreState {
   const RestoreWritingPhotos(this.done, this.total);
 
@@ -68,7 +67,7 @@ final class RestoreDone extends RestoreState {
 
   final bool settingsReset;
 
-  /// Photos whose entry was damaged: they show as missing (§6.8).
+  /// Photos whose entry was damaged: they show as missing.
   final int failedPhotos;
 }
 
@@ -84,8 +83,8 @@ final class RestoreRefused extends RestoreState {
   final RestoreRejection reason;
 }
 
-/// The picked file is larger than the phone's free space (R2): it can't
-/// even be copied in to be checked. Nothing was changed.
+/// The picked file is larger than the phone's free space: it can't even be
+/// copied in to be checked. Nothing was changed.
 final class RestoreFailedNoSpace extends RestoreState {
   const RestoreFailedNoSpace();
 }
@@ -100,9 +99,9 @@ final class RestoreFailed extends RestoreState {
   final bool needsRestart;
 }
 
-/// Runs one restore: pick → validate → confirm → migrate the candidate →
-/// stamp and check it → swap → restart (§6). Until the swap's rename
-/// nothing the user has is changed.
+/// Runs one restore: pick → validate → confirm → migrate the candidate → stamp
+/// and check it → swap → restart. Until the swap's rename nothing the user has
+/// is changed.
 ///
 /// Calls that arrive while a step runs (a double tap) are ignored: there is
 /// one candidate and one pending dialog.
@@ -160,7 +159,7 @@ class RestoreCubit extends CubitSignal<RestoreState>
         maxBytes: await _repository.maxBackupBytes(),
       );
     } on DocumentTooLarge {
-      // Larger than the free space: it can't be opened here (R2).
+      // Larger than the free space: it can't be opened here.
       return emitIfOpen(const RestoreFailedNoSpace());
     } catch (error, stackTrace) {
       // The dialog or the copy failed (a provider that can't stream the
@@ -182,9 +181,8 @@ class RestoreCubit extends CubitSignal<RestoreState>
       _start(() => _validate(() => _repository.prepareFromCopy(copy)));
 
   /// "Restore" in the confirm dialog: migrates the candidate, then swaps.
-  /// [withPhotos] false is "Restore without photos" (P6-17): the
-  /// backup's photos aren't written; those this phone lacks show as
-  /// missing.
+  /// [withPhotos] false is "Restore without photos": the backup's photos aren't
+  /// written; those this phone lacks show as missing.
   Future<void> confirm({bool withPhotos = true}) async {
     final candidate = switch (value) {
       RestoreConfirm(:final candidate) => candidate,
@@ -268,7 +266,7 @@ class RestoreCubit extends CubitSignal<RestoreState>
     }
   }
 
-  /// §6.4 steps 2–4: stamp, check that it opens as the app would, swap.
+  /// After the migration: stamp, check that it opens as the app would, swap.
   Future<void> _afterMigration() async {
     final candidate = _candidate;
     if (_finishing || candidate == null || isClosed) return;

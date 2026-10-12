@@ -1,11 +1,9 @@
-/// An expense suggested from a bank SMS (database.md §3.10, phase-9a.md
-/// §4). The SMS text itself is never kept (P9a-19): only what was parsed
-/// out of it and a SHA-256 of it.
+/// An expense suggested from a bank SMS. The SMS text itself is never kept:
+/// only what was parsed out of it and a SHA-256 of it.
 library;
 
-/// What the form keeps to mark the suggestion on Save: the row's id **and**
-/// its text's SHA-256, since after a restore the same id may name another
-/// SMS (phase-9a.md §9).
+/// What the form keeps to mark the suggestion on Save: the row's id **and** its
+/// text's SHA-256, since after a restore the same id may name another SMS.
 typedef SmsLink = ({int id, String bodySha256});
 
 /// Where `SmsSuggestionRepository.pendingPage` continues from (keyset, as
@@ -14,11 +12,11 @@ typedef SmsPageKey = ({String receivedOn, int receivedAtMs, int id});
 
 enum SmsStatus { pending, added, dismissed }
 
-/// The three payment method keys a suggestion can have (§5.5): the
-/// `builtin_key` of a built-in payment method.
+/// The three payment method keys a suggestion can have: the `builtin_key` of a
+/// built-in payment method.
 const smsPaymentMethodKeys = {'upi', 'credit_card', 'debit_card'};
 
-/// The only currency of SMS suggestions this phase (P9a-31).
+/// The only currency of SMS suggestions this phase.
 const smsCurrencyCode = 'INR';
 
 /// One stored suggestion (a row of `sms_suggestions`).
@@ -47,7 +45,7 @@ class SmsSuggestion {
   /// e.g. `VM-ABCBNK-S`.
   final String sender;
 
-  /// When the phone received the SMS, UTC: the expense's moment (P9a-4).
+  /// When the phone received the SMS, UTC: the expense's moment.
   final DateTime receivedAt;
 
   final int utcOffsetMinutes;
@@ -67,7 +65,7 @@ class SmsSuggestion {
   final String? payeeKey;
   final String? reference;
 
-  /// The suggested title and category (§5.3, §5.4), or null.
+  /// The suggested title and category, or null.
   final String? title;
   final int? categoryId;
 
@@ -94,20 +92,18 @@ class SmsSuggestion {
       'SmsSuggestion($id, $sender, $amountMinor, ${status.name})';
 }
 
-/// How far an SMS scan with the on-device model is: the backup's "(12 of
-/// 40)" (phase-9b.md §6.2). Here, not in the scanner, so the backup's
-/// cubit can show it without knowing the scanner.
+/// How far an SMS scan with the on-device model is: the backup's "(12 of 40)".
+/// Here, not in the scanner, so the backup's cubit can show it without knowing
+/// the scanner.
 typedef ScanProgress = ({int done, int total});
 
-/// Who read an SMS (`parsed_by`, phase-9b.md §4): for debugging, never
-/// shown (P9a-9).
+/// Who read an SMS (`parsed_by`): for debugging, never shown.
 enum SmsParsedBy { regex, ai }
 
-/// What a scan parsed out of one SMS, before it is stored: everything but
-/// the title and category, which `insertScanned` fills inside its
-/// transaction (§6.3 step 5) from what was learned and, for an SMS the
-/// on-device model read, its [aiTitle] and [aiCategoryId] (phase-9b.md
-/// §5.3). Holds a hash of the text, never the text.
+/// What a scan parsed out of one SMS, before it is stored: everything but the
+/// title and category, which `insertScanned` fills inside its transaction from
+/// what was learned and, for an SMS the on-device model read, its [aiTitle] and
+/// [aiCategoryId]. Holds a hash of the text, never the text.
 class NewSmsSuggestion {
   const NewSmsSuggestion({
     required this.sender,

@@ -19,7 +19,7 @@ void main() {
     expect(priceOn(const [], '2026-01-01'), isNull);
   });
 
-  group('priceChangeFor (§5.4 table, today 2026-10-09)', () {
+  group('priceChangeFor (today 2026-10-09)', () {
     const today = '2026-10-09';
     const start = '2026-01-31';
     const withScheduled = [...points, (from: '2027-01-09', amountMinor: 699)];

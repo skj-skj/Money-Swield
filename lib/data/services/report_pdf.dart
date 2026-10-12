@@ -1,9 +1,9 @@
-/// The PDF a report export hands to Android (phase-8.md §6.4, plan A):
-/// a layout-free document, every string already formatted in the app's
-/// language (money by `MoneyFormatter`, dates by intl), plus fractions and
-/// colours for the donuts. Kotlin (`ReportPdfChannel.kt`) lays it out on
-/// A4 pages and draws it with Android's own text stack, so Hindi
-/// conjuncts and colour emoji come out right (probed on the Oppo, §12a).
+/// The PDF a report export hands to Android (plan A): a layout-free document,
+/// every string already formatted in the app's language (money by
+/// `MoneyFormatter`, dates by intl), plus fractions and colours for the donuts.
+/// Kotlin (`ReportPdfChannel.kt`) lays it out on A4 pages and draws it with
+/// Android's own text stack, so Hindi conjuncts and colour emoji come out right
+/// (probed on the Oppo).
 library;
 
 import '../../domain/report_chart.dart' show ringGap, ringSweeps;
@@ -58,7 +58,7 @@ final class PdfChart extends PdfBlock {
 
   final ExportChart kind;
 
-  /// The gap after each slice of a pie or donut (§6.4: 2 pt on its ring).
+  /// The gap after each slice of a pie or donut (2 pt on its ring).
   static const gapDegrees = 2.0;
 
   /// In the donut's hole: the total.

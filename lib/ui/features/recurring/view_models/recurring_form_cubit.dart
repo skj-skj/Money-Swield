@@ -21,8 +21,7 @@ import '../../../core/builtin_names.dart';
 import '../../../core/emit_if_open.dart';
 import '../../expenses/view_models/expense_form_cubit.dart' show TitleError;
 
-/// The Edit screen's fields (phase-7a.md §7.4), and how often
-/// (phase-7b.md §7.3).
+/// The Edit screen's fields, and how often.
 class RecurringFields {
   const RecurringFields({
     required this.title,
@@ -51,7 +50,7 @@ class RecurringFields {
 
   final Frequency frequency;
 
-  /// The Every field as typed, like the Add form's (P7a-26).
+  /// The Every field as typed, like the Add form's.
   final String intervalText;
 
   /// The First payment picked; null = the default. Used only while how
@@ -126,7 +125,7 @@ class RecurringFields {
 /// Why the end can't be saved.
 enum EndError { missing, beforeEarliest, tooLate }
 
-/// Why the First payment can't be saved (phase-7b.md §7.3).
+/// Why the First payment can't be saved.
 enum FirstPaymentError { tooEarly, tooLate }
 
 sealed class RecurringFormState {
@@ -168,19 +167,19 @@ final class RecurringFormReady extends RecurringFormState {
   /// By name.
   final List<Category> categories;
 
-  /// Unarchived ones, plus the item's own archived ones (shown selected,
-  /// so saving doesn't drop them silently; A10).
+  /// Unarchived ones, plus the item's own archived ones (shown selected, so
+  /// saving doesn't drop them silently).
   final List<Event> events;
   final List<PaymentMethod> paymentMethods;
 
-  /// The earliest end allowed (P7a-27).
+  /// The earliest end allowed.
   final String earliestEnd;
 
   /// The earliest First payment of a new schedule ([earliestFirstPayment]).
   final String earliestFirst;
 
   /// Payments are waiting ([paymentsWaiting]): how often can't change until
-  /// they are added or skipped (phase-7b.md §12a).
+  /// they are added or skipped.
   final bool scheduleLocked;
   final bool showErrors;
   final bool saving;
@@ -203,11 +202,10 @@ final class RecurringFormReady extends RecurringFormState {
   );
 }
 
-/// The Edit screen of a running item (phase-7a.md §7.4): title,
-/// description, category, events, payment method, time, end, and how often
-/// (phase-7b.md §7.3: changing it saves a new item, [saveAsNew]). No draft
-/// (P7a-15): Back with changes asks. Changes apply to payments added from
-/// now on.
+/// The Edit screen of a running item: title, description, category, events,
+/// payment method, time, end, and how often (changing it saves a new item,
+/// [saveAsNew]). No draft: Back with changes asks. Changes apply to payments
+/// added from now on.
 class RecurringFormCubit extends CubitSignal<RecurringFormState>
     with EmitIfOpen<RecurringFormState> {
   RecurringFormCubit({
@@ -347,7 +345,7 @@ class RecurringFormCubit extends CubitSignal<RecurringFormState>
     );
   }
 
-  // How often (phase-7b.md §7.3).
+  // How often.
 
   void frequencyChanged(Frequency frequency) {
     if (_ready?.scheduleLocked ?? true) return;
@@ -386,8 +384,8 @@ class RecurringFormCubit extends CubitSignal<RecurringFormState>
     return next != null && next.compareTo(earliest) > 0 ? next : earliest;
   }
 
-  /// The earliest end: the item's rule (P7a-27), or with a new schedule its
-  /// First payment.
+  /// The earliest end: the item's rule, or with a new schedule its First
+  /// payment.
   String? get earliestEnd {
     final ready = _ready;
     if (ready == null) return null;
@@ -510,7 +508,7 @@ class RecurringFormCubit extends CubitSignal<RecurringFormState>
     endOn: fields.effectiveEndOn,
   );
 
-  /// **Changing how often** (phase-7b.md §7.3, after the screen's dialog):
+  /// **Changing how often** (after the screen's dialog):
   /// a new item from the First payment, this one archived, in one write.
   /// Returns the new item's id; null when a field is invalid, a save runs,
   /// or the rules refused it (the errors show, read again). Emits

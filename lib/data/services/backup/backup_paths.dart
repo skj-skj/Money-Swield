@@ -1,6 +1,6 @@
 import 'package:path/path.dart' as p;
 
-/// Where backup and restore keep their files (phase-3.md §5.2, §6.1, §6.5).
+/// Where backup and restore keep their files.
 ///
 /// - `cache/backup/`: the copy and the zip while a backup is made.
 /// - `cache/restore/picked.zip`: the document picked in the open dialog.

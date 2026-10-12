@@ -26,9 +26,9 @@ import 'photo_settings_screen.dart';
 import 'sms_settings_screen.dart';
 import 'theme_color_dialog.dart';
 
-/// The Settings tab (phase-5.md §8.5, P5-16): a two-column grid of tiles,
-/// each with an icon, a title and one muted summary line. Language opens
-/// its dialog; the others open their screen.
+/// The Settings tab: a two-column grid of tiles, each with an icon, a title and
+/// one muted summary line. Language opens its dialog; the others open their
+/// screen.
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
     super.key,
@@ -39,8 +39,8 @@ class SettingsScreen extends StatefulWidget {
 
   final AppDependencies dependencies;
 
-  /// The app-level SMS state (phase-9a.md §8.5): the SMS tile shows only in
-  /// a build with SMS. Null: no tile.
+  /// The app-level SMS state: the SMS tile shows only in a build with SMS.
+  /// Null: no tile.
   final SmsCubit? sms;
 
   /// Whether this tab is the one shown. The shell keeps the tab alive while
@@ -57,10 +57,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   PaymentMethodListCubit? _paymentMethodList;
   AppLocalizations? _l10n;
 
-  /// The Backup & restore and Photos tiles' summaries. Not part of the
-  /// settings cubit (a backup mustn't rebuild the app), so read by their own
-  /// cubit (phase-6.md R15): on start, when the tab comes back, and when a
-  /// sub-screen closes.
+  /// The Backup & restore and Photos tiles' summaries. Not part of the settings
+  /// cubit (a backup mustn't rebuild the app), so read by their own cubit: on
+  /// start, when the tab comes back, and when a sub-screen closes.
   late final _summary = SettingsSummaryCubit(
     backups: widget.dependencies.backups,
     expenses: widget.dependencies.expenses,
@@ -309,8 +308,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         null => build(null),
       };
 
-  /// The SMS tile when the build has SMS (§8.5): "On · 3 waiting" /
-  /// "Off".
+  /// The SMS tile when the build has SMS: "On · 3 waiting" / "Off".
   Widget? _smsTile(AppLocalizations l10n, _SmsTileData? data) {
     final sms = widget.sms;
     if (sms == null || data == null) return null;
@@ -323,7 +321,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  /// "Camera 1080p · Gallery 1080p · 1.2 GB" (phase-6.md §8.6).
+  /// "Camera 1080p · Gallery 1080p · 1.2 GB".
   String _photosSummary(
     AppLocalizations l10n,
     AppSettings settings,

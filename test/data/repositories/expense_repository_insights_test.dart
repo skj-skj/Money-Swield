@@ -12,9 +12,8 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../../helpers/test_database.dart';
 
-/// Phase 5's reads (phase-5.md §4.1, §6.1, §12 "Repositories"): the list
-/// order, the filters, the rows a total covers, the text filter's entries
-/// and paging by ids. All on SQLite 3.22.
+/// Home's reads: the list order, the filters, the rows a total covers, the
+/// text filter's entries and paging by ids. All on SQLite 3.22.
 void main() {
   late Database db;
   late TestClock clock;
@@ -85,8 +84,8 @@ void main() {
     }
   }
 
-  group('list order (R1)', () {
-    /// Phase-5.md R1's traveller: 5 Oct noon in India, 6 Oct 1 am in India,
+  group('list order', () {
+    /// A traveller: 5 Oct noon in India, 6 Oct 1 am in India,
     /// then 5 Oct 8 pm in New York (= 6 Oct 00:00 UTC).
     Future<void> addTraveller() async {
       await add('india noon 5th', at: DateTime.utc(2026, 10, 5, 6, 30));
@@ -206,7 +205,7 @@ void main() {
     });
 
     test("the owner's example: cab in Transport or Shopping, for Party or "
-        'Birthday (P5-32)', () async {
+        'Birthday', () async {
       await add('cab home', categoryId: transport, eventIds: {party});
       await add('cab shop', categoryId: shopping, eventIds: {birthday});
       await add('cab food', categoryId: food, eventIds: {party});
@@ -314,7 +313,7 @@ void main() {
       await add('today', minor: 100);
       await add('next week', at: DateTime.utc(2026, 10, 9, 6), minor: 200);
       await addBinned('binned');
-      // The form's unsaved draft lives in its own table (phase-4.md §6.5).
+      // The form's unsaved draft lives in its own table.
       await db.insert('expense_draft', {
         'id': 1,
         'editing_expense_id': null,
@@ -449,7 +448,7 @@ void main() {
     });
   });
 
-  test('probe refuses an expenses table without currency_code (R10)', () async {
+  test('probe refuses an expenses table without currency_code', () async {
     final db = await openMigratedDatabase();
     // An empty table passes `SELECT *`; the totals read names columns.
     await db.execute('PRAGMA foreign_keys = OFF');

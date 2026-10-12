@@ -30,8 +30,8 @@ final class StartupFailed extends StartupState {
   final StackTrace stackTrace;
 
   /// The newest pre-restore copy, when there is one: the screen then offers
-  /// "Undo last restore", the only way out if a restored database can't
-  /// start the app (phase-3.md §6.6, P3-18).
+  /// "Undo last restore", the only way out if a restored database can't start
+  /// the app.
   final PreRestoreCopy? undoCopy;
 
   /// Plain-text report for the user to copy into a bug report.
@@ -43,16 +43,14 @@ final class StartupReady extends StartupState {
 
   final AppDependencies dependencies;
 
-  /// What the recurring generator did at this start (phase-7a.md §6.3):
-  /// Home says "Added 2 recurring expenses" or asks about a backlog.
+  /// What the recurring generator did at this start: Home says "Added 2
+  /// recurring expenses" or asks about a backlog.
   final GenerateReport recurring;
 }
 
-/// Opens the database, loads the settings, adds the recurring payments
-/// that came due, empties old expenses from the bin, deletes what a
-/// cut-short backup or restore left and sweeps unused photos, once
-/// migrations are done (phase-1.md §5, phase-7a.md §6.3, phase-2.md §9.3,
-/// phase-3.md §6.6, phase-6.md §6.5).
+/// Opens the database, loads the settings, adds the recurring payments that
+/// came due, empties old expenses from the bin, deletes what a cut-short backup
+/// or restore left and sweeps unused photos, once migrations are done.
 class StartupCubit extends CubitSignal<StartupState>
     with EmitIfOpen<StartupState> {
   StartupCubit({
@@ -108,10 +106,9 @@ class StartupCubit extends CubitSignal<StartupState>
     }
   }
 
-  /// Adds the recurring payments that came due (phase-7a.md §6.3, R13),
-  /// before the bin purge (application-design.md §3). A backlog older than
-  /// 31 days is held, not added. Like the purge, a failure is logged and
-  /// never blocks the app: every payment is added again the next run, and
+  /// Adds the recurring payments that came due, before the bin purge. A backlog
+  /// older than 31 days is held, not added. Like the purge, a failure is logged
+  /// and never blocks the app: every payment is added again the next run, and
   /// no payment is lost.
   static Future<GenerateReport> _generateRecurring(
     AppDependencies dependencies,
@@ -127,9 +124,9 @@ class StartupCubit extends CubitSignal<StartupState>
     }
   }
 
-  /// Deletes expenses binned more than 30 days ago. A failure doesn't block
-  /// the app (P2-7): unlike opening the database or reading the settings,
-  /// skipping it loses nothing, and it is retried on the next start.
+  /// Deletes expenses binned more than 30 days ago. A failure doesn't block the
+  /// app: unlike opening the database or reading the settings, skipping it
+  /// loses nothing, and it is retried on the next start.
   static Future<void> _purgeBin(AppDependencies dependencies) async {
     try {
       await dependencies.expenses.purgeBin();
@@ -140,11 +137,10 @@ class StartupCubit extends CubitSignal<StartupState>
     }
   }
 
-  /// Deletes SMS suggestions not added (pending and dismissed)
-  /// received more than
-  /// the look-back ago (30 days, or a debug build's `SMS_LOOKBACK_DAYS`),
-  /// after the bin purge (phase-9a.md §4, application-design §3 step 3b).
-  /// Added ones stay. A failure is logged and never blocks the app.
+  /// Deletes SMS suggestions not added (pending and dismissed) received more
+  /// than the look-back ago (30 days, or a debug build's `SMS_LOOKBACK_DAYS`),
+  /// after the bin purge. Added ones stay. A failure is logged and never blocks
+  /// the app.
   static Future<void> _purgeOldSms(AppDependencies dependencies) async {
     try {
       await dependencies.smsSuggestions.purgeOld(
@@ -156,10 +152,10 @@ class StartupCubit extends CubitSignal<StartupState>
     }
   }
 
-  /// Deletes cut-short backup and restore files. Awaited (P3-19), so a
-  /// restore started right away (e.g. from onboarding) can't have its new
-  /// candidate deleted under it; it takes milliseconds. Like the purge, a
-  /// failure is logged and doesn't block the app.
+  /// Deletes cut-short backup and restore files. Awaited, so a restore started
+  /// right away (e.g. from onboarding) can't have its new candidate deleted
+  /// under it; it takes milliseconds. Like the purge, a failure is logged and
+  /// doesn't block the app.
   static Future<void> _cleanUpLeftovers(AppDependencies dependencies) async {
     try {
       await dependencies.restoreTools.repository.cleanUpLeftovers();
@@ -170,10 +166,9 @@ class StartupCubit extends CubitSignal<StartupState>
     }
   }
 
-  /// Deletes report exports older than a day and any half-made PDF's work
-  /// file (phase-8.md §6.3, application-design §3 step 4b). Awaited: it
-  /// empties `cache/report_work/`, so an export started meanwhile would
-  /// lose its work file; it only lists the app's own cache, quickly. A
+  /// Deletes report exports older than a day and any half-made PDF's work file.
+  /// Awaited: it empties `cache/report_work/`, so an export started meanwhile
+  /// would lose its work file; it only lists the app's own cache, quickly. A
   /// failure is logged and doesn't block the app.
   static Future<void> _deleteOldReports(AppDependencies dependencies) async {
     try {
@@ -184,10 +179,10 @@ class StartupCubit extends CubitSignal<StartupState>
   }
 
   /// Deletes photo rows and files nothing uses any more: from permanent
-  /// deletes, the purge above, Updates that removed a photo (phase-6.md
-  /// §6.5, P6-13). Awaited, after the purge, before any form can save.
-  /// Like the purge, a failure is logged and doesn't block the app; a file
-  /// is never deleted when anything that might need it can't be read.
+  /// deletes, the purge above, Updates that removed a photo. Awaited, after the
+  /// purge, before any form can save. Like the purge, a failure is logged and
+  /// doesn't block the app; a file is never deleted when anything that might
+  /// need it can't be read.
   static Future<void> _sweepPhotos(AppDependencies dependencies) async {
     final sweeper = dependencies.photoSweeper;
     if (sweeper == null) return;

@@ -40,7 +40,7 @@ final class RecurringListLoaded extends RecurringListState {
     required this.section,
   });
 
-  /// Held items (§8.6), by title.
+  /// Held items, by title.
   final List<RecurringItem> waiting;
 
   /// The other running ones, by next payment, then title; those with none
@@ -77,8 +77,8 @@ final class RecurringListLoaded extends RecurringListState {
       );
 }
 
-/// Manage → Recurring (phase-7a.md §7.2, §8.3): every item, in three
-/// sections (Waiting, Active, Archive) the screen switches between.
+/// Manage → Recurring: every item, in three sections (Waiting, Active, Archive)
+/// the screen switches between.
 class RecurringListCubit extends CubitSignal<RecurringListState>
     with EmitIfOpen<RecurringListState> {
   RecurringListCubit({
@@ -137,7 +137,7 @@ class RecurringListCubit extends CubitSignal<RecurringListState>
     if (_dataVersion.value != _loadedVersion) await load();
   }
 
-  /// The draft slot, for New (§8.3): an Add draft opens as it is.
+  /// The draft slot, for New: an Add draft opens as it is.
   Future<ExpenseDraft?> pendingDraft() => _drafts.read();
 }
 
@@ -146,7 +146,7 @@ class RecurringListCubit extends CubitSignal<RecurringListState>
 RecurringSection defaultSection(List<RecurringItem> waiting) =>
     waiting.isEmpty ? RecurringSection.active : RecurringSection.waiting;
 
-/// Held items by title (§7.2).
+/// Held items by title.
 List<RecurringItem> sortedWaiting(List<RecurringItem> items) =>
     [
       for (final i in items)

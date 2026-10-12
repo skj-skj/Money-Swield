@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_expense_tracker_app/domain/selection.dart';
 
-/// The photo grids' selection rule (phase-6.md §8.10).
+/// The photo grids' selection rule.
 void main() {
   test('a tap adds an unselected item and removes a selected one', () {
     expect(toggledSelection({1}, 2), {1, 2});

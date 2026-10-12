@@ -42,7 +42,7 @@ class CancelToken {
   void onCancel(void Function() listener) => _listeners.add(listener);
 }
 
-/// Writes a report's files and hands them on (phase-8.md §6.3, §6.6).
+/// Writes a report's files and hands them on.
 abstract interface class ReportExportService {
   /// Writes [doc] as `cache/reports/<stamp>/<name>` (a new folder per
   /// export, so a second export never rewrites a file another app may
@@ -83,9 +83,9 @@ abstract interface class ReportExportService {
   /// day). A failure is logged.
   Future<void> clearCache();
 
-  /// At startup: `cache/report_work/` entirely, export folders older than
-  /// a day (a shared file stays a day for the app it was shared to,
-  /// P8-16). Saved reports are the user's and never touched.
+  /// At startup: `cache/report_work/` entirely, export folders older than a day
+  /// (a shared file stays a day for the app it was shared to). Saved reports
+  /// are the user's and never touched.
   Future<void> deleteOld();
 }
 

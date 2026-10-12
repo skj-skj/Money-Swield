@@ -14,7 +14,7 @@ import 'package:my_expense_tracker_app/ui/features/home/views/home_screen.dart';
 import '../../helpers/pump_app.dart';
 import '../../helpers/test_database.dart';
 
-/// The main Phase 2 flows, driven through the real app (phase-2.md §13).
+/// The main expense flows, driven through the real app.
 void main() {
   late AppDependencies deps;
 
@@ -42,7 +42,7 @@ void main() {
 
   Finder field(String label) => find.widgetWithText(TextField, label);
 
-  /// [text] on an expense row; Phase 5 shows the same amount in the trend
+  /// [text] on an expense row; Home shows the same amount in the trend
   /// card and the subtotals too.
   Finder onRow(String text) =>
       find.descendant(of: find.byType(ExpenseRow), matching: find.text(text));
@@ -386,7 +386,7 @@ void main() {
       );
       await tester.enterText(field('Title'), 'Dinner');
       await tester.enterText(field('Amount'), '250');
-      // On an existing expense the save button says Update (P4-18).
+      // On an existing expense the save button says Update.
       expect(find.widgetWithText(TextButton, 'Save'), findsNothing);
       await tester.tap(find.widgetWithText(TextButton, 'Update'));
       await tester.pumpAndSettle();
@@ -396,9 +396,8 @@ void main() {
       expect(onRow('₹250.00'), findsOneWidget);
     });
 
-    // Phase 4 (D9, P4-13): no "Discard changes?" prompt any more; back
-    // keeps the changes as a draft. The draft flows are in
-    // expense_draft_flows_test.dart.
+    // No "Discard changes?" prompt; back keeps the changes as
+    // a draft. The draft flows are in expense_draft_flows_test.dart.
     testWidgets('back on a changed form keeps a draft, without a prompt', (
       tester,
     ) async {
@@ -588,7 +587,7 @@ void main() {
   });
 
   testWidgets('a category used only by a recurring item asks where to move '
-      'it, then deletes (phase-7a.md R2: it read as unused and the delete '
+      'it, then deletes (it read as unused and the delete '
       'failed on the foreign key)', (tester) async {
     usePhoneSize(tester);
     final item = await insertRecurringRow(deps.database, categoryId: 1);
@@ -1107,8 +1106,8 @@ void main() {
     expect(find.text('Moved to bin'), findsNothing, reason: 'dismissed');
   });
 
-  // Phase 5 names days by their date only (no "Today", P5-10); what a new
-  // day changes is the trend card's current period (R5).
+  // Home names days by their date only (no "Today"); what a new day changes
+  // is the trend card's current period.
   group('the trend card follows the date', () {
     Finder cardText(String text) => find.descendant(
       of: find.byKey(const ValueKey('trendCard')),
@@ -1174,10 +1173,9 @@ void main() {
   testWidgets('an expense from another time zone keeps its own time and day', (
     tester,
   ) async {
-    // Recorded at 23:30 on 1 Oct, on a phone ten hours away from this
-    // machine's zone (the stand-in for "change the phone's time zone",
-    // phase-2.md §13). Home must show that wall clock and day, not the
-    // same moment in the current zone (database.md §1).
+    // Recorded at 23:30 on 1 Oct, on a phone ten hours away from this machine's
+    // zone (the stand-in for "change the phone's time zone"). Home must show
+    // that wall clock and day, not the same moment in the current zone.
     usePhoneSize(tester);
     await useFixedClock();
     final here = DateTime(2026, 10, 1).timeZoneOffset.inMinutes;
@@ -1281,9 +1279,9 @@ void main() {
   });
 
   group("Home's messages show on Home only", () {
-    /// Whether [text] is shown inside Home (its own ScaffoldMessenger), not
-    /// on the shell's Scaffold, where it would sit under Home's FAB and
-    /// stay over the other tabs (phase-2.md §12a).
+    /// Whether [text] is shown inside Home (its own ScaffoldMessenger), not on
+    /// the shell's Scaffold, where it would sit under Home's FAB and stay over
+    /// the other tabs.
     Finder onHome(String text) =>
         find.descendant(of: find.byType(HomeScreen), matching: find.text(text));
 

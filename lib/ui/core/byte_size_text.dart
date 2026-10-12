@@ -2,11 +2,11 @@ import 'package:intl/intl.dart';
 
 import '../../l10n/app_localizations.dart';
 
-/// [bytes] for people (phase-6.md §5.4): `0 B`, `999 B`, `1.0 KB`,
-/// `1.5 MB`, `1.2 GB`; 1024-based, one decimal from KB, with [locale]'s
-/// decimal separator (`1,2 GB` in es) and grouping. A value that would
-/// round up to 1024 of a unit is shown in the next one (`1.0 MB`, never
-/// `1024.0 KB`). [locale] is the formatting locale (`formattingLocaleOf`).
+/// [bytes] for people: `0 B`, `999 B`, `1.0 KB`, `1.5 MB`, `1.2 GB`;
+/// 1024-based, one decimal from KB, with [locale]'s decimal separator (`1,2 GB`
+/// in es) and grouping. A value that would round up to 1024 of a unit is shown
+/// in the next one (`1.0 MB`, never `1024.0 KB`). [locale] is the formatting
+/// locale (`formattingLocaleOf`).
 String byteSizeText(AppLocalizations l10n, String locale, int bytes) {
   if (bytes < 1024) {
     return l10n.sizeBytes(NumberFormat.decimalPattern(locale).format(bytes));

@@ -41,12 +41,11 @@ class ItemFormState {
   );
 }
 
-/// What the Manage forms share (phase-1.md §8, §9.5): name, emoji and
-/// (optional) description, validation with a duplicate-name check,
-/// "Reset to default name" for a built-in, and saving through a template
-/// the subclass completes ([addItem], [updateItem]). The subclass adds its
-/// own actions (delete, move then delete, archive, set as default) with
-/// [runBusy].
+/// What the Manage forms share: name, emoji and (optional) description,
+/// validation with a duplicate-name check, "Reset to default name" for a
+/// built-in, and saving through a template the subclass completes ([addItem],
+/// [updateItem]). The subclass adds its own actions (delete, move then delete,
+/// archive, set as default) with [runBusy].
 ///
 /// [T] is the item: `Category`, `Event` or `PaymentMethod`.
 abstract class ItemFormCubit<T> extends CubitSignal<ItemFormState>
@@ -108,9 +107,8 @@ abstract class ItemFormCubit<T> extends CubitSignal<ItemFormState>
     required String emoji,
   });
 
-  /// Saves [original] with the new fields. [name] is null for a built-in
-  /// whose name equals its localized name, so it keeps following the
-  /// language (phase-1.md §6).
+  /// Saves [original] with the new fields. [name] is null for a built-in whose
+  /// name equals its localized name, so it keeps following the language.
   Future<T> updateItem(
     T original, {
     required String? name,

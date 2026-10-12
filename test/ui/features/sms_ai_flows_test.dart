@@ -12,8 +12,7 @@ import '../../helpers/fake_sms_service.dart';
 import '../../helpers/pump_app.dart';
 import '../../helpers/test_database.dart';
 
-/// Settings → SMS's "Use on-device AI" and the backup's count
-/// (phase-9b.md §8, §11 "Cubits / widgets").
+/// Settings → SMS's "Use on-device AI" and the backup's count.
 void main() {
   late AppDependencies deps;
   late FakeOnDeviceAi ai;
@@ -127,7 +126,7 @@ void main() {
     });
   }
 
-  group('the backup waits with a count (phase-9b.md §6.2)', () {
+  group('the backup waits with a count', () {
     testWidgets('"(12 of 40)" while the model reads; the plain message '
         'without a count', (t) async {
       await setUpApp(t);

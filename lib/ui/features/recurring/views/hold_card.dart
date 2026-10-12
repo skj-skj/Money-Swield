@@ -6,10 +6,10 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../core/formatting_locale.dart';
 import 'recurring_texts.dart';
 
-/// The question a held backlog asks on its page (phase-7a.md §8.6): "⚠ 10
-/// payments are due, 3 Aug – 5 Oct." with **Add all 10**, **Add selected**
-/// (phase-7b.md §8.1 E) and **Skip them**. No confirm: the card is the
-/// question. While one runs, a progress ring and the buttons off.
+/// The question a held backlog asks on its page: "⚠ 10 payments are due, 3 Aug
+/// – 5 Oct." with **Add all 10**, **Add selected** and
+/// **Skip them**. No confirm: the card is the question. While one runs, a
+/// progress ring and the buttons off.
 class HoldCard extends StatelessWidget {
   const HoldCard({
     super.key,
@@ -39,7 +39,7 @@ class HoldCard extends StatelessWidget {
     return Card(
       key: const ValueKey('holdCard'),
       // Not errorContainer: dark red with pink buttons was loud and hard to
-      // read in the dark theme (Oppo, §12a). The icon carries the warning.
+      // read in the dark theme (Oppo). The icon carries the warning.
       margin: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -60,8 +60,8 @@ class HoldCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            // A Wrap: three buttons take two lines at 360 dp (phase-7b.md
-            // §8.2), and at a large font they go one under the other.
+            // A Wrap: three buttons take two lines at 360 dp, and at a large
+            // font they go one under the other.
             Wrap(
               alignment: WrapAlignment.end,
               crossAxisAlignment: WrapCrossAlignment.center,

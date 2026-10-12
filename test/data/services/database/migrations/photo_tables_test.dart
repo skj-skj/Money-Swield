@@ -3,8 +3,8 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../../../../helpers/test_database.dart';
 
-/// The `photos` and `expense_photos` tables (phase-6.md §4.1) on SQLite
-/// 3.22, and the SQL facts the repository relies on (F13).
+/// The `photos` and `expense_photos` tables on SQLite
+/// 3.22, and the SQL facts the repository relies on.
 /// `all_migrations_test.dart` already covers up/down/up.
 void main() {
   late Database db;
@@ -107,7 +107,7 @@ void main() {
   });
 
   test('an ignored INSERT OR IGNORE returns 0 in tests, never the existing '
-      'id (a phone returns -1, R16): the repository never reads it', () async {
+      'id (a phone returns -1): the repository never reads it', () async {
     final first = await insertPhoto(a);
     final ignored = await db.rawInsert(
       'INSERT OR IGNORE INTO photos '

@@ -1,9 +1,9 @@
-# Tests on real database files (phase 3) run slowly on Windows: the first
-# file a test file migrates takes ~15 s (each migration step opens, writes
-# and closes files, and the virus scanner checks each). Under `flutter test`'s
-# parallel runner the first test of such a file then came close to the 30 s
-# default and timed out now and then. The same code takes well under a
-# second on the phone (phase-3.md §12a). Those files are written under
-# .dart_tool/test_tmp (test/helpers/test_folders.dart), a folder that can be
-# excluded from Windows Defender's real-time scan on its own.
+# Tests on real database files run slowly on Windows: the first file a
+# test file migrates takes ~15 s (each migration step opens, writes and closes
+# files, and the virus scanner checks each). Under `flutter test`'s parallel
+# runner the first test of such a file then came close to the 30 s default and
+# timed out now and then. The same code takes well under a second on the phone.
+# Those files are written under .dart_tool/test_tmp
+# (test/helpers/test_folders.dart), a folder that can be excluded from Windows
+# Defender's real-time scan on its own.
 timeout: 2x

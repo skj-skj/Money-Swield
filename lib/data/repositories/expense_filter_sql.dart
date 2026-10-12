@@ -1,6 +1,5 @@
-/// The SQL part of a filter (phase-5.md §6.1, phase-7b.md §6.4), shared by
-/// Home's reads (`ExpenseRepository`) and the report's
-/// (`ReportRepository`, phase-8.md R10). The text part is matched in Dart
+/// The SQL part of a filter, shared by Home's reads (`ExpenseRepository`) and
+/// the report's (`ReportRepository`). The text part is matched in Dart
 /// (`matchesText`).
 library;
 
@@ -14,12 +13,12 @@ List<String> expenseFilterSql(ExpenseFilter filter) => [
   if (filter.categoryIds.isNotEmpty)
     'category_id IN (${sqlIdList(filter.categoryIds)})',
   if (filter.eventIds.isNotEmpty) withAnyEventSql(filter.eventIds),
-  // On 3.22 this keeps Home's plan on its date index (phase-7b.md F3; the
-  // unique index isn't picked for IS NOT NULL): a plan test pins it.
+  // On 3.22 this keeps Home's plan on its date index (the unique index isn't
+  // picked for IS NOT NULL): a plan test pins it.
   if (filter.onlyRecurring) recurringOnlySql,
 ];
 
-/// A payment of a recurring item (phase-7b.md §6.4).
+/// A payment of a recurring item.
 const recurringOnlySql = 'recurring_expense_id IS NOT NULL';
 
 /// Any one of [eventIds]: an expense with two of them is still one row.

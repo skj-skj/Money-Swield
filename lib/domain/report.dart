@@ -1,11 +1,10 @@
-/// A report: the expenses of a range that pass a filter, grouped by one
-/// or two dimensions, with totals per currency (phase-8.md §5.2). The
-/// screen, the PDF and the Excel file are all built from one [Report], so
-/// an export can't differ from the screen (§9).
+/// A report: the expenses of a range that pass a filter, grouped by one or two
+/// dimensions, with totals per currency. The screen, the PDF and the Excel file
+/// are all built from one [Report], so an export can't differ from the screen.
 ///
-/// Every sum is a `BigInt` of `int` minor units, never a `double`;
-/// currencies never mix (D2); the report's totals count each row once,
-/// while a row in two events is in each of their groups.
+/// Every sum is a `BigInt` of `int` minor units, never a `double`; currencies
+/// never mix; the report's totals count each row once, while a row in two
+/// events is in each of their groups.
 library;
 
 import 'expense_filter.dart';
@@ -109,7 +108,7 @@ int compareGroupKeys(GroupKey a, GroupKey b) => switch ((a, b)) {
   _ => a.runtimeType.toString().compareTo(b.runtimeType.toString()),
 };
 
-/// One expense as a report sees it (§6.1's row).
+/// One expense as a report sees it.
 final class ReportRow {
   const ReportRow({
     required this.id,
@@ -301,9 +300,9 @@ List<GroupKey> _eventKeys(ReportRow row, Set<int> chosen) {
 }
 
 /// Whether [row] passes [filter]: any chosen category, at least one chosen
-/// event, any chosen payment method, Only recurring, every word of the
-/// text in its title or description (Home's rules, phase-5.md §5.6).
-/// [words] is `searchWords(filter.base.text)`, computed once.
+/// event, any chosen payment method, Only recurring, every word of the text in
+/// its title or description (Home's rules). [words] is
+/// `searchWords(filter.base.text)`, computed once.
 bool rowPasses(ReportRow row, ReportFilter filter, List<String> words) {
   final base = filter.base;
   if (base.categoryIds.isNotEmpty &&
@@ -393,8 +392,8 @@ Map<String, GroupTotal> _sum(List<ReportRow> rows) {
   };
 }
 
-/// [part] / [whole] in tenths of a percent, rounded half up; integers
-/// only (P8-11). Null when [whole] is 0.
+/// [part] / [whole] in tenths of a percent, rounded half up; integers only.
+/// Null when [whole] is 0.
 int? sharePermille(BigInt part, BigInt whole) {
   if (whole == BigInt.zero) return null;
   return ((part * BigInt.from(2000) + whole) ~/ (whole * BigInt.two)).toInt();

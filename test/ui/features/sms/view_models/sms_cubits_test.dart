@@ -13,7 +13,7 @@ import '../../../../domain/sms/fixtures/india_sms.dart';
 import '../../../../helpers/fake_sms_service.dart';
 import '../../../../helpers/test_database.dart';
 
-/// `SmsCubit` and `SmsListCubit` (phase-9a.md §7.1, §7.2, §12 "Cubits").
+/// `SmsCubit` and `SmsListCubit`.
 void main() {
   late AppDependencies deps;
   late TestClock clock;

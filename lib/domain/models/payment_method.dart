@@ -1,4 +1,4 @@
-/// A way of paying, such as cash or a card (database.md §3.3).
+/// A way of paying, such as cash or a card.
 class PaymentMethod {
   const PaymentMethod({
     required this.id,

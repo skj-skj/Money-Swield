@@ -5,13 +5,13 @@ import '../../../l10n/app_localizations.dart';
 import '../money_formatter.dart';
 
 /// One expense in a list (Home, the bin; also a recurring item in Manage →
-/// Recurring): its category's emoji, its title, a second line, and its
-/// amount, with marks after the amount (the repeat mark, the photo icon,
-/// Home's unsaved-changes mark; phase-7a.md P7a-23).
+/// Recurring): its category's emoji, its title, a second line, and its amount,
+/// with marks after the amount (the repeat mark, the photo icon, Home's
+/// unsaved-changes mark).
 ///
-/// The amount takes at most 45 % of the row and is scaled down, never cut:
-/// with a large font on a 360 dp phone a long amount would otherwise leave
-/// the title no room at all (phase-5.md §12a).
+/// The amount takes at most 45 % of the row and is scaled down, never cut: with
+/// a large font on a 360 dp phone a long amount would otherwise leave the title
+/// no room at all.
 class ExpenseTile extends StatelessWidget {
   const ExpenseTile({
     super.key,
@@ -33,8 +33,8 @@ class ExpenseTile extends StatelessWidget {
   /// ₹649, 9 November"); null reads the texts.
   final String? semanticsLabel;
 
-  /// 1 on Home (phase-5.md: the row keeps its height); 2 on Upcoming,
-  /// whose button left "Swim…" at the largest font (phase-7b.md §12a).
+  /// 1 on Home (the row keeps its height); 2 on Upcoming, whose button left
+  /// "Swim…" at the largest font.
   final int titleMaxLines;
 
   /// The category's emoji (`missingEmoji` when the category is gone).
@@ -43,24 +43,24 @@ class ExpenseTile extends StatelessWidget {
   final String subtitle;
 
   /// The second line's style; the list's default when null ("10 payments
-  /// waiting" is in the error colour, phase-7a.md §8.3).
+  /// waiting" is in the error colour).
   final TextStyle? subtitleStyle;
 
   /// Null shows "—": a recurring item that can't be read has no price.
   final Money? amount;
   final VoidCallback onTap;
 
-  /// Shown right after the amount, in order (phase-6.md R7).
+  /// Shown right after the amount, in order.
   final List<Widget> marks;
 
   /// The tile's side padding; the list's default when null.
   final EdgeInsetsGeometry? contentPadding;
 
-  /// A button after the amount, outside its scaling (Upcoming's Skip and
-  /// Bring back, phase-7b.md §8.3).
+  /// A button after the amount, outside its scaling (Upcoming's Skip and Bring
+  /// back).
   final Widget? action;
 
-  /// Greyed: a payment skipped once (phase-7b.md §8.3).
+  /// Greyed: a payment skipped once.
   final bool muted;
 
   /// Shown when a row's category or payment method is missing. RESTRICT
@@ -145,9 +145,9 @@ class ExpenseTile extends StatelessWidget {
   }
 }
 
-/// The repeat mark of a payment of a recurring item (phase-7a.md §8.7):
-/// first among the marks (P7a-23), small and muted, read as "Repeats".
-/// Null for a plain expense, and for one whose item was deleted for good.
+/// The repeat mark of a payment of a recurring item: first among the marks,
+/// small and muted, read as "Repeats". Null for a plain expense, and for one
+/// whose item was deleted for good.
 Widget? repeatMark(BuildContext context, bool isRecurring) {
   if (!isRecurring) return null;
   return Icon(
@@ -159,8 +159,8 @@ Widget? repeatMark(BuildContext context, bool isRecurring) {
   );
 }
 
-/// The photo mark of a row with [count] photos (phase-6.md §8.5): a small
-/// muted icon, read as "3 photos". Null without photos.
+/// The photo mark of a row with [count] photos: a small muted icon, read as "3
+/// photos". Null without photos.
 Widget? photoMark(BuildContext context, int count) {
   if (count == 0) return null;
   return Icon(

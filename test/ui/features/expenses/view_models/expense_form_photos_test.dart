@@ -18,7 +18,7 @@ import '../../../../helpers/fake_photo_service.dart';
 import '../../../../helpers/test_database.dart';
 import '../../../../helpers/test_folders.dart';
 
-/// Photos in the Add / Edit form (phase-6.md §7.1), on real files.
+/// Photos in the Add / Edit form, on real files.
 void main() {
   late AppDependencies deps;
   late TestClock clock;

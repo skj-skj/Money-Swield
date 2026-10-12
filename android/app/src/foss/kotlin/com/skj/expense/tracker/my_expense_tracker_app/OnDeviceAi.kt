@@ -6,10 +6,9 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 
 /**
- * `expense_tracker/on_device_ai` in the foss build (phase-9b.md §6.1,
- * P9b-2): no on-device AI and no Google code, so the SMS are read by the
- * regex only. Same name and constructor as play's, so `MainActivity` is
- * one file for both flavors.
+ * `expense_tracker/on_device_ai` in the foss build: no on-device AI and no
+ * Google code, so the SMS are read by the regex only. Same name and constructor
+ * as play's, so `MainActivity` is one file for both flavors.
  */
 class OnDeviceAi(messenger: BinaryMessenger, @Suppress("UNUSED_PARAMETER") context: Context) :
     MethodChannel.MethodCallHandler {

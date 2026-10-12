@@ -3,10 +3,10 @@ import 'package:material_ui/material_ui.dart';
 
 import '../formatting_locale.dart';
 
-/// A tile that picks a section and shows how many items it has: an icon,
-/// the count and the label, the chosen one filled (Recurring's Waiting ·
-/// Active · Archive, phase-7a.md §8.3). Read by TalkBack as "Waiting, 3",
-/// selected or not. Sized for three in a 360 dp row.
+/// A tile that picks a section and shows how many items it has: an icon, the
+/// count and the label, the chosen one filled (Recurring's Waiting · Active ·
+/// Archive). Read by TalkBack as "Waiting, 3", selected or not. Sized for three
+/// in a 360 dp row.
 class SectionTile extends StatelessWidget {
   const SectionTile({
     super.key,

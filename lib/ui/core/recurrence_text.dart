@@ -1,6 +1,6 @@
-/// The texts of a recurring item's rule (phase-7a.md §5.5): pure, the
-/// app's strings and a formatting locale in (`dateLocaleOf`). Weekdays and
-/// months come from intl in that locale, numbers are grouped.
+/// The texts of a recurring item's rule: pure, the app's strings and a
+/// formatting locale in (`dateLocaleOf`). Weekdays and months come from intl in
+/// that locale, numbers are grouped.
 library;
 
 import '../../domain/periods.dart';
@@ -8,10 +8,9 @@ import '../../domain/recurrence.dart';
 import '../../l10n/app_localizations.dart';
 import 'date_texts.dart';
 
-/// "Every month on day 9", "Every 2 weeks on Monday", "Every year on 29 Feb
-/// (28 Feb in other years)". "Day 9", not "the 9th": ordinals don't
-/// translate (P7a-21). A start on the 29th–31st says shorter months use
-/// their last day.
+/// "Every month on day 9", "Every 2 weeks on Monday", "Every year on 29 Feb (28
+/// Feb in other years)". "Day 9", not "the 9th": ordinals don't translate. A
+/// start on the 29th–31st says shorter months use their last day.
 String scheduleText(AppLocalizations l10n, String locale, Schedule s) {
   final start = parseDay(s.startOn);
   final n = s.interval;

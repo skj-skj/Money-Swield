@@ -14,11 +14,10 @@ import '../view_models/expense_list_cubit.dart';
 import 'day_header.dart';
 import 'group_frame.dart';
 
-/// Home's groups as slivers (phase-5.md §8.3, P5-37): per group an outline
-/// ([FrameDecoration]) around a sliver group holding the sticky frame top,
-/// then per day a sticky day header and the day's rows, lazily built. Day
-/// grouping has no day header: the frame's name is the date. All from
-/// Flutter's own slivers, no package.
+/// Home's groups as slivers: per group an outline ([FrameDecoration]) around a
+/// sliver group holding the sticky frame top, then per day a sticky day header
+/// and the day's rows, lazily built. Day grouping has no day header: the
+/// frame's name is the date. All from Flutter's own slivers, no package.
 List<Widget> homeListSlivers({
   required BuildContext context,
   required ExpenseListLoaded state,
@@ -75,8 +74,7 @@ List<Widget> homeListSlivers({
                   onRetry: cubit.loadMore,
                 ),
               ),
-            // Lets a week's last day header leave before the frame top
-            // (probe, phase-5.md §8.3).
+            // Lets a week's last day header leave before the frame top (probe).
             const SliverToBoxAdapter(child: SizedBox(height: 16)),
           ],
         ),
@@ -114,8 +112,8 @@ class ExpenseRow extends StatelessWidget {
   final Expense expense;
   final ExpenseListLoaded state;
 
-  /// The draft slot holds unsaved changes to this expense: a mark after
-  /// the amount. The row still shows the stored values (P4-21).
+  /// The draft slot holds unsaved changes to this expense: a mark after the
+  /// amount. The row still shows the stored values.
   final bool hasDraft;
   final VoidCallback onTap;
 

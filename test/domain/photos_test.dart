@@ -1,11 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_expense_tracker_app/domain/photos.dart';
 
-/// phase-6.md §5.1 and §5.2.
 void main() {
   final sha = 'a' * 64;
 
-  group('isValidPhotoPath (§5.1, every row)', () {
+  group('isValidPhotoPath (every row)', () {
     for (final (path, valid) in [
       ('photos/$sha.jpg', true),
       ('photos/$sha.png', true),
@@ -69,7 +68,7 @@ void main() {
     for (final photo in photos) photo.sha256[0],
   ];
 
-  group('addPhotos (§5.2, every row)', () {
+  group('addPhotos (every row)', () {
     test('[] + [A, B] → [A, B]', () {
       final out = addPhotos([], [p('a'), p('b')]);
       expect(shas(out.photos), ['a', 'b']);

@@ -10,7 +10,6 @@ import 'package:my_expense_tracker_app/domain/title_suggestions.dart';
 
 import 'fixtures/india_sms.dart';
 
-/// phase-9b.md §5 (§11 "Domain").
 void main() {
   const categories = <CategoryName>[
     (id: 1, name: 'Groceries'),
@@ -44,7 +43,7 @@ void main() {
     });
 
     test('asks for the whole name as the title (a "short title" made the '
-        'Pixel\'s model drop words of it, phase-9b.md §12a)', () {
+        'Pixel\'s model drop words of it)', () {
       final prompt = buildAiPrompt(bankSent1, categories)!;
       expect(prompt, contains('keeping every word of the name'));
       expect(prompt, isNot(contains('short expense title')));
@@ -200,7 +199,7 @@ void main() {
       }
     });
 
-    test('is_debit false, missing, or a string → null (P9b-37)', () {
+    test('is_debit false, missing, or a string → null', () {
       for (final value in [false, null, 'true', 1]) {
         expect(
           acceptAiResult(answer({'is_debit': value}), bankSent1, categories),
@@ -288,7 +287,7 @@ void main() {
         ('none', null),
         (null, null), // also what a missing key reads as
       ]) {
-        test('$payment → $expected (null: 9a\'s text rule)', () {
+        test('$payment → $expected (null: the regex text rule)', () {
           expect(
             acceptAiResult(
               answer({'payment': payment}),
@@ -378,7 +377,7 @@ void main() {
     });
   });
 
-  group('§5.3 with the model', () {
+  group('title and category with the model', () {
     test('title: learned > the model\'s (cleaned) > cleaned payee > none', () {
       expect(
         suggestedTitle(learned: 'Rent', ai: 'Acme', payee: 'ACME'),

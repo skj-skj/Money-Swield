@@ -2,14 +2,14 @@ import 'package:path/path.dart' as p;
 
 import '../database/database_files.dart';
 
-/// A copy of the data a restore replaced, kept for "Undo last restore"
-/// (phase-3.md §6.5): `databases/backups/pre-restore-<seq>-<UTC stamp>.db`.
+/// A copy of the data a restore replaced, kept for "Undo last restore":
+/// `databases/backups/pre-restore-<seq>-<UTC stamp>.db`.
 ///
-/// "Newest" is the highest [sequence], never the time (P3-16): with the
-/// clock set back, ordering by time would make Undo pick the wrong copy and
-/// the pruning delete the real newest one, and two restores in the same
-/// second would collide on the name. The stamp is only for people and for
-/// the "before the restore on …" text.
+/// "Newest" is the highest [sequence], never the time: with the clock set back,
+/// ordering by time would make Undo pick the wrong copy and the pruning delete
+/// the real newest one, and two restores in the same second would collide on
+/// the name. The stamp is only for people and for the "before the restore on …"
+/// text.
 class PreRestoreCopy {
   const PreRestoreCopy({
     required this.path,

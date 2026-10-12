@@ -7,9 +7,9 @@ import 'package:material_ui/material_ui.dart';
 import '../../../domain/models/dashboard_options.dart';
 import '../../../l10n/app_localizations.dart';
 
-/// A card of faces on a reel, with a carousel of pages on the current
-/// face: Home's trend card (week, month, year × currencies, phase-5.md
-/// §8.2) and the report card (its charts × currencies, phase-8.md §8.5).
+/// A card of faces on a reel, with a carousel of pages on the current face:
+/// Home's trend card (week, month, year × currencies) and the report card (its
+/// charts × currencies).
 ///
 /// **Swipe up / down** turns it like a slot-machine reel: while the finger
 /// drags, the current face tilts away and the next one comes into view.
@@ -132,10 +132,9 @@ class _ReelCardState extends State<ReelCard> with TickerProviderStateMixin {
 
   bool get _oneFace => widget.faceCount < 2;
 
-  /// A page that a released drag committed to, while its animation runs.
-  /// A new drag in that time finishes it at once (phase-5.md §8.2): the
-  /// animation can then be below half-way (a fast, short fling), so the
-  /// carousel's position can't tell.
+  /// A page that a released drag committed to, while its animation runs. A new
+  /// drag in that time finishes it at once: the animation can then be below
+  /// half-way (a fast, short fling), so the carousel's position can't tell.
   int? _pendingPage;
 
   // --- Reel ---------------------------------------------------------------
@@ -526,9 +525,9 @@ class ReelDots extends StatelessWidget {
   }
 }
 
-/// The reel's tick at a face, as set in Settings → Home (owner,
-/// 2026-10-07; one setting for both cards, phase-8.md P8-29). Also played
-/// there when a strength is picked, to feel it.
+/// The reel's tick at a face, as set in Settings → Home (owner, 2026-10-07; one
+/// setting for both cards). Also played there when a strength is picked, to
+/// feel it.
 void cardHaptic(CardHaptics haptics) {
   switch (haptics) {
     case CardHaptics.off:

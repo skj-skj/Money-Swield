@@ -100,7 +100,7 @@ abstract class AppLocalizations {
     Locale('hi'),
   ];
 
-  /// App name. Placeholder until the real name is chosen (phase-1.md §12).
+  /// App name. Placeholder until the real name is chosen.
   ///
   /// In en, this message translates to:
   /// **'Expense Tracker'**
@@ -2650,7 +2650,7 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{Every week on {weekday}} other{Every {count} weeks on {weekday}}}'**
   String scheduleWeekly(int count, String weekday);
 
-  /// 'Day 9', not 'the 9th': ordinals don't translate (P7a-21).
+  /// 'Day 9', not 'the 9th': ordinals don't translate.
   ///
   /// In en, this message translates to:
   /// **'{count, plural, =1{Every month on day {day}} other{Every {count} months on day {day}}}'**
@@ -3322,7 +3322,7 @@ abstract class AppLocalizations {
   /// **'The last payment would be after {date}. Use fewer payments.'**
   String repeatCountTooLate(String date);
 
-  /// An existing expense made to repeat (phase-7b.md §8.5).
+  /// An existing expense made to repeat.
   ///
   /// In en, this message translates to:
   /// **'Updated. Repeats: {schedule}'**
@@ -3346,7 +3346,7 @@ abstract class AppLocalizations {
   /// **'First payment'**
   String get firstPayment;
 
-  /// Under How often once it differs from the item's (phase-7b.md §8.2).
+  /// Under How often once it differs from the item's.
   ///
   /// In en, this message translates to:
   /// **'Saving makes a new recurring item; this one is archived.'**
@@ -3472,7 +3472,7 @@ abstract class AppLocalizations {
   /// **'Upcoming payments'**
   String get upcomingTitle;
 
-  /// Home's icon left of the photos icon (phase-7b.md §8.3).
+  /// Home's icon left of the photos icon.
   ///
   /// In en, this message translates to:
   /// **'Upcoming payments'**

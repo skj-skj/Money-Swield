@@ -11,16 +11,16 @@ import '../../../core/period_names.dart';
 import '../../../core/widgets/delayed_spinner.dart';
 import '../view_models/expense_list_cubit.dart';
 
-/// A subtotal on a frame top or a day header (phase-5.md §8.3), for
-/// exactly what the filters show:
+/// A subtotal on a frame top or a day header, for exactly what the filters
+/// show:
 ///
 /// - every currency on one line when it fits: `₹4,560.00 + $85.00`;
 /// - otherwise a **Show subtotal** button that opens them in a dialog;
 /// - nothing while it's read, then (after 300 ms) a small spinner;
 /// - a retry icon when the read failed.
 ///
-/// Asks the cubit for the subtotal when it is first painted, i.e. on
-/// screen (P5-26): built but off-screen headers read nothing.
+/// Asks the cubit for the subtotal when it is first painted, i.e. on screen:
+/// built but off-screen headers read nothing.
 class SubtotalView extends StatelessWidget {
   const SubtotalView({
     super.key,
@@ -94,8 +94,8 @@ class SubtotalView extends StatelessWidget {
     );
   }
 
-  /// Nothing for the first 300 ms (subtotals usually take a few, phase-5.md
-  /// §6.4), then a 16 dp spinner.
+  /// Nothing for the first 300 ms (subtotals usually take a few), then a 16 dp
+  /// spinner.
   Widget _loading(BuildContext context) => _withPrefix(
     context,
     const DelayedSpinner(

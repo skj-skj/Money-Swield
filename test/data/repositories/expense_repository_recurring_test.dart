@@ -7,8 +7,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../../helpers/recurring_fixture.dart';
 
-/// Save with Repeats (phase-7a.md §6.2) and what the expense side must keep
-/// doing with payments (R8, R9, P7a-19).
+/// Save with Repeats and what the expense side must keep doing with payments.
 void main() {
   late RecurringFixture f;
 
@@ -267,8 +266,7 @@ void main() {
       expect((await f.expenses.byId(expense.id))!.isRecurring, isTrue);
     });
 
-    test('totals, search, chips and title history count payments '
-        '(P7a-19)', () async {
+    test('totals, search, chips and title history count payments', () async {
       await f.addRepeating(input: f.input(day: '2026-08-09'));
       final rows = await f.expenses.amountsIn(
         from: '2026-08-01',
@@ -329,7 +327,7 @@ void main() {
     });
   });
 
-  group('make an existing expense repeat (phase-7b.md §6.2)', () {
+  group('make an existing expense repeat', () {
     /// A plain Rent expense on [day], 10:00, with event 2 and no photos.
     Future<Expense> plain({String day = '2026-09-01'}) =>
         f.expenses.add(f.input(title: 'Rent', day: day));

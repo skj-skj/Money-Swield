@@ -26,12 +26,11 @@ class OnboardingScreen extends StatefulWidget {
 
   final PaymentMethodRepository paymentMethods;
 
-  /// The SMS step (phase-9a.md §8.6), shown only in a build with SMS.
+  /// The SMS step, shown only in a build with SMS.
   final SmsService? sms;
   final Future<void> Function(bool enabled)? setSmsEnabled;
 
-  /// "Restore from a backup" under the language list (phase-3.md §6.7).
-  /// Hidden when null.
+  /// "Restore from a backup" under the language list. Hidden when null.
   final VoidCallback? onRestoreFromBackup;
 
   @override
@@ -146,9 +145,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 }
 
-/// "Suggest expenses from bank SMS?" (§8.6, P9a-28): Not now (the
-/// default, highlighted) or Yes, which asks for the permission. Refused:
-/// how to turn it on later; Get started works either way.
+/// "Suggest expenses from bank SMS?": Not now (the default, highlighted) or
+/// Yes, which asks for the permission. Refused: how to turn it on later; Get
+/// started works either way.
 class _SmsStep extends StatelessWidget {
   const _SmsStep({required this.state, required this.cubit});
 

@@ -2,7 +2,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../../l10n/app_localizations.dart';
 
-/// What the Skip dialog chose (phase-7b.md §8.1 F, P7b-8).
+/// What the Skip dialog chose.
 enum SkipChoice {
   /// Skip only this payment (the default).
   once,

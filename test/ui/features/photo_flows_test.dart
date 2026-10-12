@@ -20,11 +20,10 @@ import '../../helpers/test_database.dart';
 import '../../helpers/test_folders.dart';
 import '../../helpers/test_images.dart';
 
-/// Photos on the Add / Edit form through the real app (phase-6.md §12,
-/// Widgets). Files are real (staging, promotion), so the steps that touch
-/// them are pumped with [pumpUntil]; pictures show as memory images (F17).
-/// [app.pumpUntil] with a 1 ms fake step: the photo timeouts run on the
-/// fake clock.
+/// Photos on the Add / Edit form through the real app (Widgets). Files are real
+/// (staging, promotion), so the steps that touch them are pumped with
+/// [pumpUntil]; pictures show as memory images. [app.pumpUntil] with a 1 ms
+/// fake step: the photo timeouts run on the fake clock.
 Future<void> pumpUntil(
   WidgetTester tester,
   bool Function() condition, {
@@ -296,10 +295,7 @@ void main() {
     await tester.tap(find.byKey(PhotoSelectionBar.saveKey));
     await pumpUntil(
       tester,
-      () => find
-          .byKey(const ValueKey('sheetMessage'))
-          .evaluate()
-          .isNotEmpty,
+      () => find.byKey(const ValueKey('sheetMessage')).evaluate().isNotEmpty,
     );
     expect(find.byType(AlertDialog), findsNothing);
     expect(

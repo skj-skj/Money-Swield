@@ -12,8 +12,8 @@ import '../../../../domain/models/sms_suggestion.dart';
 import '../../../../domain/sms/sms_groups.dart';
 import '../../../core/emit_if_open.dart';
 
-/// What the SMS screen shows (phase-9a.md §7.2). States don't override
-/// `==`, so every emitted state reaches the screen.
+/// What the SMS screen shows. States don't override `==`, so every emitted
+/// state reaches the screen.
 sealed class SmsListState {
   const SmsListState();
 }
@@ -38,7 +38,7 @@ final class SmsListLoaded extends SmsListState {
   /// Pending suggestions, newest first.
   final List<SmsSuggestion> rows;
 
-  /// [rows] as month frames and days (§5.7).
+  /// [rows] as month frames and days.
   final List<SmsMonth> months;
 
   /// The payment methods by built-in key, so a card shows a renamed one's
@@ -63,8 +63,8 @@ final class SmsListLoaded extends SmsListState {
   );
 }
 
-/// The SMS screen's pending suggestions, 60 a page (keyset), the dismiss
-/// icon with Undo (P9a-5), and the draft slot for opening the form (§5.9).
+/// The SMS screen's pending suggestions, 60 a page (keyset), the dismiss icon
+/// with Undo, and the draft slot for opening the form.
 class SmsListCubit extends CubitSignal<SmsListState>
     with EmitIfOpen<SmsListState> {
   SmsListCubit({
@@ -87,8 +87,8 @@ class SmsListCubit extends CubitSignal<SmsListState>
 
   Future<void> load() => _loadTop(pageSize);
 
-  /// Reloads at least as many rows as are shown, so the place stays: after
-  /// the form closes, and when a scan stored rows (P9a-42).
+  /// Reloads at least as many rows as are shown, so the place stays: after the
+  /// form closes, and when a scan stored rows.
   Future<void> reload() {
     final shown = switch (value) {
       SmsListLoaded(:final rows) => rows.length,
@@ -194,10 +194,10 @@ class SmsListCubit extends CubitSignal<SmsListState>
     await reload();
   }
 
-  /// The draft slot, for the opener (§5.9).
+  /// The draft slot, for the opener.
   Future<ExpenseDraft?> pendingDraft() => _drafts.readOrNull();
 
-  /// The dialog's Dismiss draft: the slot emptied for good (P9a-50). Its
-  /// new photos go at the next start's sweep (F13).
+  /// The dialog's Dismiss draft: the slot emptied for good. Its new photos go
+  /// at the next start's sweep.
   Future<void> dismissDraft() => _drafts.clear();
 }

@@ -250,7 +250,7 @@ void main() {
     expect(deps.dataVersion.value, start);
   });
 
-  group('photos (phase-6.md §6.4a, §6.5)', () {
+  group('photos', () {
     SavedPhoto saved(int id) {
       final sha = id.toRadixString(16).padLeft(64, '0');
       return SavedPhoto(

@@ -54,14 +54,13 @@ import 'photos_sheet.dart';
 import 'repeat_section.dart';
 import 'title_suggestions_field.dart';
 
-/// Which picker is in search mode. View state, not in the cubit: it
-/// doesn't affect what gets saved (phase-2.md §6.2).
+/// Which picker is in search mode. View state, not in the cubit: it doesn't
+/// affect what gets saved.
 enum _Searching { none, category, events }
 
-/// Adds an expense, or edits the one with [expenseId]. Every back pops
-/// with a result: [ExpenseDraftKept] when the unsaved changes are in the
-/// draft slot, else null (phase-4.md §7.7). Save, Delete and "gone" pop
-/// with their own [ExpenseFormResult].
+/// Adds an expense, or edits the one with [expenseId]. Every back pops with a
+/// result: [ExpenseDraftKept] when the unsaved changes are in the draft slot,
+/// else null. Save, Delete and "gone" pop with their own [ExpenseFormResult].
 class ExpenseFormScreen extends StatefulWidget {
   const ExpenseFormScreen({
     super.key,
@@ -77,20 +76,20 @@ class ExpenseFormScreen extends StatefulWidget {
   final AppDependencies dependencies;
   final int? expenseId;
 
-  /// Recurring → New (phase-7a.md §8.3): the Add form with Repeats on.
+  /// Recurring → New: the Add form with Repeats on.
   final bool startRepeating;
 
-  /// Opens a recurring item's page, from the link row of a payment's Edit
-  /// (§8.1 E). Null: the row doesn't open anything.
+  /// Opens a recurring item's page, from the link row of a payment's Edit.
+  /// Null: the row doesn't open anything.
   final void Function(BuildContext context, int itemId)? onOpenRecurring;
 
-  /// The slot's draft, when Home opens the form from it (phase-4.md §7.4).
+  /// The slot's draft, when Home opens the form from it.
   final ExpenseDraft? draft;
 
-  /// A Home chip's amount (phase-4.md §8.1).
+  /// A Home chip's amount.
   final Money? chipAmount;
 
-  /// The SMS suggestion a new Add form is filled from (phase-9a.md §7.3).
+  /// The SMS suggestion a new Add form is filled from.
   final SmsSuggestion? sms;
 
   @override
@@ -111,10 +110,10 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   final _amount = TextEditingController();
   final _description = TextEditingController();
 
-  /// The Repeats section's Every field (phase-7a.md §8.2).
+  /// The Repeats section's Every field.
   final _interval = TextEditingController(text: '1');
 
-  /// Its "After N payments" field (phase-7b.md §8.2).
+  /// Its "After N payments" field.
   final _count = TextEditingController();
   final _countFocus = FocusNode();
   final _intervalFocus = FocusNode();
@@ -145,8 +144,8 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
 
   var _searching = _Searching.none;
 
-  /// Writes the draft when the app goes to the background, so a phone call
-  /// or the app being killed loses nothing (phase-4.md §7.3).
+  /// Writes the draft when the app goes to the background, so a phone call or
+  /// the app being killed loses nothing.
   late final AppLifecycleListener _lifecycle;
 
   @override
@@ -219,18 +218,18 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
 
   void _flushDraftInBackground() => _cubit?.flushDraftInBackground();
 
-  /// Leaving the title without a pick makes a title typed after a prefill
-  /// the user's own (phase-4.md §12a).
+  /// Leaving the title without a pick makes a title typed after a prefill the
+  /// user's own.
   void _onTitleFocus() {
     if (!_titleFocus.hasFocus) _cubit?.titleLeft();
   }
 
   void _onAmountFocus() => setState(() {});
 
-  /// Typing Every or After N changes "Next: … · last …" at the section's
-  /// end, which the keyboard covered on the Oppo (phase-7b.md §12a): once
-  /// the keyboard is up, the section's end is scrolled into view (only as
-  /// far as needed, the field staying above it).
+  /// Typing Every or After N changes "Next: … · last …" at the section's end,
+  /// which the keyboard covered on the Oppo: once the keyboard is up, the
+  /// section's end is scrolled into view (only as far as needed, the field
+  /// staying above it).
   void _onRepeatFieldFocus() {
     if (!_countFocus.hasFocus && !_intervalFocus.hasFocus) return;
     _repeatScroll?.cancel();
@@ -265,10 +264,9 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
         _setText(_amount, fields.expression);
         _setText(_description, fields.description);
         _syncInterval(fields);
-        // Not an SMS form that came with its title: everything but the
-        // category is filled, and the keyboard would hide the category
-        // tiles, the one thing left to pick (found on the Oppo,
-        // phase-9a.md §12a).
+        // Not an SMS form that came with its title: everything but the category
+        // is filled, and the keyboard would hide the category tiles, the one
+        // thing left to pick (found on the Oppo).
         final smsFilled = _form.smsLink != null && fields.title.isNotEmpty;
         if (first && !_form.isEditing && !smsFilled) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -295,8 +293,8 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   /// The camera shot under review, so its screen is pushed once.
   String? _reviewing;
 
-  /// A camera shot waits for its review (§8.2a): pushed once per shot,
-  /// also when it came back after the app was killed.
+  /// A camera shot waits for its review: pushed once per shot, also when it
+  /// came back after the app was killed.
   void _maybeReview(ExpenseFormReady state) {
     final work = state.photoWork;
     if (work is! PhotoReviewing || work.captureName == _reviewing) return;
@@ -383,7 +381,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
       try {
         saved = await _form.save();
       } on SmsAlreadyAdded {
-        // Nothing was saved; the form and its draft stay (P9a-22).
+        // Nothing was saved; the form and its draft stay.
         if (mounted) {
           _showMessage(AppLocalizations.of(context).smsAlreadyAdded);
         }
@@ -402,7 +400,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   void _showMessage(String message) =>
       showMessage(_messenger.currentState, message);
 
-  // Photos (phase-6.md §8.1–§8.4).
+  // Photos.
 
   /// The photo button: the chooser while there are none, else the sheet.
   Future<void> _onPhotoButton() async {
@@ -440,7 +438,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
     if (text != null) _showMessage(text);
   }
 
-  /// What adding photos did, when there is something to say (§7.1).
+  /// What adding photos did, when there is something to say.
   static String? _addReportText(AppLocalizations l10n, PhotoAddReport? r) {
     if (r == null) return null;
     if (r.error case final error?) return _photoErrorText(l10n, error);
@@ -546,9 +544,8 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
     if (id != null && mounted) Navigator.pop(context, ExpenseBinned(id));
   }
 
-  /// Back (phase-4.md §7.7): close the suggestions, then a picker's
-  /// search, then leave, saying whether a draft was kept. No prompt: the
-  /// changes are in the draft (D9).
+  /// Back: close the suggestions, then a picker's search, then leave, saying
+  /// whether a draft was kept. No prompt: the changes are in the draft.
   void _onBack() {
     if (_titleFocus.hasFocus && _readyState?.suggestions.isNotEmpty == true) {
       _form.dismissSuggestions();
@@ -558,8 +555,8 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
       _setSearching(_Searching.none);
       return;
     }
-    // Photos being added or saved to Pictures: wait (§7.1); each photo has
-    // a time limit, so this never lasts.
+    // Photos being added or saved to Pictures: wait; each photo has a time
+    // limit, so this never lasts.
     if (_form.photosBusy) {
       _showMessage(AppLocalizations.of(context).addingPhotos);
       return;
@@ -599,8 +596,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
     if (mounted) _showUndo(AppLocalizations.of(context).draftDiscarded);
   }
 
-  /// "Cleared" / "Draft discarded" with Undo: a mis-tap never loses data
-  /// (phase-4.md §7.6).
+  /// "Cleared" / "Draft discarded" with Undo: a mis-tap never loses data.
   void _showUndo(String message) {
     showMessage(
       _messenger.currentState,
@@ -646,7 +642,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
     final picked = await pickDay(
       context,
       initial: isoDay(wallClock),
-      // Future dates are allowed (P2-4); no real limit either way.
+      // Future dates are allowed; no real limit either way.
       first: firstExpenseDay,
       last: lastExpenseDay,
     );
@@ -663,7 +659,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   }
 
   /// The end date of Repeats: from the first payment (the form's date) to
-  /// [lastEndOn], opening on the date set (§8.2).
+  /// [lastEndOn], opening on the date set.
   Future<void> _pickEndDate() async {
     final startOn = _form.repeatStartOn;
     final repeat = _readyState?.fields.repeat;
@@ -681,9 +677,8 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   bool get _tooManyPast =>
       (_form.repeatSummary?.pastCount ?? 0) > maxPastPayments;
 
-  /// Repeats at the end of the Add form and of a plain expense's Edit
-  /// (phase-7b.md §8.2); on a payment's Edit, the link to its recurring
-  /// item instead (§8.1 E, P7a-5).
+  /// Repeats at the end of the Add form and of a plain expense's Edit; on a
+  /// payment's Edit, the link to its recurring item instead.
   List<Widget> _repeatPart(ExpenseFormReady state) {
     if (_form.linkedItem case final item?) {
       return [const SizedBox(height: 16), _linkRow(item)];
@@ -731,8 +726,8 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
       children: [
         const Divider(height: 1),
         Semantics(
-          // Its own node: merged, TalkBack read it together with the line
-          // under it (phase-7a.md §12a).
+          // Its own node: merged, TalkBack read it together with the line under
+          // it.
           container: true,
           label: l10n.repeatLinkSemantics(item.title, scheduleLine),
           button: open != null,
@@ -850,7 +845,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
             onPressed: busy || !_form.canClear ? null : _clear,
             child: Text(l10n.clear),
           ),
-        // The same button; "Update" on an existing expense (P4-18).
+        // The same button; "Update" on an existing expense.
         TextButton(
           onPressed: _form.canSave ? _save : null,
           child: Text(_form.isEditing ? l10n.update : l10n.save),
@@ -859,10 +854,10 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
     );
   }
 
-  /// The app bar's buttons with their labels' text scale capped: at 360 dp
-  /// and font 2.0, "Limpiar" and "Guardar" (and the Hindi labels) needed
-  /// 397 dp and more, past the screen's width (phase-7b.md §12a). The
-  /// title, which can be cut, keeps the full scale.
+  /// The app bar's buttons with their labels' text scale capped: at 360 dp and
+  /// font 2.0, "Limpiar" and "Guardar" (and the Hindi labels) needed 397 dp and
+  /// more, past the screen's width. The title, which can be cut, keeps the full
+  /// scale.
   static List<Widget> _clampedActions(List<Widget> actions) => [
     for (final action in actions)
       MediaQuery.withClampedTextScaling(
@@ -936,7 +931,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
         _resultLine(fields),
         const SizedBox(height: 16),
         // The photo button left of the description, centred on it (owner,
-        // after the Oppo run; §8.1 had the tops aligned).
+        // after a device run; the tops were aligned before).
         Row(
           children: [
             PhotoStackButton(
@@ -1204,7 +1199,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
       controller: _amount,
       focusNode: _amountFocus,
       onChanged: _form.amountChanged,
-      // The system keyboard (P4-6); the operator row adds + − × ÷.
+      // The system keyboard; the operator row adds + − × ÷.
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       inputFormatters: const [AmountKeyboardFormatter()],
       style: Theme.of(context).textTheme.headlineMedium,
@@ -1216,9 +1211,9 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
     );
   }
 
-  /// `= ₹170.00` / `≈ ₹1.32`, or the error right away, under the amount
-  /// (R8), with Itemize next to it when the sum has ≥ 2 terms. A live
-  /// region, so TalkBack reads it after a change.
+  /// `= ₹170.00` / `≈ ₹1.32`, or the error right away, under the amount, with
+  /// Itemize next to it when the sum has ≥ 2 terms. A live region, so TalkBack
+  /// reads it after a change.
   Widget _resultLine(ExpenseFields fields) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);

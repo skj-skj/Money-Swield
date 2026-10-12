@@ -4,9 +4,9 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../core/days_ago.dart';
 import '../../../core/widgets/form_banner.dart';
 
-/// One line under the app bar when the form opened from the draft slot
-/// (phase-4.md §7.4): "Unsaved expense restored (yesterday)". An Edit
-/// draft also offers Discard draft.
+/// One line under the app bar when the form opened from the draft slot:
+/// "Unsaved expense restored (yesterday)". An Edit draft also offers Discard
+/// draft.
 class DraftBanner extends StatelessWidget {
   const DraftBanner({
     super.key,

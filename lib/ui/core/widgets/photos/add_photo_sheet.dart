@@ -7,8 +7,8 @@ import '../app_sheet.dart';
 /// Where a new photo comes from.
 enum PhotoSource { camera, gallery }
 
-/// Asks **Take photo** or **Choose from gallery** (phase-6.md §8.2, P6-4),
-/// with "3 of 10 added" when the expense has some. Null when dismissed.
+/// Asks **Take photo** or **Choose from gallery**, with "3 of 10 added" when
+/// the expense has some. Null when dismissed.
 Future<PhotoSource?> showAddPhotoSheet(
   BuildContext context, {
   required int count,

@@ -23,7 +23,7 @@ void main() {
     expect(start.categoryIds, {1});
   });
 
-  test('setOnlyRecurring (phase-7b.md §7.5); Clear empties text, '
+  test('setOnlyRecurring; Clear empties text, '
       'categories, events and Only recurring', () {
     const filter = ExpenseFilter(text: 'x', categoryIds: {1}, eventIds: {2});
     final cubit = cubitFor(filter)..setOnlyRecurring(true);
@@ -32,7 +32,7 @@ void main() {
     expect(cubit.value.filter, ExpenseFilter.none);
   });
 
-  test('payment methods (Reports, phase-8.md §8.4): toggled; Clear empties '
+  test('payment methods (Reports): toggled; Clear empties '
       'them too; Home never sets them', () {
     final cubit = cubitFor(ExpenseFilter.none)
       ..togglePaymentMethod(2)

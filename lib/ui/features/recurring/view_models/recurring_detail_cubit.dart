@@ -74,11 +74,11 @@ final class RecurringDetailLoaded extends RecurringDetailState {
   /// are off (a double tap does it once).
   final bool busy;
 
-  /// The last generator run couldn't add its payments (§8.9).
+  /// The last generator run couldn't add its payments.
   final bool generateFailed;
 
-  /// An archived item's running relative (phase-7b.md §7.2): Restore swaps
-  /// it out, after the swap dialog. Null for a running item.
+  /// An archived item's running relative: Restore swaps it out, after the swap
+  /// dialog. Null for a running item.
   final RecurringItem? relative;
 
   RecurringDetailLoaded copyWith({
@@ -101,7 +101,7 @@ final class RecurringDetailLoaded extends RecurringDetailState {
   );
 }
 
-/// What a new price typed in the Change price sheet would do (§8.5).
+/// What a new price typed in the Change price sheet would do.
 sealed class PriceCheck {
   const PriceCheck();
 }
@@ -128,9 +128,9 @@ final class PriceOk extends PriceCheck {
   final int? replaces;
 }
 
-/// [text] (the amount field as typed) from [from], for an item with
-/// [prices] starting on [startOn] in [currencyCode], on [today]: the
-/// form's evaluator, the currency's digits, above 0 (§7.3).
+/// [text] (the amount field as typed) from [from], for an item with [prices]
+/// starting on [startOn] in [currencyCode], on [today]: the form's evaluator,
+/// the currency's digits, above 0.
 PriceCheck checkPrice({
   required String text,
   required String from,
@@ -167,7 +167,7 @@ PriceCheck checkPrice({
   }
 }
 
-/// A recurring item's page (phase-7a.md §7.3, §8.4).
+/// A recurring item's page.
 class RecurringDetailCubit extends CubitSignal<RecurringDetailState>
     with EmitIfOpen<RecurringDetailState> {
   RecurringDetailCubit({
@@ -300,20 +300,20 @@ class RecurringDetailCubit extends CubitSignal<RecurringDetailState>
     }
   }
 
-  /// **Add all** on the hold card: up to 1,000 now (§8.6). Returns how many
+  /// **Add all** on the hold card: up to 1,000 now. Returns how many
   /// were added.
   Future<int?> addAll() async => (await _busy(
     () => _recurring.generateDue(onlyId: itemId, confirmed: true),
   ))?.added;
 
-  /// The held dates for the Add selected sheet (phase-7b.md §7.2): skips
-  /// left out, at most 1,000, with the cursor and day they were read at.
-  /// Null when nothing is held any more.
+  /// The held dates for the Add selected sheet: skips left out, at most 1,000,
+  /// with the cursor and day they were read at. Null when nothing is held any
+  /// more.
   Future<HeldDates?> heldDates() => _recurring.heldDates(itemId);
 
   /// **Add selected**: the [ticked] dates added, the other listed ones
-  /// skipped for good (P7b-6). [held] is [heldDates]'s: refused if the
-  /// item moved on meanwhile (the page reloads). Busy-guarded.
+  /// skipped for good. [held] is [heldDates]'s: refused if the item moved on
+  /// meanwhile (the page reloads). Busy-guarded.
   Future<SelectedOutcome?> addSelected(
     Set<String> ticked, {
     required HeldDates held,
@@ -326,26 +326,25 @@ class RecurringDetailCubit extends CubitSignal<RecurringDetailState>
   Future<ArchiveUndo?> stop() => _busy(() => _recurring.archive(itemId));
 
   /// The archived item back in the list, from the Archive. With a running
-  /// relative, it is swapped out in the same write (P7b-3: always, after
-  /// the screen's dialog). A relative that changed since the page read it
-  /// is refused by the repository; the page reads again.
+  /// relative, it is swapped out in the same write (always, after the screen's
+  /// dialog). A relative that changed since the page read it is refused by the
+  /// repository; the page reads again.
   Future<RestoreOutcome?> restore() {
     final swapOut = _loaded?.relative?.id;
     return _busy(() => _recurring.restore(itemId, swapOut: swapOut));
   }
 
-  /// Delete for good (archived only). True when deleted. Not read again
-  /// after: the item is gone and the page closes with its own message; a
-  /// reload would say "no longer exists" and close the page a second time
-  /// (phase-7a.md §12a).
+  /// Delete for good (archived only). True when deleted. Not read again after:
+  /// the item is gone and the page closes with its own message; a reload would
+  /// say "no longer exists" and close the page a second time.
   Future<bool?> delete() => _busy(() async {
     await _recurring.delete(itemId);
     return true;
   }, reload: false);
 
-  /// What Restore will do, for its dialog (§8.1 H): the first payment it
-  /// adds, and the end that passed and is cleared. The rule
-  /// [RecurringRepository.restore] writes ([planRestore]).
+  /// What Restore will do, for its dialog: the first payment it adds, and the
+  /// end that passed and is cleared. The rule [RecurringRepository.restore]
+  /// writes ([planRestore]).
   ({String? next, String? endPassed})? get restorePreview {
     final item = _loaded?.item;
     final schedule = item?.schedule;
@@ -373,8 +372,8 @@ class RecurringDetailCubit extends CubitSignal<RecurringDetailState>
     );
   }
 
-  /// Saves a new price (§8.5). Returns false when it isn't valid (the
-  /// sheet shows why); rethrows a failed write.
+  /// Saves a new price. Returns false when it isn't valid (the sheet shows
+  /// why); rethrows a failed write.
   Future<bool> changePrice(String text, String from) async {
     final check = checkNewPrice(text, from);
     if (check is! PriceOk) return false;
@@ -387,9 +386,8 @@ class RecurringDetailCubit extends CubitSignal<RecurringDetailState>
     return true;
   }
 
-  /// The date a price change starts from by default (§8.5): the next
-  /// payment; never a past date (a held item's cursor can be months back),
-  /// nor before the start.
+  /// The date a price change starts from by default: the next payment; never a
+  /// past date (a held item's cursor can be months back), nor before the start.
   String get defaultPriceFrom {
     final item = _loaded?.item;
     final today = this.today;
@@ -412,6 +410,6 @@ class RecurringDetailCubit extends CubitSignal<RecurringDetailState>
     await load();
   }
 
-  /// The draft slot, for opening a payment (§8.4).
+  /// The draft slot, for opening a payment.
   Future<ExpenseDraft?> pendingDraft() => _drafts.read();
 }

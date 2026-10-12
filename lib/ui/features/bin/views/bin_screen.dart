@@ -15,9 +15,9 @@ import '../view_models/bin_cubit.dart';
 import '../view_models/expense_photos_cubit.dart';
 import 'bin_detail_screen.dart';
 
-/// Settings → Bin: deleted expenses, most recently deleted first, kept for
-/// 30 days (phase-2.md §9.2, application-design.md §5.4.1). Restores don't
-/// ask; permanent deletes do, because they can't be undone.
+/// Settings → Bin: deleted expenses, most recently deleted first, kept for 30
+/// days. Restores don't ask; permanent deletes do, because they can't be
+/// undone.
 class BinScreen extends StatefulWidget {
   const BinScreen({super.key, required this.dependencies, this.now});
 

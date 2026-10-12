@@ -158,7 +158,7 @@ void main() {
     });
   });
 
-  group('Home settings (phase-5.md §6.2)', () {
+  group('Home settings', () {
     test('each setter writes, then emits', () async {
       final cubit = await loadedCubit();
       await cubit.setWeekStart(WeekStart.sunday);
@@ -188,7 +188,7 @@ void main() {
     });
 
     test('setLocale, setThemeSeed and restoreDefaultLook keep the new '
-        'fields (R14)', () async {
+        'fields', () async {
       final cubit = await loadedCubit();
       await cubit.setWeekStart(WeekStart.sunday);
       await cubit.setWeekLabel(WeekLabel.number);
@@ -226,7 +226,7 @@ void main() {
     });
 
     test('photo sizing writes, then emits; restorePhotoDefaults goes back '
-        'to 1080p / 85 for both (phase-6.md §6.3)', () async {
+        'to 1080p / 85 for both', () async {
       final cubit = await loadedCubit();
       await cubit.setCameraPhotos((size: PhotoSize.p1440, quality: 90));
       await cubit.setGalleryPhotos((size: PhotoSize.original, quality: 95));

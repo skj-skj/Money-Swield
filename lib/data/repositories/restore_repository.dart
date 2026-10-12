@@ -21,13 +21,13 @@ import '../services/photo_service.dart';
 import 'settings_repository.dart';
 
 /// Runs one small read per repository on an open candidate, the way the app
-/// would on start (§6.4 step 3). Passed in so this class doesn't depend on
-/// the app layer that builds the repositories.
+/// would on start. Passed in so this class doesn't depend on the app layer that
+/// builds the repositories.
 typedef CandidateProbe = Future<void> Function(Database db);
 
-/// Prepares a database to replace the live one (phase-3.md §6). Every step
-/// here works on `databases/restore/candidate.db`; nothing touches the live
-/// database, which [AppDatabase.replaceWith] alone replaces.
+/// Prepares a database to replace the live one. Every step here works on
+/// `databases/restore/candidate.db`; nothing touches the live database, which
+/// [AppDatabase.replaceWith] alone replaces.
 class RestoreRepository {
   RestoreRepository({
     required this._appDatabase,
@@ -38,7 +38,7 @@ class RestoreRepository {
   final AppDatabase _appDatabase;
   final CandidateProbe _probe;
 
-  /// Free space (phase-6.md §6.8); null in tests without photos.
+  /// Free space; null in tests without photos.
   final PhotoService? _photoService;
 
   /// The photos of the zip being restored, from its manifest; none for a
@@ -50,9 +50,9 @@ class RestoreRepository {
   Future<String> candidatePath() async =>
       (await _appDatabase.paths()).candidate;
 
-  /// The largest backup file the open dialog may copy in: the free space
-  /// of the cache, less 50 MB (R2; a backup with photos can be far over
-  /// Phase 3's 100 MB). The database entry stays capped at 100 MB.
+  /// The largest backup file the open dialog may copy in: the free space of the
+  /// cache, less 50 MB (a backup with photos can be far over 100 MB).
+  /// The database entry stays capped at 100 MB.
   Future<int> maxBackupBytes() async {
     final service = _photoService;
     if (service == null) return BackupArchive.maxDatabaseBytes;
@@ -62,7 +62,7 @@ class RestoreRepository {
       );
       return free - RestoreCandidate.spaceMargin;
     } catch (error) {
-      // Unknown: Phase 3's limit, which always worked.
+      // Unknown: the database-only limit, which always works.
       return BackupArchive.maxDatabaseBytes;
     }
   }
@@ -70,9 +70,9 @@ class RestoreRepository {
   /// Validates the zip the open dialog copied to `cache/restore/picked.zip`
   /// and extracts its database as the candidate. Throws [RestoreRejected].
   ///
-  /// The picked zip stays (R3): its photos are written after the confirm.
-  /// [deletePickedZip] deletes it when the restore ends; the startup
-  /// cleanup deletes a leftover one.
+  /// The picked zip stays: its photos are written after the confirm.
+  /// [deletePickedZip] deletes it when the restore ends; the startup cleanup
+  /// deletes a leftover one.
   Future<RestoreCandidate> prepareFromZip() async {
     final paths = await _freshCandidateFolder();
     _photos = const [];
@@ -122,7 +122,7 @@ class RestoreRepository {
     }
   }
 
-  /// §6.8 step 5, before the swap: the zip's photos written into the
+  /// Before the swap: the zip's photos written into the
   /// app's photo folder (each checked by size, CRC and SHA-256; one already
   /// there with the right hash is kept). Returns how many failed. A write
   /// error (a full disk) throws: the restore stops before the swap, and the
@@ -151,8 +151,8 @@ class RestoreRepository {
   /// failed attempt.
   Future<RestoreCandidate> prepareFromCopy(PreRestoreCopy copy) async {
     final paths = await _freshCandidateFolder();
-    // Undo needs no photos: the copy's files are still here, kept by the
-    // sweep while the copy exists (§6.8).
+    // Undo needs no photos: the copy's files are still here, kept by the sweep
+    // while the copy exists.
     _photos = const [];
     try {
       for (final suffix in ['', ...journalSuffixes]) {
@@ -172,8 +172,8 @@ class RestoreRepository {
     }
   }
 
-  /// Writes the backup's own time into the candidate's `last_backup_at`
-  /// (P3-9): the restored data *is* that backup.
+  /// Writes the backup's own time into the candidate's `last_backup_at`: the
+  /// restored data *is* that backup.
   Future<void> stamp(RestoreCandidate candidate) async {
     final createdAt = candidate.createdAt;
     if (!candidate.stampsLastBackup || createdAt == null) return;
@@ -185,7 +185,7 @@ class RestoreRepository {
     );
   }
 
-  /// §6.4 step 3: opens the candidate as the app would and runs a small
+  /// Opens the candidate as the app would and runs a small
   /// query per repository, so a database that validates but can't start
   /// the app is refused before the swap. Then checks that nothing is left
   /// in a journal: the rename moves the `.db` only.
@@ -202,7 +202,7 @@ class RestoreRepository {
     await checkJournalsEmpty(path, what: 'The restored data');
   }
 
-  /// §6.4 step 2, before [stamp]: makes sure the candidate's `settings` can
+  /// Before [stamp]: makes sure the candidate's `settings` can
   /// be read. Settings that are missing or unreadable (the table dropped, a
   /// column renamed by hand, a value that isn't text) don't make the
   /// expenses damaged, so the backup is restored with default settings
@@ -252,8 +252,8 @@ class RestoreRepository {
   Future<void> deleteCandidate() async =>
       deleteFolderIfExists((await _appDatabase.paths()).candidateFolder);
 
-  /// Deletes what a backup or restore cut short left behind (§6.6). Run on
-  /// every start, before anything can start a new restore.
+  /// Deletes what a backup or restore cut short left behind. Run on every
+  /// start, before anything can start a new restore.
   Future<void> cleanUpLeftovers() async {
     final paths = await _appDatabase.paths();
     await deleteFolderIfExists(paths.backupWorkFolder);
@@ -269,7 +269,7 @@ class RestoreRepository {
     return paths;
   }
 
-  /// §6.2, in order, stopping at the first problem. The candidate is opened
+  /// The checks, in order, stopping at the first problem. The candidate is opened
   /// read-only and not through [MigrationRunner] (whose open creates
   /// `schema_migrations` when it's missing, hiding "not one of ours").
   Future<RestoreCandidate> _validate(
@@ -331,7 +331,7 @@ class RestoreRepository {
   }
 
   /// What the confirm dialog shows. Counting is skipped for a backup from a
-  /// schema without `expenses` (Phase 1), so it still validates.
+  /// schema without `expenses` (the earliest one), so it still validates.
   static Future<RestoreCandidate> _summarize(
     Database db, {
     required RestoreSource source,
@@ -349,9 +349,9 @@ class RestoreRepository {
         latestExpenseOn: null,
       );
     }
-    // One counting rule everywhere (P3-20): "N expenses" is active only.
-    // count(CASE …) rather than `FILTER (WHERE …)`, which needs SQLite 3.30
-    // (Android 10 has 3.22). count() of no rows is 0, unlike sum().
+    // One counting rule everywhere: "N expenses" is active only. count(CASE …)
+    // rather than `FILTER (WHERE …)`, which needs SQLite 3.30 (Android 10 has
+    // 3.22). count() of no rows is 0, unlike sum().
     final row = (await db.rawQuery(
       'SELECT count(CASE WHEN deleted_at IS NULL THEN 1 END) AS active, '
       'count(CASE WHEN deleted_at IS NOT NULL THEN 1 END) AS binned, '
@@ -368,8 +368,8 @@ class RestoreRepository {
     );
   }
 
-  /// The running recurring items (phase-7a.md R14), or null when there is
-  /// no such table: the count is then left out, the line unchanged.
+  /// The running recurring items, or null when there is no such table: the
+  /// count is then left out, the line unchanged.
   static Future<int?> _runningRecurringItems(Database db) async {
     final hasTable = (await db.rawQuery(
       "SELECT 1 FROM sqlite_master WHERE type = 'table' "

@@ -7,8 +7,8 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../../helpers/recurring_fixture.dart';
 
-/// Add selected and skips (phase-7b.md §6.1, §6.3; §9: "a skipped payment
-/// added anyway", "Add selected adds a wrong date").
+/// Add selected and skips ("a skipped payment added anyway", "Add selected adds
+/// a wrong date").
 void main() {
   late RecurringFixture f;
 
@@ -180,7 +180,7 @@ void main() {
 
   group('skips', () {
     test('skipOnce stores it; the generator passes over it and deletes it '
-        'once its cursor is past (§9)', () async {
+        'once its cursor is past', () async {
       final id = await item();
       await f.recurring.skipOnce(id, '2026-11-09');
       expect(await f.recurring.skips(after: '2026-10-09'), {
@@ -352,13 +352,10 @@ void main() {
     });
   });
 
-  test(
-    'a held item\'s list row still reads (no Phase 7a regression)',
-    () async {
-      final id = await item();
-      expect((await f.recurring.byId(id))!.archiveReason, isNull);
-      expect(ArchiveReason.values, contains(ArchiveReason.replaced));
-      expect(holdAfterDays, 31);
-    },
-  );
+  test('a held item\'s list row still reads (no regression)', () async {
+    final id = await item();
+    expect((await f.recurring.byId(id))!.archiveReason, isNull);
+    expect(ArchiveReason.values, contains(ArchiveReason.replaced));
+    expect(holdAfterDays, 31);
+  });
 }

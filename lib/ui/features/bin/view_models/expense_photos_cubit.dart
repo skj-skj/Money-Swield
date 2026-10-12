@@ -8,9 +8,9 @@ import '../../../../domain/photos.dart';
 import '../../../../domain/selection.dart';
 import '../../../core/emit_if_open.dart';
 
-/// A binned expense's photos, read-only (phase-6.md §7.3, P6-24): shown in
-/// the Bin detail, selectable, and saved to Pictures before the expense is
-/// purged (D15: 30 days). Nothing here edits the expense.
+/// A binned expense's photos, read-only: shown in the Bin detail, selectable,
+/// and saved to Pictures before the expense is purged (30 days). Nothing here
+/// edits the expense.
 class ExpensePhotosState {
   const ExpensePhotosState({
     this.photos = const [],
@@ -22,7 +22,7 @@ class ExpensePhotosState {
   final List<SavedPhoto> photos;
   final bool loaded;
 
-  /// Selected indexes; null when not selecting (§8.10).
+  /// Selected indexes; null when not selecting.
   final Set<int>? selection;
 
   /// A Save to Pictures is running.
@@ -94,7 +94,7 @@ class ExpensePhotosCubit extends CubitSignal<ExpensePhotosState>
 
   void clearSelection() => emitIfOpen(value.copyWith(selection: () => null));
 
-  /// The selected photos to Pictures; selection stays (§8.10).
+  /// The selected photos to Pictures; selection stays.
   Future<SaveToPicturesResult?> saveSelected() {
     final selection = value.selection;
     if (selection == null) return Future.value();

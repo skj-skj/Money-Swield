@@ -251,7 +251,7 @@ void main() {
     expect((await deps.settings.load()).defaultCurrency, cubit.value.currency);
   });
 
-  group('the SMS step (phase-9a.md §8.6)', () {
+  group('the SMS step', () {
     OnboardingCubit withSms(FakeSmsService sms) {
       final cubit = OnboardingCubit(
         settings: settings,

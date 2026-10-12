@@ -5,7 +5,7 @@ import '../services/database/sql_helpers.dart';
 import 'data_version.dart';
 import 'expense_owner.dart';
 
-/// Reads and writes the `categories` table (database.md §3.2).
+/// Reads and writes the `categories` table.
 ///
 /// Validation (name length, uniqueness, one emoji) is done by the form's
 /// cubit, because uniqueness depends on the localized names of built-ins.
@@ -20,7 +20,7 @@ class CategoryRepository {
 
   final Database _db;
 
-  /// Bumped after every write (phase-2.md §5).
+  /// Bumped after every write.
   final DataVersion _dataVersion;
 
   final DateTime Function() _now;
@@ -29,9 +29,9 @@ class CategoryRepository {
   /// display name, which depends on the language.
   Future<List<Category>> all() => allOn(_db);
 
-  /// [all] on [db]: inside a transaction, the transaction's executor (a
-  /// call to the database itself there waits for the transaction to end,
-  /// and so never returns; phase-8.md R13).
+  /// [all] on [db]: inside a transaction, the transaction's executor (a call to
+  /// the database itself there waits for the transaction to end, and so never
+  /// returns).
   static Future<List<Category>> allOn(DatabaseExecutor db) async {
     final rows = await db.query('categories');
     return [for (final row in rows) _fromRow(row)];
@@ -92,14 +92,13 @@ class CategoryRepository {
     _dataVersion.bump();
   }
 
-  /// How many expenses use the category. Binned ones are counted on
-  /// purpose: they block the delete too and must be moved (database.md
-  /// §3.2).
+  /// How many expenses use the category. Binned ones are counted on purpose:
+  /// they block the delete too and must be moved.
   Future<OwnerUsage> usage(int id) => ExpenseOwner.category.usage(_db, id);
 
-  /// Moves every expense of category [id], binned ones included, to [toId]
-  /// and deletes [id], in one transaction (D7). If [toId] no longer exists
-  /// the move fails on the foreign key and nothing changes.
+  /// Moves every expense of category [id], binned ones included, to [toId] and
+  /// deletes [id], in one transaction. If [toId] no longer exists the move
+  /// fails on the foreign key and nothing changes.
   Future<void> moveExpensesAndDelete(int id, {required int toId}) async {
     await _db.transaction(
       (txn) => ExpenseOwner.category.moveExpensesAndDelete(

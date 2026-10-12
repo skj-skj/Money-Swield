@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_expense_tracker_app/domain/photo_sweep.dart';
 
-/// phase-6.md §5.6.
 void main() {
   final a = '${'a' * 64}.jpg';
   final b = '${'b' * 64}.png';

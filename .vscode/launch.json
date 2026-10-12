@@ -1,6 +1,6 @@
 {
-  // Debug launches per build flavor (phase-9a.md §6.6). `flutter run`
-  // without --flavor builds foss (pubspec `default-flavor`).
+  // Debug launches per build flavor. `flutter run` without --flavor builds foss
+  // (pubspec `default-flavor`).
   "version": "0.2.0",
   "configurations": [
     {

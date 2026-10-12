@@ -2,15 +2,15 @@ import 'dart:ui' show Locale;
 
 import 'package:intl/intl.dart';
 
-/// An ISO 4217 currency. The list of currencies lives in code
-/// ([currencies]), not in the database (database.md §1).
+/// An ISO 4217 currency. The list of currencies lives in code ([currencies]),
+/// not in the database.
 class Currency {
   const Currency(this.code, this.englishName, this.minorDigits);
 
   /// ISO 4217 code, e.g. `INR`.
   final String code;
 
-  /// e.g. `Indian Rupee`. English in every language for now (phase-1.md §12).
+  /// e.g. `Indian Rupee`. English in every language for now.
   final String englishName;
 
   /// Digits after the decimal point: 2 for INR, 0 for JPY, 3 for KWD.

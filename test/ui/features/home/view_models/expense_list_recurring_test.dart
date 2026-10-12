@@ -9,8 +9,7 @@ import 'package:my_expense_tracker_app/ui/features/manage/view_models/manage_cub
 
 import '../../../../helpers/test_database.dart';
 
-/// Home's catch-up on a new day (phase-7a.md R12, §7.5) and the Manage
-/// count.
+/// Home's catch-up on a new day and the Manage count.
 void main() {
   late AppDependencies deps;
   late TestClock clock;
@@ -109,7 +108,7 @@ void main() {
     expect(cubit.value!.recurring, 1);
   });
 
-  group('upcomingIcon (phase-7b.md §7.5)', () {
+  group('upcomingIcon', () {
     FilteredScreenIcon icon(ExpenseListCubit cubit) =>
         (cubit.value as ExpenseListLoaded).upcomingIcon;
 

@@ -4,8 +4,8 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../core/builtin_names.dart';
 import '../../manage/view_models/item_form_cubit.dart';
 
-/// The add/edit event form (phase-1.md §8, §9.5): the shared form
-/// ([ItemFormCubit]) plus archive / unarchive and delete.
+/// The add/edit event form: the shared form ([ItemFormCubit]) plus archive /
+/// unarchive and delete.
 class EventFormCubit extends ItemFormCubit<Event> {
   /// [original] is the event being edited, or null to add one. [existing]
   /// is every event, archived ones included, used to refuse a duplicate
@@ -15,8 +15,8 @@ class EventFormCubit extends ItemFormCubit<Event> {
     required AppLocalizations l10n,
     required super.original,
     required List<Event> existing,
-    // Only used when adding: the expense form's picker passes its search
-    // text, so "chai" isn't typed twice (phase-2.md §6.4).
+    // Only used when adding: the expense form's picker passes its search text,
+    // so "chai" isn't typed twice.
     String initialName = '',
   }) : super(
          otherNames: [

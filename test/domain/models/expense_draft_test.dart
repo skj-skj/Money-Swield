@@ -188,7 +188,7 @@ void main() {
     expect(json['event_ids'], [1, 2]);
   });
 
-  group('photos (phase-6.md §5.5)', () {
+  group('photos', () {
     final a = 'a' * 64;
     final b = 'b' * 64;
     const uuid = '0f8fad5b-d9cb-469f-a165-70867728950e';
@@ -232,10 +232,10 @@ void main() {
         {'staged': '$uuid.jpg', 'sha256': b, 'bytes': 522871},
         {'photo_id': 12, 'path': 'photos/$a.jpg', 'sha256': a, 'bytes': 412345},
       ]);
-      expect(json['v'], 1, reason: 'v stays 1 (R10)');
+      expect(json['v'], 1, reason: 'v stays 1');
     });
 
-    test('a Phase 4 draft (no photos key) and a wrong type read as none', () {
+    test('an older draft (no photos key) and a wrong type read as none', () {
       expect(read('{"title": "Tea"}')!.photos, isEmpty);
       expect(read('{"photos": "x"}')!.photos, isEmpty);
       expect(read('{"photos": {"a": 1}}')!.photos, isEmpty);
@@ -281,7 +281,7 @@ void main() {
     });
   });
 
-  group('repeat (phase-7a.md §5.7)', () {
+  group('repeat', () {
     ExpenseDraft withRepeat(RepeatChoice? repeat) => ExpenseDraft(
       editingExpenseId: null,
       title: 'Netflix',
@@ -321,7 +321,7 @@ void main() {
         ),
         // The date is kept while Never is chosen.
         const RepeatChoice(endOn: '2027-04-09'),
-        // After N payments (phase-7b.md §5.1), the date kept too.
+        // After N payments, the date kept too.
         const RepeatChoice(
           end: RepeatEnd.afterCount,
           countText: '12',
@@ -375,7 +375,7 @@ void main() {
     });
 
     test('half-typed counts come back as typed; anything not up to 3 digits '
-        'is empty (phase-7b.md §5.1)', () {
+        'is empty', () {
       for (final text in ['', '0', '1', '2', '999', '000']) {
         final original = withRepeat(
           RepeatChoice(end: RepeatEnd.afterCount, countText: text),
@@ -394,7 +394,7 @@ void main() {
       }
     });
 
-    test('a 7a draft (no count) reads unchanged', () {
+    test('an older draft (no count) reads unchanged', () {
       expect(
         readRepeat({
           'frequency': 'weekly',
@@ -411,7 +411,7 @@ void main() {
       );
     });
 
-    test('a draft from before Phase 7 has Repeats off', () {
+    test('a draft from before Repeats has Repeats off', () {
       expect(read(jsonWith(null))!.repeat, isNull);
       final json = jsonDecode(withRepeat(null).toJson()) as Map<String, Object?>
         ..remove('repeat');
@@ -464,7 +464,7 @@ void main() {
       }
     });
 
-    test('"after N payments" reads back (phase-7b.md §5.1); a count that '
+    test('"after N payments" reads back; a count that '
         'isn\'t text is empty, the date kept; an unknown end is never', () {
       expect(
         readRepeat({'end': 'after', 'on': '2027-01-01', 'count': 12}),
@@ -485,7 +485,7 @@ void main() {
     });
   });
 
-  group('sms (phase-9a.md §7.3)', () {
+  group('sms', () {
     final sha = 'c' * 64;
     ExpenseDraft withSms(SmsLink? sms) => draft().copyForTest(sms);
 

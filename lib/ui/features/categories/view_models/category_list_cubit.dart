@@ -30,7 +30,7 @@ final class CategoryListFailed extends CategoryListState {
 }
 
 /// Loads the categories for the list screen, sorted by display name in the
-/// current language. (Sorting by popularity comes with expenses, Phase 2.)
+/// current language.
 class CategoryListCubit extends CubitSignal<CategoryListState>
     with EmitIfOpen<CategoryListState> {
   CategoryListCubit({required this._repository, required this._l10n})

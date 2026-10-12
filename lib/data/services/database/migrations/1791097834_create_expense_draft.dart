@@ -3,10 +3,9 @@
 
 import '../migration/migration.dart';
 
-/// The one unsaved Add/Edit form (database.md §3.9, phase-4.md §4). Always
-/// the row `id = 1`, written with `INSERT OR REPLACE`; that deletes the old
-/// row first, which is safe only because nothing references this table
-/// (sqlite.md §5.2). Keep it that way.
+/// The one unsaved Add/Edit form. Always the row `id = 1`, written with
+/// `INSERT OR REPLACE`; that deletes the old row first, which is safe only because
+/// nothing references this table. Keep it that way.
 class CreateExpenseDraft extends Migration {
   const CreateExpenseDraft()
     : super(version: 1791097834, name: 'create_expense_draft');
@@ -14,11 +13,11 @@ class CreateExpenseDraft extends Migration {
   @override
   Future<void> up(Migrator m) async {
     await m.createTable('expense_draft', (t) {
-      // Not a reference: the expense may be deleted meanwhile; the draft
-      // then just stops matching any row (database.md §3.9).
+      // Not a reference: the expense may be deleted meanwhile; the draft then
+      // just stops matching any row.
       t.integer('editing_expense_id');
       // Read and written only by Dart: Android 10's SQLite has no JSON
-      // functions (sqlite.md §3).
+      // functions.
       t.text('form_json', nullable: false);
       t.integer('updated_at', nullable: false);
     });

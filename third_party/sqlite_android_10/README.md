@@ -11,12 +11,12 @@
 Tests only. The app never uses it: on a phone, sqflite talks to Android's own
 SQLite. `pubspec.yaml` (`hooks: user_defines: sqlite3:`) makes the
 `sqlite3` package compile this file for `flutter test` on Windows, so tests
-run the same SQL engine as the oldest phone the app supports. Why, and
-what still differs from a phone: [notes/spec/sqlite.md](../../notes/spec/sqlite.md).
+run the same SQL engine as the oldest phone the app supports. What still
+differs from a phone: see `AGENTS.md`.
 
 The compile flags in `pubspec.yaml` are Android 10's
 (`dist/Android.bp` on the same branch), minus the ones that only mean
-something on Linux/Android and minus ICU (see the spec).
+something on Linux/Android and minus ICU (needs ICU libraries on Windows).
 
 Android's changes in this file are all in the Unix VFS (`os_unix.c`), which
 a Windows build doesn't compile. `.gitattributes` keeps the bytes exact

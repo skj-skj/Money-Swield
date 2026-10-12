@@ -5,8 +5,8 @@ import 'package:my_expense_tracker_app/domain/repeat_input.dart';
 
 import '../../helpers/recurring_fixture.dart';
 
-/// Home's Only recurring filter (phase-7b.md §6.4, P7b-11): every reader of
-/// the filter gets it, and Home's plan stays on its index (F3).
+/// Home's Only recurring filter: every reader of the filter gets it, and Home's
+/// plan stays on its index.
 void main() {
   late RecurringFixture f;
 
@@ -136,7 +136,7 @@ void main() {
     expect(isValidPhotoPath('photos/${'a' * 64}.jpg'), isTrue);
   });
 
-  test('plan (F3): Home\'s page, its next page and the totals stay on the '
+  test('plan: Home\'s page, its next page and the totals stay on the '
       'date index, no temp B-tree', () async {
     const where =
         'WHERE +deleted_at IS NULL AND recurring_expense_id IS NOT NULL';

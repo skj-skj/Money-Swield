@@ -1,9 +1,8 @@
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// The locale money, numbers and dates are formatted in: the app language
-/// with the phone's country when intl knows that pair, else the app
-/// language alone (P2-11).
+/// The locale money, numbers and dates are formatted in: the app language with
+/// the phone's country when intl knows that pair, else the app language alone.
 ///
 /// The app's own locale has no country, so on its own `en` would group
 /// `110,050` and write "Oct 1" for everyone. With the phone's country an
@@ -45,9 +44,9 @@ Locale formattingLocaleValueOf(BuildContext context) {
   return Locale(language, country.firstOrNull);
 }
 
-/// The decimal separator money is typed and shown with in [localeName]:
-/// `.` for en and hi, `,` for es. Only `.` and `,` are ever returned: the
-/// amount parser knows no other (phase-4.md §5.1).
+/// The decimal separator money is typed and shown with in [localeName]: `.` for
+/// en and hi, `,` for es. Only `.` and `,` are ever returned: the amount parser
+/// knows no other.
 String decimalSeparatorFor(String localeName) {
   final separator = NumberFormat.decimalPattern(localeName).symbols.DECIMAL_SEP;
   return separator == ',' ? ',' : '.';

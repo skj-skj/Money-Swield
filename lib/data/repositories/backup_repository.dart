@@ -17,8 +17,7 @@ import '../services/database/migration/migration_runner.dart';
 import '../services/photo_store.dart';
 import 'settings_repository.dart';
 
-/// Not enough free space to build the backup (phase-6.md §6.7 step 3).
-/// Nothing was written.
+/// Not enough free space to build the backup. Nothing was written.
 class BackupNoSpace implements Exception {
   const BackupNoSpace({required this.needed, required this.free});
 
@@ -44,15 +43,15 @@ class BackupFile {
   /// Photos in the zip.
   final int photoCount;
 
-  /// Photos the data names whose file was missing (or of another size):
-  /// left out and counted, so the user is told (§6.7).
+  /// Photos the data names whose file was missing (or of another size): left
+  /// out and counted, so the user is told.
   final int missingPhotos;
 
   /// The name suggested in the save dialog.
   String get name => p.basename(path);
 }
 
-/// Makes backups of the open database (phase-3.md §4, §5).
+/// Makes backups of the open database.
 ///
 /// The copy is built table by table inside one transaction on the app's own
 /// connection, not with `VACUUM INTO` (needs SQLite 3.27; Android 10 ships
@@ -77,11 +76,11 @@ class BackupRepository {
   final AppDatabase _appDatabase;
   final SettingsRepository _settings;
 
-  /// The photo files and free space (phase-6.md §6.7).
+  /// The photo files and free space.
   final PhotoStore _photos;
   final DateTime Function() _now;
 
-  /// Room kept free on top of twice the backup's size (§6.7 step 3).
+  /// Room kept free on top of twice the backup's size.
   static const spaceMargin = 50 * 1024 * 1024;
 
   static const _attachedName = 'backup';
@@ -91,7 +90,7 @@ class BackupRepository {
   Future<void> recordBackup(DateTime at) => _settings.setLastBackupAt(at);
 
   /// Active expenses on this phone: the confirm dialog's "All data on this
-  /// phone (N expenses)". Same rule as the backup's count (§6.2).
+  /// phone (N expenses)". Same rule as the backup's count.
   Future<int> activeExpenseCount() async => Sqflite.firstIntValue(
     await _db.rawQuery(
       'SELECT count(*) FROM expenses WHERE deleted_at IS NULL',
@@ -101,11 +100,11 @@ class BackupRepository {
   /// Builds a checked backup zip in `cache/backup/`. Throws on any problem,
   /// and then leaves nothing in that folder.
   ///
-  /// With [includePhotos] (ticked by default, P6-16) the zip holds every
-  /// photo the copy lists whose file is here with its size (§6.7); others
-  /// are left out and counted. [BackupNoSpace] when the cache can't hold
-  /// the zip and its saved copy (twice its size) and 50 MB more.
-  /// [onProgress] gets the photos zipped so far and their number.
+  /// With [includePhotos] (ticked by default) the zip holds every photo the
+  /// copy lists whose file is here with its size; others are left out and
+  /// counted. [BackupNoSpace] when the cache can't hold the zip and its saved
+  /// copy (twice its size) and 50 MB more. [onProgress] gets the photos zipped
+  /// so far and their number.
   Future<BackupFile> createBackup({
     required String appVersion,
     bool includePhotos = false,
@@ -160,10 +159,10 @@ class BackupRepository {
     }
   }
 
-  /// The photos of the copy at [copyPath] (§6.7 step 2): its `photos`
-  /// rows, paths checked, each whose file is here with its size; the rest
-  /// are counted as missing. From the copy, not the live database, so the
-  /// list is exactly what the zip's database names.
+  /// The photos of the copy at [copyPath]: its `photos` rows, paths checked,
+  /// each whose file is here with its size; the rest are counted as missing.
+  /// From the copy, not the live database, so the list is exactly what the
+  /// zip's database names.
   Future<(List<ManifestPhoto>, int)> _photosOf(String copyPath) async {
     final copy = await _appDatabase.databaseFactory.openDatabase(
       copyPath,
@@ -200,7 +199,7 @@ class BackupRepository {
     return (photos, missing);
   }
 
-  /// §6.7 step 3: the zip, then the copy the save dialog makes, both
+  /// Room for the zip, then the copy the save dialog makes, both
   /// usually on the same storage, and 50 MB to spare.
   Future<void> _checkSpace(
     BackupPaths paths,
@@ -223,7 +222,7 @@ class BackupRepository {
     if (free < needed) throw BackupNoSpace(needed: needed, free: free);
   }
 
-  /// Deletes `cache/backup/`, at the end of every backup (§5.2 step 6).
+  /// Deletes `cache/backup/`, at the end of every backup.
   Future<void> deleteBackupFiles() async =>
       deleteFolderIfExists((await _appDatabase.paths()).backupWorkFolder);
 
@@ -235,7 +234,7 @@ class BackupRepository {
         '-${two(t.hour)}${two(t.minute)}${two(t.second)}.zip';
   }
 
-  /// §4.2 step 1. `substr`, not `NOT LIKE 'sqlite_%'`: in LIKE, `_` matches
+  /// Copy step 1: the schema. `substr`, not `NOT LIKE 'sqlite_%'`: in LIKE, `_` matches
   /// any character, which would skip a table named `sqliteXdata`.
   /// `android_metadata` is left out: Android creates it in every database
   /// it opens, so the copy already has it.
@@ -254,7 +253,7 @@ class BackupRepository {
           tables.add(item);
         case 'index':
           indexes.add(item);
-        // database.md §1 bans triggers and views; a trigger would also fire
+        // The schema has no triggers or views, by design; a trigger would also fire
         // while the copy is filled.
         case final type:
           throw StateError(
@@ -267,7 +266,7 @@ class BackupRepository {
     return _Schema(tables, indexes, userVersion);
   }
 
-  /// §4.2 step 2: a new, separate database with the same schema. Running the
+  /// Copy step 2: a new, separate database with the same schema. Running the
   /// original SQL on a fresh connection needs no rewriting of table names.
   Future<void> _createEmptyCopy(String path, _Schema schema) async {
     final copy = await _appDatabase.databaseFactory.openDatabase(
@@ -290,7 +289,7 @@ class BackupRepository {
     }
   }
 
-  /// §4.2 step 3. ATTACH must run outside a transaction; everything that
+  /// Copy step 3: the rows. ATTACH must run outside a transaction; everything that
   /// touches the attached copy runs inside **one** transaction, never as a
   /// separate call: Android may run a read outside a transaction on another
   /// pooled connection, which has nothing attached. sqflite runs one
@@ -363,7 +362,7 @@ class BackupRepository {
     }
   }
 
-  /// §4.2 step 4: the copy on its own, read-only. Returns the newest applied
+  /// Copy step 4: the copy on its own, read-only. Returns the newest applied
   /// migration for the manifest.
   Future<int?> _checkCopy(String path) async {
     final copy = await _appDatabase.databaseFactory.openDatabase(
@@ -390,9 +389,9 @@ class BackupRepository {
   /// database it holds with the copy, so a backup that couldn't be
   /// restored is never saved.
   ///
-  /// Reading also checks that every listed photo has its one entry; their
-  /// sizes are compared from the zip's directory, not re-read: the bytes
-  /// were streamed from the files just checked (§6.7).
+  /// Reading also checks that every listed photo has its one entry; their sizes
+  /// are compared from the zip's directory, not re-read: the bytes were
+  /// streamed from the files just checked.
   Future<void> _checkZip(
     String zip,
     BackupPaths paths,

@@ -1,6 +1,6 @@
-/// What an export holds and what it's called (phase-8.md §5.5, §6.6).
-/// The strings themselves are made in the UI layer, which has the app's
-/// language (`report_document_builder.dart`).
+/// What an export holds and what it's called. The strings themselves are made
+/// in the UI layer, which has the app's language
+/// (`report_document_builder.dart`).
 library;
 
 import 'periods.dart';
@@ -72,13 +72,13 @@ final class ReportExportOptions {
   int get hashCode => Object.hash(groupBy, chart, groupOthers, format);
 }
 
-/// Excel's rules for sheet names (F9): at most 31 characters, none of
-/// `\ / ? * [ ] :`, not starting or ending with `'`, not "History", and
-/// no two alike (ignoring case). Sections are named after the user's
-/// categories, events and payment methods, so their names are made safe
-/// here: forbidden characters become `-`, a long name is cut (never inside
-/// a surrogate pair), an empty one is "Sheet N", and a repeat gets " (2)".
-/// [names] in, the same count out, in order.
+/// Excel's rules for sheet names: at most 31 characters, none of
+/// `\ / ? * [ ] :`, not starting or ending with `'`, not "History", and no two
+/// alike (ignoring case). Sections are named after the user's categories, events and
+/// payment methods, so their names are made safe here: forbidden characters
+/// become `-`, a long name is cut (never inside a surrogate pair), an empty one
+/// is "Sheet N", and a repeat gets " (2)". [names] in, the same count out, in
+/// order.
 List<String> sheetNames(List<String> names) {
   const max = 31;
   final taken = <String>{'history'};
@@ -114,7 +114,7 @@ List<String> sheetNames(List<String> names) {
   ];
 }
 
-/// Where the file goes after it's made (P8-15).
+/// Where the file goes after it's made.
 enum ExportAction { save, saveAs, share }
 
 const pdfMimeType = 'application/pdf';
@@ -124,10 +124,10 @@ const xlsxMimeType =
 String mimeTypeOf(ReportExport format) =>
     format == ReportExport.pdf ? pdfMimeType : xlsxMimeType;
 
-/// `expense-report-2026-10.pdf` (P8-20): ASCII only, named after the
-/// period. A week by `weekIdOf`'s year and number (29 Dec 2025 – 4 Jan
-/// 2026 is `2026-W01`; ISO 8601 only with a Monday start), a custom range
-/// by its dates, All time by [today].
+/// `expense-report-2026-10.pdf`: ASCII only, named after the period. A week by
+/// `weekIdOf`'s year and number (29 Dec 2025 – 4 Jan 2026 is `2026-W01`; ISO
+/// 8601 only with a Monday start), a custom range by its dates, All time by
+/// [today].
 String reportFileName(
   ReportRange range,
   ReportExport format,
@@ -152,8 +152,8 @@ String _weekName(ReportRange range) {
 }
 
 /// The clock time a row was recorded at, `14:05`: its moment on the clock
-/// [utcOffsetMinutes] from UTC (not the phone's zone now, §12). Integer
-/// arithmetic, never a `double` fraction of a day.
+/// [utcOffsetMinutes] from UTC (not the phone's zone now). Integer arithmetic,
+/// never a `double` fraction of a day.
 String clockTimeOf(int occurredAtMs, int utcOffsetMinutes) {
   final local = DateTime.fromMillisecondsSinceEpoch(
     occurredAtMs,

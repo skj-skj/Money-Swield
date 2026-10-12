@@ -18,8 +18,8 @@ void main() {
   };
 
   // A one-word plural branch (`=1{Daily}`, `other{days}`) is text, not a
-  // placeholder: braces right after a selector are skipped (phase-7a.md
-  // §12a; the first such branches came with the recurring texts).
+  // placeholder: braces right after a selector are skipped (the first such
+  // branches came with the recurring texts).
   Set<String> placeholdersIn(String message) => {
     for (final match in RegExp(
       r'(?<!(?:=\d+|zero|one|two|few|many|other))\{(\w+)\}',
@@ -75,8 +75,8 @@ void main() {
     }
   });
 
-  // Seen on the Oppo with 10,000 photos: "Photos use 169.4 MB (10000
-  // photos)." Counts take the language's digit grouping (phase-6.md §12a).
+  // Seen on the Oppo with 10,000 photos: "Photos use 169.4 MB (10000 photos)."
+  // Counts take the language's digit grouping.
   test('every shown int placeholder is formatted with digit grouping', () {
     for (final key in template.keys.where((key) => key.startsWith('@'))) {
       final meta = template[key];

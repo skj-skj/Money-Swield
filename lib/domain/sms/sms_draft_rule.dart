@@ -1,5 +1,4 @@
-/// What tapping an SMS card does with the draft slot (phase-9a.md §5.9,
-/// P9a-3, owner rev 3). Pure Dart.
+/// What tapping an SMS card does with the draft slot (owner rev 3). Pure Dart.
 library;
 
 import '../models/expense_draft.dart';

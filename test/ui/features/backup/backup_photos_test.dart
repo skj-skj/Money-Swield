@@ -25,8 +25,7 @@ import '../../../helpers/fake_photo_service.dart';
 import '../../../helpers/file_database.dart';
 import '../../../helpers/test_database.dart';
 
-/// Backups and restores with photos (phase-6.md §6.7, §6.8), on real
-/// database and photo files.
+/// Backups and restores with photos, on real database and photo files.
 void main() {
   late FileDatabases files;
   late Database live;
@@ -121,7 +120,7 @@ void main() {
       expect(zip.missingPhotos, 2);
     });
 
-    test('without photos: database-only, as Phase 3', () async {
+    test('without photos: database-only', () async {
       await photo('a');
       final zip = await backups().createBackup(appVersion: 't');
       expect(zipEntries(zip.path).keys, [
@@ -408,7 +407,7 @@ void main() {
       expect(await dumpTables(live), before);
     });
 
-    test('a file larger than the free space: "not enough space" (R2); a '
+    test('a file larger than the free space: "not enough space"; a '
         '150 MB limit no longer refuses it when the space is there', () async {
       service.free = 200 * 1024 * 1024;
       expect(

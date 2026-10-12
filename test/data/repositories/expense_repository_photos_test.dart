@@ -8,7 +8,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../../helpers/test_database.dart';
 
-/// Photos in `ExpenseRepository` (phase-6.md §6.4, §6.4a), on SQLite 3.22.
+/// Photos in `ExpenseRepository`, on SQLite 3.22.
 void main() {
   late Database db;
   late TestClock clock;
@@ -348,7 +348,7 @@ void main() {
       );
     });
 
-    test('the same order as page() for a traveller\'s rows (R1)', () async {
+    test('the same order as page() for a traveller\'s rows', () async {
       // Two expenses on the same stored day, the later moment first.
       final early = await repository.add(
         input(day: '2026-10-05', hour: 1, photos: [newPhoto('a')]),
@@ -449,7 +449,7 @@ void main() {
     });
   });
 
-  group('removePhotoLinks (§6.4a)', () {
+  group('removePhotoLinks', () {
     test('links of two expenses in one transaction; the rest renumbered; '
         'updated_at moves; DataVersion bumped once', () async {
       final taxi = await repository.add(

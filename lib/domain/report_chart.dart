@@ -1,6 +1,6 @@
-/// The report card's slices (phase-8.md §5.3): the first level's largest
-/// groups in one currency, the rest in Other. The donut and the bars draw
-/// the same slices, in the same colours (by position, P8-7).
+/// The report card's slices: the first level's largest groups in one currency,
+/// the rest in Other. The donut and the bars draw the same slices, in the same
+/// colours (by position).
 library;
 
 import 'dart:math' as math;
@@ -36,8 +36,8 @@ final class ChartSlice {
   /// counted in each).
   final int count;
 
-  /// Of the whole the chart shows (P8-10: with overlap, shares can add up
-  /// past 100 %). Null when that whole is 0 (only ₹0 payments).
+  /// Of the whole the chart shows (with overlap, shares can add up past 100 %).
+  /// Null when that whole is 0 (only ₹0 payments).
   final int? sharePermille;
 
   /// Of the slices' sum, 0..1, for the ring's geometry only.

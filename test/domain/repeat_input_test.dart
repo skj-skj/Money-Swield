@@ -22,7 +22,7 @@ RepeatError? check(RepeatChoice c, String start) =>
     repeatPreview(c, startOn: start, today: today);
 
 void main() {
-  group('repeatPreview (§5.2 table, today 2026-10-09)', () {
+  group('repeatPreview (today 2026-10-09)', () {
     test('monthly from today: nothing earlier, next month', () {
       final p = preview(choice(), today);
       expect(p.past, isEmpty);
@@ -213,7 +213,7 @@ void main() {
     expect(a.hashCode == a.copyWith(countText: '3').hashCode, isFalse);
   });
 
-  group('after N payments (phase-7b.md §5.1, today 2026-10-09)', () {
+  group('after N payments (today 2026-10-09)', () {
     RepeatChoice after(
       String count, {
       Frequency frequency = Frequency.monthly,

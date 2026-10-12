@@ -9,9 +9,8 @@ import '../../../core/period_names.dart';
 import '../../../core/widgets/filter/filter_sheet.dart';
 import '../../../core/widgets/section_heading.dart';
 
-/// Home's filter sheet (phase-5.md §8.4): the shared one
-/// ([showFilterSheet]) with the list's Group by above the fields. Returns
-/// both however the sheet closes (P5-18).
+/// Home's filter sheet: the shared one ([showFilterSheet]) with the list's
+/// Group by above the fields. Returns both however the sheet closes.
 Future<({ExpenseFilter filter, Period grouping})> showHomeFilterSheet(
   BuildContext context, {
   required ExpenseFilter filter,

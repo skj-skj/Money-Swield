@@ -1,19 +1,17 @@
 import 'money.dart';
 
-/// The longest title, in characters (grapheme clusters). In the domain, not
-/// the form, because the SMS title rule cuts a payee to it too
-/// (phase-9a.md R2).
+/// The longest title, in characters (grapheme clusters). In the domain, not the
+/// form, because the SMS title rule cuts a payee to it too.
 const maxTitleLength = 100;
 
 /// The longest description, in characters.
 const maxExpenseDescriptionLength = 1000;
 
 /// Where `ExpenseRepository.page` continues from: the last loaded row's
-/// `occurred_on`, `occurred_at` and id (keyset pagination, database.md §4;
-/// phase-5.md §4.1).
+/// `occurred_on`, `occurred_at` and id (keyset pagination).
 typedef ExpenseCursor = ({String occurredOn, int occurredAtMs, int id});
 
-/// A recorded expense (database.md §3.5).
+/// A recorded expense.
 class Expense {
   const Expense({
     required this.id,
@@ -71,14 +69,13 @@ class Expense {
   /// When it was moved to the bin, or null while it is active.
   final DateTime? deletedAt;
 
-  /// How many photos it has (phase-6.md §6.4): rows show an icon for them.
-  /// The photos themselves are read with `ExpenseRepository.photosOf`.
+  /// How many photos it has: rows show an icon for them. The photos themselves
+  /// are read with `ExpenseRepository.photosOf`.
   final int photoCount;
 
-  /// The recurring item it is a payment of (phase-7a.md §4.1): added by
-  /// the generator, or the first payment a Save with Repeats made. Null
-  /// for a plain expense, and once the item was deleted for good (the
-  /// foreign key sets it to NULL).
+  /// The recurring item it is a payment of: added by the generator, or the
+  /// first payment a Save with Repeats made. Null for a plain expense, and once
+  /// the item was deleted for good (the foreign key sets it to NULL).
   final int? recurringExpenseId;
 
   /// Which payment of the item it is, `YYYY-MM-DD`. Kept when an Edit
@@ -90,10 +87,9 @@ class Expense {
 
   bool get isInBin => deletedAt != null;
 
-  /// The time as it was on the clock where it was recorded, as a UTC
-  /// `DateTime` whose fields are that wall-clock time. Shown instead of the
-  /// device's current zone, so a trip abroad keeps its local times
-  /// (database.md §1).
+  /// The time as it was on the clock where it was recorded, as a UTC `DateTime`
+  /// whose fields are that wall-clock time. Shown instead of the device's
+  /// current zone, so a trip abroad keeps its local times.
   DateTime get wallClock => occurredAt.add(Duration(minutes: utcOffsetMinutes));
 
   /// The cursor that continues a page after this expense.
@@ -185,15 +181,15 @@ class ExpenseInput {
   final int paymentMethodId;
   final Set<int> eventIds;
 
-  /// The photos, in order (phase-6.md §6.4). Saving replaces the
-  /// expense's links with exactly these.
+  /// The photos, in order. Saving replaces the expense's links with exactly
+  /// these.
   final List<PhotoLinkInput> photos;
 }
 
-/// A payment the recurring generator, or a Save with Repeats, adds
-/// (phase-7a.md §6.1): an ordinary expense row that also says which item
-/// and which due date it is. Its events are the item's, copied in the same
-/// transaction; it has no amount expression (P7a-11) and no photos (P7a-4).
+/// A payment the recurring generator, or a Save with Repeats, adds: an ordinary
+/// expense row that also says which item and which due date it is. Its events
+/// are the item's, copied in the same transaction; it has no amount expression
+/// and no photos.
 class PaymentInput {
   const PaymentInput({
     required this.recurringExpenseId,
@@ -223,7 +219,7 @@ class PaymentInput {
   final int paymentMethodId;
 }
 
-/// One photo an [ExpenseInput] links (phase-6.md §6.4).
+/// One photo an [ExpenseInput] links.
 sealed class PhotoLinkInput {
   const PhotoLinkInput();
 }

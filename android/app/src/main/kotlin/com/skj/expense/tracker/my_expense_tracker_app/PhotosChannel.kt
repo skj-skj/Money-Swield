@@ -31,15 +31,15 @@ import java.io.InputStream
 import java.util.concurrent.Executors
 
 /**
- * `expense_tracker/photos` (phase-6.md §6.1): Android's own camera and
- * photo picker, reading a picture's size, resizing and JPEG-encoding it in
- * native code, copying one into `Pictures/` for the user, and free space.
+ * `expense_tracker/photos`: Android's own camera and photo picker, reading a
+ * picture's size, resizing and JPEG-encoding it in native code, copying one
+ * into `Pictures/` for the user, and free space.
  *
- * No permission is needed for any of it, so the manifest declares none
- * (phase-6.md P6-30): the camera app writes into our FileProvider file
- * (declaring `CAMERA` without holding it would make the camera intent
- * throw, F8); the picker grants read access to what was picked; MediaStore
- * lets an app add pictures to `Pictures/` without a permission (F3).
+ * No permission is needed for any of it, so the manifest declares none: the
+ * camera app writes into our FileProvider file (declaring `CAMERA` without
+ * holding it would make the camera intent throw); the picker grants read access
+ * to what was picked; MediaStore lets an app add pictures to `Pictures/`
+ * without a permission.
  *
  * The app's own photos are plain files in app-specific storage, handled by
  * Dart; this class only reads a source (a picker URI or a file) and writes
@@ -141,11 +141,10 @@ class PhotosChannel(messenger: BinaryMessenger, context: Context) :
     }
 
     /**
-     * Android's photo picker for at most [maxItems] images, through
-     * androidx's contracts (P6-5): the system picker, else an installed
-     * Play services one, else the document picker, which ignores the limit
-     * (F5) — Dart then uses the first ones only. The picked URIs, in
-     * order; empty when cancelled.
+     * Android's photo picker for at most [maxItems] images, through androidx's
+     * contracts: the system picker, else an installed Play services one, else
+     * the document picker, which ignores the limit — Dart then uses the first
+     * ones only. The picked URIs, in order; empty when cancelled.
      */
     private fun pick(maxItems: Int, result: MethodChannel.Result) {
         val request = PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
@@ -189,10 +188,9 @@ class PhotosChannel(messenger: BinaryMessenger, context: Context) :
     private class HeaderRead : RuntimeException()
 
     /**
-     * Reads the header through [ImageDecoder] and stops before decoding
-     * any pixels. ImageDecoder applies the EXIF orientation itself
-     * (checked on the Oppo, phase-6.md §12a), and its size is the size as
-     * shown.
+     * Reads the header through [ImageDecoder] and stops before decoding any
+     * pixels. ImageDecoder applies the EXIF orientation itself (checked on the
+     * Oppo), and its size is the size as shown.
      */
     private fun readHeader(source: String): Header {
         var header: Header? = null
@@ -218,9 +216,8 @@ class PhotosChannel(messenger: BinaryMessenger, context: Context) :
 
     /**
      * Writes [source] to [destination]: as it is when [width] is null
-     * (KeepBytes, phase-6.md §5.3), else decoded at [width] × [height]
-     * (the size after [quarterTurns]), turned, and JPEG-encoded at
-     * [quality].
+     * (KeepBytes), else decoded at [width] × [height] (the size after
+     * [quarterTurns]), turned, and JPEG-encoded at [quality].
      */
     private fun stage(
         source: String,
@@ -239,9 +236,8 @@ class PhotosChannel(messenger: BinaryMessenger, context: Context) :
 
     /**
      * Decodes [source] scaled so that, once turned by [quarterTurns], it is
-     * [width] × [height]; then JPEG at [quality]. One bitmap at a time,
-     * two while turning (§6.1). Transparent pixels (a PNG) become white,
-     * not JPEG's black.
+     * [width] × [height]; then JPEG at [quality]. One bitmap at a time, two
+     * while turning. Transparent pixels (a PNG) become white, not JPEG's black.
      */
     private fun encode(
         source: String,
@@ -319,11 +315,11 @@ class PhotosChannel(messenger: BinaryMessenger, context: Context) :
 
     /**
      * Copies [sourcePath] into `Pictures/<folder>/` as a new picture named
-     * [displayName] (owner rev 5, P6-46). Only ever **inserts**: an
-     * existing picture is never queried, opened, changed or deleted, so a
-     * user's file can't be touched; a name already there is renamed by
-     * MediaStore ("name (1).jpg", F4). If the copy fails, the one item
-     * inserted here is deleted. Returns the name MediaStore gave it.
+     * [displayName] (owner rev 5). Only ever **inserts**: an existing picture
+     * is never queried, opened, changed or deleted, so a user's file can't be
+     * touched; a name already there is renamed by MediaStore ("name (1).jpg").
+     * If the copy fails, the one item inserted here is deleted. Returns the
+     * name MediaStore gave it.
      */
     private fun saveToPictures(
         sourcePath: String,
@@ -373,10 +369,10 @@ class PhotosChannel(messenger: BinaryMessenger, context: Context) :
      * Writes the expense's moment into the saved copy's EXIF
      * (`DateTimeOriginal` and its offset), so galleries file it on the
      * expense's day. MediaStore's own `DATE_TAKEN` can't do it: on the Oppo
-     * (Android 14) a value an app writes is dropped when the file is
-     * scanned, and the scan reads EXIF (phase-6.md §12a). Only the copy in
-     * Pictures/ gets it; the app's own file is never changed. Best effort:
-     * a picture whose EXIF can't be written is still saved.
+     * (Android 14) a value an app writes is dropped when the file is scanned,
+     * and the scan reads EXIF. Only the copy in Pictures/ gets it; the app's
+     * own file is never changed. Best effort: a picture whose EXIF can't be
+     * written is still saved.
      */
     private fun stampDate(item: Uri, dateTime: String, offset: String) {
         try {

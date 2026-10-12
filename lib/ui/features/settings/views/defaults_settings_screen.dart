@@ -15,9 +15,9 @@ import '../../../core/widgets/show_message.dart';
 import '../../payment_methods/view_models/payment_method_list_cubit.dart';
 import '../view_models/settings_cubit.dart';
 
-/// Settings → Defaults (phase-5.md §8.5): the default currency and payment
-/// method for new expenses, the rows of the former Settings list, moved
-/// with their behaviour unchanged.
+/// Settings → Defaults: the default currency and payment method for new
+/// expenses, the rows of the former Settings list, moved with their behaviour
+/// unchanged.
 class DefaultsSettingsScreen extends StatefulWidget {
   const DefaultsSettingsScreen({super.key, required this.dependencies});
 

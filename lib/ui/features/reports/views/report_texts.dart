@@ -13,11 +13,10 @@ import '../../../core/item_labels.dart';
 import '../../../core/money_formatter.dart';
 import '../../../core/period_names.dart';
 
-/// The report's words, shared by the screen and the exports
-/// (phase-8.md §8, §5.5): range, group and dimension names, shares. A
-/// group whose category, event or payment method is missing from the
-/// maps (a newer app's data, or deleted between two reads) is "?",
-/// never left out (§6.1).
+/// The report's words, shared by the screen and the exports: range, group and
+/// dimension names, shares. A group whose category, event or payment method is
+/// missing from the maps (a newer app's data, or deleted between two reads) is
+/// "?", never left out.
 class ReportTexts {
   ReportTexts({
     required this.l10n,
@@ -99,7 +98,7 @@ class ReportTexts {
     NoEventKey() => l10n.reportNoEvent,
   };
 
-  /// A missing item's name (§6.1).
+  /// A missing item's name.
   static const unknown = '?';
 
   /// [permille] of [part]'s whole: "33.3 %"; "< 0.1 %" when [part] isn't
@@ -120,7 +119,7 @@ class ReportTexts {
   String sliceShare(ChartSlice slice) =>
       share(slice.sharePermille, slice.amount);
 
-  /// A total, or "Too large" past what the screen can print (R7).
+  /// A total, or "Too large" past what the screen can print.
   String amount(String currency, BigInt minor) =>
       totalText(l10n, formatter, currency, minor);
 

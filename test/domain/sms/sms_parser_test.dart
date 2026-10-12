@@ -5,7 +5,6 @@ import 'package:my_expense_tracker_app/domain/sms/sms_text.dart';
 
 import 'fixtures/india_sms.dart';
 
-/// phase-9a.md §5.1, §5.2, §5.5, §12 "Domain".
 void main() {
   const parser = IndiaSmsParser();
 
@@ -16,7 +15,7 @@ void main() {
       (bank, bankSent2, true),
       (bank, bankSent3, true),
       (bank, bankMandate, true),
-      (bank, bankAtm, false), // #4: ATM (P9a-35)
+      (bank, bankAtm, false), // #4: ATM
       ('VM-ABCBNK-P', 'Rs 500 off on your next purchase', false),
       ('vm-abcbnk-p', 'Rs 500 debited', false),
       ('+919876543210', 'I sent you Rs 500', false),

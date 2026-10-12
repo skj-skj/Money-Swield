@@ -3,9 +3,9 @@ import 'package:my_expense_tracker_app/app/app_dependencies.dart';
 
 import '../../helpers/test_database.dart';
 
-/// The category, payment method and event writes bump the same
-/// `DataVersion` as the expense writes (phase-2.md §5). The expense
-/// repository's own writes are covered in its test.
+/// The category, payment method and event writes bump the same `DataVersion` as
+/// the expense writes. The expense repository's own writes are covered in its
+/// test.
 void main() {
   late AppDependencies deps;
 

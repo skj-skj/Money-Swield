@@ -43,9 +43,8 @@ Future<Database> openEmptyDatabase() async {
   return db;
 }
 
-/// Repositories on a fresh migrated database.
-/// [photos] gives the app a photo folder (phase-6.md); without one,
-/// photos read as missing and nothing is swept.
+/// Repositories on a fresh migrated database. [photos] gives the app a photo
+/// folder; without one, photos read as missing and nothing is swept.
 Future<AppDependencies> openTestDependencies({
   String deviceCurrency = 'INR',
   TestClock? clock,
@@ -60,7 +59,7 @@ Future<AppDependencies> openTestDependencies({
   wallpaperSeed: wallpaperSeed,
   now: clock?.call,
   photos: photos,
-  // No real files or channels in widget tests (phase-8.md §12).
+  // No real files or channels in widget tests.
   reportExports: reportExports ?? FakeReportExportService(),
   // The sweeper has its own tests; its file I/O would hang a widget test.
   sweepPhotos: false,
@@ -99,9 +98,8 @@ const en = Locale('en');
 const es = Locale('es');
 const hi = Locale('hi');
 
-/// Inserts a recurring item row directly (phase-7a.md §4.1), for tests that
-/// only need "an item uses this". [archivedAt] set archives it; [eventIds]
-/// are its events.
+/// Inserts a recurring item row directly, for tests that only need "an item
+/// uses this". [archivedAt] set archives it; [eventIds] are its events.
 Future<int> insertRecurringRow(
   DatabaseExecutor db, {
   String title = 'Netflix',

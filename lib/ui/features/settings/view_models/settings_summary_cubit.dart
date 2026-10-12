@@ -18,11 +18,10 @@ class SettingsSummary {
   final int? photoBytes;
 }
 
-/// Reads the Settings tiles' summaries (phase-6.md §7.3). Replaces the
-/// Settings screen's own read of the backup repository: a widget doesn't
-/// call a repository (R15). Read on start, when the tab comes back, and
-/// when a sub-screen closes. Each read failing leaves its value unknown,
-/// never an error on the screen.
+/// Reads the Settings tiles' summaries. Replaces the Settings screen's own read
+/// of the backup repository: a widget doesn't call a repository. Read on start,
+/// when the tab comes back, and when a sub-screen closes. Each read failing
+/// leaves its value unknown, never an error on the screen.
 class SettingsSummaryCubit extends CubitSignal<SettingsSummary>
     with EmitIfOpen<SettingsSummary> {
   SettingsSummaryCubit({required this._backups, required this._expenses})

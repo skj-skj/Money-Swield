@@ -8,8 +8,8 @@ final onePixelPng = base64Decode(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
 );
 
-/// An image that loads in a widget test's fake-async zone, where a file
-/// never does (phase-6.md F17).
+/// An image that loads in a widget test's fake-async zone, where a file never
+/// does.
 ImageProvider memoryImage() => MemoryImage(onePixelPng);
 
 /// An image that fails to decode, like a missing file: shows "image

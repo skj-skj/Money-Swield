@@ -35,10 +35,9 @@ Future<List<R>> inChunks<T, R>(
   return results;
 }
 
-/// A stored timestamp: epoch milliseconds, always read as UTC (database.md
-/// §1). Without `isUtc` the same instant comes back in local time, and a
-/// later `.day` or `.hour` would silently be the device's, not UTC's.
-/// (Writing needs no helper: `millisecondsSinceEpoch` is the same instant
-/// whatever the time zone.)
+/// A stored timestamp: epoch milliseconds, always read as UTC. Without `isUtc`
+/// the same instant comes back in local time, and a later `.day` or `.hour`
+/// would silently be the device's, not UTC's. (Writing needs no helper:
+/// `millisecondsSinceEpoch` is the same instant whatever the time zone.)
 DateTime utcFromEpochMs(int millis) =>
     DateTime.fromMillisecondsSinceEpoch(millis, isUtc: true);

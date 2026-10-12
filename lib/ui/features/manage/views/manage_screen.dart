@@ -20,9 +20,9 @@ class ManageScreen extends StatefulWidget {
 
   final AppDependencies dependencies;
 
-  /// Whether this tab is the one shown. The shell keeps it alive while
-  /// hidden, so its counts are read again when it comes back: a repeating
-  /// expense saved on Home left "None running" (Oppo, phase-7a.md §12a).
+  /// Whether this tab is the one shown. The shell keeps it alive while hidden,
+  /// so its counts are read again when it comes back: a repeating expense saved
+  /// on Home left "None running" (Oppo).
   final bool isVisible;
 
   @override
@@ -120,9 +120,9 @@ class _ManageTile extends StatelessWidget {
   final String title;
   final int? count;
 
-  /// Shown under the title instead of [count]: "3 running". Not trailing:
-  /// a trailing text that long took the whole tile at font 2.0 (Spanish
-  /// "Ninguno activo"; phase-7a.md §12a).
+  /// Shown under the title instead of [count]: "3 running". Not trailing: a
+  /// trailing text that long took the whole tile at font 2.0 (Spanish "Ninguno
+  /// activo").
   final String? countText;
   final VoidCallback onTap;
 

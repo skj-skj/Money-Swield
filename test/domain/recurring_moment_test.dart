@@ -15,8 +15,8 @@ ZonedMoment Function(int, int, int, int, int) fixed(int offsetMinutes) =>
       offsetMinutes: offsetMinutes,
     );
 
-/// A zone at +60 whose clocks jump from 23:00 to 00:00 (+120) on
-/// 2026-10-09, like Dart moving a time in the gap forward (F10).
+/// A zone at +60 whose clocks jump from 23:00 to 00:00 (+120) on 2026-10-09,
+/// like Dart moving a time in the gap forward.
 ZonedMoment lateGap(int y, int m, int d, int h, int min) {
   final wall = DateTime.utc(y, m, d, h, min);
   final gapStart = DateTime.utc(2026, 10, 9, 23);

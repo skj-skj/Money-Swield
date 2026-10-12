@@ -3,8 +3,8 @@ import 'dart:convert';
 
 import 'package:my_expense_tracker_app/data/services/on_device_ai_service.dart';
 
-/// Stands in for the on-device model (phase-9b.md §11 "Scanner"): a status
-/// the test sets, an answer per prompt, a record of every prompt.
+/// Stands in for the on-device model: a status the test sets, an answer per
+/// prompt, a record of every prompt.
 class FakeOnDeviceAi implements OnDeviceAiService {
   FakeOnDeviceAi({this.current = AiStatus.available, this.reply});
 

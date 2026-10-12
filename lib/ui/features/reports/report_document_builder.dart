@@ -16,10 +16,10 @@ class ExportCancelled implements Exception {
   const ExportCancelled();
 }
 
-/// Builds the PDF's blocks and the Excel workbook (phase-8.md §5.5,
-/// overhauled by the owner on 2026-10-10) from a [report] grouped by
-/// [options] (`options.grouping`: sections by event, category or payment
-/// method, each split by category, or by event for category sections).
+/// Builds the PDF's blocks and the Excel workbook (overhauled by the owner on
+/// 2026-10-10) from a [report] grouped by [options] (`options.grouping`:
+/// sections by event, category or payment method, each split by category, or by
+/// event for category sections).
 ///
 /// - The top: the header, then **Overall**: per currency its total and a
 ///   chart of the sections.
@@ -28,11 +28,11 @@ class ExportCancelled implements Exception {
 ///   🔁 for a recurring payment, its category and / or events, amount).
 /// - Excel: an Overall sheet and one sheet per section.
 ///
-/// Built from the report on screen (no second read, §9), every currency,
-/// in the app's language. In the UI layer: it needs `AppLocalizations`
-/// and `MoneyFormatter` (through [texts]). Long reports are built in
-/// chunks of [chunk] rows with a pause between, so the busy dialog stays
-/// live and Cancel ([isCancelled]) is heard.
+/// Built from the report on screen (no second read), every currency, in the
+/// app's language. In the UI layer: it needs `AppLocalizations` and
+/// `MoneyFormatter` (through [texts]). Long reports are built in chunks of
+/// [chunk] rows with a pause between, so the busy dialog stays live and Cancel
+/// ([isCancelled]) is heard.
 class ReportDocumentBuilder {
   ReportDocumentBuilder({
     required this.report,
@@ -118,7 +118,7 @@ class ReportDocumentBuilder {
         : l10n.reportDocFilter(parts.join(' · '));
   }
 
-  /// Every digit, never "Too large" (R7).
+  /// Every digit, never "Too large".
   String _money(String currency, BigInt minor) =>
       texts.formatter.exactTotal(currency, minor);
 

@@ -15,9 +15,9 @@ import '../../../core/widgets/confirm_then_save.dart';
 import '../../home/views/trend_card.dart';
 import '../view_models/settings_cubit.dart';
 
-/// Settings → Home (phase-5.md §8.5): the trend chart's style, where the
-/// trend card sits, the first day of a week and how weeks are named. Each
-/// is a choice dialog; every change applies at once, Home follows (R6).
+/// Settings → Home: the trend chart's style, where the trend card sits, the
+/// first day of a week and how weeks are named. Each is a choice dialog; every
+/// change applies at once, Home follows.
 class HomeSettingsScreen extends StatelessWidget {
   const HomeSettingsScreen({super.key, required this.dependencies});
 

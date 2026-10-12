@@ -19,8 +19,7 @@ import '../../helpers/test_database.dart';
 import '../../helpers/test_folders.dart';
 import '../../helpers/test_images.dart';
 
-/// Home's photos icon and the Photos screen (phase-6.md §8.9, §8.10).
-/// Today is Wed 7 Oct 2026.
+/// Home's photos icon and the Photos screen. Today is Wed 7 Oct 2026.
 void main() {
   late AppDependencies deps;
   late FakePhotoService service;
@@ -169,7 +168,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('filterButton')));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, 'no photo');
-    // The sheet applies its filters on Back (phase-5.md §12b).
+    // The sheet applies its filters on Back.
     await tester.binding.handlePopRoute();
     await pumpUntilFound(tester, find.byKey(const ValueKey('filterChipText')));
     await tester.pumpAndSettle();
@@ -261,7 +260,7 @@ void main() {
     await tester.tap(find.byTooltip('Delete'));
     await pumpUntilFound(tester, find.text('Moved to bin'));
     await pumpUntilGone(tester, tile('Lunch', 'a'));
-    // The action itself (its placement is checked on the phone, §12a).
+    // The action itself (its placement is checked on the phone).
     tester.widget<SnackBarAction>(find.byType(SnackBarAction)).onPressed();
     await pumpUntilFound(tester, tile('Lunch', 'a'));
   });

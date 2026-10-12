@@ -16,7 +16,7 @@ import '../../../../helpers/fake_photo_service.dart';
 import '../../../../helpers/test_database.dart';
 import '../../../../helpers/test_folders.dart';
 
-/// The Photos screen's cubit and Home's icon (phase-6.md §7.4).
+/// The Photos screen's cubit and Home's icon.
 void main() {
   late AppDependencies deps;
   late FakePhotoService service;

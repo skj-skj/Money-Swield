@@ -19,11 +19,11 @@ import '../../../core/emit_if_open.dart';
 
 enum ReportPhase { loading, loaded, failed }
 
-/// Categories, events and payment methods deleted since they were chosen
-/// in the filter, dropped from it at a load (R11, P8-26). The items are
-/// those the screen last knew (named in the UI, in its language); [count]
-/// says how many were dropped, also when none was known (right after a
-/// start). A new object each time, so the screen says it once.
+/// Categories, events and payment methods deleted since they were chosen in the
+/// filter, dropped from it at a load. The items are those the screen last knew
+/// (named in the UI, in its language); [count] says how many were dropped, also
+/// when none was known (right after a start). A new object each time, so the
+/// screen says it once.
 final class FilterChangedNotice {
   FilterChangedNotice({
     required this.count,
@@ -41,9 +41,8 @@ final class FilterChangedNotice {
   int get known => categories.length + events.length + methods.length;
 }
 
-/// The Reports screen's state (phase-8.md §7.1, owner 2026-10-10). The
-/// period, filter and card show in every phase; [report] only when
-/// loaded.
+/// The Reports screen's state (owner 2026-10-10). The period, filter and card
+/// show in every phase; [report] only when loaded.
 final class ReportState {
   const ReportState({
     required this.phase,
@@ -122,11 +121,10 @@ final class ReportState {
   );
 }
 
-/// The Reports tab (phase-8.md §7.1, owner 2026-10-10): the range, the
-/// filter and the card, an overview by category; the Generate sheet's
-/// options ([exportOptions]). Reads through [ReportRepository];
-/// writes nothing but its own remembered settings (§4), each method
-/// returning that write for the screen to report a failure
+/// The Reports tab (owner 2026-10-10): the range, the filter and the card, an
+/// overview by category; the Generate sheet's options ([exportOptions]). Reads
+/// through [ReportRepository]; writes nothing but its own remembered settings,
+/// each method returning that write for the screen to report a failure
 /// (`saveOrShowError`), as Home's period.
 class ReportCubit extends CubitSignal<ReportState>
     with EmitIfOpen<ReportState> {
@@ -177,7 +175,7 @@ class ReportCubit extends CubitSignal<ReportState>
     await _settings.setReportExportOptions(options);
   }
 
-  /// The custom range the Range dialog opens on (P8-4).
+  /// The custom range the Range dialog opens on.
   ReportRange get customRange =>
       _customRange ?? defaultCustomRange(todayOn(_now()));
 
@@ -215,9 +213,8 @@ class ReportCubit extends CubitSignal<ReportState>
   }
 
   /// Reads the range's rows for the filter and builds the report. Ids of
-  /// deleted categories, events or payment methods are dropped from the
-  /// filter first, said once ([ReportState.notice]) and the filter saved
-  /// without them (R11).
+  /// deleted categories, events or payment methods are dropped from the filter
+  /// first, said once ([ReportState.notice]) and the filter saved without them.
   Future<void> load() => _latest = _load();
 
   /// The newest [load]; [settled] waits for it.
@@ -245,7 +242,7 @@ class ReportCubit extends CubitSignal<ReportState>
         start.filter.withoutText,
         withDescriptions: start.filter.base.hasText,
       );
-      // Timed on the Oppo (phase-8.md §12a); also a hint in a bug report.
+      // Timed on the Oppo; also a hint in a bug report.
       debugPrint(
         'Report read: ${data.rows.length} rows in ${watch.elapsedMilliseconds} ms',
       );
@@ -387,10 +384,9 @@ class ReportCubit extends CubitSignal<ReportState>
     );
   }
 
-  /// Midnight, or the app resumed: a week, month or year that held the
-  /// day before follows today (on 1 Nov "October" becomes "November",
-  /// P8-25); a stepped or custom range stays. Then reads if anything was
-  /// written meanwhile.
+  /// Midnight, or the app resumed: a week, month or year that held the day
+  /// before follows today (on 1 Nov "October" becomes "November"); a stepped or
+  /// custom range stays. Then reads if anything was written meanwhile.
   Future<void> newDay() async {
     final state = value;
     final today = todayOn(_now());
@@ -411,7 +407,7 @@ class ReportCubit extends CubitSignal<ReportState>
     await reloadIfChanged();
   }
 
-  /// Reads again only if something was written since the last read (R5).
+  /// Reads again only if something was written since the last read.
   Future<bool> reloadIfChanged() async {
     if (_dataVersion.value == _loadedVersion &&
         value.phase != ReportPhase.failed) {

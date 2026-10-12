@@ -1,5 +1,4 @@
-/// The SMS text as the rules read it (phase-9a.md §5.2 steps 1 and 2).
-/// Pure Dart.
+/// The SMS text as the rules read it. Pure Dart.
 library;
 
 final _lineBreaks = RegExp(r'\r\n?');
@@ -19,13 +18,13 @@ String smsText(String body) => body
     .replaceAll(_breakRun, '\n')
     .trim();
 
-/// Where a bank's "it wasn't you?" footer starts. Footers name numbers to
-/// call ("to 9000000000") and words like "requested", which the payee and
-/// candidate rules must not see (§5.2 step 2).
+/// Where a bank's "it wasn't you?" footer starts. Footers name numbers to call
+/// ("to 9000000000") and words like "requested", which the payee and candidate
+/// rules must not see.
 ///
-/// The doc names only `not you` / `if not you`; its own test case "a footer
-/// 'if not requested by you' after a real debit → yes" needs the other
-/// wordings too (phase-9a.md §12a).
+/// The doc names only `not you` / `if not you`; its own test case "a footer 'if
+/// not requested by you' after a real debit → yes" needs the other wordings
+/// too.
 final _footer = RegExp(
   r'\b(?:if\s+)?(not you|not requested by you|not done by you|not initiated by you|'
   r'not made by you|if you did not|if you have not|did not do this|'

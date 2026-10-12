@@ -4,8 +4,8 @@ import '../photos.dart';
 import '../repeat_input.dart';
 import 'sms_suggestion.dart';
 
-/// A field of the Add/Edit form, for the touched set: prefill fills only
-/// fields the user hasn't touched (D13, phase-4.md §7.1).
+/// A field of the Add/Edit form, for the touched set: prefill fills only fields
+/// the user hasn't touched.
 enum DraftField {
   title,
   amount,
@@ -17,8 +17,8 @@ enum DraftField {
   dateTime,
 }
 
-/// The one unsaved Add/Edit form (database.md §3.9, phase-4.md §5.4). Only
-/// ever used to refill a form: never counted, listed or suggested (§6.5).
+/// The one unsaved Add/Edit form. Only ever used to refill a form: never
+/// counted, listed or suggested.
 class ExpenseDraft {
   const ExpenseDraft({
     required this.editingExpenseId,
@@ -46,8 +46,8 @@ class ExpenseDraft {
 
   final String title;
 
-  /// Canonical (`50+60*2`, phase-4.md §5.1); may be unfinished: `''`,
-  /// `50+`, or even invalid text, kept as typed.
+  /// Canonical (`50+60*2`); may be unfinished: `''`, `50+`, or even invalid
+  /// text, kept as typed.
   final String amountExpression;
 
   final String description;
@@ -58,39 +58,36 @@ class ExpenseDraft {
   /// `''` when it couldn't be read back; the form then uses the default.
   final String currencyCode;
 
-  /// The picked date and time as device-local wall-clock fields, or null
-  /// when date and time were never touched (phase-4.md §5.4).
+  /// The picked date and time as device-local wall-clock fields, or null when
+  /// date and time were never touched.
   final DateTime? pickedWallClock;
 
   /// Null when the stored draft had no readable touched set; the form then
   /// counts every field that differs from a new form as touched.
   final Set<DraftField>? touched;
 
-  /// The Itemize line the form last put first in the description, its
-  /// labels, and the canonical terms they belong to (phase-4.md §5.2).
+  /// The Itemize line the form last put first in the description, its labels,
+  /// and the canonical terms they belong to.
   final String? itemizeLine;
   final List<String> itemizeLabels;
   final List<String> itemizeTerms;
 
   final DateTime updatedAt;
 
-  /// The user changed the form after a suggestion filled it: no
-  /// suggestions until Clear, also after a resume (phase-4.md §12a).
+  /// The user changed the form after a suggestion filled it: no suggestions
+  /// until Clear, also after a resume.
   final bool suggestionsBlocked;
 
-  /// The form's photos, in order (phase-6.md §5.5): saved ones by id and
-  /// path, staged ones by their staging file. A camera shot not yet used
-  /// isn't here: it has its own marker, so opening the camera never takes
-  /// the slot (§7.1).
+  /// The form's photos, in order: saved ones by id and path, staged ones by
+  /// their staging file. A camera shot not yet used isn't here: it has its own
+  /// marker, so opening the camera never takes the slot.
   final List<FormPhoto> photos;
 
-  /// The Add form's Repeats section as typed (phase-7a.md §5.7); null when
-  /// Repeats is off.
+  /// The Add form's Repeats section as typed; null when Repeats is off.
   final RepeatChoice? repeat;
 
-  /// The SMS suggestion this Add form came from (phase-9a.md §7.3), or
-  /// null. Save marks it added; only its own card or the FAB resumes the
-  /// draft (P9a-43).
+  /// The SMS suggestion this Add form came from, or null. Save marks it added;
+  /// only its own card or the FAB resumes the draft.
   final SmsLink? sms;
 
   /// The newest `form_json` version this app reads. Adding `repeat` and
@@ -146,11 +143,10 @@ class ExpenseDraft {
     if (sms case final sms?) 'sms': {'id': sms.id, 'sha256': sms.bodySha256},
   });
 
-  /// Reads `form_json` forgivingly (database.md §3.9): unknown keys are
-  /// ignored, a missing or wrong-typed key gives that field's empty value
-  /// (a list keeps its readable items). Null, meaning no draft, when the
-  /// JSON doesn't parse, isn't an object, or has a version newer than
-  /// [version].
+  /// Reads `form_json` forgivingly: unknown keys are ignored, a missing or
+  /// wrong-typed key gives that field's empty value (a list keeps its readable
+  /// items). Null, meaning no draft, when the JSON doesn't parse, isn't an
+  /// object, or has a version newer than [version].
   static ExpenseDraft? fromJson(
     String formJson, {
     required int? editingExpenseId,
@@ -221,13 +217,13 @@ class ExpenseDraft {
       RepeatEnd.afterCount => 'after',
     },
     'on': repeat.endOn,
-    // As typed, like the interval (phase-7b.md §5.1).
+    // As typed, like the interval.
     'count': repeat.countText,
   };
 
-  /// The Repeats section, read forgivingly (§5.7): not an object → null
-  /// (Repeats off); a bad field drops to its default and the rest is kept.
-  /// An unknown end kind reads as never; a 7a draft has no `count` (`''`).
+  /// The Repeats section, read forgivingly: not an object → null (Repeats off);
+  /// a bad field drops to its default and the rest is kept. An unknown end kind
+  /// reads as never; an older draft has no `count` (`''`).
   static RepeatChoice? _readRepeat(Object? value) {
     if (value is! Map<String, Object?>) return null;
     return RepeatChoice(
@@ -276,11 +272,11 @@ class ExpenseDraft {
     },
   };
 
-  /// The draft's photos, read forgivingly (§5.5): a missing or wrong-typed
-  /// `photos` is none; an item that isn't an object, misses a field, has a
-  /// wrong type, a bad SHA-256, a size that isn't positive, or a path or
-  /// staging name that fails its check is skipped, the rest kept. The
-  /// checks are what keep a crafted draft from naming any other file (§9).
+  /// The draft's photos, read forgivingly: a missing or wrong-typed `photos` is
+  /// none; an item that isn't an object, misses a field, has a wrong type, a
+  /// bad SHA-256, a size that isn't positive, or a path or staging name that
+  /// fails its check is skipped, the rest kept. The checks are what keep a
+  /// crafted draft from naming any other file.
   static List<FormPhoto> _readPhotos(Object? value) {
     if (value is! List<Object?>) return const [];
     return [

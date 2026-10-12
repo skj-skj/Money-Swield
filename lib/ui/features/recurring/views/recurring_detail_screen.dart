@@ -31,10 +31,9 @@ import 'recurring_form_screen.dart';
 import 'recurring_navigation.dart';
 import 'recurring_texts.dart';
 
-/// A recurring item's page (phase-7a.md §8.4): the hold card when held,
-/// the rule, the price history and the payments added, with Change price,
-/// Stop and Edit. An archived item opens read-only, with Restore and
-/// Delete for good instead.
+/// A recurring item's page: the hold card when held, the rule, the price
+/// history and the payments added, with Change price, Stop and Edit. An
+/// archived item opens read-only, with Restore and Delete for good instead.
 ///
 /// Stop, Restore and Delete for good close the page with their result
 /// ([RecurringPageResult]); the screen below says it.
@@ -56,9 +55,9 @@ class _RecurringDetailScreenState extends State<RecurringDetailScreen> {
   RecurringDetailCubit? _cubit;
   RecurringDetailCubit get _page => _cubit!;
 
-  /// Payments open through the form opener: the draft slot's rules and
-  /// its double-tap guard (§8.4). From here, a payment's link row leads
-  /// back to this page, so it opens nothing.
+  /// Payments open through the form opener: the draft slot's rules and its
+  /// double-tap guard. From here, a payment's link row leads back to this page,
+  /// so it opens nothing.
   late final _opener = ExpenseFormOpener(
     dependencies: widget.dependencies,
     // Not a tear-off: the page's cubit is replaced after a new schedule.
@@ -136,7 +135,7 @@ class _RecurringDetailScreenState extends State<RecurringDetailScreen> {
     }
   }
 
-  /// **Add selected** (phase-7b.md §8.1 E): the held dates in a sheet, all
+  /// **Add selected**: the held dates in a sheet, all
   /// ticked; the ticked ones are added, the rest skipped for good.
   Future<void> _addSelected(RecurringItem item) async {
     final l10n = AppLocalizations.of(context);
@@ -218,7 +217,7 @@ class _RecurringDetailScreenState extends State<RecurringDetailScreen> {
   }
 
   /// Restore, after its dialog; with a running relative, the swap dialog
-  /// instead (phase-7b.md §8.1 D, P7b-3).
+  /// instead.
   Future<void> _restore(RecurringItem item, RecurringItem? relative) async {
     final l10n = AppLocalizations.of(context);
     final locale = dateLocaleOf(context);
@@ -314,11 +313,11 @@ class _RecurringDetailScreenState extends State<RecurringDetailScreen> {
     if (!mounted) return;
     switch (result) {
       case RecurringReplaced(:final newId, :final oldTitle):
-        // How often changed: this item is archived, and this page shows
-        // the new one, saying so (no Undo: restore the old one from the
-        // Archive, P7b-5). The same route, so what the new page does later
-        // (Stop and its Undo) still reaches the screen below; a
-        // pushReplacement would have answered that screen already.
+        // How often changed: this item is archived, and this page shows the new
+        // one, saying so (no Undo: restore the old one from the Archive). The
+        // same route, so what the new page does later (Stop and its Undo) still
+        // reaches the screen below; a pushReplacement would have answered that
+        // screen already.
         final old = _cubit;
         setState(() => _cubit = _cubitFor(newId));
         await old?.close();
@@ -457,7 +456,7 @@ class _RecurringDetailScreenState extends State<RecurringDetailScreen> {
           Text(
             [
               // Held: the card says what is due; "Next: 9 Aug", two months
-              // back, read wrong under it (Oppo, §12a).
+              // back, read wrong under it (Oppo).
               if (!item.isArchived && hold == null)
                 nextText(l10n, locale, item.nextDueOn, today: today),
               endsText(l10n, locale, schedule.endOn),

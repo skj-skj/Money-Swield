@@ -58,7 +58,7 @@ List<UpcomingPayment> upcoming(
 );
 
 void main() {
-  group('§5.3 table (today 2026-10-09)', () {
+  group('upcoming (today 2026-10-09)', () {
     test('Netflix monthly from 10-09: 11-09 … 2027-10-09 (12)', () {
       final list = upcoming([
         item(1, 'Netflix', start: today, cursor: '2026-11-09'),

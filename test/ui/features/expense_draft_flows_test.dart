@@ -11,7 +11,7 @@ import 'package:my_expense_tracker_app/ui/features/home/views/home_list_slivers.
 import '../../helpers/pump_app.dart';
 import '../../helpers/test_database.dart';
 
-/// Phase 4's flows through the real app (phase-4.md §12 "Widgets").
+/// The draft flows through the real app.
 void main() {
   late AppDependencies deps;
 
@@ -544,7 +544,7 @@ void main() {
   });
 
   testWidgets('FAB, chip and row tapped while the slot read waits open one '
-      'form (R12)', (tester) async {
+      'form', (tester) async {
     usePhoneSize(tester);
     await seed();
     await pumpApp(tester, dependencies: deps);
