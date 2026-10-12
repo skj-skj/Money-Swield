@@ -83,12 +83,16 @@ String? payeeKeyOf(String? payee) {
   return words.isEmpty ? null : words.join(' ').toLowerCase();
 }
 
-/// The suggested title (§5.3), the first that gives one: the [learned]
-/// title of the payee's newest SMS-added expense, then [cleanPayee]. Null:
-/// the form's title stays empty and Save asks for it (A1). 9b puts the
-/// AI's title second.
-String? suggestedTitle({String? learned, String? payee}) {
+/// The suggested title (§5.3, phase-9b.md §5.3, P9b-53), the first that
+/// gives one: the [learned] title of the payee's newest SMS-added expense,
+/// the on-device model's title [ai], then [cleanPayee]. Null: the form's
+/// title stays empty and Save asks for it (A1).
+///
+/// The model's title is cleaned like a payee: it often repeats the bank's
+/// all-caps name ("AMAZON", "GLOBEX TECHNOLOGIES"), which then reads as
+/// "Amazon" like a regex card does (gate, phase-9b.md §12a).
+String? suggestedTitle({String? learned, String? ai, String? payee}) {
   final fromLearning = learned?.trim();
   if (fromLearning != null && fromLearning.isNotEmpty) return fromLearning;
-  return cleanPayee(payee);
+  return cleanPayee(ai) ?? cleanPayee(payee);
 }

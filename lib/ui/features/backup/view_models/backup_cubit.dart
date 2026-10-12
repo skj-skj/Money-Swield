@@ -1,13 +1,14 @@
 import 'dart:async';
 
 import 'package:bloc_signals/bloc_signals.dart';
-import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/foundation.dart' show ValueListenable, debugPrint;
 
 import '../../../../data/repositories/backup_repository.dart';
 import '../../../../data/services/backup/pre_restore_copy.dart';
 import '../../../../data/services/database/app_database.dart';
 import '../../../../data/services/document_service.dart';
 import '../../../../domain/error_report.dart';
+import '../../../../domain/models/sms_suggestion.dart' show ScanProgress;
 import '../../../core/emit_if_open.dart';
 
 /// What the Backup & restore screen shows (phase-3.md §9).
@@ -24,6 +25,7 @@ class BackupState {
     this.photosTotal,
     this.missingPhotos = 0,
     this.waitingForSms = false,
+    this.smsProgress,
   });
 
   /// Null: never backed up.
@@ -55,6 +57,10 @@ class BackupState {
   /// "Waiting for SMS reading to finish…" with Cancel.
   final bool waitingForSms;
 
+  /// While [waitingForSms] and the scan reads with the on-device model:
+  /// "… (12 of 40)" (phase-9b.md §6.2). Null otherwise.
+  final ScanProgress? smsProgress;
+
   BackupState copyWith({
     DateTime? lastBackupAt,
     PreRestoreCopy? newestCopy,
@@ -67,6 +73,7 @@ class BackupState {
     (int, int)? Function()? progress,
     int? missingPhotos,
     bool? waitingForSms,
+    ScanProgress? Function()? smsProgress,
   }) {
     // A function, so null (no progress) can be told from "keep it".
     final current = photosDone == null ? null : (photosDone!, photosTotal!);
@@ -83,6 +90,8 @@ class BackupState {
       photosTotal: shown?.$2,
       missingPhotos: missingPhotos ?? this.missingPhotos,
       waitingForSms: waitingForSms ?? this.waitingForSms,
+      // A function, like [progress], so it can be cleared.
+      smsProgress: smsProgress == null ? this.smsProgress : smsProgress(),
     );
   }
 }
@@ -110,6 +119,7 @@ class BackupCubit extends CubitSignal<BackupState>
     required this._appDatabase,
     this._photoStats,
     this._runningSmsScan,
+    this._smsProgress,
   }) : super(initialState: const BackupState());
 
   final BackupRepository _backups;
@@ -122,6 +132,9 @@ class BackupCubit extends CubitSignal<BackupState>
   /// The SMS scan running now, or null (phase-9a.md §6.7, P9a-48): a
   /// function, so this cubit doesn't know the scanner.
   final Future<void>? Function()? _runningSmsScan;
+
+  /// The running scan's progress, shown while waiting (phase-9b.md §6.2).
+  final ValueListenable<ScanProgress?>? _smsProgress;
 
   /// Completed by [cancelWait].
   Completer<void>? _cancelWait;
@@ -243,13 +256,20 @@ class BackupCubit extends CubitSignal<BackupState>
     final scan = _runningSmsScan?.call();
     if (scan == null) return true;
     final cancel = _cancelWait = Completer<void>();
-    emitIfOpen(value.copyWith(waitingForSms: true));
+    final progress = _smsProgress;
+    void showProgress() =>
+        emitIfOpen(value.copyWith(smsProgress: () => progress?.value));
+    emitIfOpen(
+      value.copyWith(waitingForSms: true, smsProgress: () => progress?.value),
+    );
+    progress?.addListener(showProgress);
     try {
       await Future.any([scan.catchError((_) {}), cancel.future]);
       return !cancel.isCompleted;
     } finally {
+      progress?.removeListener(showProgress);
       _cancelWait = null;
-      emitIfOpen(value.copyWith(waitingForSms: false));
+      emitIfOpen(value.copyWith(waitingForSms: false, smsProgress: () => null));
     }
   }
 

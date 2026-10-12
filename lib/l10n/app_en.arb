@@ -974,5 +974,10 @@
   "@smsTileOn": {"placeholders": {"count": {"type": "int", "format": "decimalPattern"}}},
   "smsTileOff": "Off",
   "smsNotNow": "Not now",
-  "smsYes": "Yes"
+  "smsYes": "Yes",
+  "smsAiSetting": "Use on-device AI",
+  "smsAiHelp": "Reads bank SMS with Google's on-device model. Nothing leaves the phone. May be slow on some phones.",
+  "smsAiDownloading": "Downloading the model…",
+  "backupWaitingForSmsCount": "Waiting for SMS reading to finish… ({done} of {total})",
+  "@backupWaitingForSmsCount": {"placeholders": {"done": {"type": "int", "format": "decimalPattern"}, "total": {"type": "int", "format": "decimalPattern"}}}
 }

@@ -38,6 +38,8 @@ class MainActivity : FlutterActivity() {
         photos = PhotosChannel(engine.dartExecutor.binaryMessenger, appContext)
         reportPdf = ReportPdfChannel(engine.dartExecutor.binaryMessenger, appContext)
         sms = SmsChannel(engine.dartExecutor.binaryMessenger, appContext)
+        // play: ML Kit's on-device model; foss: a stub (phase-9b.md §6.1).
+        onDeviceAi = OnDeviceAi(engine.dartExecutor.binaryMessenger, appContext)
         engine.dartExecutor.executeDartEntrypoint(
             DartExecutor.DartEntrypoint.createDefault(),
         )
@@ -118,5 +120,6 @@ class MainActivity : FlutterActivity() {
         var photos: PhotosChannel? = null
         var reportPdf: ReportPdfChannel? = null
         var sms: SmsChannel? = null
+        var onDeviceAi: OnDeviceAi? = null
     }
 }

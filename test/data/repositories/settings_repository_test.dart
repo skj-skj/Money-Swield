@@ -501,6 +501,26 @@ void main() {
     );
   });
 
+  group('sms_ai_parsing (phase-9b.md §4)', () {
+    test('on by default; only an explicit 0 turns it off', () async {
+      expect(await repository.smsAiParsing(), isTrue);
+      await repository.setSmsAiParsing(false);
+      expect(await repository.smsAiParsing(), isFalse);
+      expect(
+        (await db.query(
+          'settings',
+          where: "key = 'sms_ai_parsing'",
+        )).single['value'],
+        '0',
+      );
+      await repository.setSmsAiParsing(true);
+      expect(await repository.smsAiParsing(), isTrue);
+      await db.delete('settings', where: "key = 'sms_ai_parsing'");
+      await store('sms_ai_parsing', 'x');
+      expect(await repository.smsAiParsing(), isTrue);
+    });
+  });
+
   group('last backup', () {
     test('is null (never) until one is recorded', () async {
       expect(await repository.lastBackupAt(), isNull);

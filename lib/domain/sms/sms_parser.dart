@@ -27,7 +27,20 @@ abstract interface class SmsParser {
   /// [body] parsed as a debit, or null when it has no clear amount (never
   /// guessed, application-design §8.1). Call it only on a candidate.
   SmsParse? parse(String body);
+
+  /// Everything [parse] reads but the amount. The on-device model's path
+  /// takes the amount from the model and these from here (phase-9b.md
+  /// §12a): the reference keeps the duplicate check (P9a-18), and the
+  /// payee keeps one payee key per payee for the learning.
+  SmsDetails details(String body);
 }
+
+/// [SmsParse] without the amount.
+typedef SmsDetails = ({
+  String paymentMethodKey,
+  String? payee,
+  String? reference,
+});
 
 /// Indian bank debits (India only for now, phase-9a.md §2).
 class IndiaSmsParser implements SmsParser {
@@ -95,12 +108,22 @@ class IndiaSmsParser implements SmsParser {
   /// time the SMS came (P9a-4).
   @override
   SmsParse? parse(String body) {
-    final text = smsText(body);
-    final main = withoutFooter(text);
-    final amount = findAmountMinor(main);
+    final amount = findAmountMinor(withoutFooter(smsText(body)));
     if (amount == null) return null;
+    final found = details(body);
     return (
       amountMinor: amount,
+      paymentMethodKey: found.paymentMethodKey,
+      payee: found.payee,
+      reference: found.reference,
+    );
+  }
+
+  @override
+  SmsDetails details(String body) {
+    final text = smsText(body);
+    final main = withoutFooter(text);
+    return (
       paymentMethodKey: paymentMethodKeyOf(text),
       payee: _payee(main),
       reference: _reference.firstMatch(main)?[1]?.toUpperCase(),

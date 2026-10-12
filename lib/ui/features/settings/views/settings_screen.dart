@@ -236,6 +236,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             BackupScreen(
                               dependencies: dependencies,
                               runningSmsScan: widget.sms?.runningScan,
+                              smsProgress: widget.sms?.scanProgress,
                             ),
                           ),
                         ),

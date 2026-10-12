@@ -149,6 +149,12 @@ class SmsSuggestionRepository {
       });
       final learned = <String, SmsLearned?>{};
       List<TitleHistoryRow>? history;
+      // The model's pick was one of the categories when the scan began; a
+      // category deleted since would break the foreign key and fail the
+      // whole write (phase-9b.md §12a), so it is dropped here instead.
+      final categoryIds = rows.any((row) => row.aiCategoryId != null)
+          ? await _categoryIds(txn)
+          : const <int>{};
       final batch = txn.batch();
       for (final row in rows) {
         if (row.reference case final reference?) {
@@ -160,15 +166,23 @@ class SmsSuggestionRepository {
             : learned.containsKey(payeeKey)
             ? learned[payeeKey]
             : learned[payeeKey] = await _learnedFor(txn, payeeKey);
-        final title = suggestedTitle(learned: learnt?.title, payee: row.payee);
+        final title = suggestedTitle(
+          learned: learnt?.title,
+          ai: row.aiTitle,
+          payee: row.payee,
+        );
+        final ai = categoryIds.contains(row.aiCategoryId)
+            ? row.aiCategoryId
+            : null;
         final categoryId = learnt != null || title == null
-            ? suggestedCategory(learned: learnt, title: title)
+            ? suggestedCategory(learned: learnt, title: title, ai: ai)
             : suggestedCategory(
                 title: title,
                 history: history ??= await ExpenseRepository.titleHistoryOn(
                   txn,
                   now: now,
                 ),
+                ai: ai,
               );
         batch.rawInsert(
           'INSERT OR IGNORE INTO $_table (sender, received_at, '
@@ -176,7 +190,7 @@ class SmsSuggestionRepository {
           'currency_code, payment_method_key, payee, payee_key, reference, '
           'title, category_id, status, parsed_by, expense_id, created_at, '
           'updated_at) VALUES '
-          "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'regex', "
+          "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, "
           'NULL, ?, ?)',
           [
             row.sender,
@@ -192,6 +206,7 @@ class SmsSuggestionRepository {
             row.reference,
             title,
             categoryId,
+            row.parsedBy.name,
             nowMs,
             nowMs,
           ],
@@ -338,6 +353,11 @@ class SmsSuggestionRepository {
   };
 
   /// The Dart check before any write (F1).
+  static Future<Set<int>> _categoryIds(Transaction txn) async => {
+    for (final row in await txn.query('categories', columns: ['id']))
+      row['id']! as int,
+  };
+
   static void _check(NewSmsSuggestion row) {
     void fail(String why) => throw ArgumentError.value(row, 'row', why);
     if (row.sender.trim().isEmpty) fail('no sender');

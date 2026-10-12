@@ -4281,6 +4281,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Yes'**
   String get smsYes;
+
+  /// No description provided for @smsAiSetting.
+  ///
+  /// In en, this message translates to:
+  /// **'Use on-device AI'**
+  String get smsAiSetting;
+
+  /// No description provided for @smsAiHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Reads bank SMS with Google\'s on-device model. Nothing leaves the phone. May be slow on some phones.'**
+  String get smsAiHelp;
+
+  /// No description provided for @smsAiDownloading.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading the model…'**
+  String get smsAiDownloading;
+
+  /// No description provided for @backupWaitingForSmsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for SMS reading to finish… ({done} of {total})'**
+  String backupWaitingForSmsCount(int done, int total);
 }
 
 class _AppLocalizationsDelegate

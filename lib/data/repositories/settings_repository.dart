@@ -459,6 +459,18 @@ class SettingsRepository {
   /// `sms_enabled` (database.md §3.1).
   static const smsEnabledKey = 'sms_enabled';
 
+  /// Whether the on-device model may read the SMS (phase-9b.md §4): on by
+  /// default, so missing means on; only an explicit `0` turns it off.
+  /// Matters only on play with a model on the phone. Not part of
+  /// [AppSettings], like [smsEnabled].
+  Future<bool> smsAiParsing() async =>
+      await valueOf(_db, smsAiParsingKey) != '0';
+
+  Future<void> setSmsAiParsing(bool on) => _write(smsAiParsingKey, _bool(on));
+
+  /// `sms_ai_parsing` (database.md §3.1).
+  static const smsAiParsingKey = 'sms_ai_parsing';
+
   /// `sms_last_scanned_at`: the SMS scan's cursor, epoch ms (phase-9a.md
   /// §6.3 step 7). Written and read only by `SmsSuggestionRepository`,
   /// inside the scan's transaction, so it is public here only as the name.

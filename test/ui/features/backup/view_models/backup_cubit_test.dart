@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_expense_tracker_app/data/repositories/backup_repository.dart';
 import 'package:my_expense_tracker_app/data/repositories/settings_repository.dart';
+import 'package:my_expense_tracker_app/domain/models/sms_suggestion.dart';
 import 'package:my_expense_tracker_app/ui/features/backup/view_models/backup_cubit.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -153,7 +155,10 @@ void main() {
   });
 
   group('waits for a running SMS scan (phase-9a.md §6.7)', () {
-    BackupCubit waitingCubit(Future<void>? Function() scan) {
+    BackupCubit waitingCubit(
+      Future<void>? Function() scan, {
+      ValueListenable<ScanProgress?>? progress,
+    }) {
       final waiting = BackupCubit(
         backups: BackupRepository(
           live,
@@ -164,6 +169,7 @@ void main() {
         documents: documents,
         appDatabase: files.appDatabase(),
         runningSmsScan: scan,
+        smsProgress: progress,
       );
       addTearDown(waiting.close);
       return waiting;
@@ -180,6 +186,25 @@ void main() {
       expect(await backup, BackupResult.saved);
       expect(waiting.value.waitingForSms, isFalse);
       expect(documents.savedName, isNotNull);
+    });
+
+    test('with the on-device model: the count follows the scan, and is '
+        'gone after (phase-9b.md §6.2)', () async {
+      final scan = Completer<void>();
+      final progress = ValueNotifier<ScanProgress?>((done: 3, total: 40));
+      final waiting = waitingCubit(() => scan.future, progress: progress);
+      final backup = waiting.backUp();
+      await pumpEventQueue();
+      expect(waiting.value.smsProgress, (done: 3, total: 40));
+      progress.value = (done: 12, total: 40);
+      expect(waiting.value.smsProgress, (done: 12, total: 40));
+      progress.value = null;
+      scan.complete();
+      expect(await backup, BackupResult.saved);
+      expect(waiting.value.smsProgress, isNull);
+      // No listener left on the scanner's notifier.
+      progress.value = (done: 1, total: 1);
+      expect(waiting.value.smsProgress, isNull);
     });
 
     test('Cancel while waiting: no zip, nothing changed', () async {

@@ -14,13 +14,21 @@ typedef SmsLearned = ({String title, int categoryId});
 ///    180 days whose folded title equals the folded [title] ([history] is
 ///    `ExpenseRepository.titleHistoryOn`: active rows up to today, `recent`
 ///    counting the 180 days, so a row with `recent == 0` is older);
-/// 3. null. 9b adds the AI's pick third.
+/// 3. [ai]: the on-device model's pick among the user's categories, for a
+///    payee with no history (phase-9b.md §5.3; owner: "if not then AI
+///    should judge");
+/// 4. null.
 int? suggestedCategory({
   SmsLearned? learned,
   String? title,
   List<TitleHistoryRow> history = const [],
+  int? ai,
 }) {
   if (learned != null) return learned.categoryId;
+  return _byTitle(title, history) ?? ai;
+}
+
+int? _byTitle(String? title, List<TitleHistoryRow> history) {
   if (title == null) return null;
   final folded = foldTitle(title.trim());
   if (folded.isEmpty) return null;

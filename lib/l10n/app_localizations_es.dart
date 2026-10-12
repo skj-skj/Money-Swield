@@ -3521,4 +3521,27 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get smsYes => 'Sí';
+
+  @override
+  String get smsAiSetting => 'Usar IA en el dispositivo';
+
+  @override
+  String get smsAiHelp =>
+      'Lee los SMS bancarios con el modelo de Google en el dispositivo. Nada sale del teléfono. Puede ir lento en algunos teléfonos.';
+
+  @override
+  String get smsAiDownloading => 'Descargando el modelo…';
+
+  @override
+  String backupWaitingForSmsCount(int done, int total) {
+    final intl.NumberFormat doneNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String doneString = doneNumberFormat.format(done);
+    final intl.NumberFormat totalNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String totalString = totalNumberFormat.format(total);
+
+    return 'Esperando a que termine la lectura de SMS… ($doneString de $totalString)';
+  }
 }

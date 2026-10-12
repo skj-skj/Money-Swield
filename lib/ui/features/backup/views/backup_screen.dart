@@ -1,8 +1,10 @@
 import 'package:bloc_signals_flutter/bloc_signals_flutter.dart';
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../app/app_dependencies.dart';
 import '../../../../data/services/backup/pre_restore_copy.dart';
+import '../../../../domain/models/sms_suggestion.dart' show ScanProgress;
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/byte_size_text.dart';
 import '../../../core/date_texts.dart';
@@ -21,6 +23,7 @@ class BackupScreen extends StatefulWidget {
     super.key,
     required this.dependencies,
     this.runningSmsScan,
+    this.smsProgress,
   });
 
   final AppDependencies dependencies;
@@ -28,6 +31,9 @@ class BackupScreen extends StatefulWidget {
   /// The SMS scan running now, or null: a backup waits for it (phase-9a.md
   /// §6.7).
   final Future<void>? Function()? runningSmsScan;
+
+  /// That scan's count while the on-device model reads (phase-9b.md §6.2).
+  final ValueListenable<ScanProgress?>? smsProgress;
 
   @override
   State<BackupScreen> createState() => _BackupScreenState();
@@ -47,6 +53,7 @@ class _BackupScreenState extends State<BackupScreen> {
       appDatabase: _deps.restoreTools.appDatabase,
       photoStats: _deps.expenses.photoStats,
       runningSmsScan: widget.runningSmsScan,
+      smsProgress: widget.smsProgress,
     )..load();
   }
 
@@ -206,6 +213,12 @@ class _BackupList extends StatelessWidget {
                   )
                 : const Icon(Icons.backup_outlined),
             label: Text(switch (state) {
+              BackupState(
+                waitingForSms: true,
+                smsProgress: (:final done, :final total),
+              )
+                  when total > 0 =>
+                l10n.backupWaitingForSmsCount(done, total),
               BackupState(waitingForSms: true) => l10n.backupWaitingForSms,
               BackupState(
                 backingUp: true,

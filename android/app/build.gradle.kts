@@ -59,6 +59,9 @@ android {
             dimension = "store"
             applicationIdSuffix = ".play"
             manifestPlaceholders["appLabel"] = "Expense Tracker"
+            // ML Kit's components are found by reflection; R8 needs to be
+            // told to keep them (phase-9b.md §12a).
+            proguardFiles("proguard-play.pro")
         }
     }
 
@@ -91,4 +94,9 @@ flutter {
 dependencies {
     // JVM unit tests of the channels' plain Kotlin (`make test-android`).
     testImplementation("junit:junit:4.13.2")
+    // On-device AI for SMS (phase-9b.md §6.1): closed source, so play only
+    // (P9b-2). F-Droid builds `gradle: [foss]` and its scanner never reads
+    // a `playImplementation` line (phase-9b.md F7). Quoted: the Kotlin DSL
+    // has no generated accessor for a flavor's configuration.
+    "playImplementation"("com.google.mlkit:genai-prompt:1.0.0-beta4")
 }

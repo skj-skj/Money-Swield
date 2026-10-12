@@ -14,12 +14,14 @@ import '../data/repositories/settings_repository.dart';
 import '../data/repositories/sms_suggestion_repository.dart';
 import '../data/services/database/app_database.dart';
 import '../data/services/document_service.dart';
+import '../data/services/on_device_ai_service.dart';
 import '../data/services/photo_store.dart';
 import '../data/services/photo_sweeper.dart';
 import '../data/services/report_export_service.dart';
 import '../data/services/sms_scanner.dart';
 import '../data/services/sms_service.dart';
 import '../domain/periods.dart';
+import 'build_flavor.dart';
 import 'restore_tools.dart';
 
 /// The open database and the repositories built on it. Created once by the
@@ -36,6 +38,7 @@ class AppDependencies {
     required this.recurring,
     required this.smsSuggestions,
     required this.sms,
+    required this.ai,
     required this.smsScanner,
     required this.reports,
     required this.reportExports,
@@ -69,6 +72,7 @@ class AppDependencies {
     bool sweepPhotos = true,
     ReportExportService? reportExports,
     SmsService sms = const NoSmsService(),
+    OnDeviceAiService ai = const NoOnDeviceAi(),
     SmsScanner Function(SmsSuggestionRepository, SettingsRepository)?
     smsScanner,
   }) {
@@ -113,12 +117,14 @@ class AppDependencies {
       ),
       smsSuggestions: smsSuggestions,
       sms: sms,
+      ai: ai,
       smsScanner:
           smsScanner?.call(smsSuggestions, settings) ??
           SmsScanner.forApp(
             service: sms,
             repository: smsSuggestions,
             settings: settings,
+            ai: ai,
             now: now,
           ),
       reports: ReportRepository(database),
@@ -175,6 +181,7 @@ class AppDependencies {
     restoreTools: tools,
     photoRoot: await tools.appDatabase.filesFolder(),
     sms: const ChannelSmsService(),
+    ai: ChannelOnDeviceAiService(flavor: currentAppFlavor),
   );
 
   /// Runs one small query per repository on [db], the way the app does on
@@ -250,6 +257,10 @@ class AppDependencies {
 
   /// The phone's SMS inbox and permission (§6.4).
   final SmsService sms;
+
+  /// The on-device model that reads SMS on play (phase-9b.md §6.1);
+  /// `unavailable` on foss.
+  final OnDeviceAiService ai;
 
   /// Reads new bank SMS into [smsSuggestions] (§6.3).
   final SmsScanner smsScanner;

@@ -1,15 +1,20 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:isolate';
+import 'dart:math' show max, min;
 
 import 'package:crypto/crypto.dart';
-import 'package:flutter/foundation.dart' show debugPrint, kReleaseMode;
+import 'package:flutter/foundation.dart'
+    show ValueListenable, ValueNotifier, debugPrint, kReleaseMode;
 
 import '../../domain/models/sms_suggestion.dart';
+import '../../domain/sms/sms_ai_prompt.dart';
+import '../../domain/sms/sms_ai_result.dart';
 import '../../domain/sms/sms_parser.dart';
 import '../../domain/sms/sms_window.dart';
 import '../repositories/settings_repository.dart';
 import '../repositories/sms_suggestion_repository.dart';
+import 'on_device_ai_service.dart';
 import 'sms_service.dart';
 
 /// What a [SmsScanner.scan] did.
@@ -32,9 +37,24 @@ enum ScanOutcome {
 
   /// [SmsScanner.close] came first: nothing was written.
   closed,
+
+  /// The on-device model's pass stopped early (phase-9b.md §6.2 step 4):
+  /// the app left the front, AICore was busy, or [SmsScanner.pause]. What
+  /// was read is stored (the result's `added`); the cursor stays at the
+  /// first SMS not read, so the next scan asks again from there (P9b-40).
+  stopped,
 }
 
 typedef ScanResult = ({ScanOutcome outcome, int added});
+
+/// The candidate check (§5.1) for each `(sender, body)`, in one go so it
+/// can run in an isolate.
+typedef SmsCandidatesAll = Future<List<bool>> Function(
+  List<(String, String)> messages,
+);
+
+/// One inbox row and its text's SHA-256.
+typedef _Hashed = ({InboxSms sms, String sha});
 
 /// Parses each `(sender, body)`: the candidate check, then the parser
 /// (§5.1, §5.2). One list in, one list out, so it can run in an isolate.
@@ -56,9 +76,15 @@ class SmsScanner {
     int Function(int epochMs)? offsetMinutesAt,
     SmsParseAll? parseAll,
     this.readLimit = 2000,
+    this._ai = const NoOnDeviceAi(),
+    this._parser = const IndiaSmsParser(),
+    SmsCandidatesAll? candidatesAll,
+    this.aiTimeout = const Duration(seconds: 10),
+    this.aiBatchSize = 10,
   }) : _now = now ?? DateTime.now,
        _offsetMinutesAt = offsetMinutesAt ?? _deviceOffsetMinutes,
-       _parseAll = parseAll ?? parseInIsolate;
+       _parseAll = parseAll ?? parseInIsolate,
+       _candidatesAll = candidatesAll ?? candidatesInIsolate;
 
   /// The app's scanner: the look-back is 30 days unless a debug build was
   /// given `--dart-define=SMS_LOOKBACK_DAYS=<n>` (§6.8, P9a-49).
@@ -68,6 +94,7 @@ class SmsScanner {
     required SmsService service,
     required SmsSuggestionRepository repository,
     required SettingsRepository settings,
+    OnDeviceAiService ai = const NoOnDeviceAi(),
     DateTime Function()? now,
     bool releaseMode = kReleaseMode,
     String lookbackDefine = const String.fromEnvironment('SMS_LOOKBACK_DAYS'),
@@ -75,6 +102,7 @@ class SmsScanner {
     service: service,
     repository: repository,
     settings: settings,
+    ai: ai,
     now: now,
     lookbackDays: lookbackDaysFor(
       releaseMode: releaseMode,
@@ -88,6 +116,24 @@ class SmsScanner {
   final DateTime Function() _now;
   final int Function(int epochMs) _offsetMinutesAt;
   final SmsParseAll _parseAll;
+  final OnDeviceAiService _ai;
+  final SmsParser _parser;
+  final SmsCandidatesAll _candidatesAll;
+
+  /// How long the model may take for one SMS (P9b-17); then the regex
+  /// reads it. The model answered in about 0.7 s on the Pixel 11 Pro
+  /// (phase-9b.md §12a).
+  final Duration aiTimeout;
+
+  /// The model's rows are written every this many SMS, with the cursor, so
+  /// a kill loses at most this many parses (§6.2 step 3).
+  final int aiBatchSize;
+
+  /// A pass that stopped on `busy` before the model answered anything, this
+  /// many scans in a row, makes the next scan read with the regex: a model
+  /// that stays busy must not keep the SMS from ever being read
+  /// (phase-9b.md §12a). Counted in memory; a restart tries the model again.
+  static const busyStopsBeforeRegex = 3;
 
   /// How far back a scan may read, and the purge's age (§5.8): always 30
   /// in a release build.
@@ -111,6 +157,19 @@ class SmsScanner {
   /// is parsed once more.
   Set<SmsKey> _handled = {};
 
+  /// [pause] was called during this scan.
+  bool _pauseRequested = false;
+
+  /// Passes in a row that stopped on `busy` with no answer
+  /// ([busyStopsBeforeRegex]).
+  int _busyStops = 0;
+
+  final _progress = ValueNotifier<ScanProgress?>(null);
+
+  /// The model's pass, while one runs; null otherwise (a regex scan takes
+  /// about a second and shows no count).
+  ValueListenable<ScanProgress?> get progress => _progress;
+
   /// Completes when no scan runs: the backup waits on it (§6.7).
   Future<void> get idle => _running ?? Future<void>.value();
 
@@ -122,13 +181,39 @@ class SmsScanner {
   /// R14).
   void close() => _closed = true;
 
-  /// One scan at a time: a call while one runs gets that one's result.
-  Future<ScanResult> scan() {
-    if (_closed) return Future.value((outcome: ScanOutcome.closed, added: 0));
-    return _running ??= _scan().whenComplete(() => _running = null);
+  /// Stops the model's pass after the SMS it is reading (the app left the
+  /// front, phase-9b.md §6.2 step 4): the scan ends [ScanOutcome.stopped].
+  /// Nothing happens when no scan runs.
+  void pause() {
+    if (_running != null) _pauseRequested = true;
   }
 
-  Future<ScanResult> _scan() async {
+  /// One scan at a time: a call while one runs gets that one's result.
+  ///
+  /// [useAi]: the on-device model reads the candidates (§6.2): the user's
+  /// switch is on and the model is in. `SmsCubit` decides, from the status
+  /// it has just read for Settings, so AICore is asked once per scan.
+  /// [categories] are the ones the model may pick from (R16): the user's,
+  /// with the names they see; read only when the model has SMS to read.
+  Future<ScanResult> scan({
+    bool useAi = false,
+    Future<List<CategoryName>> Function() categories = _noCategories,
+  }) {
+    if (_closed) return Future.value((outcome: ScanOutcome.closed, added: 0));
+    return _running ??= _scan(useAi: useAi, categories: categories)
+        .whenComplete(() {
+          _running = null;
+          _progress.value = null;
+        });
+  }
+
+  static Future<List<CategoryName>> _noCategories() async => const [];
+
+  Future<ScanResult> _scan({
+    required bool useAi,
+    required Future<List<CategoryName>> Function() categories,
+  }) async {
+    _pauseRequested = false;
     try {
       final permission = await _service.status();
       if (!permission.built) return _result(ScanOutcome.notBuilt);
@@ -141,6 +226,25 @@ class SmsScanner {
         lookbackDays: lookbackDays,
       );
       final inbox = await _service.read(sinceMs: since, limit: readLimit);
+      if (useAi) {
+        final stored = await _storeWithAi(
+          inbox,
+          since: since,
+          startMs: start,
+          categories: categories,
+        );
+        return switch (stored) {
+          null => _result(ScanOutcome.closed),
+          (:final added, stopped: true) => (
+            outcome: ScanOutcome.stopped,
+            added: added,
+          ),
+          (:final added, stopped: false) => (
+            outcome: ScanOutcome.done,
+            added: added,
+          ),
+        };
+      }
       final added = await _store(inbox, since: since, startMs: start);
       return added == null
           ? _result(ScanOutcome.closed)
@@ -160,51 +264,188 @@ class SmsScanner {
     required int since,
     required int startMs,
   }) async {
-    final hashed = [
-      for (final sms in inbox) (sms: sms, sha: _sha256(sms.body)),
-    ];
-    final known = inbox.isEmpty
-        ? const <SmsKey>{}
-        : await _repository.existingKeys(
-            fromMs: inbox.first.receivedAtMs,
-            toMs: inbox.last.receivedAtMs,
-          );
-    SmsKey keyOf(({InboxSms sms, String sha}) row) => (
-      sender: row.sms.sender,
-      receivedAtMs: row.sms.receivedAtMs,
-      bodySha256: row.sha,
-    );
-    final fresh = [
-      for (final row in hashed)
-        if (!known.contains(keyOf(row)) && !_handled.contains(keyOf(row))) row,
-    ];
+    final hashed = _hashedOf(inbox);
+    final fresh = await _freshOf(hashed);
     final parses = fresh.isEmpty
         ? const <SmsParse?>[]
         : await _parseAll([for (final r in fresh) (r.sms.sender, r.sms.body)]);
     final rows = [
       for (final (i, row) in fresh.indexed)
-        if (parses[i] case final parse?)
-          NewSmsSuggestion(
-            sender: row.sms.sender,
-            receivedAtMs: row.sms.receivedAtMs,
-            utcOffsetMinutes: _offsetMinutesAt(row.sms.receivedAtMs),
-            bodySha256: row.sha,
-            amountMinor: parse.amountMinor,
-            paymentMethodKey: parse.paymentMethodKey,
-            payee: parse.payee,
-            reference: parse.reference,
-          ),
+        if (parses[i] case final parse?) _rowOf(row, parse),
     ];
     if (_closed) return null;
     final cursor = _cursorAfter(inbox, since: since, startMs: startMs);
     final added = await _repository.insertScanned(rows, cursorMs: cursor);
-    // The next scan reads again from the cursor; what it would find there
-    // was handled now.
-    _handled = {
-      for (final row in hashed)
-        if (row.sms.receivedAtMs >= cursor) keyOf(row),
-    };
+    _rememberHandled(hashed, cursor: cursor);
     return added;
+  }
+
+  /// §6.3 steps 3 – 7 with the on-device model (phase-9b.md §6.2): the
+  /// candidates one at a time, oldest first; the model's answer if
+  /// [acceptAiResult] takes it, else the regex. Written every [aiBatchSize]
+  /// SMS with the cursor up to the last one read. Null when closed before a
+  /// write. `stopped` when the pass ended early: the cursor then stays at
+  /// the SMS not read, which the next scan reads first.
+  Future<({int added, bool stopped})?> _storeWithAi(
+    List<InboxSms> inbox, {
+    required int since,
+    required int startMs,
+    required Future<List<CategoryName>> Function() categories,
+  }) async {
+    final hashed = _hashedOf(inbox);
+    final fresh = await _freshOf(hashed);
+    final candidate = fresh.isEmpty
+        ? const <bool>[]
+        : await _candidatesAll([
+            for (final r in fresh) (r.sms.sender, r.sms.body),
+          ]);
+    final todo = [
+      for (final (i, row) in fresh.indexed)
+        if (candidate[i]) row,
+    ];
+    // After [busyStopsBeforeRegex] busy stops in a row, this scan reads
+    // with the regex; the next one asks the model again.
+    var askModel = _busyStops < busyStopsBeforeRegex;
+    final names = askModel && todo.isNotEmpty
+        ? await categories()
+        : const <CategoryName>[];
+    var busyStop = false;
+    var rows = <NewSmsSuggestion>[];
+    var added = 0;
+    var answered = 0;
+    var modelMs = 0;
+    _Hashed? stoppedAt;
+    _progress.value = (done: 0, total: todo.length);
+    for (final (done, row) in todo.indexed) {
+      if (_closed) return null;
+      if (askModel && _pauseRequested) {
+        stoppedAt = row;
+        break;
+      }
+      NewSmsSuggestion? stored;
+      if (askModel) {
+        if (buildAiPrompt(row.sms.body, names) case final prompt?) {
+          final watch = Stopwatch()..start();
+          final reply = await _ai.prompt(prompt, timeout: aiTimeout);
+          modelMs += watch.elapsedMilliseconds;
+          switch (reply) {
+            case AiAnswer(:final text):
+              answered++;
+              if (acceptAiResult(text, row.sms.body, names) case final ai?) {
+                stored = _aiRowOf(row, ai);
+              }
+            case AiRefused(:final error) when error.stopsPass:
+              busyStop = error == AiError.busy && answered == 0;
+              stoppedAt = row;
+            case AiRefused(error: AiError.quota):
+              askModel = false;
+            case AiRefused():
+              break;
+          }
+          if (stoppedAt != null) break;
+        }
+      }
+      if (stored == null) {
+        if (_parser.parse(row.sms.body) case final parse?) {
+          stored = _rowOf(row, parse);
+        }
+      }
+      if (stored != null) rows.add(stored);
+      _progress.value = (done: done + 1, total: todo.length);
+      if ((done + 1) % aiBatchSize == 0 && done + 1 < todo.length) {
+        if (_closed) return null;
+        added += await _repository.insertScanned(
+          rows,
+          cursorMs: _cursorAt(row.sms, since: since, startMs: startMs),
+        );
+        rows = [];
+      }
+    }
+    if (_closed) return null;
+    final cursor = stoppedAt == null
+        ? _cursorAfter(inbox, since: since, startMs: startMs)
+        : _cursorAt(stoppedAt.sms, since: since, startMs: startMs);
+    added += await _repository.insertScanned(rows, cursorMs: cursor);
+    _rememberHandled(
+      stoppedAt == null ? hashed : hashed.takeWhile((r) => r != stoppedAt),
+      cursor: cursor,
+    );
+    // Any other end (an answer, another stop, the regex) breaks the row.
+    _busyStops = busyStop ? _busyStops + 1 : 0;
+    // Counts and times only, never a text (P9a-19).
+    debugPrint(
+      'SMS scan: ${todo.length} candidates, $answered answered by the '
+      'on-device model in ${answered == 0 ? 0 : modelMs ~/ answered} ms '
+      'each${stoppedAt == null ? '' : ', stopped'}',
+    );
+    return (added: added, stopped: stoppedAt != null);
+  }
+
+  List<_Hashed> _hashedOf(List<InboxSms> inbox) => [
+    for (final sms in inbox) (sms: sms, sha: _sha256(sms.body)),
+  ];
+
+  /// The rows of [hashed] neither stored nor handled by the last scan: an
+  /// SMS is parsed once (§5.8).
+  Future<List<_Hashed>> _freshOf(List<_Hashed> hashed) async {
+    final known = hashed.isEmpty
+        ? const <SmsKey>{}
+        : await _repository.existingKeys(
+            fromMs: hashed.first.sms.receivedAtMs,
+            toMs: hashed.last.sms.receivedAtMs,
+          );
+    return [
+      for (final row in hashed)
+        if (!known.contains(_keyOf(row)) && !_handled.contains(_keyOf(row)))
+          row,
+    ];
+  }
+
+  /// The next scan reads again from [cursor]; what it would find there was
+  /// handled now ([handled]: the rows read, up to where a pass stopped).
+  void _rememberHandled(Iterable<_Hashed> handled, {required int cursor}) {
+    _handled = {
+      for (final row in handled)
+        if (row.sms.receivedAtMs >= cursor) _keyOf(row),
+    };
+  }
+
+  static SmsKey _keyOf(_Hashed row) => (
+    sender: row.sms.sender,
+    receivedAtMs: row.sms.receivedAtMs,
+    bodySha256: row.sha,
+  );
+
+  NewSmsSuggestion _rowOf(_Hashed row, SmsParse parse) => NewSmsSuggestion(
+    sender: row.sms.sender,
+    receivedAtMs: row.sms.receivedAtMs,
+    utcOffsetMinutes: _offsetMinutesAt(row.sms.receivedAtMs),
+    bodySha256: row.sha,
+    amountMinor: parse.amountMinor,
+    paymentMethodKey: parse.paymentMethodKey,
+    payee: parse.payee,
+    reference: parse.reference,
+  );
+
+  /// The model's amount, payment method (when one of the three, P9b-54),
+  /// title and category; the regex's reference (the duplicate check,
+  /// P9a-18) and payee (one payee key per payee for the learning; the
+  /// model's only when the regex has none). Phase-9b.md §12a.
+  NewSmsSuggestion _aiRowOf(_Hashed row, AiParse ai) {
+    final details = _parser.details(row.sms.body);
+    return NewSmsSuggestion(
+      sender: row.sms.sender,
+      receivedAtMs: row.sms.receivedAtMs,
+      utcOffsetMinutes: _offsetMinutesAt(row.sms.receivedAtMs),
+      bodySha256: row.sha,
+      amountMinor: ai.amountMinor,
+      paymentMethodKey: ai.paymentMethodKey ?? details.paymentMethodKey,
+      payee: details.payee ?? ai.payee,
+      reference: details.reference,
+      parsedBy: SmsParsedBy.ai,
+      aiTitle: ai.title,
+      aiCategoryId: ai.categoryId,
+    );
   }
 
   /// Where the next scan starts (§6.3 step 7, P9a-39, P9a-41):
@@ -231,6 +472,13 @@ class SmsScanner {
     return cursor < since ? since : cursor;
   }
 
+  /// Where the next scan starts when this one wrote or stopped at [sms]
+  /// (phase-9b.md §6.2 steps 3 – 4): that SMS, so it is read again, but
+  /// never past [cursorLag] behind the start (P9a-41: an SMS stored late,
+  /// dated before it, is still read), never before [since].
+  int _cursorAt(InboxSms sms, {required int since, required int startMs}) =>
+      max(since, min(sms.receivedAtMs, startMs - cursorLag.inMilliseconds));
+
   static ScanResult _result(ScanOutcome outcome) =>
       (outcome: outcome, added: 0);
 
@@ -254,6 +502,19 @@ int lookbackDaysFor({required bool releaseMode, required String define}) {
 /// pure, and a few thousand regex runs shouldn't cost frames.
 Future<List<SmsParse?>> parseInIsolate(List<(String, String)> messages) =>
     Isolate.run(() => parseAllNow(messages));
+
+/// [SmsCandidatesAll] in a background isolate: the check runs a few regexes
+/// on each of up to 2,000 rows.
+Future<List<bool>> candidatesInIsolate(List<(String, String)> messages) =>
+    Isolate.run(() => candidatesNow(messages));
+
+/// [SmsCandidatesAll]'s work, on this isolate, with [parser].
+List<bool> candidatesNow(
+  List<(String, String)> messages, {
+  SmsParser parser = const IndiaSmsParser(),
+}) => [
+  for (final (sender, body) in messages) parser.isDebitCandidate(sender, body),
+];
 
 /// [SmsParseAll]'s work, on this isolate, with [parser] (India's banks:
 /// the only ones read for now).

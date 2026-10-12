@@ -1,10 +1,15 @@
+import 'dart:async';
+
 import 'package:bloc_signals/bloc_signals.dart';
-import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/foundation.dart' show ValueListenable, debugPrint;
 
 import '../../../../data/repositories/settings_repository.dart';
 import '../../../../data/repositories/sms_suggestion_repository.dart';
+import '../../../../data/services/on_device_ai_service.dart';
 import '../../../../data/services/sms_scanner.dart';
 import '../../../../data/services/sms_service.dart';
+import '../../../../domain/models/sms_suggestion.dart' show ScanProgress;
+import '../../../../domain/sms/sms_ai_prompt.dart';
 import '../../../core/emit_if_open.dart';
 
 /// Where SMS suggestions stand (phase-9a.md §7.1).
@@ -34,6 +39,9 @@ class SmsState {
     this.lastScanAt,
     this.scanVersion = 0,
     this.canAsk = true,
+    this.aiStatus = AiStatus.unavailable,
+    this.aiOn = true,
+    this.aiDownloadStarted = false,
   });
 
   final SmsAvailability availability;
@@ -55,6 +63,42 @@ class SmsState {
   /// the app's settings page can grant it (P9a-30).
   final bool canAsk;
 
+  /// The on-device model (phase-9b.md §7): always `unavailable` on foss,
+  /// read without a channel call.
+  final AiStatus aiStatus;
+
+  /// The `sms_ai_parsing` setting (on by default).
+  final bool aiOn;
+
+  /// The user turned the AI on and its download was asked for in this run:
+  /// "Downloading the model…" shows until the status says `available`.
+  final bool aiDownloadStarted;
+
+  /// Settings → SMS shows the AI switch (§8): a model in or one that can
+  /// come, with SMS suggestions on. Never on foss.
+  bool get showsAi =>
+      aiStatus.canBeUsed &&
+      (availability == SmsAvailability.on ||
+          availability == SmsAvailability.needsPermission);
+
+  /// The model is being fetched: Android's own download, or the one this
+  /// run asked for.
+  bool get aiDownloading =>
+      aiStatus == AiStatus.downloading ||
+      (aiDownloadStarted && aiStatus != AiStatus.available);
+
+  /// The switch's position: on when the setting is on and the model is in
+  /// or coming. A `downloadable` model shows off though the setting is on
+  /// (the default): the app never downloads it on its own (P9b-34), and a
+  /// tap starts the download.
+  bool get aiSwitchOn =>
+      aiOn && (aiStatus == AiStatus.available || aiDownloading);
+
+  /// A scan asks the model (phase-9b.md §6.2): the switch is on and the
+  /// model is in; `downloadable` and `downloading` read with the regex
+  /// (P9b-34), as does foss (`unavailable`).
+  bool get aiReads => aiOn && aiStatus == AiStatus.available;
+
   /// The feature can be seen at all (Settings tile, onboarding step).
   bool get isBuilt =>
       availability != SmsAvailability.unknown &&
@@ -67,6 +111,9 @@ class SmsState {
     DateTime? lastScanAt,
     int? scanVersion,
     bool? canAsk,
+    AiStatus? aiStatus,
+    bool? aiOn,
+    bool? aiDownloadStarted,
   }) => SmsState(
     availability: availability ?? this.availability,
     pendingCount: pendingCount ?? this.pendingCount,
@@ -74,6 +121,9 @@ class SmsState {
     lastScanAt: lastScanAt ?? this.lastScanAt,
     scanVersion: scanVersion ?? this.scanVersion,
     canAsk: canAsk ?? this.canAsk,
+    aiStatus: aiStatus ?? this.aiStatus,
+    aiOn: aiOn ?? this.aiOn,
+    aiDownloadStarted: aiDownloadStarted ?? this.aiDownloadStarted,
   );
 
   @override
@@ -84,7 +134,10 @@ class SmsState {
       other.scanning == scanning &&
       other.lastScanAt == lastScanAt &&
       other.scanVersion == scanVersion &&
-      other.canAsk == canAsk;
+      other.canAsk == canAsk &&
+      other.aiStatus == aiStatus &&
+      other.aiOn == aiOn &&
+      other.aiDownloadStarted == aiDownloadStarted;
 
   @override
   int get hashCode => Object.hash(
@@ -94,6 +147,9 @@ class SmsState {
     lastScanAt,
     scanVersion,
     canAsk,
+    aiStatus,
+    aiOn,
+    aiDownloadStarted,
   );
 }
 
@@ -121,17 +177,32 @@ class SmsCubit extends CubitSignal<SmsState> with EmitIfOpen<SmsState> {
     required this._scanner,
     required this._repository,
     required this._settings,
+    this._ai = const NoOnDeviceAi(),
+    Future<List<CategoryName>> Function()? categoryNames,
     DateTime Function()? now,
     this.minScanInterval = const Duration(seconds: 60),
-  }) : _now = now ?? DateTime.now,
+  }) : _categoryNames = categoryNames ?? _noCategories,
+       _now = now ?? DateTime.now,
        super(initialState: const SmsState());
 
   final SmsService _service;
   final SmsScanner _scanner;
   final SmsSuggestionRepository _repository;
   final SettingsRepository _settings;
+  final OnDeviceAiService _ai;
+
+  /// The user's categories with the names they see (R16): the UI builds
+  /// them (built-ins are localized), the scan passes them to the model.
+  final Future<List<CategoryName>> Function() _categoryNames;
   final DateTime Function() _now;
   final Duration minScanInterval;
+
+  static Future<List<CategoryName>> _noCategories() async => const [];
+
+  /// The last scan's model pass stopped early (the app left the front,
+  /// AICore busy): the next [resumed] scans at once, not after a minute,
+  /// so the rest is read as soon as the app is back (P9b-40).
+  bool _stoppedEarly = false;
 
   /// When the last scan started; null before the first.
   DateTime? _lastScanStart;
@@ -144,7 +215,48 @@ class SmsCubit extends CubitSignal<SmsState> with EmitIfOpen<SmsState> {
 
   /// The app came back to the front: the permission may have changed in
   /// Android's settings, and new SMS may have come.
-  Future<void> resumed() => _scanIfDue(force: false);
+  Future<void> resumed() => _scanIfDue(force: _stoppedEarly);
+
+  /// The app left the front (phase-9b.md §6.2 step 4): the model refuses
+  /// background calls, so its pass stops after the SMS it is reading, and
+  /// [resumed] goes on from there.
+  void paused() => _scanner.pause();
+
+  /// The model's progress while a scan with it runs (the backup's "SMS 12
+  /// of 40", §6.2).
+  ValueListenable<ScanProgress?> get scanProgress => _scanner.progress;
+
+  /// The AI switch (§8). On: the setting is written, and a model that is
+  /// `downloadable` starts downloading (P9b-34: only now, never on its own).
+  /// Off: the regex reads everything from the next scan on; a download
+  /// already running isn't stopped (AICore's, not the app's).
+  Future<void> setAiParsing(bool on) async {
+    await _settings.setSmsAiParsing(on);
+    emitIfOpen(value.copyWith(aiOn: on));
+    // A second tap while the first download runs (off, on again) starts
+    // none: one download at a time.
+    if (on &&
+        value.aiStatus == AiStatus.downloadable &&
+        !value.aiDownloadStarted) {
+      _download();
+    }
+  }
+
+  /// Starts the download and, when it ends, reads the status again; a model
+  /// that is in by then is used from the next scan on. Not awaited: on some
+  /// phones it never answers (phase-9b.md §12a), and the screen shows
+  /// "Downloading the model…" meanwhile.
+  void _download() {
+    emitIfOpen(value.copyWith(aiDownloadStarted: true));
+    unawaited(
+      _ai.download().then((_) async {
+        if (isClosed) return;
+        // Done or failed: the status says which.
+        final status = await _ai.status();
+        emitIfOpen(value.copyWith(aiStatus: status, aiDownloadStarted: false));
+      }),
+    );
+  }
 
   /// The SMS screen closed, or Home shows again.
   Future<void> refreshCount() async {
@@ -220,13 +332,21 @@ class SmsCubit extends CubitSignal<SmsState> with EmitIfOpen<SmsState> {
     }
     _lastScanStart = at;
     emitIfOpen(value.copyWith(scanning: true));
-    final result = await _scanner.scan();
+    final result = await _scanner.scan(
+      useAi: value.aiReads,
+      categories: _categoriesOrNone,
+    );
+    _stoppedEarly = result.outcome == ScanOutcome.stopped;
     final count = await _countOr(value.pendingCount);
     emitIfOpen(
       value.copyWith(
         scanning: false,
         pendingCount: count,
-        lastScanAt: result.outcome == ScanOutcome.done ? _now() : null,
+        lastScanAt:
+            result.outcome == ScanOutcome.done ||
+                result.outcome == ScanOutcome.stopped
+            ? _now()
+            : null,
         scanVersion: result.added > 0 ? value.scanVersion + 1 : null,
       ),
     );
@@ -247,6 +367,7 @@ class SmsCubit extends CubitSignal<SmsState> with EmitIfOpen<SmsState> {
       emitIfOpen(
         value.copyWith(availability: availability, canAsk: permission.canAsk),
       );
+      await _readAi();
       return availability;
     } catch (error) {
       // No channel (a test, a phone without the SMS provider): as if the
@@ -254,6 +375,32 @@ class SmsCubit extends CubitSignal<SmsState> with EmitIfOpen<SmsState> {
       debugPrint('Reading the SMS status failed: $error');
       emitIfOpen(value.copyWith(availability: SmsAvailability.notBuilt));
       return SmsAvailability.notBuilt;
+    }
+  }
+
+  /// The model's status and the switch's setting into the state: the
+  /// switch shows from it, and the next scan reads with the model from it.
+  /// The status is a quick call to AICore on play, none on foss. A failure
+  /// here reads as no model; SMS suggestions themselves go on.
+  Future<void> _readAi() async {
+    try {
+      final status = await _ai.status();
+      final on = await _settings.smsAiParsing();
+      emitIfOpen(value.copyWith(aiStatus: status, aiOn: on));
+    } catch (error) {
+      debugPrint('Reading the on-device AI status failed: $error');
+      emitIfOpen(value.copyWith(aiStatus: AiStatus.unavailable));
+    }
+  }
+
+  /// The categories for the model; none when they can't be read (the scan
+  /// then still runs: the model just picks no category).
+  Future<List<CategoryName>> _categoriesOrNone() async {
+    try {
+      return await _categoryNames();
+    } catch (error) {
+      debugPrint('Reading categories for the SMS scan failed: $error');
+      return const [];
     }
   }
 

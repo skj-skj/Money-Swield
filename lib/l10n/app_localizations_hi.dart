@@ -3505,4 +3505,27 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get smsYes => 'हाँ';
+
+  @override
+  String get smsAiSetting => 'डिवाइस पर AI का उपयोग करें';
+
+  @override
+  String get smsAiHelp =>
+      'बैंक SMS को Google के डिवाइस पर चलने वाले मॉडल से पढ़ता है। कुछ भी फ़ोन से बाहर नहीं जाता। कुछ फ़ोन पर धीमा हो सकता है।';
+
+  @override
+  String get smsAiDownloading => 'मॉडल डाउनलोड हो रहा है…';
+
+  @override
+  String backupWaitingForSmsCount(int done, int total) {
+    final intl.NumberFormat doneNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String doneString = doneNumberFormat.format(done);
+    final intl.NumberFormat totalNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String totalString = totalNumberFormat.format(total);
+
+    return 'SMS पढ़ना पूरा होने की प्रतीक्षा हो रही है… ($totalString में से $doneString)';
+  }
 }

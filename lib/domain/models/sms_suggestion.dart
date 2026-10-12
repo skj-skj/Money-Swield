@@ -94,9 +94,20 @@ class SmsSuggestion {
       'SmsSuggestion($id, $sender, $amountMinor, ${status.name})';
 }
 
+/// How far an SMS scan with the on-device model is: the backup's "(12 of
+/// 40)" (phase-9b.md §6.2). Here, not in the scanner, so the backup's
+/// cubit can show it without knowing the scanner.
+typedef ScanProgress = ({int done, int total});
+
+/// Who read an SMS (`parsed_by`, phase-9b.md §4): for debugging, never
+/// shown (P9a-9).
+enum SmsParsedBy { regex, ai }
+
 /// What a scan parsed out of one SMS, before it is stored: everything but
 /// the title and category, which `insertScanned` fills inside its
-/// transaction (§6.3 step 5). Holds a hash of the text, never the text.
+/// transaction (§6.3 step 5) from what was learned and, for an SMS the
+/// on-device model read, its [aiTitle] and [aiCategoryId] (phase-9b.md
+/// §5.3). Holds a hash of the text, never the text.
 class NewSmsSuggestion {
   const NewSmsSuggestion({
     required this.sender,
@@ -107,6 +118,9 @@ class NewSmsSuggestion {
     required this.paymentMethodKey,
     this.payee,
     this.reference,
+    this.parsedBy = SmsParsedBy.regex,
+    this.aiTitle,
+    this.aiCategoryId,
   });
 
   final String sender;
@@ -117,4 +131,11 @@ class NewSmsSuggestion {
   final String paymentMethodKey;
   final String? payee;
   final String? reference;
+  final SmsParsedBy parsedBy;
+
+  /// The model's title, as checked (`acceptAiResult`), or null.
+  final String? aiTitle;
+
+  /// The model's pick among the user's categories, or null.
+  final int? aiCategoryId;
 }

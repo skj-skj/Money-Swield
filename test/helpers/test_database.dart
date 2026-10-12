@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:my_expense_tracker_app/app/app_dependencies.dart';
 import 'package:my_expense_tracker_app/data/services/database/migrations/all_migrations.dart';
+import 'package:my_expense_tracker_app/data/services/on_device_ai_service.dart';
 import 'package:my_expense_tracker_app/data/services/photo_store.dart';
 import 'package:my_expense_tracker_app/data/services/report_export_service.dart';
 import 'package:my_expense_tracker_app/data/services/sms_scanner.dart';
@@ -52,6 +53,7 @@ Future<AppDependencies> openTestDependencies({
   PhotoStore? photos,
   ReportExportService? reportExports,
   SmsService sms = const NoSmsService(),
+  OnDeviceAiService ai = const NoOnDeviceAi(),
 }) async => AppDependencies.forDatabase(
   await openMigratedDatabase(),
   deviceCurrency: deviceCurrency,
@@ -63,6 +65,7 @@ Future<AppDependencies> openTestDependencies({
   // The sweeper has its own tests; its file I/O would hang a widget test.
   sweepPhotos: false,
   sms: sms,
+  ai: ai,
   // Parsing on this isolate: `Isolate.run` never completes inside a
   // widget test's fake async (the scanner's own tests cover it).
   smsScanner: (repository, settings) => SmsScanner(
@@ -71,6 +74,8 @@ Future<AppDependencies> openTestDependencies({
     settings: settings,
     now: clock?.call,
     parseAll: (messages) async => parseAllNow(messages),
+    ai: ai,
+    candidatesAll: (messages) async => candidatesNow(messages),
   ),
 );
 

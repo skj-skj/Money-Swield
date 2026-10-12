@@ -77,6 +77,24 @@ int? findAmountMinor(String text) {
   return null;
 }
 
+/// Every amount [text] writes with its currency (`Rs`, `INR`, `₹`, before
+/// or after), in paise, leaving out balances and limits (phase-9b.md §5.2):
+/// what the on-device model may answer. Each is judged by
+/// [parseAmountMinor], so "150", "150.0" and "150.00" are one amount and
+/// "1500" is not "150.00".
+///
+/// Only amounts with a currency: the doc's "appears literally in the text"
+/// let a 12-digit reference ("Ref 100000000001") or the footer's phone
+/// number through as an amount (phase-9b.md §12a). Nothing is lost: an SMS
+/// reaches the model only when it has such an amount (§5.1).
+Set<int> amountsInText(String text) => {
+  for (final match in [
+    ..._currencyFirst.allMatches(text),
+    ..._currencyLast.allMatches(text),
+  ])
+    if (!_isBalance(text, match.start)) ?parseAmountMinor(match[1]!),
+};
+
 /// Whether the amount at [start] comes within [_notPaidReach] characters
 /// after a balance or limit word **with no other number between them**:
 /// "Avl Lmt INR 50,000" is a limit; in "Avl Bal Rs 10,000. Rs 250

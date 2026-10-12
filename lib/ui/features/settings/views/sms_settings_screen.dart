@@ -30,6 +30,35 @@ class SmsSettingsScreen extends StatelessWidget {
     }
   }
 
+  /// "Use on-device AI" (phase-9b.md §8): play with a model in or one that
+  /// can come, SMS on. The help stays while the model downloads, so what
+  /// it does and that nothing leaves the phone is always there.
+  Widget _aiSwitch(BuildContext context, SmsState state) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    return SwitchListTile(
+      key: const ValueKey('smsAiSwitch'),
+      title: Text(l10n.smsAiSetting),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.smsAiHelp),
+          if (state.aiDownloading)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                l10n.smsAiDownloading,
+                style: TextStyle(color: theme.colorScheme.primary),
+              ),
+            ),
+        ],
+      ),
+      value: state.aiSwitchOn,
+      onChanged: (value) =>
+          saveOrShowError(context, () => sms.setAiParsing(value)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -60,6 +89,7 @@ class SmsSettingsScreen extends StatelessWidget {
                 value: on,
                 onChanged: (value) => _toggle(context, value),
               ),
+              if (state.showsAi) _aiSwitch(context, state),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                 child: Text(l10n.smsPrivacyNote, style: muted),

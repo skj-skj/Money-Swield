@@ -721,5 +721,9 @@
   "smsTileOn": "{count, plural, =0{चालू} =1{चालू · 1 बाकी} other{चालू · {count} बाकी}}",
   "smsTileOff": "बंद",
   "smsNotNow": "अभी नहीं",
-  "smsYes": "हाँ"
+  "smsYes": "हाँ",
+  "smsAiSetting": "डिवाइस पर AI का उपयोग करें",
+  "smsAiHelp": "बैंक SMS को Google के डिवाइस पर चलने वाले मॉडल से पढ़ता है। कुछ भी फ़ोन से बाहर नहीं जाता। कुछ फ़ोन पर धीमा हो सकता है।",
+  "smsAiDownloading": "मॉडल डाउनलोड हो रहा है…",
+  "backupWaitingForSmsCount": "SMS पढ़ना पूरा होने की प्रतीक्षा हो रही है… ({total} में से {done})"
 }

@@ -721,5 +721,9 @@
   "smsTileOn": "{count, plural, =0{Activado} =1{Activado · 1 pendiente} other{Activado · {count} pendientes}}",
   "smsTileOff": "Desactivado",
   "smsNotNow": "Ahora no",
-  "smsYes": "Sí"
+  "smsYes": "Sí",
+  "smsAiSetting": "Usar IA en el dispositivo",
+  "smsAiHelp": "Lee los SMS bancarios con el modelo de Google en el dispositivo. Nada sale del teléfono. Puede ir lento en algunos teléfonos.",
+  "smsAiDownloading": "Descargando el modelo…",
+  "backupWaitingForSmsCount": "Esperando a que termine la lectura de SMS… ({done} de {total})"
 }

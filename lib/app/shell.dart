@@ -1,7 +1,9 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../domain/models/recurring_item.dart';
+import '../domain/sms/sms_ai_prompt.dart';
 import '../l10n/app_localizations.dart';
+import '../ui/core/builtin_names.dart';
 import '../ui/core/widgets/back_guard.dart';
 import '../ui/features/home/views/home_screen.dart';
 import '../ui/features/manage/views/manage_screen.dart';
@@ -51,8 +53,23 @@ class _ShellState extends State<Shell> {
     scanner: widget.dependencies.smsScanner,
     repository: widget.dependencies.smsSuggestions,
     settings: widget.dependencies.settings,
+    ai: widget.dependencies.ai,
+    categoryNames: _categoryNames,
     now: widget.dependencies.now,
   );
+
+  /// The user's categories with the names they see, for the on-device
+  /// model (phase-9b.md R16): built-ins are localized here, in the UI, so
+  /// the data layer never imports l10n. Read at each scan, so a renamed or
+  /// new category and a changed language are seen.
+  Future<List<CategoryName>> _categoryNames() async {
+    if (!mounted) return const [];
+    final l10n = AppLocalizations.of(context);
+    return [
+      for (final category in await widget.dependencies.categories.all())
+        (id: category.id, name: categoryName(l10n, category)),
+    ];
+  }
 
   /// Scans again when the app comes back to the front (at most once a
   /// minute, P9a-13).
@@ -61,7 +78,12 @@ class _ShellState extends State<Shell> {
   @override
   void initState() {
     super.initState();
-    _lifecycle = AppLifecycleListener(onResume: () => _sms.resumed());
+    // Leaving the front stops the on-device model's pass: AICore refuses a
+    // background app (phase-9b.md §6.2 step 4).
+    _lifecycle = AppLifecycleListener(
+      onResume: () => _sms.resumed(),
+      onHide: () => _sms.paused(),
+    );
     // After the first frame (application-design §3 step 6): the scan reads
     // in the background and never delays Home.
     WidgetsBinding.instance.addPostFrameCallback((_) {
