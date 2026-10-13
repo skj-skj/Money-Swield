@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/domain/expense_filter.dart';
-import 'package:my_expense_tracker_app/domain/report_filter.dart';
+import 'package:money_swield/domain/expense_filter.dart';
+import 'package:money_swield/domain/report_filter.dart';
 
 void main() {
   const full = ReportFilter(

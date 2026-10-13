@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:my_expense_tracker_app/ui/core/widgets/sheet_messenger.dart';
-import 'package:my_expense_tracker_app/ui/core/widgets/show_message.dart';
+import 'package:money_swield/ui/core/widgets/sheet_messenger.dart';
+import 'package:money_swield/ui/core/widgets/show_message.dart';
 
 /// Snackbars inside a bottom sheet, where the screen's own would be
 /// covered by the sheet.

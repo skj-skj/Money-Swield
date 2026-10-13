@@ -1,11 +1,11 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/data/repositories/expense_draft_repository.dart';
-import 'package:my_expense_tracker_app/data/services/photo_store.dart';
-import 'package:my_expense_tracker_app/data/services/photo_sweeper.dart';
-import 'package:my_expense_tracker_app/domain/models/expense_draft.dart';
-import 'package:my_expense_tracker_app/domain/photos.dart';
+import 'package:money_swield/data/repositories/expense_draft_repository.dart';
+import 'package:money_swield/data/services/photo_store.dart';
+import 'package:money_swield/data/services/photo_sweeper.dart';
+import 'package:money_swield/domain/models/expense_draft.dart';
+import 'package:money_swield/domain/photos.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 

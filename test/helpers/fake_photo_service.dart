@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:my_expense_tracker_app/data/services/photo_service.dart';
-import 'package:my_expense_tracker_app/domain/photo_sizing.dart';
+import 'package:money_swield/data/services/photo_service.dart';
+import 'package:money_swield/domain/photo_sizing.dart';
 import 'package:path/path.dart' as p;
 
 /// A picture the fake knows: its header and the bytes a kept copy has.
@@ -64,7 +64,7 @@ class FakePhotoService implements PhotoService {
   final pickLimits = <int>[];
   final stages = <({String source, PhotoPlan plan, int quarterTurns})>[];
 
-  /// "Pictures/Expense Tracker", by final name, in the order inserted.
+  /// "Pictures/Money Swield", by final name, in the order inserted.
   final savedPictures = <SavedPicture>[];
 
   void _call(String name) {

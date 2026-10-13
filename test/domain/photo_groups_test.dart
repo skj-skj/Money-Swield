@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/domain/models/expense.dart';
-import 'package:my_expense_tracker_app/domain/models/money.dart';
-import 'package:my_expense_tracker_app/domain/photo_groups.dart';
-import 'package:my_expense_tracker_app/domain/photos.dart';
+import 'package:money_swield/domain/models/expense.dart';
+import 'package:money_swield/domain/models/money.dart';
+import 'package:money_swield/domain/photo_groups.dart';
+import 'package:money_swield/domain/photos.dart';
 
 void main() {
   var nextId = 100;

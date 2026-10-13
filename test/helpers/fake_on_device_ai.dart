@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:my_expense_tracker_app/data/services/on_device_ai_service.dart';
+import 'package:money_swield/data/services/on_device_ai_service.dart';
 
 /// Stands in for the on-device model: a status the test sets, an answer per
 /// prompt, a record of every prompt.

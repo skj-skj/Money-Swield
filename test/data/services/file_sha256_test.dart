@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/data/services/file_sha256.dart';
+import 'package:money_swield/data/services/file_sha256.dart';
 import 'package:path/path.dart' as p;
 
 import '../../helpers/test_folders.dart';

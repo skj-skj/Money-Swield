@@ -23,7 +23,7 @@ class BackupManifest {
 
   /// Marks the zip as one of ours, so restore can say "this isn't a backup"
   /// instead of a generic error.
-  static const appId = 'expense_tracker';
+  static const appId = 'money_swield';
 
   /// The zip layout this app writes and the newest it can read. Not the
   /// database schema: that is decided by the database's own migrations.

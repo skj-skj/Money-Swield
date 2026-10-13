@@ -3,17 +3,17 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:my_expense_tracker_app/app/app_dependencies.dart';
-import 'package:my_expense_tracker_app/data/services/report_pdf.dart';
-import 'package:my_expense_tracker_app/domain/expense_filter.dart';
-import 'package:my_expense_tracker_app/domain/models/dashboard_options.dart';
-import 'package:my_expense_tracker_app/domain/models/expense.dart';
-import 'package:my_expense_tracker_app/domain/models/money.dart';
-import 'package:my_expense_tracker_app/domain/report.dart';
-import 'package:my_expense_tracker_app/domain/report_document.dart';
-import 'package:my_expense_tracker_app/domain/report_filter.dart';
-import 'package:my_expense_tracker_app/domain/report_range.dart';
-import 'package:my_expense_tracker_app/ui/core/charts/donut_chart.dart';
+import 'package:money_swield/app/app_dependencies.dart';
+import 'package:money_swield/data/services/report_pdf.dart';
+import 'package:money_swield/domain/expense_filter.dart';
+import 'package:money_swield/domain/models/dashboard_options.dart';
+import 'package:money_swield/domain/models/expense.dart';
+import 'package:money_swield/domain/models/money.dart';
+import 'package:money_swield/domain/report.dart';
+import 'package:money_swield/domain/report_document.dart';
+import 'package:money_swield/domain/report_filter.dart';
+import 'package:money_swield/domain/report_range.dart';
+import 'package:money_swield/ui/core/charts/donut_chart.dart';
 
 import '../../../helpers/fake_report_export_service.dart';
 import '../../../helpers/pump_app.dart';
@@ -571,7 +571,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(
       find.text(
-        'Saved to Download/Expense Tracker. No app on this phone can open it.',
+        'Saved to Download/Money Swield. No app on this phone can open it.',
       ),
       findsOneWidget,
     );

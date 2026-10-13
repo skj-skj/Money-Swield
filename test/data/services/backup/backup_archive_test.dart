@@ -2,9 +2,9 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/data/services/backup/backup_archive.dart';
-import 'package:my_expense_tracker_app/data/services/backup/backup_manifest.dart';
-import 'package:my_expense_tracker_app/domain/models/restore_candidate.dart';
+import 'package:money_swield/data/services/backup/backup_archive.dart';
+import 'package:money_swield/data/services/backup/backup_manifest.dart';
+import 'package:money_swield/domain/models/restore_candidate.dart';
 import 'package:path/path.dart' as p;
 
 import '../../../helpers/test_folders.dart';
@@ -75,7 +75,7 @@ void main() {
       expect(await File(extractTo).readAsBytes(), databaseBytes);
     });
 
-    test('entries are manifest.json then expense_tracker.db', () async {
+    test('entries are manifest.json then money_swield.db', () async {
       final source = p.join(folder.path, 'source.db');
       await File(source).writeAsBytes(databaseBytes);
       await BackupArchive.write(
@@ -91,7 +91,7 @@ void main() {
       final bytes = await File(zipPath).readAsBytes();
       expect(
         dataOffsetOf(bytes, 'manifest.json'),
-        lessThan(dataOffsetOf(bytes, 'expense_tracker.db')),
+        lessThan(dataOffsetOf(bytes, 'money_swield.db')),
       );
     });
 
@@ -100,7 +100,7 @@ void main() {
         textEntry('../evil', 'x'),
         textEntry('manifest.json', manifestJson()),
         textEntry('notes.txt', 'hello'),
-        entry('expense_tracker.db', databaseBytes),
+        entry('money_swield.db', databaseBytes),
         textEntry('../../evil2', 'y'),
       ]);
 
@@ -119,7 +119,7 @@ void main() {
     test('an uncompressed (stored) database entry reads too', () async {
       await writeZip([
         textEntry('manifest.json', manifestJson()),
-        entry('expense_tracker.db', databaseBytes, stored: true),
+        entry('money_swield.db', databaseBytes, stored: true),
       ]);
       await read();
       expect(await File(extractTo).readAsBytes(), databaseBytes);
@@ -133,7 +133,7 @@ void main() {
           'manifest.json',
           manifestJson({'padding': 'x' * BackupArchive.maxManifestBytes}),
         ),
-        entry('expense_tracker.db', databaseBytes),
+        entry('money_swield.db', databaseBytes),
       ]);
       await expectRejected(RestoreRejection.notABackup);
     });
@@ -141,7 +141,7 @@ void main() {
     test('a database entry declaring more than the limit is refused', () async {
       await writeZip([
         textEntry('manifest.json', manifestJson()),
-        entry('expense_tracker.db', databaseBytes),
+        entry('money_swield.db', databaseBytes),
       ]);
       await expectRejected(RestoreRejection.notABackup, maxDatabaseBytes: 4999);
     });
@@ -153,9 +153,9 @@ void main() {
       final bomb = Uint8List(2 * 1024 * 1024);
       final zip = buildZip([
         textEntry('manifest.json', manifestJson()),
-        entry('expense_tracker.db', bomb),
+        entry('money_swield.db', bomb),
       ]);
-      patchDeclaredSize(zip, 'expense_tracker.db', 10);
+      patchDeclaredSize(zip, 'money_swield.db', 10);
       await File(zipPath).writeAsBytes(zip);
 
       await expectRejected(
@@ -171,18 +171,18 @@ void main() {
           // Over the limit (16 MB).
           manifestJson({'padding': ' ' * BackupArchive.maxManifestBytes}),
         ),
-        entry('expense_tracker.db', databaseBytes),
+        entry('money_swield.db', databaseBytes),
       ]);
       patchDeclaredSize(zip, 'manifest.json', 10);
       await File(zipPath).writeAsBytes(zip);
       await expectRejected(RestoreRejection.notABackup);
     });
 
-    test('two expense_tracker.db entries are refused', () async {
+    test('two money_swield.db entries are refused', () async {
       await writeZip([
         textEntry('manifest.json', manifestJson()),
-        entry('expense_tracker.db', databaseBytes),
-        entry('expense_tracker.db', [1, 2, 3]),
+        entry('money_swield.db', databaseBytes),
+        entry('money_swield.db', [1, 2, 3]),
       ]);
       await expectRejected(RestoreRejection.notABackup);
     });
@@ -191,7 +191,7 @@ void main() {
       await writeZip([
         textEntry('manifest.json', manifestJson()),
         textEntry('manifest.json', manifestJson({'format': 9})),
-        entry('expense_tracker.db', databaseBytes),
+        entry('money_swield.db', databaseBytes),
       ]);
       await expectRejected(RestoreRejection.notABackup);
     });
@@ -201,9 +201,9 @@ void main() {
     Future<void> flipDatabaseByte({required bool stored}) async {
       final zip = buildZip([
         textEntry('manifest.json', manifestJson()),
-        entry('expense_tracker.db', databaseBytes, stored: stored),
+        entry('money_swield.db', databaseBytes, stored: stored),
       ]);
-      zip[dataOffsetOf(zip, 'expense_tracker.db') + 3] ^= 0x40;
+      zip[dataOffsetOf(zip, 'money_swield.db') + 3] ^= 0x40;
       await File(zipPath).writeAsBytes(zip);
     }
 
@@ -220,7 +220,7 @@ void main() {
     test('a zip cut short is not read as a backup', () async {
       final zip = buildZip([
         textEntry('manifest.json', manifestJson()),
-        entry('expense_tracker.db', databaseBytes),
+        entry('money_swield.db', databaseBytes),
       ]);
       await File(zipPath).writeAsBytes(zip.sublist(0, zip.length ~/ 2));
       await expectLater(read(), throwsA(isA<RestoreRejected>()));
@@ -240,11 +240,11 @@ void main() {
     });
 
     test('a zip without manifest.json', () async {
-      await writeZip([entry('expense_tracker.db', databaseBytes)]);
+      await writeZip([entry('money_swield.db', databaseBytes)]);
       await expectRejected(RestoreRejection.notABackup);
     });
 
-    test('a zip without expense_tracker.db', () async {
+    test('a zip without money_swield.db', () async {
       await writeZip([textEntry('manifest.json', manifestJson())]);
       await expectRejected(RestoreRejection.notABackup);
     });
@@ -252,7 +252,7 @@ void main() {
     test('a manifest from another app', () async {
       await writeZip([
         textEntry('manifest.json', manifestJson({'app': 'other_app'})),
-        entry('expense_tracker.db', databaseBytes),
+        entry('money_swield.db', databaseBytes),
       ]);
       await expectRejected(RestoreRejection.notABackup);
     });
@@ -261,7 +261,7 @@ void main() {
   test('format 2 is "made by a newer version"', () async {
     await writeZip([
       textEntry('manifest.json', manifestJson({'format': 2})),
-      entry('expense_tracker.db', databaseBytes),
+      entry('money_swield.db', databaseBytes),
     ]);
     await expectRejected(RestoreRejection.tooNew);
   });

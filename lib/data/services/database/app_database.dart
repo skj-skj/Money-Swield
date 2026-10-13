@@ -57,7 +57,7 @@ class AppDatabase {
        _cacheFolder = cacheFolder ?? _defaultCacheFolder,
        _files = fileOperations;
 
-  static const fileName = 'expense_tracker.db';
+  static const fileName = 'money_swield.db';
 
   /// How many pre-restore copies are kept.
   static const keptPreRestoreCopies = 3;

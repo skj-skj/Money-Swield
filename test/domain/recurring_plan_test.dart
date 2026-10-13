@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/domain/recurrence.dart';
-import 'package:my_expense_tracker_app/domain/recurring_plan.dart';
+import 'package:money_swield/domain/recurrence.dart';
+import 'package:money_swield/domain/recurring_plan.dart';
 
 const today = '2026-10-09';
 

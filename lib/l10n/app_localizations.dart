@@ -103,7 +103,7 @@ abstract class AppLocalizations {
   /// App name. Placeholder until the real name is chosen.
   ///
   /// In en, this message translates to:
-  /// **'Expense Tracker'**
+  /// **'Money Swield'**
   String get appTitle;
 
   /// No description provided for @save.
@@ -1435,7 +1435,7 @@ abstract class AppLocalizations {
   /// No description provided for @notABackup.
   ///
   /// In en, this message translates to:
-  /// **'This file isn\'t a backup from Expense Tracker.'**
+  /// **'This file isn\'t a backup from Money Swield.'**
   String get notABackup;
 
   /// No description provided for @backupTooNew.
@@ -4093,7 +4093,7 @@ abstract class AppLocalizations {
   /// No description provided for @reportSavedNoViewer.
   ///
   /// In en, this message translates to:
-  /// **'Saved to Download/Expense Tracker. No app on this phone can open it.'**
+  /// **'Saved to Download/Money Swield. No app on this phone can open it.'**
   String get reportSavedNoViewer;
 
   /// No description provided for @reportHighlights.

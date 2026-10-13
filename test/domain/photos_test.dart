@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/domain/photos.dart';
+import 'package:money_swield/domain/photos.dart';
 
 void main() {
   final sha = 'a' * 64;
@@ -15,7 +15,7 @@ void main() {
       ('photos/${'a' * 65}.jpg', false),
       ('photos/${'A' * 64}.jpg', false),
       ('photos/../databases/x.jpg', false),
-      ('../databases/expense_tracker.db', false),
+      ('../databases/money_swield.db', false),
       ('/storage/emulated/0/photos/$sha.jpg', false),
       (
         r'photos\'

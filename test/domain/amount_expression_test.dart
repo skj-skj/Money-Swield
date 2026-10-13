@@ -1,8 +1,8 @@
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/domain/amount_expression.dart';
-import 'package:my_expense_tracker_app/domain/amount_input.dart';
+import 'package:money_swield/domain/amount_expression.dart';
+import 'package:money_swield/domain/amount_input.dart';
 
 ExpressionResult inr(String text) => evaluateExpression(text, minorDigits: 2);
 ExpressionResult jpy(String text) => evaluateExpression(text, minorDigits: 0);

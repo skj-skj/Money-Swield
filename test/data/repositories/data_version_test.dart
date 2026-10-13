@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/app/app_dependencies.dart';
+import 'package:money_swield/app/app_dependencies.dart';
 
 import '../../helpers/test_database.dart';
 

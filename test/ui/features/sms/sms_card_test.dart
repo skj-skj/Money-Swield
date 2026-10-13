@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:my_expense_tracker_app/domain/models/sms_suggestion.dart';
-import 'package:my_expense_tracker_app/l10n/app_localizations.dart';
-import 'package:my_expense_tracker_app/ui/features/sms/views/sms_card.dart';
+import 'package:money_swield/domain/models/sms_suggestion.dart';
+import 'package:money_swield/l10n/app_localizations.dart';
+import 'package:money_swield/ui/features/sms/views/sms_card.dart';
 
 /// The SMS card; both bugs were found on the Oppo.
 void main() {

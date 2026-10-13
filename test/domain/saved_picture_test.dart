@@ -1,6 +1,6 @@
 import 'package:characters/characters.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/domain/saved_picture.dart';
+import 'package:money_swield/domain/saved_picture.dart';
 
 void main() {
   String name(String title, {String day = '2026-10-01', String ext = 'jpg'}) =>

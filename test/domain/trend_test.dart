@@ -1,10 +1,10 @@
 import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/domain/periods.dart';
-import 'package:my_expense_tracker_app/domain/smooth_line.dart';
-import 'package:my_expense_tracker_app/domain/totals.dart';
-import 'package:my_expense_tracker_app/domain/trend.dart';
+import 'package:money_swield/domain/periods.dart';
+import 'package:money_swield/domain/smooth_line.dart';
+import 'package:money_swield/domain/totals.dart';
+import 'package:money_swield/domain/trend.dart';
 
 void main() {
   final maxInt = BigInt.from(9223372036854775807);

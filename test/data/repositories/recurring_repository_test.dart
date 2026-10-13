@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/data/repositories/recurring_repository.dart';
-import 'package:my_expense_tracker_app/domain/models/money.dart';
-import 'package:my_expense_tracker_app/domain/models/recurring_item.dart';
-import 'package:my_expense_tracker_app/domain/repeat_input.dart';
+import 'package:money_swield/data/repositories/recurring_repository.dart';
+import 'package:money_swield/domain/models/money.dart';
+import 'package:money_swield/domain/models/recurring_item.dart';
+import 'package:money_swield/domain/repeat_input.dart';
 
 import '../../helpers/recurring_fixture.dart';
 import '../../helpers/test_database.dart';

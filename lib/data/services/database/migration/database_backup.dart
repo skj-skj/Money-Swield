@@ -7,7 +7,7 @@ import '../database_files.dart';
 /// Copies the database file aside before migrations touch it.
 ///
 /// The copy lives in a `backups` folder next to the database, e.g.
-/// `.../databases/backups/expense_tracker.db.2026-09-30T10-15-00Z.bak`.
+/// `.../databases/backups/money_swield.db.2026-09-30T10-15-00Z.bak`.
 ///
 /// Only one backup is kept: the oldest. If a run fails, its backup stays,
 /// and it holds the data from before any migration ran. Later runs reuse it

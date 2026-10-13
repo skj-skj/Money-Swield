@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/app/app_dependencies.dart';
-import 'package:my_expense_tracker_app/data/repositories/expense_draft_repository.dart';
-import 'package:my_expense_tracker_app/data/repositories/sms_suggestion_repository.dart';
-import 'package:my_expense_tracker_app/domain/models/expense_draft.dart';
-import 'package:my_expense_tracker_app/domain/models/sms_suggestion.dart';
-import 'package:my_expense_tracker_app/domain/repeat_input.dart';
-import 'package:my_expense_tracker_app/ui/features/expenses/view_models/expense_form_cubit.dart';
+import 'package:money_swield/app/app_dependencies.dart';
+import 'package:money_swield/data/repositories/expense_draft_repository.dart';
+import 'package:money_swield/data/repositories/sms_suggestion_repository.dart';
+import 'package:money_swield/domain/models/expense_draft.dart';
+import 'package:money_swield/domain/models/sms_suggestion.dart';
+import 'package:money_swield/domain/repeat_input.dart';
+import 'package:money_swield/ui/features/expenses/view_models/expense_form_cubit.dart';
 
 import '../../../../helpers/fake_timers.dart';
 import '../../../../helpers/test_database.dart';

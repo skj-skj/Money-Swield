@@ -1,17 +1,17 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/app/app_dependencies.dart';
-import 'package:my_expense_tracker_app/domain/amount_expression.dart';
-import 'package:my_expense_tracker_app/domain/models/expense.dart';
-import 'package:my_expense_tracker_app/domain/models/money.dart';
-import 'package:my_expense_tracker_app/domain/models/recurring_item.dart';
-import 'package:my_expense_tracker_app/domain/recurrence.dart';
-import 'package:my_expense_tracker_app/domain/recurring_price.dart';
-import 'package:my_expense_tracker_app/domain/repeat_input.dart';
-import 'package:my_expense_tracker_app/ui/features/expenses/view_models/expense_form_cubit.dart'
+import 'package:money_swield/app/app_dependencies.dart';
+import 'package:money_swield/domain/amount_expression.dart';
+import 'package:money_swield/domain/models/expense.dart';
+import 'package:money_swield/domain/models/money.dart';
+import 'package:money_swield/domain/models/recurring_item.dart';
+import 'package:money_swield/domain/recurrence.dart';
+import 'package:money_swield/domain/recurring_price.dart';
+import 'package:money_swield/domain/repeat_input.dart';
+import 'package:money_swield/ui/features/expenses/view_models/expense_form_cubit.dart'
     show TitleError;
-import 'package:my_expense_tracker_app/ui/features/recurring/view_models/recurring_detail_cubit.dart';
-import 'package:my_expense_tracker_app/ui/features/recurring/view_models/recurring_form_cubit.dart';
-import 'package:my_expense_tracker_app/ui/features/recurring/view_models/recurring_list_cubit.dart';
+import 'package:money_swield/ui/features/recurring/view_models/recurring_detail_cubit.dart';
+import 'package:money_swield/ui/features/recurring/view_models/recurring_form_cubit.dart';
+import 'package:money_swield/ui/features/recurring/view_models/recurring_list_cubit.dart';
 
 import '../../../../helpers/test_database.dart';
 

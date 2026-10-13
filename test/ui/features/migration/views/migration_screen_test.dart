@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:my_expense_tracker_app/data/services/database/migration/migration_runner.dart';
+import 'package:money_swield/data/services/database/migration/migration_runner.dart';
 
 import '../../../../helpers/fake_app_database.dart';
 import '../../../../helpers/pump_app.dart';
@@ -99,7 +99,7 @@ void main() {
           step: 'Running 1790000000_add_currency_to_expenses',
           error: StateError('boom'),
           stackTrace: StackTrace.current,
-          backupPath: '/backups/expense_tracker.db.bak',
+          backupPath: '/backups/money_swield.db.bak',
         );
       }),
     );
@@ -118,10 +118,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.textContaining('boom'), findsOneWidget);
-    expect(
-      find.textContaining('/backups/expense_tracker.db.bak'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('/backups/money_swield.db.bak'), findsOneWidget);
 
     await tester.tap(find.text('Try again'));
     await tester.pump();

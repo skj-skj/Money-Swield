@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:my_expense_tracker_app/domain/periods.dart';
-import 'package:my_expense_tracker_app/ui/core/money_formatter.dart';
-import 'package:my_expense_tracker_app/ui/core/period_names.dart';
+import 'package:money_swield/domain/periods.dart';
+import 'package:money_swield/ui/core/money_formatter.dart';
+import 'package:money_swield/ui/core/period_names.dart';
 
 import '../../helpers/test_database.dart';
 

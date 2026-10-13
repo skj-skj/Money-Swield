@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/domain/expense_filter.dart';
-import 'package:my_expense_tracker_app/domain/models/recurring_item.dart';
-import 'package:my_expense_tracker_app/domain/recurrence.dart';
-import 'package:my_expense_tracker_app/domain/recurring_price.dart';
-import 'package:my_expense_tracker_app/domain/upcoming.dart';
+import 'package:money_swield/domain/expense_filter.dart';
+import 'package:money_swield/domain/models/recurring_item.dart';
+import 'package:money_swield/domain/recurrence.dart';
+import 'package:money_swield/domain/recurring_price.dart';
+import 'package:money_swield/domain/upcoming.dart';
 
 const today = '2026-10-09';
 

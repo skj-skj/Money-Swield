@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/domain/amount_expression.dart';
-import 'package:my_expense_tracker_app/domain/amount_field_input.dart';
+import 'package:money_swield/domain/amount_expression.dart';
+import 'package:money_swield/domain/amount_field_input.dart';
 
 /// `|` marks the cursor, `[…]` a selection, in these tests' strings.
 FieldEdit parse(String marked) {

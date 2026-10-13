@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/domain/models/currency.dart';
-import 'package:my_expense_tracker_app/ui/core/currency_labels.dart';
+import 'package:money_swield/domain/models/currency.dart';
+import 'package:money_swield/ui/core/currency_labels.dart';
 
 void main() {
   group('currencyLabel', () {

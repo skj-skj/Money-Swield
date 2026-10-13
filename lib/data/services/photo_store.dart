@@ -344,7 +344,7 @@ class PhotoStore {
 
   // Save to Pictures (owner rev 5).
 
-  /// Copies [items] into `Pictures/Expense Tracker/`, one at a time, in order.
+  /// Copies [items] into `Pictures/Money Swield/`, one at a time, in order.
   /// Not linked to anything: no row, setting or draft changes, and the app
   /// never touches the copies again. A missing file is skipped and counted, a
   /// failed one counted, and the rest go on. When the phone hasn't room for all

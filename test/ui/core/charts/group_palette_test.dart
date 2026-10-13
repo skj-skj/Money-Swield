@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_color_utilities/material_color_utilities.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:my_expense_tracker_app/ui/core/charts/group_palette.dart';
+import 'package:money_swield/ui/core/charts/group_palette.dart';
 
 /// Over 144 themes, light and dark, every slice
 /// colour keeps 3:1 on the card and adjacent slices stay apart for normal,

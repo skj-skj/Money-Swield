@@ -1,4 +1,4 @@
-package com.skj.expense.tracker.my_expense_tracker_app
+package com.skj.money.swield.expense.tracker
 
 import android.content.Context
 import android.content.Intent
@@ -113,7 +113,7 @@ class MainActivity : FlutterActivity() {
 
     private companion object {
         const val ENGINE_ID = "main"
-        const val DYNAMIC_COLOR_CHANNEL = "expense_tracker/dynamic_color"
+        const val DYNAMIC_COLOR_CHANNEL = "money_swield/dynamic_color"
 
         /** Created with the cached engine, so they live as long as it. */
         var documents: DocumentsChannel? = null

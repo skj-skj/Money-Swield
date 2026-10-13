@@ -1,4 +1,4 @@
-package com.skj.expense.tracker.my_expense_tracker_app
+package com.skj.money.swield.expense.tracker
 
 import android.app.Activity
 import android.content.ActivityNotFoundException
@@ -24,7 +24,7 @@ import java.io.InputStream
 import java.util.concurrent.Executors
 
 /**
- * `expense_tracker/documents`: the system save and open dialogs (Storage Access
+ * `money_swield/documents`: the system save and open dialogs (Storage Access
  * Framework) and the app version, for backup and restore. Own code instead of a
  * file-picker plugin. Also a report's Save to `Download/<AppName>/`, Share and
  * Open.
@@ -338,7 +338,7 @@ class DocumentsChannel(messenger: BinaryMessenger, context: Context) :
     private class TooLarge : Exception()
 
     companion object {
-        const val NAME = "expense_tracker/documents"
+        const val NAME = "money_swield/documents"
         private const val REQUEST_CODE = 0x5E7
         private const val BUFFER = 64 * 1024
     }

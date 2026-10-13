@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/domain/sms/sms_amount.dart';
+import 'package:money_swield/domain/sms/sms_amount.dart';
 
 void main() {
   group('parseAmountMinor', () {

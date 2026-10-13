@@ -1,4 +1,4 @@
-package com.skj.expense.tracker.my_expense_tracker_app
+package com.skj.money.swield.expense.tracker
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

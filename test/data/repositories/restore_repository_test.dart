@@ -3,16 +3,16 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart' show Locale;
-import 'package:my_expense_tracker_app/app/restore_tools.dart';
-import 'package:my_expense_tracker_app/data/repositories/restore_repository.dart';
-import 'package:my_expense_tracker_app/data/repositories/settings_repository.dart';
-import 'package:my_expense_tracker_app/data/services/backup/pre_restore_copy.dart';
-import 'package:my_expense_tracker_app/data/services/database/migration/migration_runner.dart';
-import 'package:my_expense_tracker_app/data/services/database/migrations/all_migrations.dart';
-import 'package:my_expense_tracker_app/data/services/document_service.dart';
-import 'package:my_expense_tracker_app/domain/models/app_settings.dart';
-import 'package:my_expense_tracker_app/domain/models/app_theme_mode.dart';
-import 'package:my_expense_tracker_app/domain/models/restore_candidate.dart';
+import 'package:money_swield/app/restore_tools.dart';
+import 'package:money_swield/data/repositories/restore_repository.dart';
+import 'package:money_swield/data/repositories/settings_repository.dart';
+import 'package:money_swield/data/services/backup/pre_restore_copy.dart';
+import 'package:money_swield/data/services/database/migration/migration_runner.dart';
+import 'package:money_swield/data/services/database/migrations/all_migrations.dart';
+import 'package:money_swield/data/services/document_service.dart';
+import 'package:money_swield/domain/models/app_settings.dart';
+import 'package:money_swield/domain/models/app_theme_mode.dart';
+import 'package:money_swield/domain/models/restore_candidate.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -58,7 +58,7 @@ void main() {
     await File(files.paths.pickedZip).writeAsBytes(
       buildZip([
         textEntry('manifest.json', manifestJson(manifest)),
-        entry('expense_tracker.db', await File(databasePath).readAsBytes()),
+        entry('money_swield.db', await File(databasePath).readAsBytes()),
       ]),
     );
   }
@@ -595,7 +595,7 @@ void main() {
       );
       final migrationBackup = p.join(
         paths.preRestoreFolder,
-        'expense_tracker.db.2026-01-01T00-00-00Z.bak',
+        'money_swield.db.2026-01-01T00-00-00Z.bak',
       );
       for (final path in [
         paths.backupCopy,

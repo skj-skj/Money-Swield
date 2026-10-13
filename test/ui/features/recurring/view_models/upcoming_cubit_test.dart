@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/app/app_dependencies.dart';
-import 'package:my_expense_tracker_app/domain/expense_filter.dart';
-import 'package:my_expense_tracker_app/domain/models/expense.dart';
-import 'package:my_expense_tracker_app/domain/models/money.dart';
-import 'package:my_expense_tracker_app/domain/repeat_input.dart';
-import 'package:my_expense_tracker_app/domain/upcoming.dart';
-import 'package:my_expense_tracker_app/ui/features/recurring/view_models/upcoming_cubit.dart';
+import 'package:money_swield/app/app_dependencies.dart';
+import 'package:money_swield/domain/expense_filter.dart';
+import 'package:money_swield/domain/models/expense.dart';
+import 'package:money_swield/domain/models/money.dart';
+import 'package:money_swield/domain/repeat_input.dart';
+import 'package:money_swield/domain/upcoming.dart';
+import 'package:money_swield/ui/features/recurring/view_models/upcoming_cubit.dart';
 
 import '../../../../helpers/test_database.dart';
 

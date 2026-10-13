@@ -90,12 +90,12 @@ abstract interface class PhotoService {
   Future<int> freeBytes(String path);
 }
 
-/// [PhotoService] over the `expense_tracker/photos` channel that
+/// [PhotoService] over the `money_swield/photos` channel that
 /// `MainActivity` registers.
 class ChannelPhotoService implements PhotoService {
   const ChannelPhotoService();
 
-  static const _channel = MethodChannel('expense_tracker/photos');
+  static const _channel = MethodChannel('money_swield/photos');
 
   @override
   Future<bool> capture(String path) => _call(

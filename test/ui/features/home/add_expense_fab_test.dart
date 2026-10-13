@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:my_expense_tracker_app/ui/features/home/views/add_expense_fab.dart';
+import 'package:money_swield/ui/features/home/views/add_expense_fab.dart';
 
 /// Home's Add button folding into a round "+" (owner, 2026-10-07): it
 /// animates, and folded it is a 56 dp circle with the "+" centred

@@ -1,24 +1,24 @@
 import 'package:flutter/widgets.dart' show Locale;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:my_expense_tracker_app/data/repositories/report_repository.dart';
-import 'package:my_expense_tracker_app/data/services/report_pdf.dart';
-import 'package:my_expense_tracker_app/data/services/xlsx/xlsx_writer.dart';
-import 'package:my_expense_tracker_app/domain/expense_filter.dart';
-import 'package:my_expense_tracker_app/domain/models/category.dart';
-import 'package:my_expense_tracker_app/domain/models/event.dart';
-import 'package:my_expense_tracker_app/domain/models/payment_method.dart';
-import 'package:my_expense_tracker_app/domain/periods.dart';
-import 'package:my_expense_tracker_app/domain/report.dart';
-import 'package:my_expense_tracker_app/domain/report_chart.dart';
-import 'package:my_expense_tracker_app/domain/report_document.dart';
-import 'package:my_expense_tracker_app/domain/report_filter.dart';
-import 'package:my_expense_tracker_app/domain/report_range.dart';
-import 'package:my_expense_tracker_app/l10n/app_localizations.dart';
-import 'package:my_expense_tracker_app/ui/core/money_formatter.dart';
-import 'package:my_expense_tracker_app/ui/core/period_names.dart';
-import 'package:my_expense_tracker_app/ui/features/reports/report_document_builder.dart';
-import 'package:my_expense_tracker_app/ui/features/reports/views/report_texts.dart';
+import 'package:money_swield/data/repositories/report_repository.dart';
+import 'package:money_swield/data/services/report_pdf.dart';
+import 'package:money_swield/data/services/xlsx/xlsx_writer.dart';
+import 'package:money_swield/domain/expense_filter.dart';
+import 'package:money_swield/domain/models/category.dart';
+import 'package:money_swield/domain/models/event.dart';
+import 'package:money_swield/domain/models/payment_method.dart';
+import 'package:money_swield/domain/periods.dart';
+import 'package:money_swield/domain/report.dart';
+import 'package:money_swield/domain/report_chart.dart';
+import 'package:money_swield/domain/report_document.dart';
+import 'package:money_swield/domain/report_filter.dart';
+import 'package:money_swield/domain/report_range.dart';
+import 'package:money_swield/l10n/app_localizations.dart';
+import 'package:money_swield/ui/core/money_formatter.dart';
+import 'package:money_swield/ui/core/period_names.dart';
+import 'package:money_swield/ui/features/reports/report_document_builder.dart';
+import 'package:money_swield/ui/features/reports/views/report_texts.dart';
 
 /// The document builder (owner's overhaul, 2026-10-10): the
 /// PDF's blocks and the Excel sheets from a report, without widgets.

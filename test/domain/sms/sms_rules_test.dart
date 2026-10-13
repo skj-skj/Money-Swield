@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/domain/models/expense_draft.dart';
-import 'package:my_expense_tracker_app/domain/models/sms_suggestion.dart';
-import 'package:my_expense_tracker_app/domain/sms/sms_draft_rule.dart';
-import 'package:my_expense_tracker_app/domain/sms/sms_groups.dart';
-import 'package:my_expense_tracker_app/domain/sms/sms_learning.dart';
-import 'package:my_expense_tracker_app/domain/sms/sms_title.dart';
-import 'package:my_expense_tracker_app/domain/sms/sms_window.dart';
-import 'package:my_expense_tracker_app/domain/title_suggestions.dart';
+import 'package:money_swield/domain/models/expense_draft.dart';
+import 'package:money_swield/domain/models/sms_suggestion.dart';
+import 'package:money_swield/domain/sms/sms_draft_rule.dart';
+import 'package:money_swield/domain/sms/sms_groups.dart';
+import 'package:money_swield/domain/sms/sms_learning.dart';
+import 'package:money_swield/domain/sms/sms_title.dart';
+import 'package:money_swield/domain/sms/sms_window.dart';
+import 'package:money_swield/domain/title_suggestions.dart';
 
 void main() {
   group('cleanPayee / suggestedTitle', () {

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/data/repositories/expense_owner.dart';
+import 'package:money_swield/data/repositories/expense_owner.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../../helpers/test_database.dart';

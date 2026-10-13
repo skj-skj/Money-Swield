@@ -1,10 +1,10 @@
-import 'package:my_expense_tracker_app/data/repositories/data_version.dart';
-import 'package:my_expense_tracker_app/data/repositories/expense_repository.dart';
-import 'package:my_expense_tracker_app/data/repositories/recurring_repository.dart';
-import 'package:my_expense_tracker_app/domain/models/expense.dart';
-import 'package:my_expense_tracker_app/domain/models/money.dart';
-import 'package:my_expense_tracker_app/domain/recurring_moment.dart';
-import 'package:my_expense_tracker_app/domain/repeat_input.dart';
+import 'package:money_swield/data/repositories/data_version.dart';
+import 'package:money_swield/data/repositories/expense_repository.dart';
+import 'package:money_swield/data/repositories/recurring_repository.dart';
+import 'package:money_swield/domain/models/expense.dart';
+import 'package:money_swield/domain/models/money.dart';
+import 'package:money_swield/domain/recurring_moment.dart';
+import 'package:money_swield/domain/repeat_input.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'test_database.dart';

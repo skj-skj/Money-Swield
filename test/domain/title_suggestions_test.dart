@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/domain/title_suggestions.dart';
+import 'package:money_swield/domain/title_suggestions.dart';
 
 TitleHistoryRow row(
   String title, {

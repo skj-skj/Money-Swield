@@ -3,10 +3,10 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/data/repositories/backup_repository.dart';
-import 'package:my_expense_tracker_app/data/repositories/settings_repository.dart';
-import 'package:my_expense_tracker_app/domain/models/sms_suggestion.dart';
-import 'package:my_expense_tracker_app/ui/features/backup/view_models/backup_cubit.dart';
+import 'package:money_swield/data/repositories/backup_repository.dart';
+import 'package:money_swield/data/repositories/settings_repository.dart';
+import 'package:money_swield/domain/models/sms_suggestion.dart';
+import 'package:money_swield/ui/features/backup/view_models/backup_cubit.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../../../../helpers/fake_document_service.dart';

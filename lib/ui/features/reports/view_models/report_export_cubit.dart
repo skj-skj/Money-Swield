@@ -42,7 +42,7 @@ sealed class ExportOutcome {
   const ExportOutcome();
 }
 
-/// Saved to `Download/Expense Tracker/`.
+/// Saved to `Download/Money Swield/`.
 final class ExportSaved extends ExportOutcome {
   const ExportSaved(this.saved, this.mimeType);
 

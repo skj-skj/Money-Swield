@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/data/repositories/data_version.dart';
-import 'package:my_expense_tracker_app/data/repositories/event_repository.dart';
-import 'package:my_expense_tracker_app/data/repositories/expense_repository.dart';
-import 'package:my_expense_tracker_app/domain/models/expense.dart';
-import 'package:my_expense_tracker_app/domain/models/money.dart';
+import 'package:money_swield/data/repositories/data_version.dart';
+import 'package:money_swield/data/repositories/event_repository.dart';
+import 'package:money_swield/data/repositories/expense_repository.dart';
+import 'package:money_swield/domain/models/expense.dart';
+import 'package:money_swield/domain/models/money.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../../helpers/test_database.dart';

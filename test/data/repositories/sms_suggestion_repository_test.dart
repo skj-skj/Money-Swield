@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/app/app_dependencies.dart';
-import 'package:my_expense_tracker_app/data/repositories/data_version.dart';
-import 'package:my_expense_tracker_app/data/repositories/expense_repository.dart';
-import 'package:my_expense_tracker_app/data/repositories/sms_suggestion_repository.dart';
-import 'package:my_expense_tracker_app/domain/models/expense.dart';
-import 'package:my_expense_tracker_app/domain/models/money.dart';
-import 'package:my_expense_tracker_app/domain/models/sms_suggestion.dart';
-import 'package:my_expense_tracker_app/domain/repeat_input.dart';
+import 'package:money_swield/app/app_dependencies.dart';
+import 'package:money_swield/data/repositories/data_version.dart';
+import 'package:money_swield/data/repositories/expense_repository.dart';
+import 'package:money_swield/data/repositories/sms_suggestion_repository.dart';
+import 'package:money_swield/domain/models/expense.dart';
+import 'package:money_swield/domain/models/money.dart';
+import 'package:money_swield/domain/models/sms_suggestion.dart';
+import 'package:money_swield/domain/repeat_input.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../../helpers/test_database.dart';

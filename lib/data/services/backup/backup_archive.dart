@@ -23,7 +23,7 @@ typedef PhotosRestored = ({int written, int skipped, int failed});
 
 /// Writes and reads backup zips. No SQL here.
 ///
-/// A backup holds `manifest.json`, `expense_tracker.db` and, with photos, one
+/// A backup holds `manifest.json`, `money_swield.db` and, with photos, one
 /// entry per photo named by its relative path (`photos/<sha256>.jpg`), stored,
 /// not deflated (JPEGs don't shrink). Reading looks only at the names the
 /// manifest lists, after they passed [isValidPhotoPath], so a crafted entry
@@ -43,7 +43,7 @@ class BackupArchive {
   const BackupArchive._();
 
   static const manifestName = 'manifest.json';
-  static const databaseName = 'expense_tracker.db';
+  static const databaseName = 'money_swield.db';
 
   /// A manifest is a few hundred bytes plus ~230 per photo: 16 MB holds about
   /// 70,000 photos (64 KB held only ~280).

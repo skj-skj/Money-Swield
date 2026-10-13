@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:my_expense_tracker_app/domain/models/currency.dart';
+import 'package:money_swield/domain/models/currency.dart';
 
 void main() {
   group('catalog', () {

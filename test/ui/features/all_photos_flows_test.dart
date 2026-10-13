@@ -2,15 +2,15 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:my_expense_tracker_app/app/app_dependencies.dart';
-import 'package:my_expense_tracker_app/data/services/photo_store.dart';
-import 'package:my_expense_tracker_app/domain/models/expense.dart';
-import 'package:my_expense_tracker_app/domain/models/money.dart';
-import 'package:my_expense_tracker_app/ui/core/widgets/list_frames.dart';
-import 'package:my_expense_tracker_app/ui/core/widgets/photos/photo_selection_bar.dart';
-import 'package:my_expense_tracker_app/ui/core/widgets/photos/photo_thumb.dart';
-import 'package:my_expense_tracker_app/ui/features/home/views/all_photos_screen.dart';
-import 'package:my_expense_tracker_app/ui/features/home/views/home_list_slivers.dart';
+import 'package:money_swield/app/app_dependencies.dart';
+import 'package:money_swield/data/services/photo_store.dart';
+import 'package:money_swield/domain/models/expense.dart';
+import 'package:money_swield/domain/models/money.dart';
+import 'package:money_swield/ui/core/widgets/list_frames.dart';
+import 'package:money_swield/ui/core/widgets/photos/photo_selection_bar.dart';
+import 'package:money_swield/ui/core/widgets/photos/photo_thumb.dart';
+import 'package:money_swield/ui/features/home/views/all_photos_screen.dart';
+import 'package:money_swield/ui/features/home/views/home_list_slivers.dart';
 import 'package:path/path.dart' as p;
 
 import '../../helpers/fake_photo_service.dart';
@@ -284,7 +284,7 @@ void main() {
     await tester.tap(find.byKey(PhotoSelectionBar.saveKey));
     await pumpUntilFound(
       tester,
-      find.text('2 photos saved to Pictures/Expense Tracker'),
+      find.text('2 photos saved to Pictures/Money Swield'),
     );
     expect(service.savedPictures.map((s) => s.name), [
       'Lunch 2026-10-05.jpg',

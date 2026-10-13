@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/data/repositories/report_repository.dart';
-import 'package:my_expense_tracker_app/domain/expense_filter.dart';
-import 'package:my_expense_tracker_app/domain/models/money.dart';
-import 'package:my_expense_tracker_app/domain/repeat_input.dart';
-import 'package:my_expense_tracker_app/domain/report_filter.dart';
-import 'package:my_expense_tracker_app/domain/report_range.dart';
+import 'package:money_swield/data/repositories/report_repository.dart';
+import 'package:money_swield/domain/expense_filter.dart';
+import 'package:money_swield/domain/models/money.dart';
+import 'package:money_swield/domain/repeat_input.dart';
+import 'package:money_swield/domain/report_filter.dart';
+import 'package:money_swield/domain/report_range.dart';
 
 import '../../helpers/recurring_fixture.dart';
 

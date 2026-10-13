@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/domain/popularity.dart';
-import 'package:my_expense_tracker_app/ui/core/builtin_names.dart';
-import 'package:my_expense_tracker_app/ui/core/picker_order.dart';
+import 'package:money_swield/domain/popularity.dart';
+import 'package:money_swield/ui/core/builtin_names.dart';
+import 'package:money_swield/ui/core/picker_order.dart';
 
 void main() {
   List<int> ids(List<PickerItem> items) => [for (final i in items) i.id];

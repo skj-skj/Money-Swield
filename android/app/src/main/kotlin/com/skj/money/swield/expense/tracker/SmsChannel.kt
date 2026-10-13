@@ -1,4 +1,4 @@
-package com.skj.expense.tracker.my_expense_tracker_app
+package com.skj.money.swield.expense.tracker
 
 import android.Manifest
 import android.app.Activity
@@ -16,7 +16,7 @@ import io.flutter.plugin.common.MethodChannel
 import java.util.concurrent.Executors
 
 /**
- * `expense_tracker/sms`: reads bank SMS from the inbox and asks for READ_SMS.
+ * `money_swield/sms`: reads bank SMS from the inbox and asks for READ_SMS.
  * Own code, no plugin, in both flavors; the permission itself is declared only
  * in the flavor manifests, and `status.built` reads the merged manifest, so
  * play built with `-PnoSms` hides the feature without a BuildConfig flag.
@@ -189,7 +189,7 @@ class SmsChannel(messenger: BinaryMessenger, context: Context) :
     private fun prefs() = appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
     private companion object {
-        const val NAME = "expense_tracker/sms"
+        const val NAME = "money_swield/sms"
         const val REQUEST_CODE = 4301
         const val PREFS = "sms_permission"
         const val ASKED_KEY = "asked_once"

@@ -7,16 +7,16 @@ import 'package:archive/archive_io.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:my_expense_tracker_app/app/restore_tools.dart';
-import 'package:my_expense_tracker_app/data/repositories/backup_repository.dart';
-import 'package:my_expense_tracker_app/data/repositories/settings_repository.dart';
-import 'package:my_expense_tracker_app/data/services/backup/backup_archive.dart';
-import 'package:my_expense_tracker_app/data/services/backup/backup_manifest.dart';
-import 'package:my_expense_tracker_app/data/services/photo_service.dart';
-import 'package:my_expense_tracker_app/data/services/photo_store.dart';
-import 'package:my_expense_tracker_app/domain/models/restore_candidate.dart';
-import 'package:my_expense_tracker_app/ui/features/backup/view_models/restore_cubit.dart';
-import 'package:my_expense_tracker_app/ui/features/migration/view_models/migration_cubit.dart';
+import 'package:money_swield/app/restore_tools.dart';
+import 'package:money_swield/data/repositories/backup_repository.dart';
+import 'package:money_swield/data/repositories/settings_repository.dart';
+import 'package:money_swield/data/services/backup/backup_archive.dart';
+import 'package:money_swield/data/services/backup/backup_manifest.dart';
+import 'package:money_swield/data/services/photo_service.dart';
+import 'package:money_swield/data/services/photo_store.dart';
+import 'package:money_swield/domain/models/restore_candidate.dart';
+import 'package:money_swield/ui/features/backup/view_models/restore_cubit.dart';
+import 'package:money_swield/ui/features/migration/view_models/migration_cubit.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -123,10 +123,7 @@ void main() {
     test('without photos: database-only', () async {
       await photo('a');
       final zip = await backups().createBackup(appVersion: 't');
-      expect(zipEntries(zip.path).keys, [
-        'manifest.json',
-        'expense_tracker.db',
-      ]);
+      expect(zipEntries(zip.path).keys, ['manifest.json', 'money_swield.db']);
     });
 
     test('no space: BackupNoSpace, nothing left in cache/backup', () async {

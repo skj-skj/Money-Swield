@@ -26,15 +26,23 @@ NO_SMS ?=
 # Name for `make migration`, in snake_case.
 NAME ?=
 
-# Each flavor has its own id (owner, 2026-10-11: `.foss` / `.play`).
-APP_ID := com.skj.expense.tracker.my_expense_tracker_app.$(FLAVOR)
+# Each flavor has its own id (owner, 2026-10-11: `.foss` / `.play`), and a
+# debug (and profile) build adds `.debug` so it never touches a released
+# app's data (owner, 2026-10-12).
+APP_ID := com.skj.money.swield.expense.tracker.$(FLAVOR)$(if $(filter debug profile,$(MODE)),.debug)
 # Flutter names flavored APKs app-<flavor>-<mode>.apk.
 APK := build/app/outputs/flutter-apk/app-$(FLAVOR)-$(MODE).apk
 DART_DEFINES := $(if $(SMS_LOOKBACK_DAYS),--dart-define=SMS_LOOKBACK_DAYS=$(SMS_LOOKBACK_DAYS))
 GRADLE_ARGS := $(if $(NO_SMS),-PnoSms=true)
+# Release builds for upload. `--split-per-abi` makes one APK per ABI
+# (armeabi-v7a, arm64-v8a, x86_64); Flutter adds 1000 * ABI number to the
+# version code of each, so they never clash.
+VERSION := $(shell sed -n 's/^version: *\([^+]*\).*/\1/p' pubspec.yaml)
+DIST := build/dist
+ABIS := armeabi-v7a arm64-v8a x86_64
 
 .DEFAULT_GOAL := help
-.PHONY: help format analyze test test-android build bundle install uninstall reinstall migration
+.PHONY: help format analyze test test-android build bundle github fdroid install uninstall reinstall migration require-key
 
 help:
 	@echo 'make format    [FILES=...]   dart format (whole project by default)'
@@ -42,7 +50,9 @@ help:
 	@echo 'make test      [FILES=...]   flutter test (full run: two suites)'
 	@echo 'make test-android            JVM unit tests of the Kotlin code (gradle)'
 	@echo 'make build     [MODE=debug|release] [FLAVOR=foss|play] [SMS_LOOKBACK_DAYS=n]  build the APK'
-	@echo 'make bundle    [NO_SMS=1]    build the play AAB (release) for Google Play'
+	@echo 'make bundle    [NO_SMS=1]    Google Play: the play AAB (release, needs android/key.properties)'
+	@echo 'make github    [NO_SMS=1]    GitHub: foss + play release APKs split per ABI (6) in $(DIST)/'
+	@echo 'make fdroid                  F-Droid check: foss release APKs split per ABI (3) in $(DIST)/'
 	@echo 'make install   [MODE=...] [FLAVOR=...]  install the built APK over adb'
 	@echo 'make uninstall               uninstall the app (deletes its data)'
 	@echo 'make reinstall [MODE=...] [FLAVOR=...]  uninstall, then install (fresh data)'
@@ -75,8 +85,40 @@ test-android:
 build:
 	flutter build apk --$(MODE) --flavor $(FLAVOR) $(DART_DEFINES) $(GRADLE_ARGS)
 
-bundle:
+# Upload builds must be signed with the release key; without
+# android/key.properties gradle falls back to the debug key.
+require-key:
+	@test -f android/key.properties || { echo 'android/key.properties not found: release uploads need the release key'; exit 1; }
+
+bundle: require-key
 	flutter build appbundle --release --flavor play $(GRADLE_ARGS)
+	@echo 'AAB: build/app/outputs/bundle/playRelease/app-play-release.aab'
+
+# Builds one flavor's release APKs split per ABI and copies them to
+# $(DIST)/money-swield-<version>-<flavor>-<abi>.apk. github and fdroid
+# empty $(DIST) first, so it holds only what to upload.
+define split_apks
+	flutter build apk --release --split-per-abi --flavor $(1) $(GRADLE_ARGS)
+	mkdir -p $(DIST)
+	for abi in $(ABIS); do \
+	  cp build/app/outputs/flutter-apk/app-$$abi-$(1)-release.apk \
+	    $(DIST)/money-swield-$(VERSION)-$(1)-$$abi.apk; \
+	done
+endef
+
+github: require-key
+	rm -rf $(DIST)
+	$(call split_apks,foss)
+	$(call split_apks,play)
+	@ls -1 $(DIST)
+
+# F-Droid builds from source with its own recipe (fdroiddata) and signs
+# with its own key, so no release key is needed here. This builds the same
+# APKs locally, to check the foss release before tagging.
+fdroid:
+	rm -rf $(DIST)
+	$(call split_apks,foss)
+	@ls -1 $(DIST)
 
 # Installs what `make build` produced; it doesn't rebuild. -r keeps the app
 # data. Set ANDROID_SERIAL when several devices are connected.

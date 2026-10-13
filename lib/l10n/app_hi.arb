@@ -1,7 +1,7 @@
 {
   "@@locale": "hi",
 
-  "appTitle": "Expense Tracker",
+  "appTitle": "Money Swield",
 
   "save": "सहेजें",
   "cancel": "रद्द करें",
@@ -239,7 +239,7 @@
   "restoreFailedRestartMessage": "इस फ़ोन का आपका डेटा नहीं बदला। उसे फिर से खोलने के लिए ऐप दोबारा शुरू होगा। कृपया नीचे दी गई रिपोर्ट कॉपी करके हमें भेजें ताकि हम इसे ठीक कर सकें।",
   "restartApp": "ऐप दोबारा शुरू करें",
   "restoreRejectedTitle": "यह फ़ाइल रीस्टोर नहीं हो सकती",
-  "notABackup": "यह फ़ाइल Expense Tracker का बैकअप नहीं है।",
+  "notABackup": "यह फ़ाइल Money Swield का बैकअप नहीं है।",
   "backupTooNew": "यह बैकअप ऐप के नए वर्ज़न से बना है। ऐप अपडेट करें, फिर दोबारा कोशिश करें।",
   "backupDamaged": "यह बैकअप खराब है और रीस्टोर नहीं हो सकता।",
 
@@ -690,7 +690,7 @@
   "reportSectionsOverlap": "दो इवेंट वाला खर्च दोनों हिस्सों में है: हिस्सों के कुल जोड़ कुल मिलाकर से ज़्यादा हो सकते हैं, जो उसे एक बार गिनता है।",
   "reportColNote": "नोट",
 
-  "reportSavedNoViewer": "Download/Expense Tracker में सेव हुई। इस फ़ोन का कोई ऐप इसे नहीं खोल सकता।",
+  "reportSavedNoViewer": "Download/Money Swield में सेव हुई। इस फ़ोन का कोई ऐप इसे नहीं खोल सकता।",
   "reportHighlights": "मुख्य बातें",
   "reportHiExpenses": "खर्च",
   "reportHiPerDay": "प्रति दिन",

@@ -2,11 +2,11 @@ import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter/services.dart';
 
 /// Reads the wallpaper's accent color from Android 12+ ("Material You"),
-/// through the `expense_tracker/dynamic_color` channel in `MainActivity`.
+/// through the `money_swield/dynamic_color` channel in `MainActivity`.
 class DynamicColorService {
   const DynamicColorService();
 
-  static const _channel = MethodChannel('expense_tracker/dynamic_color');
+  static const _channel = MethodChannel('money_swield/dynamic_color');
 
   /// The accent color as ARGB, or null when the device has none (before
   /// Android 12) or it can't be read. The app then uses its default color.

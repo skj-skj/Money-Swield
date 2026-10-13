@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/domain/photo_sweep.dart';
+import 'package:money_swield/domain/photo_sweep.dart';
 
 void main() {
   final a = '${'a' * 64}.jpg';

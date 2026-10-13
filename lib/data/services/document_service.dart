@@ -32,12 +32,12 @@ abstract interface class DocumentService {
   Future<String> appVersion();
 }
 
-/// [DocumentService] over the `expense_tracker/documents` channel that
+/// [DocumentService] over the `money_swield/documents` channel that
 /// `MainActivity` registers.
 class ChannelDocumentService implements DocumentService {
   const ChannelDocumentService();
 
-  static const _channel = MethodChannel('expense_tracker/documents');
+  static const _channel = MethodChannel('money_swield/documents');
 
   @override
   Future<bool> saveDocument({

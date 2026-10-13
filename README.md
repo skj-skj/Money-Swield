@@ -1,6 +1,6 @@
-# My Expense Tracker
+# Money Swield
 
-A Flutter app for tracking expenses on the go. Android only.
+An offline expense tracker for Android, built with Flutter.
 
 The data is stored in a SQLite database in the app's package directory,
 `/sdcard/Android/data/<package-name>/` (app-specific external storage; Android

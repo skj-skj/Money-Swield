@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/domain/periods.dart';
-import 'package:my_expense_tracker_app/domain/report.dart';
-import 'package:my_expense_tracker_app/domain/report_document.dart';
-import 'package:my_expense_tracker_app/domain/report_range.dart';
+import 'package:money_swield/domain/periods.dart';
+import 'package:money_swield/domain/report.dart';
+import 'package:money_swield/domain/report_document.dart';
+import 'package:money_swield/domain/report_range.dart';
 
 /// File names and sheet names.
 void main() {

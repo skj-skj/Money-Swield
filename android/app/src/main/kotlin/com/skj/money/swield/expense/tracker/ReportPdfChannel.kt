@@ -1,4 +1,4 @@
-package com.skj.expense.tracker.my_expense_tracker_app
+package com.skj.money.swield.expense.tracker
 
 import android.content.Context
 import android.graphics.Canvas
@@ -23,7 +23,7 @@ import java.io.FileOutputStream
 import java.util.concurrent.Executors
 
 /**
- * `expense_tracker/report_pdf`: writes a report's PDF with Android's
+ * `money_swield/report_pdf`: writes a report's PDF with Android's
  * `PdfDocument` (plan A). Dart sends a layout-free document (every string
  * formatted, see report_pdf.dart); this lays it out on A4 pages and draws it
  * with the system's text stack, so Hindi conjuncts and colour emoji come out
@@ -426,7 +426,7 @@ class ReportPdfChannel(messenger: BinaryMessenger, context: Context) :
     }
 
     companion object {
-        const val NAME = "expense_tracker/report_pdf"
+        const val NAME = "money_swield/report_pdf"
 
         /** Pages per part (memory: about 25 MB of recorded pages each). */
         private const val PART_PAGES = 100

@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/app/app_dependencies.dart';
-import 'package:my_expense_tracker_app/domain/amount_expression.dart';
-import 'package:my_expense_tracker_app/domain/models/expense.dart';
-import 'package:my_expense_tracker_app/domain/models/money.dart';
-import 'package:my_expense_tracker_app/ui/core/picker_order.dart';
-import 'package:my_expense_tracker_app/ui/features/expenses/view_models/expense_form_cubit.dart';
+import 'package:money_swield/app/app_dependencies.dart';
+import 'package:money_swield/domain/amount_expression.dart';
+import 'package:money_swield/domain/models/expense.dart';
+import 'package:money_swield/domain/models/money.dart';
+import 'package:money_swield/ui/core/picker_order.dart';
+import 'package:money_swield/ui/features/expenses/view_models/expense_form_cubit.dart';
 
 import '../../../../helpers/test_database.dart';
 

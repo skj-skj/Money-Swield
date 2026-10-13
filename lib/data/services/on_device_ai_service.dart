@@ -88,7 +88,7 @@ abstract interface class OnDeviceAiService {
   Future<AiReply> prompt(String text, {required Duration timeout});
 }
 
-/// [OnDeviceAiService] over `expense_tracker/on_device_ai` (`OnDeviceAi.kt`).
+/// [OnDeviceAiService] over `money_swield/on_device_ai` (`OnDeviceAi.kt`).
 /// On foss it never calls the channel: the status is [AiStatus.unavailable].
 class ChannelOnDeviceAiService implements OnDeviceAiService {
   const ChannelOnDeviceAiService({
@@ -109,7 +109,7 @@ class ChannelOnDeviceAiService implements OnDeviceAiService {
   /// can't hang on it.
   final Duration promptBackstop;
 
-  static const _channel = MethodChannel('expense_tracker/on_device_ai');
+  static const _channel = MethodChannel('money_swield/on_device_ai');
 
   @override
   Future<AiStatus> status() async {

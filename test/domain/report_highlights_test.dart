@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/domain/expense_filter.dart';
-import 'package:my_expense_tracker_app/domain/report.dart';
-import 'package:my_expense_tracker_app/domain/report_filter.dart';
-import 'package:my_expense_tracker_app/domain/report_highlights.dart';
-import 'package:my_expense_tracker_app/domain/report_range.dart';
+import 'package:money_swield/domain/expense_filter.dart';
+import 'package:money_swield/domain/report.dart';
+import 'package:money_swield/domain/report_filter.dart';
+import 'package:money_swield/domain/report_highlights.dart';
+import 'package:money_swield/domain/report_range.dart';
 
 /// The Highlights strip (owner, 2026-10-11).
 void main() {

@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/data/repositories/category_repository.dart';
-import 'package:my_expense_tracker_app/data/repositories/event_repository.dart';
-import 'package:my_expense_tracker_app/data/repositories/payment_method_repository.dart';
-import 'package:my_expense_tracker_app/data/repositories/settings_repository.dart';
-import 'package:my_expense_tracker_app/domain/models/category.dart';
-import 'package:my_expense_tracker_app/ui/core/builtin_names.dart';
+import 'package:money_swield/data/repositories/category_repository.dart';
+import 'package:money_swield/data/repositories/event_repository.dart';
+import 'package:money_swield/data/repositories/payment_method_repository.dart';
+import 'package:money_swield/data/repositories/settings_repository.dart';
+import 'package:money_swield/domain/models/category.dart';
+import 'package:money_swield/ui/core/builtin_names.dart';
 
 import '../../helpers/test_database.dart';
 

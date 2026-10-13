@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:my_expense_tracker_app/ui/core/widgets/item_card.dart';
-import 'package:my_expense_tracker_app/ui/core/widgets/two_column_masonry.dart';
+import 'package:money_swield/ui/core/widgets/item_card.dart';
+import 'package:money_swield/ui/core/widgets/two_column_masonry.dart';
 
 void main() {
   Future<void> pump(WidgetTester tester, Widget child) => tester.pumpWidget(

@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/domain/expense_filter.dart';
-import 'package:my_expense_tracker_app/domain/report.dart';
-import 'package:my_expense_tracker_app/domain/report_chart.dart';
-import 'package:my_expense_tracker_app/domain/report_filter.dart';
-import 'package:my_expense_tracker_app/domain/report_range.dart';
+import 'package:money_swield/domain/expense_filter.dart';
+import 'package:money_swield/domain/report.dart';
+import 'package:money_swield/domain/report_chart.dart';
+import 'package:money_swield/domain/report_filter.dart';
+import 'package:money_swield/domain/report_range.dart';
 
 void main() {
   var nextId = 1;

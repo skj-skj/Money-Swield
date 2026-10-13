@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/app/app_dependencies.dart';
-import 'package:my_expense_tracker_app/data/repositories/payment_method_repository.dart';
-import 'package:my_expense_tracker_app/domain/models/app_settings.dart';
-import 'package:my_expense_tracker_app/domain/models/payment_method.dart';
-import 'package:my_expense_tracker_app/l10n/app_localizations.dart';
-import 'package:my_expense_tracker_app/ui/core/form_validation.dart';
-import 'package:my_expense_tracker_app/ui/features/payment_methods/view_models/payment_method_form_cubit.dart';
-import 'package:my_expense_tracker_app/ui/features/settings/view_models/settings_cubit.dart';
+import 'package:money_swield/app/app_dependencies.dart';
+import 'package:money_swield/data/repositories/payment_method_repository.dart';
+import 'package:money_swield/domain/models/app_settings.dart';
+import 'package:money_swield/domain/models/payment_method.dart';
+import 'package:money_swield/l10n/app_localizations.dart';
+import 'package:money_swield/ui/core/form_validation.dart';
+import 'package:money_swield/ui/features/payment_methods/view_models/payment_method_form_cubit.dart';
+import 'package:money_swield/ui/features/settings/view_models/settings_cubit.dart';
 
 import '../../../../helpers/test_database.dart';
 

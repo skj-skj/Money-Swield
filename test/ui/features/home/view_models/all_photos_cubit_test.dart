@@ -1,15 +1,15 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/app/app_dependencies.dart';
-import 'package:my_expense_tracker_app/data/repositories/expense_repository.dart';
-import 'package:my_expense_tracker_app/data/services/photo_store.dart';
-import 'package:my_expense_tracker_app/domain/expense_filter.dart';
-import 'package:my_expense_tracker_app/domain/models/expense.dart';
-import 'package:my_expense_tracker_app/domain/models/expense_draft.dart';
-import 'package:my_expense_tracker_app/domain/models/money.dart';
-import 'package:my_expense_tracker_app/ui/features/home/view_models/all_photos_cubit.dart';
-import 'package:my_expense_tracker_app/ui/features/home/view_models/expense_list_cubit.dart';
+import 'package:money_swield/app/app_dependencies.dart';
+import 'package:money_swield/data/repositories/expense_repository.dart';
+import 'package:money_swield/data/services/photo_store.dart';
+import 'package:money_swield/domain/expense_filter.dart';
+import 'package:money_swield/domain/models/expense.dart';
+import 'package:money_swield/domain/models/expense_draft.dart';
+import 'package:money_swield/domain/models/money.dart';
+import 'package:money_swield/ui/features/home/view_models/all_photos_cubit.dart';
+import 'package:money_swield/ui/features/home/view_models/expense_list_cubit.dart';
 import 'package:path/path.dart' as p;
 
 import '../../../../helpers/fake_photo_service.dart';

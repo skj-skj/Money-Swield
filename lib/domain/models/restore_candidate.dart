@@ -1,6 +1,6 @@
 /// Why a file can't be restored, one per text the user sees.
 enum RestoreRejection {
-  /// "This file isn't a backup from Expense Tracker."
+  /// "This file isn't a backup from Money Swield."
   notABackup,
 
   /// "This backup was made by a newer version of the app."

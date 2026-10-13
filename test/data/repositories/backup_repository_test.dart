@@ -1,11 +1,11 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/data/repositories/backup_repository.dart';
-import 'package:my_expense_tracker_app/data/repositories/settings_repository.dart';
-import 'package:my_expense_tracker_app/data/services/backup/backup_archive.dart';
-import 'package:my_expense_tracker_app/data/services/database/database_checks.dart';
-import 'package:my_expense_tracker_app/data/services/database/migrations/all_migrations.dart';
+import 'package:money_swield/data/repositories/backup_repository.dart';
+import 'package:money_swield/data/repositories/settings_repository.dart';
+import 'package:money_swield/data/services/backup/backup_archive.dart';
+import 'package:money_swield/data/services/database/database_checks.dart';
+import 'package:money_swield/data/services/database/migrations/all_migrations.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -169,7 +169,7 @@ void main() {
       expect(backup.zip.name, BackupRepository.backupFileName(now));
       expect(
         backup.zip.name,
-        matches(RegExp(r'^expense-tracker-backup-\d{8}-\d{6}\.zip$')),
+        matches(RegExp(r'^money-swield-backup-\d{8}-\d{6}\.zip$')),
       );
     });
 

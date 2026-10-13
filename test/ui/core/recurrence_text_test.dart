@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:my_expense_tracker_app/domain/recurrence.dart';
-import 'package:my_expense_tracker_app/ui/core/recurrence_text.dart';
+import 'package:money_swield/domain/recurrence.dart';
+import 'package:money_swield/ui/core/recurrence_text.dart';
 
 import '../../helpers/test_database.dart';
 

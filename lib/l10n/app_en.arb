@@ -1,7 +1,7 @@
 {
   "@@locale": "en",
 
-  "appTitle": "Expense Tracker",
+  "appTitle": "Money Swield",
   "@appTitle": {"description": "App name. Placeholder until the real name is chosen."},
 
   "save": "Save",
@@ -292,7 +292,7 @@
   "restoreFailedRestartMessage": "Your data on this phone is unchanged. The app restarts to open it again. Please copy the report below and send it to us so we can fix it.",
   "restartApp": "Restart the app",
   "restoreRejectedTitle": "Can't restore this file",
-  "notABackup": "This file isn't a backup from Expense Tracker.",
+  "notABackup": "This file isn't a backup from Money Swield.",
   "backupTooNew": "This backup was made by a newer version of the app. Update the app, then try again.",
   "backupDamaged": "This backup is damaged and can't be restored.",
 
@@ -935,7 +935,7 @@
   "reportSectionsOverlap": "An expense in two events is in both sections: section totals can add up to more than the overall total, which counts it once.",
   "reportColNote": "Note",
 
-  "reportSavedNoViewer": "Saved to Download/Expense Tracker. No app on this phone can open it.",
+  "reportSavedNoViewer": "Saved to Download/Money Swield. No app on this phone can open it.",
   "reportHighlights": "Highlights",
   "reportHiExpenses": "Expenses",
   "reportHiPerDay": "Per day",

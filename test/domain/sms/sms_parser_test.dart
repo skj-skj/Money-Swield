@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/domain/sms/sms_parser.dart';
-import 'package:my_expense_tracker_app/domain/sms/sms_payment_method.dart';
-import 'package:my_expense_tracker_app/domain/sms/sms_text.dart';
+import 'package:money_swield/domain/sms/sms_parser.dart';
+import 'package:money_swield/domain/sms/sms_payment_method.dart';
+import 'package:money_swield/domain/sms/sms_text.dart';
 
 import 'fixtures/india_sms.dart';
 

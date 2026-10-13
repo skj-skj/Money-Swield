@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="${appLabel}"
+        android:label="${appLabel}${labelSuffix}"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
@@ -26,7 +26,7 @@
             </intent-filter>
         </activity>
         <!-- The camera app writes a photo into photos_staging/ through this
-            ; res/xml/photo_paths.xml shares nothing else.
+             provider; res/xml/photo_paths.xml shares nothing else.
              No CAMERA permission on purpose: declared but not granted, it
              makes the camera intent throw. No storage permission
              either: the app's photos are in its own folder, and saving a

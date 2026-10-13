@@ -3,11 +3,11 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart' show Locale;
-import 'package:my_expense_tracker_app/data/services/backup/backup_paths.dart';
-import 'package:my_expense_tracker_app/data/services/database/app_database.dart';
-import 'package:my_expense_tracker_app/data/services/database/migration/migration.dart';
-import 'package:my_expense_tracker_app/data/services/database/migration/migration_runner.dart';
-import 'package:my_expense_tracker_app/data/services/database/migrations/all_migrations.dart';
+import 'package:money_swield/data/services/backup/backup_paths.dart';
+import 'package:money_swield/data/services/database/app_database.dart';
+import 'package:money_swield/data/services/database/migration/migration.dart';
+import 'package:money_swield/data/services/database/migration/migration_runner.dart';
+import 'package:money_swield/data/services/database/migrations/all_migrations.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -30,7 +30,7 @@ class FileDatabases {
     bool androidLike = false,
     bool noIsolate = false,
   }) async {
-    final root = await testFolder('expense_tracker_test');
+    final root = await testFolder('money_swield_test');
     sqfliteFfiInit();
     final factory = noIsolate
         ? databaseFactoryFfiNoIsolate

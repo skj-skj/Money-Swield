@@ -32,7 +32,7 @@ bool isValidSha256(String text) => _sha256.hasMatch(text);
 
 /// `photos/<sha256>.<ext>`, the only shape of a saved photo's path. Every path
 /// from the database, a draft, a manifest or a zip passes this before any file
-/// is read, written or deleted, so a crafted `../databases/expense_tracker.db`
+/// is read, written or deleted, so a crafted `../databases/money_swield.db`
 /// can never reach a file.
 bool isValidPhotoPath(String relativePath) => _photoPath.hasMatch(relativePath);
 

@@ -10,7 +10,7 @@ class AppLocalizationsHi extends AppLocalizations {
   AppLocalizationsHi([String locale = 'hi']) : super(locale);
 
   @override
-  String get appTitle => 'Expense Tracker';
+  String get appTitle => 'Money Swield';
 
   @override
   String get save => 'सहेजें';
@@ -890,7 +890,7 @@ class AppLocalizationsHi extends AppLocalizations {
   String get restoreRejectedTitle => 'यह फ़ाइल रीस्टोर नहीं हो सकती';
 
   @override
-  String get notABackup => 'यह फ़ाइल Expense Tracker का बैकअप नहीं है।';
+  String get notABackup => 'यह फ़ाइल Money Swield का बैकअप नहीं है।';
 
   @override
   String get backupTooNew =>
@@ -3364,7 +3364,7 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get reportSavedNoViewer =>
-      'Download/Expense Tracker में सेव हुई। इस फ़ोन का कोई ऐप इसे नहीं खोल सकता।';
+      'Download/Money Swield में सेव हुई। इस फ़ोन का कोई ऐप इसे नहीं खोल सकता।';
 
   @override
   String get reportHighlights => 'मुख्य बातें';

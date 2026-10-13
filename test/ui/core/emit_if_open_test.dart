@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:bloc_signals/bloc_signals.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/ui/core/emit_if_open.dart';
+import 'package:money_swield/ui/core/emit_if_open.dart';
 
 /// Loads a value across an await, like every cubit using the mixin.
 class _Loader extends CubitSignal<int> with EmitIfOpen<int> {

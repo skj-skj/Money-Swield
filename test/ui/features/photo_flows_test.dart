@@ -2,15 +2,15 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:my_expense_tracker_app/app/app_dependencies.dart';
-import 'package:my_expense_tracker_app/data/services/photo_store.dart';
-import 'package:my_expense_tracker_app/domain/models/expense.dart';
-import 'package:my_expense_tracker_app/domain/models/money.dart';
-import 'package:my_expense_tracker_app/domain/photo_sizing.dart';
-import 'package:my_expense_tracker_app/ui/core/widgets/photos/photo_selection_bar.dart';
-import 'package:my_expense_tracker_app/ui/core/widgets/photos/photo_thumb.dart';
-import 'package:my_expense_tracker_app/ui/core/widgets/photos/photo_viewer.dart';
-import 'package:my_expense_tracker_app/ui/features/home/views/home_list_slivers.dart';
+import 'package:money_swield/app/app_dependencies.dart';
+import 'package:money_swield/data/services/photo_store.dart';
+import 'package:money_swield/domain/models/expense.dart';
+import 'package:money_swield/domain/models/money.dart';
+import 'package:money_swield/domain/photo_sizing.dart';
+import 'package:money_swield/ui/core/widgets/photos/photo_selection_bar.dart';
+import 'package:money_swield/ui/core/widgets/photos/photo_thumb.dart';
+import 'package:money_swield/ui/core/widgets/photos/photo_viewer.dart';
+import 'package:money_swield/ui/features/home/views/home_list_slivers.dart';
 import 'package:path/path.dart' as p;
 
 import '../../helpers/fake_photo_service.dart';
@@ -214,8 +214,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('viewerSave')));
     await pumpUntil(
       tester,
-      () =>
-          find.text('Saved to Pictures/Expense Tracker').evaluate().isNotEmpty,
+      () => find.text('Saved to Pictures/Money Swield').evaluate().isNotEmpty,
     );
     expect(service.savedPictures.single.name, startsWith('Lunch '));
 
@@ -299,7 +298,7 @@ void main() {
     );
     expect(find.byType(AlertDialog), findsNothing);
     expect(
-      find.text('3 photos saved to Pictures/Expense Tracker'),
+      find.text('3 photos saved to Pictures/Money Swield'),
       findsOneWidget,
     );
     // The 328 dp sheet shortens the title to the number; TalkBack's

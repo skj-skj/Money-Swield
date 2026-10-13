@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/data/services/backup/backup_manifest.dart';
+import 'package:money_swield/data/services/backup/backup_manifest.dart';
 
 import 'zip_test_helpers.dart';
 
@@ -13,9 +13,9 @@ void main() {
       'app missing': manifestJson({'app': null}),
       'app of another program': manifestJson({'app': 'something_else'}),
       'a JSON array': '[1, 2, 3]',
-      'a JSON string': '"expense_tracker"',
+      'a JSON string': '"money_swield"',
       'JSON null': 'null',
-      'not JSON': '{"app": "expense_tracker", ',
+      'not JSON': '{"app": "money_swield", ',
       'empty': '',
     };
     for (final MapEntry(key: name, value: text) in cases.entries) {
@@ -29,8 +29,7 @@ void main() {
 
     test('"format": null (present but null)', () {
       expect(
-        () =>
-            BackupManifest.decode('{"app": "expense_tracker", "format": null}'),
+        () => BackupManifest.decode('{"app": "money_swield", "format": null}'),
         throwsA(isA<FormatException>()),
       );
     });
@@ -89,7 +88,7 @@ void main() {
       createdAt: DateTime.utc(2026, 10, 3, 8, 35, 12, 345).toLocal(),
     ).encode();
     expect(text, contains('"created_at": "2026-10-03T08:35:12Z"'));
-    expect(text, contains('"app": "expense_tracker"'));
+    expect(text, contains('"app": "money_swield"'));
     expect(text, contains('"includes_photos": false'));
     final back = BackupManifest.decode(text);
     expect(back.createdAt, DateTime.utc(2026, 10, 3, 8, 35, 12));
@@ -155,7 +154,7 @@ void main() {
       },
       'a crafted path': {
         'includes_photos': true,
-        'photos': [entry(a, path: '../databases/expense_tracker.db')],
+        'photos': [entry(a, path: '../databases/money_swield.db')],
       },
       'a path that names another hash': {
         'includes_photos': true,

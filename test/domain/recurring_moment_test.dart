@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/domain/periods.dart';
-import 'package:my_expense_tracker_app/domain/recurring_moment.dart';
+import 'package:money_swield/domain/periods.dart';
+import 'package:money_swield/domain/recurring_moment.dart';
 
 /// A fixed-offset zone: wall-clock fields minus the offset is the instant.
 ZonedMoment Function(int, int, int, int, int) fixed(int offsetMinutes) =>

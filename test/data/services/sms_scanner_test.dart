@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/data/repositories/settings_repository.dart';
-import 'package:my_expense_tracker_app/data/repositories/sms_suggestion_repository.dart';
-import 'package:my_expense_tracker_app/data/services/sms_scanner.dart';
-import 'package:my_expense_tracker_app/domain/sms/sms_parser.dart';
+import 'package:money_swield/data/repositories/settings_repository.dart';
+import 'package:money_swield/data/repositories/sms_suggestion_repository.dart';
+import 'package:money_swield/data/services/sms_scanner.dart';
+import 'package:money_swield/domain/sms/sms_parser.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../../domain/sms/fixtures/india_sms.dart';

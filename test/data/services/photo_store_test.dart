@@ -3,10 +3,10 @@ import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/data/services/photo_service.dart';
-import 'package:my_expense_tracker_app/data/services/photo_store.dart';
-import 'package:my_expense_tracker_app/domain/photo_sizing.dart';
-import 'package:my_expense_tracker_app/domain/photos.dart';
+import 'package:money_swield/data/services/photo_service.dart';
+import 'package:money_swield/data/services/photo_store.dart';
+import 'package:money_swield/domain/photo_sizing.dart';
+import 'package:money_swield/domain/photos.dart';
 import 'package:path/path.dart' as p;
 
 import '../../helpers/fake_photo_service.dart';
@@ -204,7 +204,7 @@ void main() {
     test('pathOf refuses crafted paths and names', () {
       final crafted = SavedPhoto(
         id: 1,
-        relativePath: '../databases/expense_tracker.db',
+        relativePath: '../databases/money_swield.db',
         sha256: 'a' * 64,
         byteSize: 1,
       );

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/domain/periods.dart';
-import 'package:my_expense_tracker_app/domain/report_range.dart';
+import 'package:money_swield/domain/periods.dart';
+import 'package:money_swield/domain/report_range.dart';
 
 void main() {
   const mon = WeekStart.monday;

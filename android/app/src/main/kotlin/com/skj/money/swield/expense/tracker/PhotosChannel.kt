@@ -1,4 +1,4 @@
-package com.skj.expense.tracker.my_expense_tracker_app
+package com.skj.money.swield.expense.tracker
 
 import android.app.Activity
 import android.content.ActivityNotFoundException
@@ -31,7 +31,7 @@ import java.io.InputStream
 import java.util.concurrent.Executors
 
 /**
- * `expense_tracker/photos`: Android's own camera and photo picker, reading a
+ * `money_swield/photos`: Android's own camera and photo picker, reading a
  * picture's size, resizing and JPEG-encoding it in native code, copying one
  * into `Pictures/` for the user, and free space.
  *
@@ -436,7 +436,7 @@ class PhotosChannel(messenger: BinaryMessenger, context: Context) :
     }
 
     companion object {
-        const val NAME = "expense_tracker/photos"
+        const val NAME = "money_swield/photos"
         private const val REQUEST_CODE = 0x5E8
         private const val BUFFER = 64 * 1024
         private const val PREVIEW_EDGE = 1080

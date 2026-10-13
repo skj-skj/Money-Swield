@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:my_expense_tracker_app/app/app_dependencies.dart';
-import 'package:my_expense_tracker_app/data/services/on_device_ai_service.dart';
-import 'package:my_expense_tracker_app/domain/models/sms_suggestion.dart';
-import 'package:my_expense_tracker_app/ui/features/backup/views/backup_screen.dart';
+import 'package:money_swield/app/app_dependencies.dart';
+import 'package:money_swield/data/services/on_device_ai_service.dart';
+import 'package:money_swield/domain/models/sms_suggestion.dart';
+import 'package:money_swield/ui/features/backup/views/backup_screen.dart';
 
 import '../../helpers/fake_on_device_ai.dart';
 import '../../helpers/fake_sms_service.dart';

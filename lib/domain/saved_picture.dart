@@ -8,7 +8,7 @@ const savedPictureTitleLength = 60;
 
 /// The folder under `Pictures/` that saved pictures go to. Not translated: it
 /// is the app's name, and only new saves follow a later rename.
-const savedPicturesFolder = 'Expense Tracker';
+const savedPicturesFolder = 'Money Swield';
 
 /// Characters a file name can't hold on Android's shared storage or a PC.
 final _forbidden = RegExp(r'[/\\:*?"<>|\x00-\x1F\x7F]');

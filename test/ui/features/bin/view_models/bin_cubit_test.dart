@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/app/app_dependencies.dart';
-import 'package:my_expense_tracker_app/ui/features/bin/view_models/bin_cubit.dart';
-import 'package:my_expense_tracker_app/ui/features/bin/views/bin_screen.dart';
+import 'package:money_swield/app/app_dependencies.dart';
+import 'package:money_swield/ui/features/bin/view_models/bin_cubit.dart';
+import 'package:money_swield/ui/features/bin/views/bin_screen.dart';
 
 import '../../../../helpers/test_database.dart';
 

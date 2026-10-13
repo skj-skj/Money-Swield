@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
@@ -5,7 +7,7 @@ plugins {
 }
 
 android {
-    namespace = "com.skj.expense.tracker.my_expense_tracker_app"
+    namespace = "com.skj.money.swield.expense.tracker"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -15,8 +17,9 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.skj.expense.tracker.my_expense_tracker_app"
+        // The flavor and build type add `.foss` / `.play` and `.debug` (see
+        // below).
+        applicationId = "com.skj.money.swield.expense.tracker"
         // You can update the following values to match your application needs.
         // For more information, see:
         // https://flutter.dev/to/review-gradle-config. Android 10: pictures the
@@ -32,19 +35,54 @@ android {
         versionName = flutter.versionName
     }
 
+    // The upload / release key, read from android/key.properties (never
+    // committed). Without that file, release builds are signed with the
+    // debug key so `flutter run --release` and F-Droid's build (which signs
+    // with its own key) still work; `make bundle` and `make github` refuse
+    // to run without it.
+    val keyProperties = Properties()
+    val keyPropertiesFile = rootProject.file("key.properties")
+    if (keyPropertiesFile.exists()) {
+        keyPropertiesFile.inputStream().use { keyProperties.load(it) }
+    }
+    signingConfigs {
+        if (keyPropertiesFile.exists()) {
+            create("release") {
+                storeFile = rootProject.file(keyProperties.getProperty("storeFile"))
+                storePassword = keyProperties.getProperty("storePassword")
+                keyAlias = keyProperties.getProperty("keyAlias")
+                keyPassword = keyProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
+        // A debug build is its own app, `<id>.debug`, so installing one
+        // never touches the data of the released app on the same phone
+        // (owner, 2026-10-12).
+        debug {
+            applicationIdSuffix = ".debug"
+            manifestPlaceholders["labelSuffix"] = " (debug)"
+        }
+        // Flutter's plugin creates `profile` as a copy of `debug` before this
+        // block runs, so it gets none of the above: without these it would
+        // fail the manifest merge and take the released app's id.
+        getByName("profile") {
+            applicationIdSuffix = ".debug"
+            manifestPlaceholders["labelSuffix"] = " (profile)"
+        }
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("release")
+                ?: signingConfigs.getByName("debug")
+            manifestPlaceholders["labelSuffix"] = ""
         }
     }
 
     // foss: no closed-source code, what F-Droid builds (`gradle: [foss]`) and
-    // the FOSS APK on GitHub. play: Google Play's AAB and a second APK. Each
-    // its own applicationId, `.foss` / `.play` after the base one (owner,
-    // 2026-10-11): the two install side by side, each with its own data. The
-    // namespace (the Kotlin package) stays the base one.
+    // the FOSS APKs on GitHub. play: Google Play's AAB and the play APKs on
+    // GitHub. Each its own applicationId, `.foss` / `.play` after the base
+    // one (owner, 2026-10-11): the two install side by side, each with its
+    // own data. The namespace (the Kotlin package) stays the base one.
     flavorDimensions += "store"
     productFlavors {
         // The launcher name: foss says so, so the two can be told apart
@@ -52,12 +90,12 @@ android {
         create("foss") {
             dimension = "store"
             applicationIdSuffix = ".foss"
-            manifestPlaceholders["appLabel"] = "Expense Tracker (FOSS)"
+            manifestPlaceholders["appLabel"] = "Money Swield (FOSS)"
         }
         create("play") {
             dimension = "store"
             applicationIdSuffix = ".play"
-            manifestPlaceholders["appLabel"] = "Expense Tracker"
+            manifestPlaceholders["appLabel"] = "Money Swield"
             // ML Kit's components are found by reflection; R8 needs to be told
             // to keep them.
             proguardFiles("proguard-play.pro")

@@ -1,4 +1,4 @@
-package com.skj.expense.tracker.my_expense_tracker_app
+package com.skj.money.swield.expense.tracker
 
 /** The picture can't be decoded: the channel's `notAnImage`. */
 class NotAnImage(cause: Throwable?) : Exception(cause)

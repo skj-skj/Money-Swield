@@ -1,12 +1,12 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:my_expense_tracker_app/domain/models/dashboard_options.dart';
-import 'package:my_expense_tracker_app/domain/periods.dart';
-import 'package:my_expense_tracker_app/l10n/app_localizations.dart';
-import 'package:my_expense_tracker_app/ui/core/period_names.dart';
-import 'package:my_expense_tracker_app/ui/features/home/view_models/trend_cubit.dart';
-import 'package:my_expense_tracker_app/ui/features/home/views/trend_card.dart';
+import 'package:money_swield/domain/models/dashboard_options.dart';
+import 'package:money_swield/domain/periods.dart';
+import 'package:money_swield/l10n/app_localizations.dart';
+import 'package:money_swield/ui/core/period_names.dart';
+import 'package:money_swield/ui/features/home/view_models/trend_cubit.dart';
+import 'package:money_swield/ui/features/home/views/trend_card.dart';
 
 /// The trend card's swipes. The reel turns like a mechanical dial: a quick
 /// flick turns exactly one face, a held drag one face per card height, with a

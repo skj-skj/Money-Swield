@@ -5,7 +5,7 @@ changing code.
 
 ## The app
 
-An offline expense tracker for **Android only** (Flutter). It answers
+**Money Swield**, an offline expense tracker for **Android only** (Flutter). It answers
 "where did my money go?" by week, month, year, category and event.
 
 - Recording an expense takes seconds: title, amount, category, Save.
@@ -78,7 +78,9 @@ targets.
 | Full test run | `make test` (builds two suite files with `tool/test_suites.dart`) |
 | Kotlin unit tests | `make test-android` (JVM, both flavors) |
 | Build APK | `make build MODE=debug\|release FLAVOR=foss\|play` |
-| Build Play bundle | `make bundle` (`NO_SMS=1` leaves READ_SMS out) |
+| Google Play upload | `make bundle`: the play AAB (`NO_SMS=1` leaves READ_SMS out) |
+| GitHub upload | `make github`: foss + play release APKs split per ABI, 6 in `build/dist/` |
+| F-Droid check | `make fdroid`: foss release APKs split per ABI, 3 in `build/dist/` |
 | Install on phone | `make install` / `make reinstall` (reinstall wipes data) |
 | New migration | `make migration NAME=add_something` |
 | Regenerate strings | `flutter gen-l10n` (also runs on build) |
@@ -186,8 +188,9 @@ third_party/           Android 10's SQLite source, for tests only
 
 | | `foss` (default) | `play` |
 |---|---|---|
-| Store | F-Droid, GitHub | Google Play |
-| App id suffix | `.foss` | `.play` |
+| Store | F-Droid, GitHub | Google Play (AAB), GitHub |
+| App id | `com.skj.money.swield.expense.tracker.foss` | `com.skj.money.swield.expense.tracker.play` |
+| Launcher name | Money Swield (FOSS) | Money Swield |
 | SMS suggestions | yes | yes; `-PnoSms=true` removes READ_SMS |
 | SMS parsing | regex | on-device AI (ML Kit GenAI, Gemini Nano) if available and on, else regex |
 | Closed-source code | **none** | ML Kit GenAI Prompt (`playImplementation` only) |
@@ -198,6 +201,28 @@ lives only in `android/app/src/play/` with its library added as
 answers "unavailable". Dart reads the flavor with `currentAppFlavor`;
 anything but `play` is foss. `android/app/proguard-play.pro` keeps ML
 Kit's reflection-loaded classes in play release builds.
+
+**Debug builds are separate apps**: the `debug` build type adds `.debug`
+to the id (`….foss.debug`, `….play.debug`) and " (debug)" to the
+launcher name, so a debug install never touches the data of a released
+app on the same phone. The Kotlin package (`namespace`) is the base id
+without a suffix; the Dart package is `money_swield`.
+
+**Releases** (`version:` in `pubspec.yaml`; split APKs get 1000 × ABI
+number added to the version code by Flutter):
+
+| Where | What | Command |
+|---|---|---|
+| Google Play | play AAB | `make bundle` |
+| GitHub | foss + play, one APK per ABI (armeabi-v7a, arm64-v8a, x86_64): 6 | `make github` |
+| F-Droid | foss, one APK per ABI: 3 | built by F-Droid from source (recipe in fdroiddata, one build entry per ABI); `make fdroid` builds the same locally |
+
+**Signing**: release builds read `android/key.properties` (`storeFile`,
+`storePassword`, `keyAlias`, `keyPassword`; `storeFile` relative to
+`android/`). The file and the keystore are gitignored and never
+committed. Without the file, release builds fall back to the debug key
+(for `flutter run --release` and F-Droid, which signs with its own key);
+`make bundle` and `make github` refuse to run without it.
 
 ## Kotlin side
 
@@ -225,13 +250,13 @@ flowchart LR
         PAC[PendingActivityCall]
         FP[ReportsFileProvider]
     end
-    DS -- expense_tracker/documents --> DOC
-    PS -- expense_tracker/photos --> PH
-    RE -- expense_tracker/report_pdf --> PDF
-    RE -- expense_tracker/documents --> DOC
-    SS -- expense_tracker/sms --> SMS
-    AI -- expense_tracker/on_device_ai --> ODA
-    DC -- expense_tracker/dynamic_color --> MA
+    DS -- money_swield/documents --> DOC
+    PS -- money_swield/photos --> PH
+    RE -- money_swield/report_pdf --> PDF
+    RE -- money_swield/documents --> DOC
+    SS -- money_swield/sms --> SMS
+    AI -- money_swield/on_device_ai --> ODA
+    DC -- money_swield/dynamic_color --> MA
     MA --> DOC & PH & PDF & SMS & ODA
     DOC --> PAC
     PH --> PAC

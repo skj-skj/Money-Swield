@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:material_ui/material_ui.dart' show Locale;
-import 'package:my_expense_tracker_app/data/services/database/app_database.dart';
-import 'package:my_expense_tracker_app/domain/models/restore_candidate.dart';
-import 'package:my_expense_tracker_app/ui/features/backup/view_models/restore_cubit.dart';
-import 'package:my_expense_tracker_app/ui/features/backup/views/backup_texts.dart';
-import 'package:my_expense_tracker_app/ui/features/backup/views/restore_screen.dart';
-import 'package:my_expense_tracker_app/ui/features/migration/view_models/migration_cubit.dart';
+import 'package:money_swield/data/services/database/app_database.dart';
+import 'package:money_swield/domain/models/restore_candidate.dart';
+import 'package:money_swield/ui/features/backup/view_models/restore_cubit.dart';
+import 'package:money_swield/ui/features/backup/views/backup_texts.dart';
+import 'package:money_swield/ui/features/backup/views/restore_screen.dart';
+import 'package:money_swield/ui/features/migration/view_models/migration_cubit.dart';
 
 import '../../../../helpers/fake_app_database.dart';
 import '../../../../helpers/test_database.dart';

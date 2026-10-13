@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/l10n/app_localizations.dart';
+import 'package:money_swield/l10n/app_localizations.dart';
 
 /// gen-l10n only warns about a missing translation (and then shows English),
 /// so these checks make a gap in es/hi a test failure instead.

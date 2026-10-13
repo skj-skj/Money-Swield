@@ -3,17 +3,17 @@ import 'dart:math' as math;
 import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:my_expense_tracker_app/data/services/photo_service.dart';
-import 'package:my_expense_tracker_app/data/services/photo_store.dart';
-import 'package:my_expense_tracker_app/l10n/app_localizations.dart';
-import 'package:my_expense_tracker_app/ui/core/widgets/photos/add_photo_sheet.dart';
-import 'package:my_expense_tracker_app/ui/core/widgets/photos/photo_grid.dart';
-import 'package:my_expense_tracker_app/ui/core/widgets/photos/photo_review_screen.dart';
-import 'package:my_expense_tracker_app/ui/core/widgets/photos/photo_selection_bar.dart';
-import 'package:my_expense_tracker_app/ui/core/widgets/photos/photo_stack_button.dart';
-import 'package:my_expense_tracker_app/ui/core/widgets/photos/photo_thumb.dart';
-import 'package:my_expense_tracker_app/ui/core/widgets/photos/photo_viewer.dart';
-import 'package:my_expense_tracker_app/ui/core/widgets/photos/saved_to_pictures_message.dart';
+import 'package:money_swield/data/services/photo_service.dart';
+import 'package:money_swield/data/services/photo_store.dart';
+import 'package:money_swield/l10n/app_localizations.dart';
+import 'package:money_swield/ui/core/widgets/photos/add_photo_sheet.dart';
+import 'package:money_swield/ui/core/widgets/photos/photo_grid.dart';
+import 'package:money_swield/ui/core/widgets/photos/photo_review_screen.dart';
+import 'package:money_swield/ui/core/widgets/photos/photo_selection_bar.dart';
+import 'package:money_swield/ui/core/widgets/photos/photo_stack_button.dart';
+import 'package:money_swield/ui/core/widgets/photos/photo_thumb.dart';
+import 'package:money_swield/ui/core/widgets/photos/photo_viewer.dart';
+import 'package:money_swield/ui/core/widgets/photos/saved_to_pictures_message.dart';
 
 import '../../../helpers/test_database.dart';
 import '../../../helpers/test_images.dart';
@@ -555,7 +555,7 @@ void main() {
               imageOf: (i, maxPx) => memoryImage(),
               onSave: (i) async {
                 saved.add(i);
-                return 'Saved to Pictures/Expense Tracker';
+                return 'Saved to Pictures/Money Swield';
               },
               onDelete: (i) async {
                 deleted.add(i);
@@ -572,7 +572,7 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('viewerSave')));
       await tester.pumpAndSettle();
       expect(saved, [1]);
-      expect(find.text('Saved to Pictures/Expense Tracker'), findsOneWidget);
+      expect(find.text('Saved to Pictures/Money Swield'), findsOneWidget);
       await tester.fling(find.byType(PageView), const Offset(-400, 0), 1000);
       await tester.pumpAndSettle();
       expect(find.text('3 / 3'), findsOneWidget);
@@ -784,13 +784,13 @@ void main() {
           failed: failed,
           noSpace: noSpace,
         ));
-    expect(text(1, 0, 0), 'Saved to Pictures/Expense Tracker');
-    expect(text(3, 0, 0), '3 photos saved to Pictures/Expense Tracker');
+    expect(text(1, 0, 0), 'Saved to Pictures/Money Swield');
+    expect(text(3, 0, 0), '3 photos saved to Pictures/Money Swield');
     expect(text(2, 0, 1), "2 saved; 1 couldn't be saved");
     expect(text(0, 1, 0), "1 photo is missing and wasn't saved");
     expect(
       text(2, 1, 0),
-      '2 photos saved to Pictures/Expense Tracker. 1 photo is missing and '
+      '2 photos saved to Pictures/Money Swield. 1 photo is missing and '
       "wasn't saved",
     );
     expect(
@@ -815,7 +815,7 @@ void main() {
         l10n,
         () async => (saved: 1, missing: 0, failed: 0, noSpace: false),
       ),
-      'Saved to Pictures/Expense Tracker',
+      'Saved to Pictures/Money Swield',
     );
     expect(await saveToPicturesMessage(l10n, () async => null), isNull);
     expect(

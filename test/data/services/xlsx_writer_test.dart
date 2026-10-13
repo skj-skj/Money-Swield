@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:archive/archive.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/data/services/xlsx/xlsx_writer.dart';
-import 'package:my_expense_tracker_app/l10n/app_localizations.dart';
+import 'package:money_swield/data/services/xlsx/xlsx_writer.dart';
+import 'package:money_swield/l10n/app_localizations.dart';
 
 /// The .xlsx writer: decode the zip, read the XML.
 void main() {

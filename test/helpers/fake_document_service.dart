@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:my_expense_tracker_app/data/services/document_service.dart';
+import 'package:money_swield/data/services/document_service.dart';
 
 /// Stands in for the system save and open dialogs. By default saving
 /// "saves" (keeps a copy of the bytes) and opening cancels.

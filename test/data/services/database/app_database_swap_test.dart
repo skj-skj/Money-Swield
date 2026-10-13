@@ -1,12 +1,12 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/app/restore_tools.dart';
-import 'package:my_expense_tracker_app/data/services/backup/file_operations.dart';
-import 'package:my_expense_tracker_app/data/services/backup/pre_restore_copy.dart';
-import 'package:my_expense_tracker_app/data/services/database/app_database.dart';
-import 'package:my_expense_tracker_app/data/services/database/migration/database_backup.dart';
-import 'package:my_expense_tracker_app/data/services/document_service.dart';
+import 'package:money_swield/app/restore_tools.dart';
+import 'package:money_swield/data/services/backup/file_operations.dart';
+import 'package:money_swield/data/services/backup/pre_restore_copy.dart';
+import 'package:money_swield/data/services/database/app_database.dart';
+import 'package:money_swield/data/services/database/migration/database_backup.dart';
+import 'package:money_swield/data/services/document_service.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 

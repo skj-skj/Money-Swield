@@ -2,17 +2,17 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/data/repositories/category_repository.dart';
-import 'package:my_expense_tracker_app/data/repositories/data_version.dart';
-import 'package:my_expense_tracker_app/data/repositories/expense_repository.dart';
-import 'package:my_expense_tracker_app/data/repositories/settings_repository.dart';
-import 'package:my_expense_tracker_app/data/repositories/sms_suggestion_repository.dart';
-import 'package:my_expense_tracker_app/data/services/on_device_ai_service.dart';
-import 'package:my_expense_tracker_app/data/services/sms_scanner.dart';
-import 'package:my_expense_tracker_app/domain/models/expense.dart';
-import 'package:my_expense_tracker_app/domain/models/money.dart';
-import 'package:my_expense_tracker_app/domain/models/sms_suggestion.dart';
-import 'package:my_expense_tracker_app/domain/sms/sms_ai_prompt.dart';
+import 'package:money_swield/data/repositories/category_repository.dart';
+import 'package:money_swield/data/repositories/data_version.dart';
+import 'package:money_swield/data/repositories/expense_repository.dart';
+import 'package:money_swield/data/repositories/settings_repository.dart';
+import 'package:money_swield/data/repositories/sms_suggestion_repository.dart';
+import 'package:money_swield/data/services/on_device_ai_service.dart';
+import 'package:money_swield/data/services/sms_scanner.dart';
+import 'package:money_swield/domain/models/expense.dart';
+import 'package:money_swield/domain/models/money.dart';
+import 'package:money_swield/domain/models/sms_suggestion.dart';
+import 'package:money_swield/domain/sms/sms_ai_prompt.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../../domain/sms/fixtures/india_sms.dart';

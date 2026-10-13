@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/domain/amount_expression.dart';
-import 'package:my_expense_tracker_app/domain/itemize.dart';
+import 'package:money_swield/domain/amount_expression.dart';
+import 'package:money_swield/domain/itemize.dart';
 
 List<String> termsOf(String canonical) =>
     (evaluateExpression(canonical, minorDigits: 2) as ExpressionValue).terms;

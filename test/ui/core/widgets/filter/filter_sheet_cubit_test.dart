@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/domain/expense_filter.dart';
-import 'package:my_expense_tracker_app/ui/core/widgets/filter/filter_sheet_cubit.dart';
+import 'package:money_swield/domain/expense_filter.dart';
+import 'package:money_swield/ui/core/widgets/filter/filter_sheet_cubit.dart';
 
 void main() {
   FilterSheetCubit cubitFor(ExpenseFilter filter) {

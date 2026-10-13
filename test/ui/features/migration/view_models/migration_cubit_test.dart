@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart' show Locale;
-import 'package:my_expense_tracker_app/data/services/database/app_database.dart';
-import 'package:my_expense_tracker_app/data/services/database/migration/migration_runner.dart';
-import 'package:my_expense_tracker_app/ui/features/migration/view_models/migration_cubit.dart';
+import 'package:money_swield/data/services/database/app_database.dart';
+import 'package:money_swield/data/services/database/migration/migration_runner.dart';
+import 'package:money_swield/ui/features/migration/view_models/migration_cubit.dart';
 import 'package:path/path.dart' as p;
 
 import '../../../../data/services/database/migration/test_helpers.dart';

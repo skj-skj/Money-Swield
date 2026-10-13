@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:my_expense_tracker_app/data/services/sms_service.dart';
+import 'package:money_swield/data/services/sms_service.dart';
 
 /// Stands in for the SMS channel: an inbox in memory, a permission the test
 /// sets, and a record of every read.

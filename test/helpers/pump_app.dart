@@ -1,11 +1,11 @@
 import 'package:bloc_signals_flutter/bloc_signals_flutter.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:my_expense_tracker_app/app/app.dart';
-import 'package:my_expense_tracker_app/app/app_dependencies.dart';
-import 'package:my_expense_tracker_app/domain/models/app_settings.dart';
-import 'package:my_expense_tracker_app/ui/features/migration/view_models/migration_cubit.dart';
-import 'package:my_expense_tracker_app/ui/features/settings/view_models/settings_cubit.dart';
+import 'package:money_swield/app/app.dart';
+import 'package:money_swield/app/app_dependencies.dart';
+import 'package:money_swield/domain/models/app_settings.dart';
+import 'package:money_swield/ui/features/migration/view_models/migration_cubit.dart';
+import 'package:money_swield/ui/features/settings/view_models/settings_cubit.dart';
 
 import 'fake_app_database.dart';
 

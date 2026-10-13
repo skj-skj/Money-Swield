@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/ui/core/byte_size_text.dart';
+import 'package:money_swield/ui/core/byte_size_text.dart';
 
 import '../../helpers/test_database.dart';
 

@@ -226,11 +226,11 @@ class BackupRepository {
   Future<void> deleteBackupFiles() async =>
       deleteFolderIfExists((await _appDatabase.paths()).backupWorkFolder);
 
-  /// `expense-tracker-backup-YYYYMMDD-HHMMSS.zip` in device-local time.
+  /// `money-swield-backup-YYYYMMDD-HHMMSS.zip` in device-local time.
   static String backupFileName(DateTime at) {
     final t = at.toLocal();
     String two(int n) => n.toString().padLeft(2, '0');
-    return 'expense-tracker-backup-${t.year}${two(t.month)}${two(t.day)}'
+    return 'money-swield-backup-${t.year}${two(t.month)}${two(t.day)}'
         '-${two(t.hour)}${two(t.minute)}${two(t.second)}.zip';
   }
 

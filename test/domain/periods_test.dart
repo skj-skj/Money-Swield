@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/domain/periods.dart';
+import 'package:money_swield/domain/periods.dart';
 
 void main() {
   String range(String day, Period period, [WeekStart s = WeekStart.monday]) {

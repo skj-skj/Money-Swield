@@ -1,15 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:my_expense_tracker_app/app/app_dependencies.dart';
-import 'package:my_expense_tracker_app/domain/models/app_theme_mode.dart';
-import 'package:my_expense_tracker_app/domain/models/expense.dart';
-import 'package:my_expense_tracker_app/domain/models/money.dart';
-import 'package:my_expense_tracker_app/domain/models/recurring_item.dart';
-import 'package:my_expense_tracker_app/domain/recurrence.dart';
-import 'package:my_expense_tracker_app/domain/repeat_input.dart';
-import 'package:my_expense_tracker_app/ui/features/home/views/home_list_slivers.dart';
-import 'package:my_expense_tracker_app/ui/features/recurring/views/recurring_detail_screen.dart';
-import 'package:my_expense_tracker_app/ui/features/recurring/views/upcoming_screen.dart';
+import 'package:money_swield/app/app_dependencies.dart';
+import 'package:money_swield/domain/models/app_theme_mode.dart';
+import 'package:money_swield/domain/models/expense.dart';
+import 'package:money_swield/domain/models/money.dart';
+import 'package:money_swield/domain/models/recurring_item.dart';
+import 'package:money_swield/domain/recurrence.dart';
+import 'package:money_swield/domain/repeat_input.dart';
+import 'package:money_swield/ui/features/home/views/home_list_slivers.dart';
+import 'package:money_swield/ui/features/recurring/views/recurring_detail_screen.dart';
+import 'package:money_swield/ui/features/recurring/views/upcoming_screen.dart';
 
 import '../../helpers/pump_app.dart';
 import '../../helpers/test_database.dart';

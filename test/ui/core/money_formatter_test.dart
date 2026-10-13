@@ -3,9 +3,9 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:my_expense_tracker_app/domain/models/money.dart';
-import 'package:my_expense_tracker_app/ui/core/formatting_locale.dart';
-import 'package:my_expense_tracker_app/ui/core/money_formatter.dart';
+import 'package:money_swield/domain/models/money.dart';
+import 'package:money_swield/ui/core/formatting_locale.dart';
+import 'package:money_swield/ui/core/money_formatter.dart';
 
 void main() {
   String format(Money money, {required String locale}) =>

@@ -1,10 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/domain/models/expense_draft.dart';
-import 'package:my_expense_tracker_app/domain/models/sms_suggestion.dart';
-import 'package:my_expense_tracker_app/domain/photos.dart';
-import 'package:my_expense_tracker_app/domain/repeat_input.dart';
+import 'package:money_swield/domain/models/expense_draft.dart';
+import 'package:money_swield/domain/models/sms_suggestion.dart';
+import 'package:money_swield/domain/photos.dart';
+import 'package:money_swield/domain/repeat_input.dart';
 
 final _at = DateTime.utc(2026, 10, 4, 8);
 
@@ -262,7 +262,7 @@ void main() {
         {'photo_id': '12', 'path': 'photos/$a.jpg', 'sha256': a, 'bytes': 5},
         {
           'photo_id': 12,
-          'path': '../databases/expense_tracker.db',
+          'path': '../databases/money_swield.db',
           'sha256': a,
           'bytes': 5,
         },

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/ui/core/widgets/move_dialog.dart';
+import 'package:money_swield/ui/core/widgets/move_dialog.dart';
 
 import '../../../helpers/test_database.dart';
 

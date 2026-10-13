@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/domain/photo_sizing.dart';
-import 'package:my_expense_tracker_app/domain/photos.dart';
+import 'package:money_swield/domain/photo_sizing.dart';
+import 'package:money_swield/domain/photos.dart';
 
 void main() {
   const mb = 1024 * 1024;

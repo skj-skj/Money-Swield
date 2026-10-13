@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:my_expense_tracker_app/app/app_dependencies.dart';
-import 'package:my_expense_tracker_app/app/shell.dart';
-import 'package:my_expense_tracker_app/domain/models/item_shape.dart';
-import 'package:my_expense_tracker_app/ui/core/themes.dart';
+import 'package:money_swield/app/app_dependencies.dart';
+import 'package:money_swield/app/shell.dart';
+import 'package:money_swield/domain/models/item_shape.dart';
+import 'package:money_swield/ui/core/themes.dart';
 
 import '../../../../helpers/pump_app.dart';
 import '../../../../helpers/test_database.dart';

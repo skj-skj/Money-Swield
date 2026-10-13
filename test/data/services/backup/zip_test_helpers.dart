@@ -30,7 +30,7 @@ Uint8List buildZip(List<ZipEntry> entries) {
 /// value removes one.
 String manifestJson([Map<String, Object?> overrides = const {}]) {
   final fields = <String, Object?>{
-    'app': 'expense_tracker',
+    'app': 'money_swield',
     'format': 1,
     'app_version': '1.0.0+1',
     'schema_version': 1790960267,

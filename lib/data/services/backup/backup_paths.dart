@@ -11,7 +11,7 @@ import 'package:path/path.dart' as p;
 class BackupPaths {
   const BackupPaths({required this.databaseFile, required this.cacheFolder});
 
-  /// The live database, `.../databases/expense_tracker.db`.
+  /// The live database, `.../databases/money_swield.db`.
   final String databaseFile;
 
   /// The app's cache folder. Leftovers there are deleted on start.
@@ -29,7 +29,7 @@ class BackupPaths {
   String get candidate => p.join(candidateFolder, 'candidate.db');
 
   /// Shared with the migration runner's own backups (named
-  /// `expense_tracker.db.*`); pre-restore copies are named so the runner
+  /// `money_swield.db.*`); pre-restore copies are named so the runner
   /// never picks them up.
   String get preRestoreFolder => p.join(databaseFolder, 'backups');
 }

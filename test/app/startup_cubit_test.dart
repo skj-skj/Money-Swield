@@ -2,13 +2,13 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/app/app_dependencies.dart';
-import 'package:my_expense_tracker_app/app/restore_tools.dart';
-import 'package:my_expense_tracker_app/app/startup_cubit.dart';
-import 'package:my_expense_tracker_app/data/services/backup/pre_restore_copy.dart';
-import 'package:my_expense_tracker_app/data/services/database/app_database.dart';
-import 'package:my_expense_tracker_app/domain/models/app_settings.dart';
-import 'package:my_expense_tracker_app/ui/features/settings/view_models/settings_cubit.dart';
+import 'package:money_swield/app/app_dependencies.dart';
+import 'package:money_swield/app/restore_tools.dart';
+import 'package:money_swield/app/startup_cubit.dart';
+import 'package:money_swield/data/services/backup/pre_restore_copy.dart';
+import 'package:money_swield/data/services/database/app_database.dart';
+import 'package:money_swield/domain/models/app_settings.dart';
+import 'package:money_swield/ui/features/settings/view_models/settings_cubit.dart';
 
 import '../helpers/fake_document_service.dart';
 import '../helpers/fake_report_export_service.dart';

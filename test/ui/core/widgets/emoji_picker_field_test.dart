@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/ui/core/form_validation.dart';
-import 'package:my_expense_tracker_app/ui/core/widgets/emoji_picker_field.dart';
+import 'package:money_swield/ui/core/form_validation.dart';
+import 'package:money_swield/ui/core/widgets/emoji_picker_field.dart';
 
 void main() {
   test('offers about 80 emojis, none twice', () {

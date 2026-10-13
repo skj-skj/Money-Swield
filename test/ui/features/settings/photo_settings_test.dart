@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:my_expense_tracker_app/app/app_dependencies.dart';
-import 'package:my_expense_tracker_app/domain/models/expense.dart';
-import 'package:my_expense_tracker_app/domain/models/money.dart';
-import 'package:my_expense_tracker_app/domain/photo_sizing.dart';
-import 'package:my_expense_tracker_app/ui/features/settings/view_models/settings_summary_cubit.dart';
-import 'package:my_expense_tracker_app/ui/features/settings/views/photo_settings_screen.dart';
+import 'package:money_swield/app/app_dependencies.dart';
+import 'package:money_swield/domain/models/expense.dart';
+import 'package:money_swield/domain/models/money.dart';
+import 'package:money_swield/domain/photo_sizing.dart';
+import 'package:money_swield/ui/features/settings/view_models/settings_summary_cubit.dart';
+import 'package:money_swield/ui/features/settings/views/photo_settings_screen.dart';
 
 import '../../../helpers/pump_app.dart';
 import '../../../helpers/test_database.dart';

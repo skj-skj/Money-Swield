@@ -1,7 +1,7 @@
 {
   "@@locale": "es",
 
-  "appTitle": "Expense Tracker",
+  "appTitle": "Money Swield",
 
   "save": "Guardar",
   "cancel": "Cancelar",
@@ -239,7 +239,7 @@
   "restoreFailedRestartMessage": "Tus datos en este teléfono no cambiaron. La app se reinicia para volver a abrirlos. Copia el informe de abajo y envíanoslo para que podamos corregirlo.",
   "restartApp": "Reiniciar la app",
   "restoreRejectedTitle": "No se puede restaurar este archivo",
-  "notABackup": "Este archivo no es una copia de Expense Tracker.",
+  "notABackup": "Este archivo no es una copia de Money Swield.",
   "backupTooNew": "Esta copia se hizo con una versión más nueva de la app. Actualiza la app e inténtalo de nuevo.",
   "backupDamaged": "Esta copia está dañada y no se puede restaurar.",
 
@@ -690,7 +690,7 @@
   "reportSectionsOverlap": "Un gasto en dos eventos está en las dos secciones: los totales de las secciones pueden sumar más que el total general, que lo cuenta una vez.",
   "reportColNote": "Nota",
 
-  "reportSavedNoViewer": "Guardado en Download/Expense Tracker. Ninguna app de este teléfono puede abrirlo.",
+  "reportSavedNoViewer": "Guardado en Download/Money Swield. Ninguna app de este teléfono puede abrirlo.",
   "reportHighlights": "Destacados",
   "reportHiExpenses": "Gastos",
   "reportHiPerDay": "Por día",

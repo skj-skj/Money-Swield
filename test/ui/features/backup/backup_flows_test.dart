@@ -3,22 +3,22 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:my_expense_tracker_app/app/app.dart';
-import 'package:my_expense_tracker_app/app/app_dependencies.dart';
-import 'package:my_expense_tracker_app/app/restore_tools.dart';
-import 'package:my_expense_tracker_app/app/shell.dart';
-import 'package:my_expense_tracker_app/data/repositories/backup_repository.dart';
-import 'package:my_expense_tracker_app/data/repositories/settings_repository.dart';
-import 'package:my_expense_tracker_app/data/services/backup/pre_restore_copy.dart';
-import 'package:my_expense_tracker_app/data/services/database/migration/migration.dart';
-import 'package:my_expense_tracker_app/data/services/database/migrations/all_migrations.dart';
-import 'package:my_expense_tracker_app/domain/models/app_settings.dart';
-import 'package:my_expense_tracker_app/domain/models/app_theme_mode.dart';
-import 'package:my_expense_tracker_app/ui/features/backup/views/backup_screen.dart';
-import 'package:my_expense_tracker_app/ui/features/backup/views/restore_screen.dart';
-import 'package:my_expense_tracker_app/ui/features/migration/view_models/migration_cubit.dart';
-import 'package:my_expense_tracker_app/ui/features/onboarding/views/onboarding_screen.dart';
-import 'package:my_expense_tracker_app/ui/features/settings/view_models/settings_cubit.dart';
+import 'package:money_swield/app/app.dart';
+import 'package:money_swield/app/app_dependencies.dart';
+import 'package:money_swield/app/restore_tools.dart';
+import 'package:money_swield/app/shell.dart';
+import 'package:money_swield/data/repositories/backup_repository.dart';
+import 'package:money_swield/data/repositories/settings_repository.dart';
+import 'package:money_swield/data/services/backup/pre_restore_copy.dart';
+import 'package:money_swield/data/services/database/migration/migration.dart';
+import 'package:money_swield/data/services/database/migrations/all_migrations.dart';
+import 'package:money_swield/domain/models/app_settings.dart';
+import 'package:money_swield/domain/models/app_theme_mode.dart';
+import 'package:money_swield/ui/features/backup/views/backup_screen.dart';
+import 'package:money_swield/ui/features/backup/views/restore_screen.dart';
+import 'package:money_swield/ui/features/migration/view_models/migration_cubit.dart';
+import 'package:money_swield/ui/features/onboarding/views/onboarding_screen.dart';
+import 'package:money_swield/ui/features/settings/view_models/settings_cubit.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -138,7 +138,7 @@ void main() {
     );
     await tester.tap(find.text('Back up now'));
     await pumpUntilFound(tester, find.text('Backup saved'));
-    expect(documents.savedName, startsWith('expense-tracker-backup-'));
+    expect(documents.savedName, startsWith('money-swield-backup-'));
     expect(find.text('Last backup: today'), findsOneWidget);
 
     // Back on Settings, the row says so without reopening the tab.

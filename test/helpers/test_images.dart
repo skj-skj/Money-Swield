@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:material_ui/material_ui.dart';
-import 'package:my_expense_tracker_app/data/services/photo_store.dart';
+import 'package:money_swield/data/services/photo_store.dart';
 
 /// A 1 × 1 PNG.
 final onePixelPng = base64Decode(

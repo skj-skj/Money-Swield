@@ -1,7 +1,7 @@
-package com.skj.expense.tracker.my_expense_tracker_app
+package com.skj.money.swield.expense.tracker
 
 /**
- * The words `expense_tracker/on_device_ai` answers with, from ML Kit's numbers.
+ * The words `money_swield/on_device_ai` answers with, from ML Kit's numbers.
  * Plain Kotlin in `src/main`, so it is tested on the JVM in both flavors (`make
  * test-android`) and the foss build needs no ML Kit class to compile it.
  *

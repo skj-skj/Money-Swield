@@ -1,9 +1,9 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/data/services/database/migration/migration.dart';
-import 'package:my_expense_tracker_app/data/services/database/migration/schema_reader.dart';
-import 'package:my_expense_tracker_app/data/services/database/migrations/all_migrations.dart';
+import 'package:money_swield/data/services/database/migration/migration.dart';
+import 'package:money_swield/data/services/database/migration/schema_reader.dart';
+import 'package:money_swield/data/services/database/migrations/all_migrations.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../migration/test_helpers.dart';

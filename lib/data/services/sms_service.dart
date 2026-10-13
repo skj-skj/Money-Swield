@@ -25,11 +25,11 @@ abstract interface class SmsService {
   Future<List<InboxSms>> read({required int sinceMs, required int limit});
 }
 
-/// [SmsService] over the `expense_tracker/sms` channel (`SmsChannel.kt`).
+/// [SmsService] over the `money_swield/sms` channel (`SmsChannel.kt`).
 class ChannelSmsService implements SmsService {
   const ChannelSmsService();
 
-  static const _channel = MethodChannel('expense_tracker/sms');
+  static const _channel = MethodChannel('money_swield/sms');
 
   @override
   Future<SmsPermission> status() async {

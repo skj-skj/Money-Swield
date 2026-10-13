@@ -2,8 +2,8 @@ import 'dart:io';
 import 'dart:ui' show Locale;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/data/services/database/migration/migration.dart';
-import 'package:my_expense_tracker_app/data/services/database/migration/migration_runner.dart';
+import 'package:money_swield/data/services/database/migration/migration.dart';
+import 'package:money_swield/data/services/database/migration/migration_runner.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 

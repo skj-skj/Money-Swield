@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/domain/expense_filter.dart';
-import 'package:my_expense_tracker_app/domain/photos.dart';
-import 'package:my_expense_tracker_app/domain/repeat_input.dart';
+import 'package:money_swield/domain/expense_filter.dart';
+import 'package:money_swield/domain/photos.dart';
+import 'package:money_swield/domain/repeat_input.dart';
 
 import '../../helpers/recurring_fixture.dart';
 

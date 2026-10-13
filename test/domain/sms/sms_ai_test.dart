@@ -1,12 +1,12 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/domain/sms/sms_ai_prompt.dart';
-import 'package:my_expense_tracker_app/domain/sms/sms_ai_result.dart';
-import 'package:my_expense_tracker_app/domain/sms/sms_amount.dart';
-import 'package:my_expense_tracker_app/domain/sms/sms_learning.dart';
-import 'package:my_expense_tracker_app/domain/sms/sms_title.dart';
-import 'package:my_expense_tracker_app/domain/title_suggestions.dart';
+import 'package:money_swield/domain/sms/sms_ai_prompt.dart';
+import 'package:money_swield/domain/sms/sms_ai_result.dart';
+import 'package:money_swield/domain/sms/sms_amount.dart';
+import 'package:money_swield/domain/sms/sms_learning.dart';
+import 'package:money_swield/domain/sms/sms_title.dart';
+import 'package:money_swield/domain/title_suggestions.dart';
 
 import 'fixtures/india_sms.dart';
 

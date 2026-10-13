@@ -58,7 +58,7 @@ abstract interface class ReportExportService {
   /// [book] as `cache/reports/<stamp>/<name>`; throws `TooManyRows`.
   Future<String> writeXlsx(xlsx.XlsxWorkbook book, String name);
 
-  /// Copies [path] to `Download/Expense Tracker/` (insert-only).
+  /// Copies [path] to `Download/Money Swield/` (insert-only).
   Future<SavedReport> save(String path, String name, String mimeType);
 
   /// The system save dialog (Save as…); false when cancelled.
@@ -90,7 +90,7 @@ abstract interface class ReportExportService {
 }
 
 /// [ReportExportService] on the app's cache folder and its channels
-/// (`expense_tracker/report_pdf`, `expense_tracker/documents`).
+/// (`money_swield/report_pdf`, `money_swield/documents`).
 class ChannelReportExportService implements ReportExportService {
   ChannelReportExportService({
     required this._cacheDir,
@@ -103,12 +103,12 @@ class ChannelReportExportService implements ReportExportService {
   final DocumentService _documents;
   final DateTime Function() _now;
 
-  static const _pdfChannel = MethodChannel('expense_tracker/report_pdf');
-  static const _documentsChannel = MethodChannel('expense_tracker/documents');
+  static const _pdfChannel = MethodChannel('money_swield/report_pdf');
+  static const _documentsChannel = MethodChannel('money_swield/documents');
 
   /// The folder name under `Download/`: application-design's `<AppName>`,
   /// not translated (one folder whatever the language).
-  static const downloadsFolder = 'Expense Tracker';
+  static const downloadsFolder = 'Money Swield';
 
   /// How long an exported file stays in the cache.
   static const keepFor = Duration(days: 1);

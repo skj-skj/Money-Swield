@@ -1,7 +1,7 @@
 import 'dart:ui' show Locale;
 
-import 'package:my_expense_tracker_app/data/services/database/migration/migration.dart';
-import 'package:my_expense_tracker_app/data/services/database/migration/migration_prompter.dart';
+import 'package:money_swield/data/services/database/migration/migration.dart';
+import 'package:money_swield/data/services/database/migration/migration_prompter.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 /// Real SQLite (via FFI) for tests on the development machine.

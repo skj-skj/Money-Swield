@@ -1,9 +1,8 @@
 import 'dart:async';
 
-import 'package:my_expense_tracker_app/data/services/report_export_service.dart';
-import 'package:my_expense_tracker_app/data/services/report_pdf.dart';
-import 'package:my_expense_tracker_app/data/services/xlsx/xlsx_writer.dart'
-    as xlsx;
+import 'package:money_swield/data/services/report_export_service.dart';
+import 'package:money_swield/data/services/report_pdf.dart';
+import 'package:money_swield/data/services/xlsx/xlsx_writer.dart' as xlsx;
 
 /// [ReportExportService] without files or channels: it records what it was
 /// asked and answers as told.

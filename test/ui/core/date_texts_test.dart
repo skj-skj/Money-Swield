@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
-import 'package:my_expense_tracker_app/ui/core/date_texts.dart';
+import 'package:money_swield/ui/core/date_texts.dart';
 
 void main() {
   setUpAll(initializeDateFormatting);

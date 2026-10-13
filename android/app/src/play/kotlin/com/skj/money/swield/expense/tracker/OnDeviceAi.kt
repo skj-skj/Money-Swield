@@ -1,4 +1,4 @@
-package com.skj.expense.tracker.my_expense_tracker_app
+package com.skj.money.swield.expense.tracker
 
 import android.content.Context
 import android.util.Log
@@ -27,7 +27,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 
 /**
- * `expense_tracker/on_device_ai`, play only: Gemini Nano through AICore, with
+ * `money_swield/on_device_ai`, play only: Gemini Nano through AICore, with
  * ML Kit's GenAI Prompt API. The foss build has a class with this name that
  * answers `unavailable` and holds no Google code (`src/foss`).
  *
@@ -207,7 +207,7 @@ class OnDeviceAi(messenger: BinaryMessenger, @Suppress("UNUSED_PARAMETER") conte
         if (e is GenAiException) "code ${e.errorCode}" else e.javaClass.simpleName
 
     private companion object {
-        const val NAME = "expense_tracker/on_device_ai"
+        const val NAME = "money_swield/on_device_ai"
         const val TAG = "OnDeviceAi"
 
         /** The JSON answer is under 100 tokens; this caps a rambling one. */

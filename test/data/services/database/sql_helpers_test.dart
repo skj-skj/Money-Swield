@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_expense_tracker_app/data/services/database/sql_helpers.dart';
+import 'package:money_swield/data/services/database/sql_helpers.dart';
 
 void main() {
   group('sqlPlaceholders', () {

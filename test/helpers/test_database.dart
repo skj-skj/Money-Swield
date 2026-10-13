@@ -1,13 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:my_expense_tracker_app/app/app_dependencies.dart';
-import 'package:my_expense_tracker_app/data/services/database/migrations/all_migrations.dart';
-import 'package:my_expense_tracker_app/data/services/on_device_ai_service.dart';
-import 'package:my_expense_tracker_app/data/services/photo_store.dart';
-import 'package:my_expense_tracker_app/data/services/report_export_service.dart';
-import 'package:my_expense_tracker_app/data/services/sms_scanner.dart';
-import 'package:my_expense_tracker_app/data/services/sms_service.dart';
-import 'package:my_expense_tracker_app/l10n/app_localizations.dart';
+import 'package:money_swield/app/app_dependencies.dart';
+import 'package:money_swield/data/services/database/migrations/all_migrations.dart';
+import 'package:money_swield/data/services/on_device_ai_service.dart';
+import 'package:money_swield/data/services/photo_store.dart';
+import 'package:money_swield/data/services/report_export_service.dart';
+import 'package:money_swield/data/services/sms_scanner.dart';
+import 'package:money_swield/data/services/sms_service.dart';
+import 'package:money_swield/l10n/app_localizations.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../data/services/database/migration/test_helpers.dart';
