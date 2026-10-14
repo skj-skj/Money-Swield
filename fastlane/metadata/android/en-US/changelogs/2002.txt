@@ -1,0 +1,2 @@
+- F-Droid and GitHub now get the exact same app, so you can update
+  from either one.
