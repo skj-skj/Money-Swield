@@ -42,7 +42,7 @@ dependencies:
   # HCT for the report's slice colours; the version Flutter itself pins, so it
   # adds no code.
   material_color_utilities: ^0.13.0
-  material_ui: ^1.6.0
+  material_ui: ^1.7.0
   path: ^1.9.1
   path_provider: ^2.1.6
   sqflite: ^2.4.4+2

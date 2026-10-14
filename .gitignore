@@ -55,3 +55,15 @@ app.*.map.json
 
 # Personal Claude Code instructions, kept local only
 /CLAUDE.local.md
+
+# Signing keys and their secrets, never committed, wherever they land in
+# the repo (android/.gitignore covers android/ only). CI writes its
+# keystore as android/release-ci.p12; `make release-act` reads .secrets.
+*.jks
+*.keystore
+*.p12
+*.pfx
+/.secrets
+
+# temp files/dir
+.flutter_tool_state

@@ -88,6 +88,7 @@ targets.
 | Google Play upload | `make bundle`: the play AAB (`NO_SMS=1` leaves READ_SMS out) |
 | GitHub upload | `make github`: foss + play release APKs split per ABI, 6 in `build/dist/` |
 | F-Droid check | `make fdroid`: foss release APKs split per ABI, 3 in `build/dist/` |
+| GitHub release | Actions → **Release** → Run workflow (`.github/workflows/release.yml`), or `make release` locally (needs `gh`). Both run `scripts/release.py`: version check first, then build, tag `v<version>`, publish with the top `CHANGELOG.md` section, which it marks released (and copies to F-Droid's changelog files) before starting a new `x.y.z (Unreleased)` section. `make release-check` runs the check alone; `make release-act` runs the workflow in Docker as a dry run |
 | Install on phone | `make install` / `make reinstall` (reinstall wipes data) |
 | New migration | `make migration NAME=add_something` |
 | Outdated dependencies | `make check-dep`: `flutter pub outdated`, then the Gradle wrapper, plugins and Kotlin libraries (Gradle Versions Plugin, added by `tool/check_dep.init.gradle.kts` for that run only) |

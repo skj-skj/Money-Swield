@@ -9,8 +9,12 @@
 # same tests, compiled as two files instead of one per test file.
 
 # Bash on every OS. Without this, make on Windows may run recipes in
-# cmd.exe, where the shell syntax below fails.
-SHELL := bash
+# cmd.exe, where the shell syntax below fails. A full path, not `bash`:
+# from PowerShell, `bash` on PATH can be Windows' WSL launcher
+# (System32\bash.exe), which runs recipes in Linux, where Windows tools such
+# as act.exe are not found by their plain name. /bin/bash is make's own
+# MSYS / Git Bash on Windows, and the system bash on Linux and macOS.
+SHELL := /bin/bash
 .SHELLFLAGS := -eu -o pipefail -c
 
 FILES ?=
@@ -45,7 +49,7 @@ DIST := build/dist
 ABIS := armeabi-v7a arm64-v8a x86_64
 
 .DEFAULT_GOAL := help
-.PHONY: help format analyze test test-android build bundle github fdroid install uninstall reinstall migration check-dep require-key
+.PHONY: help format analyze test test-android build bundle github fdroid install uninstall reinstall migration check-dep require-key release release-check release-signing release-notes release-publish release-act
 
 help:
 	@echo 'make format    [FILES=...]   dart format (whole project by default)'
@@ -56,6 +60,10 @@ help:
 	@echo 'make bundle    [NO_SMS=1]    Google Play: the play AAB (release, needs android/key.properties)'
 	@echo 'make github    [NO_SMS=1]    GitHub: foss + play release APKs split per ABI (6) in $(DIST)/'
 	@echo 'make fdroid                  F-Droid check: foss release APKs split per ABI (3) in $(DIST)/'
+	@echo 'make release                 GitHub release from HEAD: check, build, tag, publish (needs gh)'
+	@echo 'make release-check           is pubspec.yaml a new version, with its changelog?'
+	@echo 'make release-notes           write $(DIST)/release-notes.md from the changelog'
+	@echo 'make release-act             run the release workflow locally in Docker (act), as a dry run'
 	@echo 'make install   [MODE=...] [FLAVOR=...]  install the built APK over adb'
 	@echo 'make uninstall               uninstall the app (deletes its data)'
 	@echo 'make reinstall [MODE=...] [FLAVOR=...]  uninstall, then install (fresh data)'
@@ -154,3 +162,48 @@ check-dep:
 	flutter pub outdated
 	@test -n '$(ANDROID_JDK)' || { echo 'No JDK found: pass ANDROID_JDK=<jdk folder>'; exit 1; }
 	cd android && JAVA_HOME='$(ANDROID_JDK)' ./gradlew -I ../tool/check_dep.init.gradle.kts dependencyUpdates
+
+# Releases: scripts/release.py does the work; .github/workflows/release.yml
+# runs the same targets. On Windows `python3` may be the Microsoft Store
+# stub, so plain `python` is used there.
+PYTHON ?= $(if $(filter Windows_NT,$(OS)),python,python3)
+
+# The version is checked first, so nothing is built for a version that
+# can't be released.
+release: release-check require-key
+	$(MAKE) github
+	$(MAKE) release-notes
+	$(MAKE) release-publish
+
+release-check:
+	$(PYTHON) scripts/release.py check
+
+# CI only: writes android/key.properties from the ANDROID_* environment
+# variables (see the workflow). Refuses to replace an existing one.
+release-signing:
+	$(PYTHON) scripts/release.py signing
+
+release-notes:
+	$(PYTHON) scripts/release.py notes
+
+release-publish:
+	$(PYTHON) scripts/release.py publish
+
+# Runs the workflow in Docker with act (https://github.com/nektos/act), as a
+# dry run: the APKs land in build/act-artifacts, nothing is tagged. The
+# release key comes from .secrets (gitignored), in the workflow's names:
+#   ANDROID_KEYSTORE_BASE64=<base64 of the .jks, one line>
+#   ANDROID_STORE_PASSWORD=...  ANDROID_KEY_ALIAS=...  ANDROID_KEY_PASSWORD=...
+# The full image has the Android SDK the build needs (a large download).
+# --pull=false uses the local copy instead of pulling the image on every run
+# (act's default); update it by hand with
+# `docker pull catthehacker/ubuntu:full-latest`. --rm removes the job
+# container when a run fails or is stopped, so the next run doesn't fail on
+# "volume is in use".
+release-act:
+	@test -f .secrets || { echo '.secrets not found: see the comment above release-act in the Makefile'; exit 1; }
+	act workflow_dispatch -W .github/workflows/release.yml \
+	  --input dry_run=true --secret-file .secrets \
+	  --artifact-server-path build/act-artifacts \
+	  -P ubuntu-latest=catthehacker/ubuntu:full-latest \
+	  --pull=false --rm
