@@ -31,6 +31,13 @@ bin, photos, SMS).
 - Closed-source Dart packages, or packages that pull in Google Play
   Services or Firebase.
 
+### Licence
+
+GPL-3.0-or-later (`LICENSE`), with one exception in `README.md`: builds
+may include Google ML Kit (`play` flavor only). The name and logo are not
+under the GPL (`TRADEMARKS.md`). A new dependency must have a GPL-3.0-compatible
+licence (MIT, BSD, Apache-2.0, …).
+
 ## Ground rules
 
 1. **Never lose or corrupt user data.** Every multi-row write is one
@@ -166,6 +173,10 @@ android/app/src/
   playNoSms/           play manifest without READ_SMS
   test/                JVM unit tests of the plain Kotlin parts
 third_party/           Android 10's SQLite source, for tests only
+fastlane/metadata/android/en-US/
+                       F-Droid store listing: title, descriptions,
+                       changelogs/<versionCode>.txt (one per ABI),
+                       icon, feature graphic, phone screenshots
 ```
 
 ### Startup

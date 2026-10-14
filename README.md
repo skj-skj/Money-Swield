@@ -54,3 +54,14 @@ one instead.
 [database migrations guide](lib/data/services/database/migrations/README.md)**.
 It lists every available operation, explains how to backfill data, and describes
 how user data is protected.
+
+## License
+
+Copyright (C) 2026 skj-skj. Licensed under the
+[GNU GPL v3.0 or later](LICENSE), with no warranty.
+
+One exception: the `play` flavor uses Google's closed-source ML Kit, and
+you're allowed to share builds that include it (GPL section 7).
+
+The name "Money Swield" and its logo are not covered by the GPL; see
+[TRADEMARKS.md](TRADEMARKS.md).

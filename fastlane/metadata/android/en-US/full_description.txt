@@ -1,0 +1,38 @@
+Money Swield answers one question: <b>where did my money go?</b> See it by week, month, year, category or event. Everything stays on your phone: no account, no server, no sync, no ads and no tracking.
+
+<b>Record an expense in seconds</b>
+<ul>
+<li>Title, amount, category, Save. Type a title you've used before and the rest is filled in for you.</li>
+<li>Do the math in the amount field: 120 + 85 × 2.</li>
+<li>Add events (a trip, a wedding, a festival), a payment method, a note and up to 10 photos of the receipt.</li>
+<li>Leave the form at any time; your draft is kept.</li>
+</ul>
+
+<b>See where it went</b>
+<ul>
+<li>Home shows this week's, month's or year's total with a trend chart. Swipe the card to switch.</li>
+<li>Filter by category, event or text, and group the list by day, week, month or year.</li>
+<li>Reports with charts and highlights, exported to PDF or Excel.</li>
+</ul>
+
+<b>Many currencies, kept apart</b>
+Spend in rupees at home and dollars on a trip: each currency keeps its own total, and amounts are never converted or added across currencies.
+
+<b>Recurring payments</b>
+Rent, subscriptions and bills are added on their due date. Change a price from a given date without touching past expenses, or skip a payment once.
+
+<b>Suggestions from bank SMS (optional)</b>
+Turn it on and the app reads debit SMS from banks while it is open, and suggests them as expenses. The SMS text is never stored and never leaves your phone. It never runs in the background.
+
+<b>Your data is safe</b>
+<ul>
+<li>Deleted expenses go to a bin for 30 days, with Undo.</li>
+<li>Back up to a single zip file, with or without photos, and restore it on any phone. A restore can be undone.</li>
+<li>The database is backed up before every app update changes it.</li>
+</ul>
+
+<b>Make it yours</b>
+Light or dark theme, colors from your wallpaper or a color you pick, your own categories, events and payment methods. Available in English, Spanish and Hindi.
+
+<b>Permissions</b>
+The app has no internet permission at all. It asks to read SMS only if you turn on SMS suggestions. Photos are taken with your camera app, so no camera permission is needed.
