@@ -83,6 +83,7 @@ targets.
 | F-Droid check | `make fdroid`: foss release APKs split per ABI, 3 in `build/dist/` |
 | Install on phone | `make install` / `make reinstall` (reinstall wipes data) |
 | New migration | `make migration NAME=add_something` |
+| Outdated dependencies | `make check-dep`: `flutter pub outdated`, then the Gradle wrapper, plugins and Kotlin libraries (Gradle Versions Plugin, added by `tool/check_dep.init.gradle.kts` for that run only) |
 | Regenerate strings | `flutter gen-l10n` (also runs on build) |
 
 - **Format at width 80.** The width is pinned in `analysis_options.yaml`;

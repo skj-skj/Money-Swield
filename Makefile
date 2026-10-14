@@ -42,7 +42,7 @@ DIST := build/dist
 ABIS := armeabi-v7a arm64-v8a x86_64
 
 .DEFAULT_GOAL := help
-.PHONY: help format analyze test test-android build bundle github fdroid install uninstall reinstall migration require-key
+.PHONY: help format analyze test test-android build bundle github fdroid install uninstall reinstall migration check-dep require-key
 
 help:
 	@echo 'make format    [FILES=...]   dart format (whole project by default)'
@@ -57,6 +57,7 @@ help:
 	@echo 'make uninstall               uninstall the app (deletes its data)'
 	@echo 'make reinstall [MODE=...] [FLAVOR=...]  uninstall, then install (fresh data)'
 	@echo 'make migration NAME=snake_case_name  create a database migration'
+	@echo 'make check-dep               report outdated Flutter and Android (Gradle) dependencies'
 
 # The page width comes from analysis_options.yaml, so it isn't passed here.
 format:
@@ -141,3 +142,12 @@ reinstall:
 migration:
 	@test -n '$(NAME)' || { echo 'Usage: make migration NAME=add_currency_to_expenses'; exit 1; }
 	dart tool/new_migration.dart $(NAME)
+
+# Reports only; updating stays a deliberate step. pub outdated covers the
+# Dart packages; Gradle has no such command, so the init script adds the
+# Gradle Versions Plugin for this run only (the wrapper, plugins and Kotlin
+# libraries). Gradle needs the JDK, like test-android.
+check-dep:
+	flutter pub outdated
+	@test -n '$(ANDROID_JDK)' || { echo 'No JDK found: pass ANDROID_JDK=<jdk folder>'; exit 1; }
+	cd android && JAVA_HOME='$(ANDROID_JDK)' ./gradlew -I ../tool/check_dep.init.gradle.kts dependencyUpdates
