@@ -8,6 +8,9 @@ top. Keep each version's changes under 500 characters (F-Droid's limit).
 
 ## 1.0.1 (Unreleased)
 
+- F-Droid and GitHub now get the exact same app, so you can update
+  from either one.
+
 ## 1.0.0
 
 - First release.

@@ -37,9 +37,11 @@ android {
 
     // The upload / release key, read from android/key.properties (never
     // committed). Without that file, release builds are signed with the
-    // debug key so `flutter run --release` and F-Droid's build (which signs
-    // with its own key) still work; `make bundle` and `make github` refuse
-    // to run without it.
+    // debug key so `flutter run --release` still works; `make bundle` and
+    // `make github` refuse to run without it. F-Droid's recipe deletes the
+    // two `signingConfig = ...` lines of `release` below by their text, to
+    // build unsigned and compare with the GitHub APKs (reproducible
+    // builds): keep those two lines as they are.
     val keyProperties = Properties()
     val keyPropertiesFile = rootProject.file("key.properties")
     if (keyPropertiesFile.exists()) {

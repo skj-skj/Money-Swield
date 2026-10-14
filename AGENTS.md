@@ -88,7 +88,7 @@ targets.
 | Google Play upload | `make bundle`: the play AAB (`NO_SMS=1` leaves READ_SMS out) |
 | GitHub upload | `make github`: foss + play release APKs split per ABI, 6 in `build/dist/` |
 | F-Droid check | `make fdroid`: foss release APKs split per ABI, 3 in `build/dist/` |
-| GitHub release | Actions → **Release** → Run workflow (`.github/workflows/release.yml`), or `make release` locally (needs `gh`). Both run `scripts/release.py`: version check first, then build, tag `v<version>`, publish with the top `CHANGELOG.md` section, which it marks released (and copies to F-Droid's changelog files) before starting a new `x.y.z (Unreleased)` section. `make release-check` runs the check alone; `make release-act` runs the workflow in Docker as a dry run |
+| GitHub release | Actions → **Release** → Run workflow (`.github/workflows/release.yml`), or `make release` locally (needs `gh`; its APKs won't match F-Droid's reproducible build, so use the workflow for real releases). Both run `scripts/release.py`: version check first, then build, tag `v<version>`, publish with the top `CHANGELOG.md` section, which it marks released (and copies to F-Droid's changelog files) before starting a new `x.y.z (Unreleased)` section. `make release-check` runs the check alone; `make release-act` runs the workflow in Docker as a dry run |
 | Install on phone | `make install` / `make reinstall` (reinstall wipes data) |
 | New migration | `make migration NAME=add_something` |
 | Outdated dependencies | `make check-dep`: `flutter pub outdated`, then the Gradle wrapper, plugins and Kotlin libraries (Gradle Versions Plugin, added by `tool/check_dep.init.gradle.kts` for that run only) |
@@ -228,14 +228,25 @@ number added to the version code by Flutter):
 |---|---|---|
 | Google Play | play AAB | `make bundle` |
 | GitHub | foss + play, one APK per ABI (armeabi-v7a, arm64-v8a, x86_64): 6 | `make github` |
-| F-Droid | foss, one APK per ABI: 3 | built by F-Droid from source (recipe in fdroiddata, one build entry per ABI); `make fdroid` builds the same locally |
+| F-Droid | foss, one APK per ABI: 3 | reproducible builds: F-Droid rebuilds from source (recipe in fdroiddata, one build entry per ABI) and publishes the GitHub foss APKs only when its build is byte-identical; `make fdroid` builds the same locally (but not byte-identical) |
+
+**Reproducible builds for F-Droid**: the GitHub foss APKs must come from
+the Release workflow (Ubuntu runner, checkout at
+`/home/runner/work/Money-Swield/Money-Swield`), never from `make release`
+on a dev machine: `libapp.so` embeds the build path. The workflow and the
+recipe do the same setup: pub cache inside the checkout, and jni's native
+library linked with `--build-id=none`. The recipe also deletes the two
+`signingConfig = ...` lines of `release` in `android/app/build.gradle.kts`
+by their text to build unsigned, so keep them as they are. A Flutter,
+NDK, JDK or jni change can break the match: check the F-Droid build after
+one.
 
 **Signing**: release builds read `android/key.properties` (`storeFile`,
 `storePassword`, `keyAlias`, `keyPassword`; `storeFile` relative to
 `android/`). The file and the keystore are gitignored and never
 committed. Without the file, release builds fall back to the debug key
-(for `flutter run --release` and F-Droid, which signs with its own key);
-`make bundle` and `make github` refuse to run without it.
+(for `flutter run --release`); `make bundle` and `make github` refuse to
+run without it. F-Droid publishes APKs signed with this same key.
 
 ## Kotlin side
 

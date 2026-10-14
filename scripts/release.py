@@ -307,17 +307,20 @@ def expected_apks(version):
 def notes():
     version, _ = current_version()
     changes = unreleased_changes(version)
-    # A GitHub play APK has a higher version code than Play's build, and
-    # F-Droid signs with its own key, so an app only updates from the
-    # source it was installed from.
+    # F-Droid publishes these same foss APKs (reproducible builds, our
+    # signature), so a foss install updates from either. A GitHub play APK
+    # has a higher version code than Play's build, so play installs stay
+    # with the source they came from.
     body = (
         f"{changes}\n\n"
         "---\n\n"
         "**Which APK?** `foss` has no closed-source code; `play` can use "
         "on-device AI to read bank SMS. Most phones need `arm64-v8a`; "
         "older 32-bit phones `armeabi-v7a`.\n\n"
-        "Update from where you installed (GitHub, F-Droid or Google Play): "
-        "the builds can't update each other.\n"
+        "The `foss` APKs here are the same ones F-Droid publishes, so a "
+        "`foss` install can update from either. A `play` APK from here and "
+        "the Google Play app can't update each other: update from where "
+        "you installed it.\n"
     )
     DIST.mkdir(parents=True, exist_ok=True)
     NOTES.write_text(body, encoding="utf-8", newline="\n")

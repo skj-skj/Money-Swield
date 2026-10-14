@@ -69,6 +69,25 @@ jobs:
           flutter-version: 3.47.7
           cache: true
 
+      # F-Droid rebuilds the foss APKs from source and publishes these
+      # signed ones only when its build is byte-identical (reproducible
+      # builds; its recipe in fdroiddata repeats this step). Two things
+      # would otherwise differ between machines:
+      # - the pub cache path: kept inside the checkout, which F-Droid
+      #   builds at this same path (/home/runner/work/Money-Swield/...);
+      # - jni's native library: its linker build-id hashes the NDK and pub
+      #   cache paths, so it is linked without one.
+      # APKs for F-Droid therefore come from this workflow only, never from
+      # `make release` on a dev machine.
+      - name: Reproducible build setup
+        run: |
+          export PUB_CACHE="$GITHUB_WORKSPACE/.pub-cache"
+          echo "PUB_CACHE=$PUB_CACHE" >> "$GITHUB_ENV"
+          flutter pub get --enforce-lockfile
+          sed -i -e 's/-Wl,/-Wl,--build-id=none,/' "$PUB_CACHE"/hosted/pub.dev/jni-*/src/CMakeLists.txt
+          # Fails if a jni update changed its CMake file and the edit missed.
+          grep -q -- '--build-id=none' "$PUB_CACHE"/hosted/pub.dev/jni-*/src/CMakeLists.txt
+
       - name: Release key
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
