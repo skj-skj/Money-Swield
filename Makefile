@@ -17,6 +17,14 @@
 SHELL := /bin/bash
 .SHELLFLAGS := -eu -o pipefail -c
 
+# The flutter script starts with `#!/usr/bin/env bash`. Run from PowerShell,
+# PATH has System32 (WSL's bash.exe) before MSYS's /usr/bin, so env starts
+# WSL, which can't find C:/flutter/bin/flutter. Put /usr/bin first so env
+# finds MSYS's bash.
+ifeq ($(OS),Windows_NT)
+export PATH := /usr/bin:$(PATH)
+endif
+
 FILES ?=
 # debug or release.
 MODE ?= debug
@@ -124,9 +132,10 @@ github: require-key
 	$(call split_apks,play)
 	@ls -1 $(DIST)
 
-# F-Droid builds from source with its own recipe (fdroiddata) and signs
-# with its own key, so no release key is needed here. This builds the same
-# APKs locally, to check the foss release before tagging.
+# F-Droid builds from source with its own recipe (fdroiddata) and, when its
+# build matches the GitHub release, publishes our signed APKs. This builds
+# the foss APKs locally (no release key needed), to check them before
+# tagging; they won't match byte for byte (see .github/workflows/release.yml).
 fdroid:
 	rm -rf $(DIST)
 	$(call split_apks,foss)

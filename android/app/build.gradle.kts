@@ -77,6 +77,13 @@ android {
             signingConfig = signingConfigs.findByName("release")
                 ?: signingConfigs.getByName("debug")
             manifestPlaceholders["labelSuffix"] = ""
+            // AGP otherwise writes the built commit's hash into the APK
+            // (META-INF/version-control-info.textproto). The GitHub release
+            // is built one commit before its tag (scripts/release.py) and
+            // F-Droid builds the tag, so the APKs would differ.
+            vcsInfo {
+                include = false
+            }
         }
     }
 
