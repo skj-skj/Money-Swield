@@ -116,6 +116,32 @@ android {
         includeInApk = false
         includeInBundle = true
     }
+
+    // Native libraries (libflutter.so, libapp.so) compressed in APKs: the
+    // GitHub / F-Droid download halves (arm64 ~20 MB to ~9 MB), at the cost
+    // of Android unpacking them once at install (~10 MB more on the phone,
+    // same speed once running). The AAB keeps them stored uncompressed: Play
+    // compresses its downloads anyway, so there it would only cost storage
+    // (owner, 2026-10-14). Flutter runs Gradle with `bundle<Flavor><Type>`
+    // for an AAB and `assemble…` for an APK.
+    val buildingBundle = gradle.startParameter.taskNames.any {
+        it.substringAfterLast(':').startsWith("bundle")
+    }
+    packaging {
+        jniLibs {
+            useLegacyPackaging = !buildingBundle
+        }
+        // Kotlin's reflection metadata and coroutine debug-probe files: read
+        // only by kotlin-reflect and debuggers, neither of which the app uses.
+        resources {
+            excludes += listOf(
+                "kotlin/**",
+                "kotlin-tooling-metadata.json",
+                "DebugProbesKt.bin",
+                "META-INF/*.version",
+            )
+        }
+    }
 }
 
 kotlin {

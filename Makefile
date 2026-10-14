@@ -34,6 +34,9 @@ APP_ID := com.skj.money.swield.expense.tracker.$(FLAVOR)$(if $(filter debug prof
 APK := build/app/outputs/flutter-apk/app-$(FLAVOR)-$(MODE).apk
 DART_DEFINES := $(if $(SMS_LOOKBACK_DAYS),--dart-define=SMS_LOOKBACK_DAYS=$(SMS_LOOKBACK_DAYS))
 GRADLE_ARGS := $(if $(NO_SMS),-PnoSms=true)
+# Release builds use neither --split-debug-info nor --obfuscate: together
+# they save only ~0.7 MB per APK, and would make release stack traces
+# unreadable without symbol files kept per release (owner, 2026-10-14).
 # Release builds for upload. `--split-per-abi` makes one APK per ABI
 # (armeabi-v7a, arm64-v8a, x86_64); Flutter adds 1000 * ABI number to the
 # version code of each, so they never clash.
