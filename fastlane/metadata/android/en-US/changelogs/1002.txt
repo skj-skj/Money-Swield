@@ -1,2 +1,8 @@
+- First release on F-Droid.
+- Add an expense in seconds: title, amount, category, Save.
+- Totals by week, month and year, with filters and events.
+- Reports with charts, exported to PDF or Excel.
+- Recurring payments, photos of receipts, backup and restore.
+- Optional suggestions from bank SMS, read only on your phone.
 - F-Droid and GitHub now get the exact same app, so you can update
   from either one.
