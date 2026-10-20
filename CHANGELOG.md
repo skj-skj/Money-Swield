@@ -6,7 +6,7 @@ Newest first. The top section is the next release, marked
 section into F-Droid's changelog files, and starts a new empty section on
 top. Keep each version's changes under 500 characters (F-Droid's limit).
 
-## 1.0.2 (Unreleased)
+## 1.0.2
 
 - First release on F-Droid.
 - Add an expense in seconds: title, amount, category, Save.
