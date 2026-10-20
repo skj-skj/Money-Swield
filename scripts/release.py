@@ -28,7 +28,7 @@ made:
 
 1. "release 1.2.3": drops "(Unreleased)" and writes the section to
    F-Droid's changelog files (fastlane/metadata/android/en-US/changelogs/
-   <1000+N|2000+N|4000+N>.txt, one per split-APK version code). This
+   <N*10+1|N*10+2|N*10+3>.txt, one per split-APK version code). This
    commit gets the tag, so F-Droid reads the listing from it.
 2. "start 1.2.4": adds an empty `## 1.2.4 (Unreleased)` section on top.
    The next patch version is a guess; edit the heading for a minor or
@@ -53,16 +53,19 @@ FDROID_CHANGELOGS = ROOT / "fastlane/metadata/android/en-US/changelogs"
 DIST = ROOT / "build/dist"
 NOTES = DIST / "release-notes.md"
 
-# Flutter's --split-per-abi adds 1000 * ABI number to the build number:
-# armeabi-v7a 1, arm64-v8a 2, x86_64 4.
-ABI_OFFSETS = (1000, 2000, 4000)
+# A split APK's version code is `build number * 10 + ABI number`, set in
+# android/app/build.gradle.kts: armeabi-v7a 1, arm64-v8a 2, x86_64 3.
 ABIS = ("armeabi-v7a", "arm64-v8a", "x86_64")
+ABI_CODES = (1, 2, 3)
 FLAVORS = ("foss", "play")
 # F-Droid's limit for a changelog file.
 FDROID_MAX_CHARS = 500
-# The build number must stay below 1000, or a split APK's version code
-# would clash with the next ABI's (1000 + 1001 == 2000 + 1).
-BUILD_NUMBER_MAX = 999
+# Android's largest version code is 2100000000.
+BUILD_NUMBER_MAX = 2_100_000_000 // 10 - 1
+# 1.0.0 and 1.0.1 were released with Flutter's own split-APK codes
+# (`1000 * ABI + build number`, x86_64 = 4), up to 4002. Every code must be
+# above that, or a phone that installed one of them can't update.
+OLD_SCHEME_MAX_VERSION_CODE = 4002
 UNRELEASED = "(Unreleased)"
 
 VERSION_RE = re.compile(
@@ -205,6 +208,13 @@ def check():
         raise ReleaseError(
             f"build number {build} must be between 1 and {BUILD_NUMBER_MAX}"
         )
+    if min(version_codes(build)) <= OLD_SCHEME_MAX_VERSION_CODE:
+        raise ReleaseError(
+            f"build number {build} gives version codes "
+            f"{', '.join(map(str, version_codes(build)))}, not above "
+            f"{OLD_SCHEME_MAX_VERSION_CODE} (1.0.1's): raise it in "
+            "pubspec.yaml"
+        )
 
     # The version check comes first: a release that reuses a version
     # would be refused by every phone that has the old one.
@@ -327,6 +337,15 @@ def notes():
     print(f"wrote {NOTES.relative_to(ROOT)}")
 
 
+def version_codes(build):
+    """The split APKs' version codes, in ABIS order."""
+    return [build * 10 + abi for abi in ABI_CODES]
+
+
+def fdroid_changelog_paths(build):
+    return [FDROID_CHANGELOGS / f"{code}.txt" for code in version_codes(build)]
+
+
 def finalize_changelog(version, build):
     """Marks the top section released and writes F-Droid's files."""
     text = read_changelog()
@@ -335,7 +354,7 @@ def finalize_changelog(version, build):
     write_changelog(
         text[: heading.start()] + released + text[heading.end() :]
     )
-    paths = [FDROID_CHANGELOGS / f"{o + build}.txt" for o in ABI_OFFSETS]
+    paths = fdroid_changelog_paths(build)
     # Git keeps no empty folders: before the first release, a checkout has
     # no changelogs/ folder.
     FDROID_CHANGELOGS.mkdir(parents=True, exist_ok=True)

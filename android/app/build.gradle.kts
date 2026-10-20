@@ -1,3 +1,4 @@
+import com.android.build.gradle.internal.api.ApkVariantOutputImpl
 import java.util.Properties
 
 plugins {
@@ -27,10 +28,8 @@ android {
         // storage permission; the app's own photos stay in its own folder.
         minSdk = 29
         targetSdk = flutter.targetSdkVersion
-        // Uses the version code from pubspec.yaml. When using split APKs, 1000 * ABI_VERSION
-        // is added automatically by Flutter. (https://developer.android.com/studio/build/configure-apk-splits#configure-APK-versions)
-        // You can force using the value of versionCode by specifying the `-P force-version-code-ignoring-abi=true`
-        // flag during build.
+        // The build number from pubspec.yaml. The AAB keeps it as is; split
+        // APKs get `build number * 10 + ABI` (see the end of this file).
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
@@ -149,6 +148,28 @@ android {
                 "DebugProbesKt.bin",
                 "META-INF/*.version",
             )
+        }
+    }
+}
+
+// Split APKs (`--split-per-abi`, GitHub and F-Droid) get
+// `build number * 10 + ABI`, F-Droid's scheme for Flutter apps, instead of
+// Flutter's `1000 * ABI + build number`: a newer release then has a higher
+// code than an older one on every ABI, and the codes never clash however
+// high the build number goes. Flutter's plugin sets its own override in a
+// callback registered when the plugin is applied, before this file's body
+// runs, so this one runs after it and wins. The AAB has no ABI filter and
+// keeps the plain build number. F-Droid's recipe (VercodeOperation) and
+// scripts/release.py (the changelog file names) use the same numbers.
+val abiCodes = mapOf("armeabi-v7a" to 1, "arm64-v8a" to 2, "x86_64" to 3)
+android.applicationVariants.configureEach {
+    val variant = this
+    variant.outputs.forEach { output ->
+        val abiVersionCode =
+            abiCodes[output.filters.find { it.filterType == "ABI" }?.identifier]
+        if (abiVersionCode != null) {
+            (output as ApkVariantOutputImpl).versionCodeOverride =
+                variant.versionCode * 10 + abiVersionCode
         }
     }
 }

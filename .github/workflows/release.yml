@@ -63,6 +63,9 @@ jobs:
           cache: gradle
 
       # Same Flutter as the dev machine; raise it together with local.
+      # F-Droid's recipe reads its Flutter version from the line below (the
+      # only one of its kind in this file), so a Flutter upgrade needs no
+      # recipe change. Keep the value a plain x.y.z.
       - uses: subosito/flutter-action@v2
         with:
           channel: stable

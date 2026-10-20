@@ -50,8 +50,9 @@ GRADLE_ARGS := $(if $(NO_SMS),-PnoSms=true)
 # they save only ~0.7 MB per APK, and would make release stack traces
 # unreadable without symbol files kept per release (owner, 2026-10-14).
 # Release builds for upload. `--split-per-abi` makes one APK per ABI
-# (armeabi-v7a, arm64-v8a, x86_64); Flutter adds 1000 * ABI number to the
-# version code of each, so they never clash.
+# (armeabi-v7a, arm64-v8a, x86_64), each with version code
+# `build number * 10 + ABI number` (android/app/build.gradle.kts), so they
+# never clash.
 VERSION := $(shell sed -n 's/^version: *\([^+]*\).*/\1/p' pubspec.yaml)
 DIST := build/dist
 ABIS := armeabi-v7a arm64-v8a x86_64

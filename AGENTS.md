@@ -221,8 +221,10 @@ launcher name, so a debug install never touches the data of a released
 app on the same phone. The Kotlin package (`namespace`) is the base id
 without a suffix; the Dart package is `money_swield`.
 
-**Releases** (`version:` in `pubspec.yaml`; split APKs get 1000 × ABI
-number added to the version code by Flutter):
+**Releases** (`version:` in `pubspec.yaml`; each split APK's version code
+is `build number × 10 + ABI` (armeabi-v7a 1, arm64-v8a 2, x86_64 3), set in
+`android/app/build.gradle.kts` in place of Flutter's `1000 × ABI + build
+number`; the AAB keeps the plain build number):
 
 | Where | What | Command |
 |---|---|---|
@@ -239,7 +241,8 @@ library linked with `--build-id=none`. The recipe also deletes the two
 `signingConfig = ...` lines of `release` in `android/app/build.gradle.kts`
 by their text to build unsigned, so keep them as they are. A Flutter,
 NDK, JDK or jni change can break the match: check the F-Droid build after
-one.
+one. The recipe takes its Flutter version from the workflow's
+`flutter-version:` line, so a Flutter upgrade needs no recipe change.
 
 **Signing**: release builds read `android/key.properties` (`storeFile`,
 `storePassword`, `keyAlias`, `keyPassword`; `storeFile` relative to
