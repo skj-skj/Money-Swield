@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="fastlane/metadata/android/en-US/images/icon.png" alt="Money Swield logo" width="128">
+</p>
+
 # Money Swield
 
 An offline expense tracker for Android, built with Flutter. It answers one
